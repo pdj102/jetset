@@ -1,0 +1,46 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Check Spectrum Next Toolchain",
+            "type": "shell",
+            "command": "./scripts/check-toolchain.sh",
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "env": {
+                    "PATH": "/home/paul/src/z88dk/bin:${env:PATH}",
+                    "ZCCCFG": "/home/paul/src/z88dk/lib/config"
+                }
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Build Spectrum Next",
+            "type": "shell",
+            "command": "zcc",
+            "args": [
+                "+zxn",
+                "-subtype=nex",
+                "-clib=sdcc_iy",
+                "main.c",
+                "-o",
+                "main",
+                "-create-app"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "env": {
+                    "PATH": "/home/paul/src/z88dk/bin:${env:PATH}",
+                    "ZCCCFG": "/home/paul/src/z88dk/lib/config"
+                }
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [
+                "$gcc"
+            ]
+        }
+    ]
+}

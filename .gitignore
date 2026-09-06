@@ -1,0 +1,18 @@
+# z88dk and Spectrum Next build products
+*.asm
+*.bin
+*.def
+*.ihx
+*.map
+*.nex
+*.o
+*.opt
+*.sym
+*.tap
+*.tmp
+zcc_opt.def
+main
+
+# Editor and local environment files
+.claude/settings.local.json
+.vscode/*.log
