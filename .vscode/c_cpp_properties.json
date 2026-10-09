@@ -1,0 +1,24 @@
+{
+    "configurations": [
+        {
+            "name": "Spectrum Next",
+            "compilerPath": "/home/paul/src/z88dk/bin/zcc",
+            "compilerArgs": [
+                "+zxn",
+                "-clib=sdcc_iy"
+            ],
+            "intelliSenseMode": "gcc-x86",
+            "cStandard": "c11",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "/home/paul/src/z88dk/include/**",
+                "/home/paul/src/z88dk/include/_DEVELOPMENT/**"
+            ],
+            "defines": [
+                "__Z88DK",
+                "__Z80"
+            ]
+        }
+    ],
+    "version": 4
+}
