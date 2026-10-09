@@ -8,6 +8,9 @@
 
 #include <stdint.h>
 
+
+#define ZXN_TILEMAP_X_OFFSET_MAX    319
+
 /**
  * @brief A tile entry in the ZX Next tilemap.
  */
@@ -18,6 +21,16 @@ typedef struct zxn_tile {
     /** Attribute byte controlling this tile's display properties. */
     uint8_t tile_attr;
 } zxn_tile_t;
+
+/**
+ * @brief Inclusive clip-window coordinates for the ZX Next tilemap.
+ */
+typedef struct zxn_rect {
+    uint8_t x1;
+    uint8_t x2;
+    uint8_t y1;
+    uint8_t y2;
+} zxn_rect_t;
 
 /**
  * @brief An 8x8 ZX Next tile definition containing 4-bit pixel indices.
@@ -34,7 +47,24 @@ typedef struct zxn_tile_definition {
 /**
  * @brief Initialize the ZX Next tilemap hardware.
  */
-void zxn_tile_map_init(void);
+void zxn_tilemap_init(void);
+
+/**
+ * @brief Set the inclusive tilemap clip window in pixels (default is 0,159,0,255 after a Reset).
+ * 
+ * The X coordinates are internally doubled (40x32 mode) or quadrupled (80x32 mode)
+ * origin [0,0] is 32* pixels left and above the top-left ULA pixel, i.e. Tilemap mode does use same coordinates as Sprites
+ *  
+ * @param r Clip coordinates in hardware order: X1, X2, Y1, Y2.
+ */
+void zxn_tilemap_set_clip(const zxn_rect_t *r);
+
+/**
+ * @brief Set the tilemap scroll offset in pixels.
+ * @param x Horizontal offset (0-319 in 40-column mode, 0-639 in 80-column mode).
+ * @param y Vertical offset (0-255).
+ */
+void zxn_tilemap_set_scroll(uint16_t x, uint8_t y);
 
 /**
  * @brief Fill the tilemap with the specified tile entry.

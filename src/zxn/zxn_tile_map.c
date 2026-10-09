@@ -21,9 +21,38 @@
 
 #define ZXN_REG_TILEDEFS_BASE_ADDR 0x6F /* Tile Definitions Base Address Register */
 
+#define ZXN_REG_CLIP_WINDOW_TILEMAP  0x1B /* Tilemap Clip Window Register */
+#define ZXN_REG_CLIP_WINDOW_CONTROL  0x1C /* Clip Window Control Register */
+#define ZXN_CLIP_WINDOW_RESET_TILEMAP_INDEX 0x08
+
+#define ZXN_REG_TILEMAP_X_OFFSET_MSB 0x2F
+#define ZXN_REG_TILEMAP_X_OFFSET_LSB 0x30
+#define ZXN_REG_TILEMAP_Y_OFFSET    0x31
+
+
 static  zxn_tile_t *tilemap_base_p = (zxn_tile_t *) ZXN_TILEMAP_BASE;
 
-void zxn_tile_map_init(void)
+void zxn_tilemap_set_scroll(uint16_t x, uint8_t y)
+{
+    zxn_util_assert(x <= ZXN_TILEMAP_X_OFFSET_MAX);
+
+    ZXN_WRITE_REG(ZXN_REG_TILEMAP_X_OFFSET_MSB, (uint8_t)((x >> 8) & 0x03));
+    ZXN_WRITE_REG(ZXN_REG_TILEMAP_X_OFFSET_LSB, (uint8_t)(x & 0xFF));
+    ZXN_WRITE_REG(ZXN_REG_TILEMAP_Y_OFFSET, y);
+}
+
+void zxn_tilemap_set_clip(const zxn_rect_t *r)
+{
+    zxn_util_assert(r != NULL);
+
+    ZXN_WRITE_REG(ZXN_REG_CLIP_WINDOW_CONTROL, ZXN_CLIP_WINDOW_RESET_TILEMAP_INDEX);
+    ZXN_WRITE_REG(ZXN_REG_CLIP_WINDOW_TILEMAP, r->x1);
+    ZXN_WRITE_REG(ZXN_REG_CLIP_WINDOW_TILEMAP, r->x2);
+    ZXN_WRITE_REG(ZXN_REG_CLIP_WINDOW_TILEMAP, r->y1);
+    ZXN_WRITE_REG(ZXN_REG_CLIP_WINDOW_TILEMAP, r->y2);
+}
+
+void zxn_tilemap_init(void)
 {
     /** 
     * Set the Tilemap Control Register

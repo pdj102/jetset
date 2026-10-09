@@ -47,19 +47,45 @@ static const zxn_tile_t blank_tile_entry = {
 
 int main(void)
 {
+    uint16_t scroll_x = 0;
+    uint8_t scroll_y = 0;
+    uint8_t tile_x;
+    uint8_t tile_y;
+
+    zxn_rect_t clip_window = {
+        .x1 = 0,
+        .x2 = 20*8 - 1,
+        .y1 = 0,
+        .y2 = 32*8 - 1,
+    };
 
     zxn_hw_init();
     zxn_write_palette9( RPC_SELECT_TILEMAP_PALETTE_0, tile_palette, 4);
 
 
-    zxn_tile_map_init();
+    zxn_tilemap_init();
 
-    zxnext_tilemap_clear(&wall_tile_entry);
-    zxnext_tilemap_set(0, 0, &blank_tile_entry);
+    for (tile_y = 0; tile_y < 32; tile_y++)
+    {
+        for (tile_x = 0; tile_x < 40; tile_x++)
+        {
+            const zxn_tile_t *tile = ((tile_x + tile_y) & 1)
+                ? &wall_tile_entry
+                : &blank_tile_entry;
+            zxnext_tilemap_set(tile_x, tile_y, tile);
+        }
+    }
 
+    zxn_tilemap_set_scroll(0, 0);
+
+    // zxn_tilemap_set_clip(&clip_window);
     while (1)
     {
         zxn_frame_wait_vblank();
+        zxn_tilemap_set_scroll(scroll_x, scroll_y);
+
+        scroll_x = (scroll_x == ZXN_TILEMAP_X_OFFSET_MAX) ? 0 : scroll_x + 1;
+        scroll_y++;
     }
 
 }

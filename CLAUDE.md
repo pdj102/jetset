@@ -4,13 +4,9 @@ Jetset is a Spectrum Next game written in C and built with z88dk from WSL.
 
 ## Build
 
-Run the default VS Code build task, or execute this command from the project root:
+Run make
 
-```sh
-zcc +zxn -subtype=nex -clib=sdcc_iy main.c -o main -create-app
-```
-
-The build produces `main.nex`. Generated compiler and emulator files are ignored by Git.
+The build produces `bin\main.nex`. Generated compiler and emulator files are ignored by Git.
 
 ## Development conventions
 
