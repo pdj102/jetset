@@ -43,9 +43,11 @@ typedef struct zxn_palette_entry_9
 /**
  * @brief Write 9-bit palette entries to a selected ZX Next palette.
  * @param palette_select Palette-selection bits to apply to the palette control register e.g. RPC_SELECT_LAYER_2_PALETTE_0
+ * @param first_index Index of the first entry to write (0-255).
  * @param palette_entries Pointer to the palette entries to write.
  * @param num_entries Number of palette entries to write.
  */
-void zxn_write_palette9(uint8_t palette_select, const zxn_palette_entry_9_t *palette_entries, uint16_t num_entries);
+void zxn_write_palette9(uint8_t palette_select, uint8_t first_index,
+                        const zxn_palette_entry_9_t *palette_entries, uint16_t num_entries);
 
 #endif

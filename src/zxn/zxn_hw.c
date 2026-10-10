@@ -11,10 +11,27 @@ void zxn_hw_init(void)
     zxn_audio_init();
 }
 
-/* Enable sprite layer and disable unused video interrupt sources. */
+#define ZXN_REG_ULA_CONTROL     0x68
+#define ZXN_RUC_DISABLE_ULA     0x80 /* bit 7 = 1 to stop displaying the ULA screen */
+
+/* Set the layer order, hide the ULA screen and disable unused video interrupts. */
 void zxn_video_init(void)
 {
-    ZXN_WRITE_REG(REG_SPRITE_LAYER_SYSTEM, 0);
+    /*
+     * Sprites over Layer 2 over ULA/tilemap: sprites draw over the room tiles.
+     * Sprites stay hidden until the sprite code enables RSLS_SPRITES_VISIBLE.
+     */
+    ZXN_WRITE_REG(REG_SPRITE_LAYER_SYSTEM, RSLS_LAYER_PRIORITY_SLU);
+
+    /*
+     * The ULA screen memory at 0x4000 holds the tilemap and tile definitions,
+     * so the ULA would show them as garbage through transparent tilemap pixels.
+     */
+    ZXN_WRITE_REG(ZXN_REG_ULA_CONTROL, ZXN_READ_REG(ZXN_REG_ULA_CONTROL) | ZXN_RUC_DISABLE_ULA);
+
+    /* Colour shown where every layer is transparent (RRRGGGBB): black */
+    ZXN_WRITE_REG(REG_FALLBACK_COLOR, 0x00);
+
     ZXN_WRITE_REG(REG_LINE_INTERRUPT_CONTROL, RLIC_DISABLE_ULA_INTERRUPT);
 }
 

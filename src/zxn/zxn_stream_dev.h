@@ -12,6 +12,7 @@
 #include <stdint.h>
 
 #include "zxn_stream.h"
+#include "zxn_tilemap.h"
 #include "zxn_util.h"
 
 /** Device-specific character output function. */
@@ -25,11 +26,13 @@ typedef void (*zxn_flush_fn)(ZXN_FILE *stream);
  */
 typedef struct zxn_tm_state {
     zxn_rect_t area; /**< Window in inclusive tile coordinates. */
-    uint8_t cx;      /**< Cursor column (absolute tile coordinate). */
+    uint8_t cx;      /**< Cursor column (absolute); x2 + 1 means a wrap is pending. */
     uint8_t cy;      /**< Cursor row (absolute tile coordinate). */
+    zxn_tile_t *cell; /**< Tilemap address of the cursor position. */
     uint8_t attr;    /**< Attribute byte for written tiles. */
     uint8_t esc;     /**< Control-code state machine state. */
     uint8_t arg;     /**< Saved first parameter of AT. */
+    uint8_t clip;    /**< Non-zero: clip at the edges, never wrap or scroll. */
 } zxn_tm_state_t;
 
 /**

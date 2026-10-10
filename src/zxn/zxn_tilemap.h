@@ -12,6 +12,16 @@
 
 #define ZXN_TILEMAP_X_OFFSET_MAX    319
 
+#define ZXN_TILEMAP_WIDTH   40  /**< Width of the tilemap in tiles (row stride). */
+#define ZXN_TILEMAP_HEIGHT  32  /**< Height of the tilemap in tiles. */
+
+/**
+ * Pixel value drawn as transparent in every tile, whatever the palette offset.
+ * The font in tile_defs_data.asm uses 0 for its background and 2 for ink, so
+ * text backgrounds are transparent and tile 0 is a fully transparent tile.
+ */
+#define ZXN_TILEMAP_TRANSPARENT  0
+
 /**
  * @brief A tile entry in the ZX Next tilemap.
  */
@@ -70,6 +80,18 @@ void zxn_tilemap_clear(const zxn_tile_t *tile_p);
  * @param tile_p Pointer to the tile entry to place at the position.
  */
 void zxn_tilemap_set(uint8_t x, uint8_t y, const zxn_tile_t *tile_p);
+
+/**
+ * @brief Get the address of a tilemap position.
+ *
+ * For fast sequential writes: the next tile on the same row is at the
+ * returned pointer + 1, and the tile below is at + ZXN_TILEMAP_WIDTH.
+ *
+ * @param x Horizontal tile coordinate.
+ * @param y Vertical tile coordinate.
+ * @return Pointer to the tile entry in tilemap memory.
+ */
+zxn_tile_t *zxn_tilemap_cell(uint8_t x, uint8_t y);
 
 /**
  * @brief Set the attribute byte at a tilemap position.

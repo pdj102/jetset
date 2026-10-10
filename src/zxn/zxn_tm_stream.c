@@ -2,13 +2,23 @@
 
 #include <stddef.h>
 
+#include "zxn_palette.h"
 #include "zxn_stream_dev.h"
 #include "zxn_tilemap.h"
 
-#define TILEMAP_WIDTH  40
-#define TILEMAP_HEIGHT 32
-
 #define BLANK_TILE_ID  0x20
+
+#define INK_BANK_SIZE     16 /* palette entries per attribute palette offset */
+#define INK_BANK_ENTRIES  4  /* entries 0-3 are all the font pixels use */
+
+/* One row per ZXN_INK_* bank: entry 0 is transparent, 1-3 are the ink colour.
+   Colours are 9-bit: RRRGGGBB plus the low blue bit. */
+static const zxn_palette_entry_9_t ink_banks[][INK_BANK_ENTRIES] = {
+    { {0x00, 0}, {0xFF, 1}, {0xFF, 1}, {0xFF, 1} }, /* ZXN_INK_WHITE */
+    { {0x00, 0}, {0xFC, 0}, {0xFC, 0}, {0xFC, 0} }, /* ZXN_INK_YELLOW */
+    { {0x00, 0}, {0x1F, 1}, {0x1F, 1}, {0x1F, 1} }, /* ZXN_INK_CYAN */
+    { {0x00, 0}, {0xE0, 0}, {0xE0, 0}, {0xE0, 0} }, /* ZXN_INK_RED */
+};
 
 /* Control-code state machine states */
 #define ESC_NONE  0
@@ -16,34 +26,59 @@
 #define ESC_ATTR  2
 #define ESC_AT_Y  3
 #define ESC_AT_X  4
+#define ESC_CLIP  5
 
-/* Move the cursor down a row, scrolling the window at the bottom. */
+/* Point the cached cell at the cursor after a non-sequential move. */
+static void tm_sync(zxn_tm_state_t *tm)
+{
+    tm->cell = zxn_tilemap_cell(tm->cx, tm->cy);
+}
+
+/* Move the cursor down a row; at the bottom, scroll unless clipping. */
 static void tm_linefeed(zxn_tm_state_t *tm)
 {
     zxn_tile_t blank;
 
     if (++tm->cy > tm->area.y2) {
         tm->cy = tm->area.y2;
-        blank.tile_id = BLANK_TILE_ID;
-        blank.tile_attr = tm->attr;
-        zxn_tilemap_scroll_up(&tm->area, &blank);
+        if (!tm->clip) {
+            blank.tile_id = BLANK_TILE_ID;
+            blank.tile_attr = tm->attr;
+            zxn_tilemap_scroll_up(&tm->area, &blank);
+        }
     }
+    tm_sync(tm);
 }
 
-/* Handle a character in the normal (no parameter pending) state. */
-static void tm_char(zxn_tm_state_t *tm, uint8_t c)
+/*
+ * Print a character while the cursor is past the right edge (a wrap is
+ * pending). Clipping windows drop it; others wrap, then print it.
+ */
+static void tm_wrap_char(zxn_tm_state_t *tm, uint8_t c)
+{
+    zxn_tile_t *cell;
+
+    if (tm->clip) {
+        return;
+    }
+    tm->cx = tm->area.x1;
+    tm_linefeed(tm);
+
+    cell = tm->cell;
+    cell->tile_id = c;
+    cell->tile_attr = tm->attr;
+    tm->cx++;
+    tm->cell = cell + 1;
+}
+
+/* Handle a control code in the normal (no parameter pending) state. */
+static void tm_control(zxn_tm_state_t *tm, uint8_t c)
 {
     zxn_tile_t t;
+    zxn_rect_t r;
 
     if (c >= 0x20) {
-        t.tile_id = c;
-        t.tile_attr = tm->attr;
-        zxn_tilemap_set(tm->cx, tm->cy, &t);
-
-        if (++tm->cx > tm->area.x2) {
-            tm->cx = tm->area.x1;
-            tm_linefeed(tm);
-        }
+        tm_wrap_char(tm, c);
         return;
     }
 
@@ -54,10 +89,24 @@ static void tm_char(zxn_tm_state_t *tm, uint8_t c)
         break;
     case ZXN_CTRL_CR:
         tm->cx = tm->area.x1;
+        tm_sync(tm);
         break;
     case ZXN_CTRL_BS:
         if (tm->cx > tm->area.x1) {
             tm->cx--;
+            tm->cell--;
+        }
+        break;
+    case ZXN_CTRL_CLREOL:
+        /* Blank from the cursor to the right edge; the cursor stays put */
+        if (tm->cx <= tm->area.x2) {
+            t.tile_id = BLANK_TILE_ID;
+            t.tile_attr = tm->attr;
+            r.x1 = tm->cx;
+            r.x2 = tm->area.x2;
+            r.y1 = tm->cy;
+            r.y2 = tm->cy;
+            zxn_tilemap_fill(&r, &t);
         }
         break;
     case ZXN_CTRL_CLS:
@@ -66,6 +115,7 @@ static void tm_char(zxn_tm_state_t *tm, uint8_t c)
         zxn_tilemap_fill(&tm->area, &t);
         tm->cx = tm->area.x1;
         tm->cy = tm->area.y1;
+        tm_sync(tm);
         break;
     case ZXN_CTRL_INK:
         tm->esc = ESC_INK;
@@ -76,15 +126,17 @@ static void tm_char(zxn_tm_state_t *tm, uint8_t c)
     case ZXN_CTRL_AT:
         tm->esc = ESC_AT_Y;
         break;
+    case ZXN_CTRL_CLIP:
+        tm->esc = ESC_CLIP;
+        break;
     default:
         break;
     }
 }
 
-/* Tilemap device output function. */
-static int tm_put(uint8_t c, ZXN_FILE *stream)
+/* Handle a control code or a pending control-code parameter. */
+static void tm_escape(zxn_tm_state_t *tm, uint8_t c)
 {
-    zxn_tm_state_t *tm = &stream->u.tm;
     uint8_t state = tm->esc;
     uint8_t pos;
 
@@ -92,7 +144,7 @@ static int tm_put(uint8_t c, ZXN_FILE *stream)
 
     switch (state) {
     case ESC_NONE:
-        tm_char(tm, c);
+        tm_control(tm, c);
         break;
     case ESC_INK:
         tm->attr = (tm->attr & 0x0F) | (uint8_t)(c << 4);
@@ -110,7 +162,35 @@ static int tm_put(uint8_t c, ZXN_FILE *stream)
         tm->cx = (c > tm->area.x2 - tm->area.x1) ? tm->area.x2 : pos;
         pos = tm->arg + tm->area.y1;
         tm->cy = (tm->arg > tm->area.y2 - tm->area.y1) ? tm->area.y2 : pos;
+        tm_sync(tm);
         break;
+    case ESC_CLIP:
+        tm->clip = c;
+        break;
+    }
+}
+
+/* Tilemap device output function. Kept small so SDCC compiles the fast path
+   without a large stack frame; everything else is in tm_escape(). */
+static int tm_put(uint8_t c, ZXN_FILE *stream)
+{
+    zxn_tm_state_t *tm = &stream->u.tm;
+    zxn_tile_t *cell;
+
+    /*
+     * Fast path: a printable character with no parameter pending and the
+     * cursor inside the window is two stores through the cached cell pointer.
+     * Writing the last column leaves the cursor one past the right edge; the
+     * wrap happens only when the next character arrives (see tm_wrap_char).
+     */
+    if (c >= 0x20 && tm->esc == ESC_NONE && tm->cx <= tm->area.x2) {
+        cell = tm->cell;
+        cell->tile_id = c;
+        cell->tile_attr = tm->attr;
+        tm->cx++;
+        tm->cell = cell + 1;
+    } else {
+        tm_escape(tm, c);
     }
     return c;
 }
@@ -118,8 +198,8 @@ static int tm_put(uint8_t c, ZXN_FILE *stream)
 ZXN_FILE *zxn_open_tilemap(const zxn_rect_t *area, uint8_t attr)
 {
     zxn_util_assert(area != NULL);
-    zxn_util_assert(area->x1 <= area->x2 && area->x2 < TILEMAP_WIDTH);
-    zxn_util_assert(area->y1 <= area->y2 && area->y2 < TILEMAP_HEIGHT);
+    zxn_util_assert(area->x1 <= area->x2 && area->x2 < ZXN_TILEMAP_WIDTH);
+    zxn_util_assert(area->y1 <= area->y2 && area->y2 < ZXN_TILEMAP_HEIGHT);
 
     ZXN_FILE *s = zxn_stream_alloc(tm_put, NULL);
 
@@ -131,6 +211,8 @@ ZXN_FILE *zxn_open_tilemap(const zxn_rect_t *area, uint8_t attr)
         tm->cy = area->y1;
         tm->attr = attr;
         tm->esc = ESC_NONE;
+        tm->clip = 0;
+        tm_sync(tm);
     }
     return s;
 }
@@ -157,4 +239,26 @@ void zxn_tm_at(uint8_t y, uint8_t x, ZXN_FILE *stream)
 void zxn_tm_cls(ZXN_FILE *stream)
 {
     zxn_putc(ZXN_CTRL_CLS, stream);
+}
+
+void zxn_tm_clreol(ZXN_FILE *stream)
+{
+    zxn_putc(ZXN_CTRL_CLREOL, stream);
+}
+
+void zxn_tm_clip(uint8_t on, ZXN_FILE *stream)
+{
+    zxn_putc(ZXN_CTRL_CLIP, stream);
+    zxn_putc(on, stream);
+}
+
+void zxn_tm_load_ink_palette(void)
+{
+    uint8_t bank;
+
+    for (bank = 0; bank < sizeof(ink_banks) / sizeof(ink_banks[0]); bank++) {
+        zxn_write_palette9(RPC_SELECT_TILEMAP_PALETTE_0,
+                           (uint8_t)((ZXN_INK_WHITE + bank) * INK_BANK_SIZE),
+                           ink_banks[bank], INK_BANK_ENTRIES);
+    }
 }

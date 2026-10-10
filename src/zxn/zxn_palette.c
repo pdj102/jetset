@@ -1,35 +1,37 @@
 #include "zxn_palette.h"
 
 #include <arch/zxn.h>
+#include <stddef.h>
 
 #include "zxn_util.h"
 
 #define ZXN_REG_PALETTE_VALUE_9  0x44 /* Use to set 9-bit (2-byte) colours of the Enhanced ULA palette, or to read second byte of colour. */
-
-#define ZXN_REG_TILEMAP_TRANSPARENCY_INDEX 0x4C /* Tilemap transparency index register */
 
 #define ZXN_TILE_PALETTE_SIZE_8_BIT 256 /* 256 bytes for 8-bit palette */
 #define ZXN_TILE_PALETTE_SIZE_9_BIT 512 /* 512 bytes for 9-bit palette */
 
 #include <arch/zxn.h>
 
-void zxn_write_palette9(uint8_t palette_select, const zxn_palette_entry_9_t *palette_entries, uint16_t num_entries)
+/* Palette control register bits 6-4 select the palette that writes go to;
+   bit 7 = 1 would disable index auto-increment */
+#define ZXN_RPC_SELECT_MASK  0xF0
+
+void zxn_write_palette9(uint8_t palette_select, uint8_t first_index,
+                        const zxn_palette_entry_9_t *palette_entries, uint16_t num_entries)
 {
     zxn_util_assert(palette_entries != NULL);
+    zxn_util_assert(first_index + num_entries <= 256);
 
-    // Read the current value of the Palette Control Register and set the palette selection bits
-    uint8_t reg = ZXN_READ_REG(REG_PALETTE_CONTROL) | palette_select;
+    /* Replace the previous selection and keep auto-increment on; the low
+       bits (which palettes are displayed) are preserved */
+    uint8_t reg = (ZXN_READ_REG(REG_PALETTE_CONTROL) & (uint8_t)~ZXN_RPC_SELECT_MASK) | palette_select;
 
-    // Select the palette for writing
     ZXN_WRITE_REG(REG_PALETTE_CONTROL, reg);
+    ZXN_WRITE_REG(REG_PALETTE_INDEX, first_index);
 
-    // Set the palette index to 0
-    ZXN_WRITE_REG(REG_PALETTE_INDEX, 0); 
-
-    // Write the palette entries
+    /* Each entry is two writes; the index advances after the second */
     while (num_entries--) {
         ZXN_WRITE_REG(ZXN_REG_PALETTE_VALUE_9, palette_entries->value);
-        palette_entries++;
         ZXN_WRITE_REG(ZXN_REG_PALETTE_VALUE_9, palette_entries->extra);
         palette_entries++;
     }

@@ -6,8 +6,6 @@
 #include "zxn_util.h"
 
 #define ZXN_TILEMAP_BASE 0x4000 /* The base address of the tilemap in memory */
-#define ZXN_TILEMAP_WIDTH 40    /* The width of the tilemap in tiles */
-#define ZXN_TILEMAP_HEIGHT 32   /* The height of the tilemap in tiles */
 
 #define ZXN_REG_TILEMAP_CONTROL 0x6B    /* Tilemap Control Register */
 #define ZXN_RTC_ENABLE     0b10000000 /* bit 7 = 1 to enable the tilemap */
@@ -17,6 +15,8 @@
 #define ZXN_RTC_TEXT       0b00000100 /* bit 3 = 0 for graphics, 1 for text mode */
 #define ZXN_RTC_512_TILES  0b00000010 /* bit 1 = 1 to activate 512 tile mode */
 #define ZXN_RTC_ON_TOP     0b00000001 /* bit 0 = 1 to force tilemap on top of ULA */
+
+#define ZXN_REG_TILEMAP_TRANSPARENCY_INDEX 0x4C /* Tilemap Transparency Index Register */
 
 #define ZXN_REG_TILEMAP_BASE_ADDR 0x6E /*  Tilemap Base Address Register */
 
@@ -101,6 +101,9 @@ void zxn_tilemap_init(void)
      */
     ZXN_NEXTREG(ZXN_REG_TILEDEFS_BASE_ADDR , 10);
 
+
+    /* Pixels with this 4-bit value are transparent in every tile */
+    ZXN_WRITE_REG(ZXN_REG_TILEMAP_TRANSPARENCY_INDEX, ZXN_TILEMAP_TRANSPARENT);
 }
 
  void zxn_tilemap_clear(const zxn_tile_t *tile_p)
@@ -127,6 +130,14 @@ void zxn_tilemap_set(uint8_t x, uint8_t y, const zxn_tile_t *tile_p)
 
     t_p->tile_id = tile_p->tile_id;
     t_p->tile_attr = tile_p->tile_attr;
+}
+
+zxn_tile_t *zxn_tilemap_cell(uint8_t x, uint8_t y)
+{
+    zxn_util_assert(x < ZXN_TILEMAP_WIDTH);
+    zxn_util_assert(y < ZXN_TILEMAP_HEIGHT);
+
+    return tilemap_base_p + ((y * ZXN_TILEMAP_WIDTH) + x);
 }
 
 void zxn_tilemap_set_attr(uint8_t x, uint8_t y, uint8_t tile_attr)
