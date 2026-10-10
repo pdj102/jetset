@@ -7,6 +7,8 @@ BINDIR := bin
 
 SRCS := \
 	src/main.c \
+	src/zxn/zxn_cspect.c \
+	src/zxn/zxn_cspect_stream.c \
 	src/zxn/zxn_hw.c \
 	src/zxn/zxn_frame.c \
 	src/zxn/zxn_palette.c \
@@ -22,6 +24,8 @@ SRCS := \
 
 OBJS := \
 	$(OBJDIR)/main.o \
+	$(OBJDIR)/zxn/zxn_cspect.o \
+	$(OBJDIR)/zxn/zxn_cspect_stream.o \
 	$(OBJDIR)/zxn/zxn_hw.o \
 	$(OBJDIR)/zxn/zxn_frame.o \
 	$(OBJDIR)/zxn/zxn_palette.o \
@@ -37,6 +41,9 @@ OBJS := \
 
 BIN_TARGET := $(BINDIR)/$(TARGET)
 
+# ZXN_CSPECT enables the CSpect DebugOut stream; build with 'make CFLAGS=' for hardware
+CFLAGS ?= -DZXN_CSPECT
+
 export PATH := $(Z88DK_ROOT)/bin:$(PATH)
 export ZCCCFG
 
@@ -48,7 +55,7 @@ build: $(BIN_TARGET).nex
 
 $(OBJDIR)/%.o: src/%.c
 	@mkdir -p $(dir $@)
-	$(ZCC) -c +zxn -clib=sdcc_iy $< -o $@
+	$(ZCC) -c +zxn -clib=sdcc_iy $(CFLAGS) $< -o $@
 
 $(OBJDIR)/%.o: src/%.asm
 	@mkdir -p $(dir $@)

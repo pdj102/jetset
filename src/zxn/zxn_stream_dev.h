@@ -17,6 +17,9 @@
 /** Device-specific character output function. */
 typedef int (*zxn_put_fn)(uint8_t c, ZXN_FILE *stream);
 
+/** Device-specific function that sends any buffered output. */
+typedef void (*zxn_flush_fn)(ZXN_FILE *stream);
+
 /**
  * @brief State of a tilemap window stream.
  */
@@ -33,7 +36,8 @@ typedef struct zxn_tm_state {
  * @brief An output stream.
  */
 struct zxn_file {
-    zxn_put_fn put;  /**< Device output function; NULL for a free slot. */
+    zxn_put_fn put;     /**< Device output function; NULL for a free slot. */
+    zxn_flush_fn flush; /**< Device flush function; NULL if unbuffered. */
     union {
         zxn_tm_state_t tm; /**< Tilemap window state. */
     } u;
@@ -42,8 +46,9 @@ struct zxn_file {
 /**
  * @brief Claim a free stream slot for a device.
  * @param put Device output function.
+ * @param flush Device flush function, or NULL if the device is unbuffered.
  * @return The stream, or NULL if no slot is free.
  */
-ZXN_FILE *zxn_stream_alloc(zxn_put_fn put);
+ZXN_FILE *zxn_stream_alloc(zxn_put_fn put, zxn_flush_fn flush);
 
 #endif

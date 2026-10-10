@@ -121,7 +121,7 @@ ZXN_FILE *zxn_open_tilemap(const zxn_rect_t *area, uint8_t attr)
     zxn_util_assert(area->x1 <= area->x2 && area->x2 < TILEMAP_WIDTH);
     zxn_util_assert(area->y1 <= area->y2 && area->y2 < TILEMAP_HEIGHT);
 
-    ZXN_FILE *s = zxn_stream_alloc(tm_put);
+    ZXN_FILE *s = zxn_stream_alloc(tm_put, NULL);
 
     if (s != NULL) {
         zxn_tm_state_t *tm = &s->u.tm;

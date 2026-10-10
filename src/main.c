@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <arch/zxn.h>
 
+#include "zxn/zxn_cspect_stream.h"
 #include "zxn/zxn_frame.h"
 #include "zxn/zxn_hw.h"
 #include "zxn/zxn_palette.h"
@@ -35,7 +36,11 @@ int main(void)
     ZXN_FILE *left;
     ZXN_FILE *right;
     ZXN_FILE *uart;
+    ZXN_FILE *dbg;
     uint8_t i;
+
+    dbg = zxn_open_cspect_debug();
+    zxn_printf(dbg, "jetset start, %u streams, 100%% ok\n", ZXN_FILE_MAX);
 
     zxn_hw_init();
     zxn_write_palette9( RPC_SELECT_TILEMAP_PALETTE_0, tile_palette, 4);
@@ -80,6 +85,10 @@ int main(void)
     zxn_close(uart);
     uart = zxn_open_uart();
     zxn_util_assert(uart != NULL);
+
+    /* A partial line is sent when the stream is closed */
+    zxn_puts("init done", dbg);
+    zxn_close(dbg);
 
     while (1)
     {

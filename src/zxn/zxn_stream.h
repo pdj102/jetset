@@ -32,8 +32,14 @@ typedef struct zxn_file ZXN_FILE;
 int zxn_putc(uint8_t c, ZXN_FILE *stream);
 
 /**
- * @brief Close a stream and free its slot.
- * @param stream Open stream.
+ * @brief Send any output the device is holding in a buffer.
+ * @param stream Open stream, or NULL (ignored).
+ */
+void zxn_flush(ZXN_FILE *stream);
+
+/**
+ * @brief Close a stream, flushing any buffered output, and free its slot.
+ * @param stream Open stream, or NULL (ignored).
  */
 void zxn_close(ZXN_FILE *stream);
 

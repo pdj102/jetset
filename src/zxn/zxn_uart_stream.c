@@ -1,5 +1,7 @@
 #include "zxn_uart_stream.h"
 
+#include <stddef.h>
+
 #include "zxn_stream_dev.h"
 #include "zxn_uart.h"
 
@@ -13,5 +15,5 @@ static int uart_put(uint8_t c, ZXN_FILE *stream)
 
 ZXN_FILE *zxn_open_uart(void)
 {
-    return zxn_stream_alloc(uart_put);
+    return zxn_stream_alloc(uart_put, NULL);
 }
