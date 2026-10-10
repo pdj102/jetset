@@ -36,11 +36,11 @@ int main(void)
     ZXN_FILE *left;
     ZXN_FILE *right;
     ZXN_FILE *uart;
-    ZXN_FILE *dbg;
     uint8_t i;
 
-    dbg = zxn_open_cspect_debug();
-    zxn_printf(dbg, "jetset start, %u streams, 100%% ok\n", ZXN_FILE_MAX);
+    /* Send asserts and debug output to the CSpect console (NULL on hardware) */
+    zxn_util_set_debug_stream(zxn_open_cspect_debug());
+    zxn_util_debugf("jetset start, %u streams\n", ZXN_FILE_MAX);
 
     zxn_hw_init();
     zxn_write_palette9( RPC_SELECT_TILEMAP_PALETTE_0, tile_palette, 4);
@@ -86,9 +86,10 @@ int main(void)
     uart = zxn_open_uart();
     zxn_util_assert(uart != NULL);
 
-    /* A partial line is sent when the stream is closed */
-    zxn_puts("init done", dbg);
-    zxn_close(dbg);
+    zxn_util_info("init done");
+
+    /* DEMO: remove - shows the assert output format, then halts here */
+    zxn_util_assert(ZXN_FILE_MAX == 0);
 
     while (1)
     {

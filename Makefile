@@ -41,7 +41,9 @@ OBJS := \
 
 BIN_TARGET := $(BINDIR)/$(TARGET)
 
-# ZXN_CSPECT enables the CSpect DebugOut stream; build with 'make CFLAGS=' for hardware
+# Build modes:
+#   make                     CSpect: asserts and debug output go to the DebugOut console
+#   make CFLAGS=-DNDEBUG     hardware: asserts and debug output compiled out, no RST $18
 CFLAGS ?= -DZXN_CSPECT
 
 export PATH := $(Z88DK_ROOT)/bin:$(PATH)
