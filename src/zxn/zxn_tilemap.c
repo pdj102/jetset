@@ -7,6 +7,11 @@
 
 #define ZXN_TILEMAP_BASE 0x4000 /* The base address of the tilemap in memory */
 
+/* Tilemap memory; the PC tests point this at an array instead */
+#ifndef ZXN_TILEMAP_MEM
+#define ZXN_TILEMAP_MEM ((zxn_tile_t *) ZXN_TILEMAP_BASE)
+#endif
+
 #define ZXN_REG_TILEMAP_CONTROL 0x6B    /* Tilemap Control Register */
 #define ZXN_RTC_ENABLE     0b10000000 /* bit 7 = 1 to enable the tilemap */
 #define ZXN_RTC_80X32      0b01000000 /* bit 6 = 0 for 40x32, 1 for 80x32 */
@@ -31,7 +36,7 @@
 #define ZXN_REG_TILEMAP_Y_OFFSET    0x31
 
 
-static  zxn_tile_t *tilemap_base_p = (zxn_tile_t *) ZXN_TILEMAP_BASE;
+static  zxn_tile_t *tilemap_base_p = ZXN_TILEMAP_MEM;
 
 void zxn_tilemap_set_scroll(uint16_t x, uint8_t y)
 {
@@ -110,7 +115,7 @@ void zxn_tilemap_init(void)
 {
     zxn_util_assert(tile_p != NULL);
 
-    zxn_tile_t *t_p =  ((zxn_tile_t *) ZXN_TILEMAP_BASE);
+    zxn_tile_t *t_p = ZXN_TILEMAP_MEM;
 
     uint16_t count = ZXN_TILEMAP_WIDTH * ZXN_TILEMAP_HEIGHT; 
     uint16_t s;

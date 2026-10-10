@@ -49,7 +49,7 @@ CFLAGS ?= -DZXN_CSPECT
 export PATH := $(Z88DK_ROOT)/bin:$(PATH)
 export ZCCCFG
 
-.PHONY: all build check clean
+.PHONY: all build check clean test
 
 all: build
 
@@ -70,5 +70,10 @@ $(BIN_TARGET).nex: $(OBJS)
 check:
 	./scripts/check-toolchain.sh
 
+# PC tests for the zxn library; see tests/Makefile
+test:
+	$(MAKE) -C tests Z88DK_ROOT=$(Z88DK_ROOT)
+
 clean:
 	rm -rf $(OBJDIR) $(BINDIR)
+	$(MAKE) -C tests clean

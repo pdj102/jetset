@@ -1,5 +1,4 @@
 # z88dk and Spectrum Next build products
-*.asm
 *.bin
 *.def
 *.ihx
@@ -16,3 +15,6 @@ main
 # Editor and local environment files
 .claude/settings.local.json
 .vscode/*.log
+
+# PC test build output
+tests/build/

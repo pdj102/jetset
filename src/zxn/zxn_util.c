@@ -57,6 +57,8 @@ static void report_fatal(const char *kind, const char *message, const char *file
         reporting = 1;
         zxn_printf(debug_stream, "%s: %s FILE: %s LINE: %u\n", kind, message, file, line);
         zxn_flush(debug_stream);
+        /* Never reached on the Next; lets the PC tests report again */
+        reporting = 0;
     }
     ZXN_UTIL_HALT();
 }
