@@ -4,8 +4,11 @@
 #include "zxn/zxn_frame.h"
 #include "zxn/zxn_hw.h"
 #include "zxn/zxn_palette.h"
-#include "zxn/zxn_putc.h"
-#include "zxn/zxn_tile_map.h"
+#include "zxn/zxn_print.h"
+#include "zxn/zxn_printf.h"
+#include "zxn/zxn_tilemap.h"
+#include "zxn/zxn_tm_stream.h"
+#include "zxn/zxn_uart_stream.h"
 #include "zxn/zxn_util.h"
 
 static const zxn_palette_entry_9_t tile_palette[] = {
@@ -24,14 +27,6 @@ static const zxn_tile_t blank_tile_entry = {
     .tile_id = 1,
     .tile_attr = 0,
 };
-
-/* Write a NUL-terminated string to a stream. */
-static void demo_puts(const char *str, ZXN_FILE *stream)
-{
-    while (*str) {
-        zxn_putc((uint8_t)*str++, stream);
-    }
-}
 
 int main(void)
 {
@@ -54,24 +49,32 @@ int main(void)
     uart = zxn_open_uart();
 
     /* Clear the left window, then fill it past the bottom to force wrap and scroll */
-    zxn_putc(ZXN_CTRL_CLS, left);
-    zxn_putc(ZXN_CTRL_INK, left);
-    zxn_putc(1, left);    
+    zxn_tm_cls(left);
+    zxn_tm_ink(2, left);
     for (i = 0; i < 12; i++) {
-        demo_puts("Line wraps within the window ", left);
+        zxn_puts("Line wraps within the window ", left);
         zxn_putc(ZXN_CTRL_LF, left);
     }
 
     /* Change colour and position the cursor in the right window */
-    zxn_putc(ZXN_CTRL_CLS, right);
-    zxn_putc(ZXN_CTRL_INK, right);
-    zxn_putc(1, right);
-    zxn_putc(ZXN_CTRL_AT, right);
-    zxn_putc(5, right);
-    zxn_putc(3, right);
-    demo_puts("AT 5,3 INK 1", right);
+    zxn_tm_cls(right);
+    zxn_tm_ink(2, right);
+    zxn_tm_at(5, 3, right);
+    zxn_puts("AT 5,3 INK 1", right);
 
-    demo_puts("uart\n", uart);
+    /* Fixed-width decimal and hex output */
+    zxn_tm_at(7, 0, right);
+    zxn_puts("SCORE ", right);
+    zxn_putu16w(420, 5, '0', right);
+    zxn_tm_at(8, 0, right);
+    zxn_puts("ADDR ", right);
+    zxn_puthex16(0x4A00, right);
+
+    /* Formatted output */
+    zxn_tm_at(9, 0, right);
+    zxn_printf(right, "%s %05u %04X %d", "HI", 420u, 0x4A00u, -7);
+
+    zxn_puts("uart\n", uart);
 
     /* Closing frees a slot that the next open reuses */
     zxn_close(uart);

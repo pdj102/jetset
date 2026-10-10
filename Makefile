@@ -10,9 +10,13 @@ SRCS := \
 	src/zxn/zxn_hw.c \
 	src/zxn/zxn_frame.c \
 	src/zxn/zxn_palette.c \
-	src/zxn/zxn_putc.c \
-	src/zxn/zxn_tile_map.c \
+	src/zxn/zxn_print.c \
+	src/zxn/zxn_printf.c \
+	src/zxn/zxn_stream.c \
+	src/zxn/zxn_tilemap.c \
+	src/zxn/zxn_tm_stream.c \
 	src/zxn/zxn_uart.c \
+	src/zxn/zxn_uart_stream.c \
 	src/zxn/zxn_util.c \
 	src/tile_defs_data.asm
 
@@ -21,9 +25,13 @@ OBJS := \
 	$(OBJDIR)/zxn/zxn_hw.o \
 	$(OBJDIR)/zxn/zxn_frame.o \
 	$(OBJDIR)/zxn/zxn_palette.o \
-	$(OBJDIR)/zxn/zxn_putc.o \
-	$(OBJDIR)/zxn/zxn_tile_map.o \
+	$(OBJDIR)/zxn/zxn_print.o \
+	$(OBJDIR)/zxn/zxn_printf.o \
+	$(OBJDIR)/zxn/zxn_stream.o \
+	$(OBJDIR)/zxn/zxn_tilemap.o \
+	$(OBJDIR)/zxn/zxn_tm_stream.o \
 	$(OBJDIR)/zxn/zxn_uart.o \
+	$(OBJDIR)/zxn/zxn_uart_stream.o \
 	$(OBJDIR)/zxn/zxn_util.o \
 	$(OBJDIR)/tile_defs_data.o
 

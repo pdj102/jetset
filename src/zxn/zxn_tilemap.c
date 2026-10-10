@@ -1,4 +1,4 @@
-#include "zxn_tile_map.h"
+#include "zxn_tilemap.h"
 
 #include <arch/zxn.h>
 #include <string.h>

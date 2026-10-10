@@ -1,9 +1,9 @@
-#include "zxn_putc.h"
+#include "zxn_tm_stream.h"
 
 #include <stddef.h>
 
-#include "zxn_uart.h"
-#include "zxn_util.h"
+#include "zxn_stream_dev.h"
+#include "zxn_tilemap.h"
 
 #define TILEMAP_WIDTH  40
 #define TILEMAP_HEIGHT 32
@@ -16,23 +16,6 @@
 #define ESC_ATTR  2
 #define ESC_AT_Y  3
 #define ESC_AT_X  4
-
-static ZXN_FILE streams[ZXN_FILE_MAX];
-
-/* Return a free stream slot, or NULL if all are in use. */
-static ZXN_FILE *alloc_stream(zxn_put_fn put)
-{
-    ZXN_FILE *s = streams;
-    uint8_t i;
-
-    for (i = ZXN_FILE_MAX; i; i--, s++) {
-        if (s->put == NULL) {
-            s->put = put;
-            return s;
-        }
-    }
-    return NULL;
-}
 
 /* Move the cursor down a row, scrolling the window at the bottom. */
 static void tm_linefeed(zxn_tm_state_t *tm)
@@ -132,21 +115,13 @@ static int tm_put(uint8_t c, ZXN_FILE *stream)
     return c;
 }
 
-/* UART device output function. */
-static int uart_put(uint8_t c, ZXN_FILE *stream)
-{
-    (void)stream;
-    zxn_uart_write_byte(c);
-    return c;
-}
-
 ZXN_FILE *zxn_open_tilemap(const zxn_rect_t *area, uint8_t attr)
 {
     zxn_util_assert(area != NULL);
     zxn_util_assert(area->x1 <= area->x2 && area->x2 < TILEMAP_WIDTH);
     zxn_util_assert(area->y1 <= area->y2 && area->y2 < TILEMAP_HEIGHT);
 
-    ZXN_FILE *s = alloc_stream(tm_put);
+    ZXN_FILE *s = zxn_stream_alloc(tm_put);
 
     if (s != NULL) {
         zxn_tm_state_t *tm = &s->u.tm;
@@ -160,22 +135,26 @@ ZXN_FILE *zxn_open_tilemap(const zxn_rect_t *area, uint8_t attr)
     return s;
 }
 
-ZXN_FILE *zxn_open_uart(void)
+void zxn_tm_ink(uint8_t n, ZXN_FILE *stream)
 {
-    return alloc_stream(uart_put);
+    zxn_putc(ZXN_CTRL_INK, stream);
+    zxn_putc(n, stream);
 }
 
-int zxn_putc(uint8_t c, ZXN_FILE *stream)
+void zxn_tm_attr(uint8_t a, ZXN_FILE *stream)
 {
-    if (stream == NULL || stream->put == NULL) {
-        return ZXN_EOF;
-    }
-    return stream->put(c, stream);
+    zxn_putc(ZXN_CTRL_ATTR, stream);
+    zxn_putc(a, stream);
 }
 
-void zxn_close(ZXN_FILE *stream)
+void zxn_tm_at(uint8_t y, uint8_t x, ZXN_FILE *stream)
 {
-    zxn_util_assert(stream != NULL);
+    zxn_putc(ZXN_CTRL_AT, stream);
+    zxn_putc(y, stream);
+    zxn_putc(x, stream);
+}
 
-    stream->put = NULL;
+void zxn_tm_cls(ZXN_FILE *stream)
+{
+    zxn_putc(ZXN_CTRL_CLS, stream);
 }

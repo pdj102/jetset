@@ -8,6 +8,8 @@
 #ifndef UTIL_H
 #define UTIL_H
 
+#include <stdint.h>
+
 /***************************************************
  * public defines
  ***************************************************/
@@ -15,6 +17,18 @@
 /***************************************************
  * public types
  ***************************************************/
+
+/**
+ * @brief Inclusive rectangle coordinates on the ZX Next tilemap.
+ *
+ * Used in pixels for the clip window and in tiles for tilemap areas.
+ */
+typedef struct zxn_rect {
+    uint8_t x1;
+    uint8_t x2;
+    uint8_t y1;
+    uint8_t y2;
+} zxn_rect_t;
 
 /***************************************************
  * public variables

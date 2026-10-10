@@ -1,13 +1,14 @@
-#ifndef ZXN_TILE_MAP_H
-#define ZXN_TILE_MAP_H
+#ifndef ZXN_TILEMAP_H
+#define ZXN_TILEMAP_H
 
 /**
- * @file zxn_tile_map.h
+ * @file zxn_tilemap.h
  * @brief ZX Next tilemap and tile-definition types and operations.
  */
 
 #include <stdint.h>
 
+#include "zxn_util.h"
 
 #define ZXN_TILEMAP_X_OFFSET_MAX    319
 
@@ -21,18 +22,6 @@ typedef struct zxn_tile {
     /** Attribute byte controlling this tile's display properties. */
     uint8_t tile_attr;
 } zxn_tile_t;
-
-/**
- * @brief Inclusive rectangle coordinates on the ZX Next tilemap.
- *
- * Used in pixels for the clip window and in tiles for tilemap areas.
- */
-typedef struct zxn_rect {
-    uint8_t x1;
-    uint8_t x2;
-    uint8_t y1;
-    uint8_t y2;
-} zxn_rect_t;
 
 /**
  * @brief An 8x8 ZX Next tile definition containing 4-bit pixel indices.
