@@ -17,29 +17,12 @@
         {
             "label": "Build Spectrum Next",
             "type": "shell",
-            "command": "zcc",
+            "command": "make",
             "args": [
-                "+zxn",
-                "-subtype=nex",
-                "-clib=sdcc_iy",
-                "-I/home/paul/src/z88dk/include",
-                "src/main.c",
-                "src/zxn/zxn_hw.c",
-                "src/zxn/zxn_frame.c",
-                "src/zxn/zxn_palette.c",
-                "src/zxn/zxn_tile_map.c",
-                "src/zxn/zxn_util.c",
-                "src/tile_defs_data.asm",
-                "-o",
-                "main",
-                "-create-app"
+                "build"
             ],
             "options": {
-                "cwd": "${workspaceFolder}",
-                "env": {
-                    "PATH": "/home/paul/src/z88dk/bin:${env:PATH}",
-                    "ZCCCFG": "/home/paul/src/z88dk/lib/config"
-                }
+                "cwd": "${workspaceFolder}"
             },
             "group": {
                 "kind": "build",

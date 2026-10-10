@@ -11,11 +11,9 @@ void zxn_hw_init(void)
     zxn_audio_init();
 }
 
-/* Reset the ULA display and disable unused video interrupt sources. */
+/* Enable sprite layer and disable unused video interrupt sources. */
 void zxn_video_init(void)
 {
-    zx_border(INK_BLACK);
-    zx_cls_attr(PAPER_BLACK | INK_BLACK);
     ZXN_WRITE_REG(REG_SPRITE_LAYER_SYSTEM, 0);
     ZXN_WRITE_REG(REG_LINE_INTERRUPT_CONTROL, RLIC_DISABLE_ULA_INTERRUPT);
 }

@@ -23,7 +23,9 @@ typedef struct zxn_tile {
 } zxn_tile_t;
 
 /**
- * @brief Inclusive clip-window coordinates for the ZX Next tilemap.
+ * @brief Inclusive rectangle coordinates on the ZX Next tilemap.
+ *
+ * Used in pixels for the clip window and in tiles for tilemap areas.
  */
 typedef struct zxn_rect {
     uint8_t x1;
@@ -70,7 +72,7 @@ void zxn_tilemap_set_scroll(uint16_t x, uint8_t y);
  * @brief Fill the tilemap with the specified tile entry.
  * @param tile_p Pointer to the tile entry to copy to every map position.
  */
-void zxnext_tilemap_clear(const zxn_tile_t *tile_p);
+void zxn_tilemap_clear(const zxn_tile_t *tile_p);
 
 /**
  * @brief Set a tilemap position to the specified tile entry.
@@ -78,7 +80,7 @@ void zxnext_tilemap_clear(const zxn_tile_t *tile_p);
  * @param y Vertical tile coordinate.
  * @param tile_p Pointer to the tile entry to place at the position.
  */
-void zxnext_tilemap_set(uint8_t x, uint8_t y, const zxn_tile_t *tile_p);
+void zxn_tilemap_set(uint8_t x, uint8_t y, const zxn_tile_t *tile_p);
 
 /**
  * @brief Set the attribute byte at a tilemap position.
@@ -86,7 +88,21 @@ void zxnext_tilemap_set(uint8_t x, uint8_t y, const zxn_tile_t *tile_p);
  * @param y Vertical tile coordinate.
  * @param tile_attr Attribute byte to write.
  */
-void zxnext_tilemap_set_attr(uint8_t x, uint8_t y, uint8_t tile_attr);
+void zxn_tilemap_set_attr(uint8_t x, uint8_t y, uint8_t tile_attr);
+
+/**
+ * @brief Fill a tilemap area with the specified tile entry.
+ * @param r Area in inclusive tile coordinates.
+ * @param fill_p Pointer to the tile entry to copy to every position in the area.
+ */
+void zxn_tilemap_fill(const zxn_rect_t *r, const zxn_tile_t *fill_p);
+
+/**
+ * @brief Scroll a tilemap area up one row and fill the bottom row.
+ * @param r Area in inclusive tile coordinates.
+ * @param fill_p Pointer to the tile entry used to fill the bottom row.
+ */
+void zxn_tilemap_scroll_up(const zxn_rect_t *r, const zxn_tile_t *fill_p);
 
 
 #endif

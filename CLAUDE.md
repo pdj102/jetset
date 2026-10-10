@@ -6,11 +6,11 @@ Jetset is a Spectrum Next game written in C and built with z88dk from WSL.
 
 Run make
 
-The build produces `bin\main.nex`. Generated compiler and emulator files are ignored by Git.
+The build produces `bin/main.nex`. Generated compiler and emulator files are ignored by Git.
 
 ## Development conventions
 
-- Keep the program entry point in `main.c` until the build layout is deliberately changed.
+- Keep the program entry point in `src/main.c` until the build layout is deliberately changed.
 - Put reusable game code and headers under `src/`.
 - Target Spectrum Next hardware and the z88dk `+zxn` target; do not substitute a desktop C runtime.
 - Keep changes small and build after changes to C code.

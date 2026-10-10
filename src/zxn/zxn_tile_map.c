@@ -1,6 +1,7 @@
 #include "zxn_tile_map.h"
 
 #include <arch/zxn.h>
+#include <string.h>
 
 #include "zxn_util.h"
 
@@ -102,7 +103,7 @@ void zxn_tilemap_init(void)
 
 }
 
- void zxnext_tilemap_clear(const zxn_tile_t *tile_p)
+ void zxn_tilemap_clear(const zxn_tile_t *tile_p)
 {
     zxn_util_assert(tile_p != NULL);
 
@@ -116,7 +117,7 @@ void zxn_tilemap_init(void)
     }
 }
 
-void zxnext_tilemap_set(uint8_t x, uint8_t y, const zxn_tile_t *tile_p)
+void zxn_tilemap_set(uint8_t x, uint8_t y, const zxn_tile_t *tile_p)
 {
     zxn_util_assert(x < ZXN_TILEMAP_WIDTH);
     zxn_util_assert(y < ZXN_TILEMAP_HEIGHT);
@@ -128,7 +129,7 @@ void zxnext_tilemap_set(uint8_t x, uint8_t y, const zxn_tile_t *tile_p)
     t_p->tile_attr = tile_p->tile_attr;
 }
 
-void zxnext_tilemap_set_attr(uint8_t x, uint8_t y, uint8_t tile_attr)
+void zxn_tilemap_set_attr(uint8_t x, uint8_t y, uint8_t tile_attr)
 {
     zxn_util_assert(x < ZXN_TILEMAP_WIDTH);
     zxn_util_assert(y < ZXN_TILEMAP_HEIGHT);
@@ -138,7 +139,7 @@ void zxnext_tilemap_set_attr(uint8_t x, uint8_t y, uint8_t tile_attr)
     t_p->tile_attr = tile_attr;
 }
 
-void  zxnext_tilemap_copy(uint8_t fx, uint8_t fy, uint8_t tx, uint8_t ty)
+void  zxn_tilemap_copy(uint8_t fx, uint8_t fy, uint8_t tx, uint8_t ty)
 {
     zxn_util_assert(fx < ZXN_TILEMAP_WIDTH);
     zxn_util_assert(fy < ZXN_TILEMAP_HEIGHT);
@@ -149,4 +150,52 @@ void  zxnext_tilemap_copy(uint8_t fx, uint8_t fy, uint8_t tx, uint8_t ty)
     volatile zxn_tile_t *t_p = tilemap_base_p + ( (ty * ZXN_TILEMAP_WIDTH) + tx);
 
     *t_p = *f_p; /* copy the tile */
+}
+
+
+void zxn_tilemap_fill(const zxn_rect_t *r, const zxn_tile_t *fill_p)
+{
+    zxn_util_assert(r != NULL);
+    zxn_util_assert(fill_p != NULL);
+    zxn_util_assert(r->x1 <= r->x2 && r->x2 < ZXN_TILEMAP_WIDTH);
+    zxn_util_assert(r->y1 <= r->y2 && r->y2 < ZXN_TILEMAP_HEIGHT);
+
+    zxn_tile_t *row_p = tilemap_base_p + ((r->y1 * ZXN_TILEMAP_WIDTH) + r->x1);
+    uint8_t width = r->x2 - r->x1 + 1;
+    uint8_t rows = r->y2 - r->y1 + 1;
+    uint8_t x;
+
+    while (rows--) {
+        zxn_tile_t *t_p = row_p;
+
+        for (x = width; x; x--) {
+            *t_p++ = *fill_p;
+        }
+        row_p += ZXN_TILEMAP_WIDTH;
+    }
+}
+
+void zxn_tilemap_scroll_up(const zxn_rect_t *r, const zxn_tile_t *fill_p)
+{
+    zxn_util_assert(r != NULL);
+    zxn_util_assert(fill_p != NULL);
+    zxn_util_assert(r->x1 <= r->x2 && r->x2 < ZXN_TILEMAP_WIDTH);
+    zxn_util_assert(r->y1 <= r->y2 && r->y2 < ZXN_TILEMAP_HEIGHT);
+
+    zxn_tile_t *dst_p = tilemap_base_p + ((r->y1 * ZXN_TILEMAP_WIDTH) + r->x1);
+    uint16_t bytes = (uint16_t)(r->x2 - r->x1 + 1) * sizeof(zxn_tile_t);
+    uint8_t rows = r->y2 - r->y1;
+    zxn_rect_t bottom;
+
+    /* Copy each row up one line; memcpy compiles to a single LDIR per row */
+    while (rows--) {
+        memcpy(dst_p, dst_p + ZXN_TILEMAP_WIDTH, bytes);
+        dst_p += ZXN_TILEMAP_WIDTH;
+    }
+
+    bottom.x1 = r->x1;
+    bottom.x2 = r->x2;
+    bottom.y1 = r->y2;
+    bottom.y2 = r->y2;
+    zxn_tilemap_fill(&bottom, fill_p);
 }

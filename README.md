@@ -11,11 +11,7 @@ A Spectrum Next game project using C, z88dk, WSL, and VS Code.
 
 ## Build
 
-Use **Terminal: Run Build Task** in VS Code, or run:
-
-```sh
-zcc +zxn -subtype=nex -clib=sdcc_iy -I/home/paul/src/z88dk/include src/main.c src/zxn/zxn_hw.c src/zxn/zxn_frame.c -o main -create-app
-```
+Use **Terminal: Run Build Task** in VS Code
 
 This creates `main.nex`, which can be loaded in an emulator or copied to a Spectrum Next SD card.
 

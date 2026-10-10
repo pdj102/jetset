@@ -52,7 +52,7 @@ void zxn_util_abort_f(const char *message, const char *file, unsigned line);
 
 #define zxn_util_abort(message) \
     do { \
-        util_abort_f((message), __FILE__, __LINE__); \
+        zxn_util_abort_f((message), __FILE__, __LINE__); \
     } while (0)
 
 

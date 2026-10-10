@@ -10,13 +10,17 @@
             "intelliSenseMode": "gcc-x86",
             "cStandard": "c11",
             "includePath": [
-                "${workspaceFolder}/**",
-                "/home/paul/src/z88dk/include/**",
-                "/home/paul/src/z88dk/include/_DEVELOPMENT/**"
+                "${workspaceFolder}/src/**",
+                "/home/paul/src/z88dk/include/_DEVELOPMENT/common"
             ],
             "defines": [
                 "__Z88DK",
-                "__Z80"
+                "__Z80",
+                "__Z80N",
+                "__ZXNEXT",
+                "__Z88DK_NEWLIB",
+                "__SDCC",
+                "__SDCC_IY"
             ]
         }
     ],
