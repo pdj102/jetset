@@ -12,12 +12,15 @@
  * the two halves of a read, as on the hardware.
  */
 static const uint16_t *sequence;
+static int length;
 static int pos;
 static int reads;
 
 static uint8_t read_line(uint8_t reg)
 {
-    uint16_t line = sequence[pos];
+    /* After the last line the display stays on it (the final check of
+       frame_line() reads the high byte once more) */
+    uint16_t line = sequence[pos < length ? pos : length - 1];
 
     reads++;
     if (reg == REG_ACTIVE_VIDEO_LINE_H) {
@@ -29,9 +32,12 @@ static uint8_t read_line(uint8_t reg)
 }
 
 /* Run zxn_frame_wait_vblank() over a sequence; return the index it stopped at */
-static int wait_over(const uint16_t *lines)
+#define wait_over(lines)  wait_over_n(lines, sizeof(lines) / sizeof(lines[0]))
+
+static int wait_over_n(const uint16_t *lines, int n)
 {
     sequence = lines;
+    length = n;
     pos = 0;
     reads = 0;
     zxn_frame_wait_vblank();

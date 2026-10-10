@@ -127,6 +127,37 @@ void test_reg_reset(void)
     test_reg_read_hook = NULL;
 }
 
+/* ---- IO ports ---- */
+
+uint16_t test_port_log_port[TEST_PORT_LOG_MAX];
+uint8_t test_port_log_val[TEST_PORT_LOG_MAX];
+int test_port_log_count;
+uint8_t (*test_port_read_hook)(uint16_t port);
+
+/* Append a log entry; the caller's assignment fills in its value */
+uint8_t *test_port_write(uint16_t port)
+{
+    static uint8_t overflow;
+
+    if (test_port_log_count >= TEST_PORT_LOG_MAX) {
+        return &overflow;
+    }
+    test_port_log_port[test_port_log_count] = port;
+    test_port_log_val[test_port_log_count] = 0;
+    return &test_port_log_val[test_port_log_count++];
+}
+
+uint8_t test_port_read(uint16_t port)
+{
+    return test_port_read_hook ? test_port_read_hook(port) : 0;
+}
+
+void test_port_reset(void)
+{
+    test_port_log_count = 0;
+    test_port_read_hook = NULL;
+}
+
 /* ---- Tilemap memory ---- */
 
 unsigned char test_tilemap_mem[ZXN_TILEMAP_WIDTH * ZXN_TILEMAP_HEIGHT * sizeof(zxn_tile_t)];
@@ -164,6 +195,7 @@ void test_init(void)
 {
     setvbuf(stdout, NULL, _IONBF, 0);
     test_reg_reset();
+    test_port_reset();
     test_capture_reset();
     memset(test_tilemap_mem, 0, sizeof(test_tilemap_mem));
     test_cspect_count = 0;

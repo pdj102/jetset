@@ -4,13 +4,17 @@
 #include "zxn/zxn_cspect_stream.h"
 #include "zxn/zxn_frame.h"
 #include "zxn/zxn_hw.h"
+#include "zxn/zxn_mmu.h"
 #include "zxn/zxn_palette.h"
 #include "zxn/zxn_print.h"
 #include "zxn/zxn_printf.h"
+#include "zxn/zxn_sprite.h"
 #include "zxn/zxn_tilemap.h"
 #include "zxn/zxn_tm_stream.h"
 #include "zxn/zxn_uart_stream.h"
 #include "zxn/zxn_util.h"
+
+#include "sprite_data.h"
 
 static const zxn_palette_entry_9_t tile_palette[] = {
     { 0x00, 0x00 },
@@ -31,6 +35,27 @@ static const zxn_tile_t game_tile_entry = {
     .tile_attr = 0,
 };
 
+/* Sprite ids in the demo */
+#define SPR_STANDING  0
+#define SPR_WALKER    1
+#define SPR_BIG       2
+#define SPR_RECOLOUR  3
+
+#define WALK_Y          ZXN_SPRITE_FROM_TILE(20)  /* feet on the game area (row 22) */
+#define WALK_X_MAX      (ZXN_SPRITE_FROM_TILE(40) - 16)
+#define WALK_FRAME_SHIFT 3                        /* 8 frames per animation step */
+
+/* Load the demo sprite graphics from their banked page. */
+static void load_sprite_graphics(void)
+{
+    uint8_t old = zxn_mmu_map(ZXN_MMU_SLOT_BANKED_0, DEMO_SPRITE_PAGE);
+
+    zxn_sprite_load_patterns(0, demo_sprite_patterns, DEMO_SPRITE_PATTERNS);
+    zxn_write_palette9(RPC_SELECT_SPRITES_PALETTE_0, 0, demo_sprite_palette, DEMO_SPRITE_COLOURS);
+
+    zxn_mmu_map(ZXN_MMU_SLOT_BANKED_0, old);
+}
+
 int main(void)
 {
     static const zxn_rect_t left_area = { .x1 = 0, .x2 = 19, .y1 = 0, .y2 = 9 };
@@ -42,6 +67,9 @@ int main(void)
     ZXN_FILE *uart;
     ZXN_FILE *hud;
     uint8_t i;
+    uint16_t walk_x = 0;
+    int8_t walk_dx = 1;
+    uint8_t frame = 0;
 
     /* Send asserts and debug output to the CSpect console (NULL on hardware) */
     zxn_util_set_debug_stream(zxn_open_cspect_debug());
@@ -108,13 +136,37 @@ int main(void)
     zxn_putu16(99, hud);
     zxn_tm_clreol(hud);
 
-    zxn_util_info("init done");
+    /* Sprites: graphics come from banked page 32, mapped in only while loading */
+    zxn_sprite_init();
+    load_sprite_graphics();
 
-    /* DEMO: remove - shows the assert output format, then halts here */
-    zxn_util_assert(ZXN_FILE_MAX == 0);
+    /* Standing on the game area, exactly on tile (4, 20) */
+    zxn_sprite_set(SPR_STANDING, ZXN_SPRITE_FROM_TILE(4), WALK_Y, 0, 0);
+    /* Double size, below the left text window */
+    zxn_sprite_set(SPR_BIG, ZXN_SPRITE_FROM_TILE(8), ZXN_SPRITE_FROM_TILE(12), 0, 0);
+    zxn_sprite_set_scale(SPR_BIG, ZXN_SPRITE_SCALE_X2 | ZXN_SPRITE_SCALE_Y2);
+    /* Palette offset 1 recolours the same pattern; mirrored, in the left border area */
+    zxn_sprite_set(SPR_RECOLOUR, 0, ZXN_SPRITE_FROM_TILE(17), 0,
+                  ZXN_SPRITE_PALETTE(1) | ZXN_SPRITE_MIRROR_X);
+    /* Walks back and forth along the game area */
+    zxn_sprite_set(SPR_WALKER, walk_x, WALK_Y, 0, 0);
+
+    zxn_util_info("init done");
 
     while (1)
     {
         zxn_frame_wait_vblank();
+        /* First thing in the blanking period, so no sprite changes mid-frame */
+        zxn_sprite_update();
+
+        frame++;
+        walk_x += walk_dx;
+        if (walk_x == 0 || walk_x == WALK_X_MAX) {
+            walk_dx = -walk_dx;
+        }
+        zxn_sprite_move(SPR_WALKER, walk_x, WALK_Y);
+        /* The pattern faces right; mirror it when walking left */
+        zxn_sprite_set_flags(SPR_WALKER, walk_dx < 0 ? ZXN_SPRITE_MIRROR_X : 0);
+        zxn_sprite_set_pattern(SPR_WALKER, (uint8_t)(frame >> WALK_FRAME_SHIFT) & 1);
     }
 }

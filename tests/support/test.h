@@ -75,6 +75,19 @@ extern uint8_t (*test_reg_read_hook)(uint8_t reg);
 
 void test_reg_reset(void);
 
+/* ---- IO ports logged by support/arch/zxn.h ---- */
+
+#define TEST_PORT_LOG_MAX 20000
+
+extern uint16_t test_port_log_port[TEST_PORT_LOG_MAX];
+extern uint8_t test_port_log_val[TEST_PORT_LOG_MAX];
+extern int test_port_log_count;         /**< Number of logged writes, in order. */
+
+/** If set, logged port reads call this; otherwise they return 0. */
+extern uint8_t (*test_port_read_hook)(uint16_t port);
+
+void test_port_reset(void);
+
 /* ---- Tilemap memory (replaces 0x4000) ---- */
 
 /** The tilemap as tiles: test_tilemap[y * ZXN_TILEMAP_WIDTH + x]. */
