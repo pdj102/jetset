@@ -1,11 +1,11 @@
-/* zxn_printf.c, checked against the C library's snprintf. */
+/* nge_printf.c, checked against the C library's snprintf. */
 #include "test.h"
 
 #include <stdio.h>
 
-#include "zxn_printf.h"
+#include "output/nge_printf.h"
 
-static ZXN_FILE *cap;
+static NGE_FILE *cap;
 
 /* Format with both and compare text and return value */
 #define SAME(...) \
@@ -14,7 +14,7 @@ static ZXN_FILE *cap;
         int ref_ret_ = snprintf(ref_, sizeof(ref_), __VA_ARGS__); \
         int ret_; \
         test_capture_reset(); \
-        ret_ = zxn_printf(cap, __VA_ARGS__); \
+        ret_ = nge_printf(cap, __VA_ARGS__); \
         CHECK_STR(test_capture_text(), ref_); \
         CHECK(ret_ == ref_ret_); \
     } while (0)
@@ -52,13 +52,13 @@ int main(void)
 
     /* Behaviour where snprintf differs or is undefined */
     test_capture_reset();
-    CHECK(zxn_printf(cap, "%q") == 1);
+    CHECK(nge_printf(cap, "%q") == 1);
     CHECK_STR(test_capture_text(), "q");
     test_capture_reset();
-    CHECK(zxn_printf(cap, "end%") == 4);
+    CHECK(nge_printf(cap, "end%") == 4);
     CHECK_STR(test_capture_text(), "end%");
     test_capture_reset();
-    zxn_printf(cap, "%s", (char *)NULL);
+    nge_printf(cap, "%s", (char *)NULL);
     CHECK_STR(test_capture_text(), "(null)");
 
     return test_summary("printf");

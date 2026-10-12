@@ -1,4 +1,4 @@
-# PC tests for the zxn library (src/zxn), built with the host C compiler.
+# PC tests for the nge library (src/nge), built with the host C compiler.
 #
 #   make test                  from the project root: build and run every test
 #   make -C tests              the same, from anywhere
@@ -8,15 +8,16 @@
 #   1. Create tests/test_<name>.c with a main() that calls test_init(),
 #      makes CHECK()s and returns test_summary("<name>") (see support/test.h).
 #   2. That's all: every tests/test_*.c is found automatically and linked with
-#      every library source in src/zxn, so new src/zxn/*.c files are included
-#      too. Next register and IO port names come from z88dk's own headers.
+#      every library source in src/nge/*/, so new modules and folders are
+#      included too. Next register and IO port names come from z88dk's own
+#      headers.
 #   Library files that only work on the Next (inline asm traps) are listed in
 #   LIB_EXCLUDE and replaced by fakes in support/test.c.
 
 Z88DK_ROOT ?= /home/paul/src/z88dk
 HOSTCC ?= gcc
 
-SRCDIR := ../src/zxn
+SRCDIR := ../src/nge
 BUILD := build
 GEN := $(BUILD)/gen
 
@@ -24,18 +25,18 @@ Z88DK_ARCH_H := $(Z88DK_ROOT)/include/_DEVELOPMENT/common/arch/zxn.h
 Z88DK_CONFIG_DIR := $(Z88DK_ROOT)/libsrc/newlib/target/zxn
 
 # Library code that cannot run on the PC
-LIB_EXCLUDE := zxn_cspect.c
+LIB_EXCLUDE := devices/nge_cspect.c
 
-LIB_SRCS := $(filter-out $(addprefix $(SRCDIR)/,$(LIB_EXCLUDE)),$(wildcard $(SRCDIR)/*.c))
+LIB_SRCS := $(filter-out $(addprefix $(SRCDIR)/,$(LIB_EXCLUDE)),$(wildcard $(SRCDIR)/*/*.c))
 LIB_OBJS := $(patsubst $(SRCDIR)/%.c,$(BUILD)/lib/%.o,$(LIB_SRCS))
 SUPPORT_OBJS := $(BUILD)/support/test.o $(BUILD)/support/zxn_io.o
 
 TEST_SRCS := $(wildcard test_*.c)
 TESTS := $(patsubst %.c,$(BUILD)/%,$(TEST_SRCS))
 
-# ZXN_CSPECT: build the DebugOut stream (its trap is faked).
-# ZXN_FILE_MAX: room for the stdout debug stream that test_init() opens.
-CPPFLAGS := -DZXN_CSPECT -DZXN_FILE_MAX=8 \
+# NGE_CSPECT: build the DebugOut stream (its trap is faked).
+# NGE_FILE_MAX: room for the stdout debug stream that test_init() opens.
+CPPFLAGS := -DNGE_CSPECT -DNGE_FILE_MAX=8 \
             -include support/test_config.h \
             -Isupport -I$(GEN) -I$(SRCDIR) -I$(Z88DK_CONFIG_DIR)
 CFLAGS := -std=gnu11 -O1 -g -Wall -MMD -MP
@@ -96,4 +97,4 @@ $(GEN)/zxn_io.c: $(Z88DK_ARCH_H)
 clean:
 	rm -rf $(BUILD)
 
--include $(wildcard $(BUILD)/*.d $(BUILD)/lib/*.d $(BUILD)/support/*.d)
+-include $(wildcard $(BUILD)/*.d $(BUILD)/lib/*/*.d $(BUILD)/support/*.d)

@@ -1,9 +1,9 @@
-/* zxn_frame.c: waiting for vertical blank. */
+/* nge_frame.c: waiting for vertical blank. */
 #include "test.h"
 
 #include <arch/zxn.h>
 
-#include "zxn_frame.h"
+#include "hw/nge_frame.h"
 
 /*
  * Successive video line numbers. Reading the high register returns bit 8 of
@@ -31,7 +31,7 @@ static uint8_t read_line(uint8_t reg)
     return (uint8_t)line;
 }
 
-/* Run zxn_frame_wait_vblank() over a sequence; return the index it stopped at */
+/* Run nge_frame_wait_vblank() over a sequence; return the index it stopped at */
 #define wait_over(lines)  wait_over_n(lines, sizeof(lines) / sizeof(lines[0]))
 
 static int wait_over_n(const uint16_t *lines, int n)
@@ -40,7 +40,7 @@ static int wait_over_n(const uint16_t *lines, int n)
     length = n;
     pos = 0;
     reads = 0;
-    zxn_frame_wait_vblank();
+    nge_frame_wait_vblank();
     return pos - 1;
 }
 

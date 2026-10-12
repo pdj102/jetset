@@ -13,10 +13,10 @@
 
 /* Tilemap memory is a byte array in test.c instead of 0x4000 */
 extern unsigned char test_tilemap_mem[];
-#define ZXN_TILEMAP_MEM  ((zxn_tile_t *) test_tilemap_mem)
+#define NGE_TILEMAP_MEM  ((nge_tile_t *) test_tilemap_mem)
 
-/* A fatal zxn_util error returns to the test instead of halting */
+/* A fatal nge_util error returns to the test instead of halting */
 void test_halt(void);
-#define ZXN_UTIL_HALT()  test_halt()
+#define NGE_UTIL_HALT()  test_halt()
 
 #endif

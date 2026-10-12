@@ -5,52 +5,29 @@ TARGET := main
 OBJDIR := obj
 BINDIR := bin
 
+# Sources are found automatically: a new module, folder or data file needs no
+# change here.
+#   src/main.c        entry point
+#   src/nge/*/        the nge game engine library (see src/nge/README.md)
+#   src/game/         Jetset game code
+#   src/data/         graphics and other data (.asm)
 SRCS := \
 	src/main.c \
-	src/zxn/zxn_cspect.c \
-	src/zxn/zxn_cspect_stream.c \
-	src/zxn/zxn_hw.c \
-	src/zxn/zxn_mmu.c \
-	src/zxn/zxn_frame.c \
-	src/zxn/zxn_palette.c \
-	src/zxn/zxn_print.c \
-	src/zxn/zxn_printf.c \
-	src/zxn/zxn_sprite.c \
-	src/zxn/zxn_stream.c \
-	src/zxn/zxn_tilemap.c \
-	src/zxn/zxn_tm_stream.c \
-	src/zxn/zxn_uart.c \
-	src/zxn/zxn_uart_stream.c \
-	src/zxn/zxn_util.c \
-	src/tile_defs_data.asm \
-	src/sprite_data.asm
+	$(sort $(wildcard src/nge/*/*.c)) \
+	$(sort $(wildcard src/game/*.c)) \
+	$(sort $(wildcard src/data/*.asm))
 
-OBJS := \
-	$(OBJDIR)/main.o \
-	$(OBJDIR)/zxn/zxn_cspect.o \
-	$(OBJDIR)/zxn/zxn_cspect_stream.o \
-	$(OBJDIR)/zxn/zxn_hw.o \
-	$(OBJDIR)/zxn/zxn_mmu.o \
-	$(OBJDIR)/zxn/zxn_frame.o \
-	$(OBJDIR)/zxn/zxn_palette.o \
-	$(OBJDIR)/zxn/zxn_print.o \
-	$(OBJDIR)/zxn/zxn_printf.o \
-	$(OBJDIR)/zxn/zxn_sprite.o \
-	$(OBJDIR)/zxn/zxn_stream.o \
-	$(OBJDIR)/zxn/zxn_tilemap.o \
-	$(OBJDIR)/zxn/zxn_tm_stream.o \
-	$(OBJDIR)/zxn/zxn_uart.o \
-	$(OBJDIR)/zxn/zxn_uart_stream.o \
-	$(OBJDIR)/zxn/zxn_util.o \
-	$(OBJDIR)/tile_defs_data.o \
-	$(OBJDIR)/sprite_data.o
+OBJS := $(patsubst src/%,$(OBJDIR)/%.o,$(basename $(SRCS)))
+
+# Includes are written from these roots: "hw/nge_hw.h", "data/sprite_data.h"
+INCLUDES := -Isrc/nge -Isrc
 
 BIN_TARGET := $(BINDIR)/$(TARGET)
 
 # Build modes:
 #   make                     CSpect: asserts and debug output go to the DebugOut console
 #   make CFLAGS=-DNDEBUG     hardware: asserts and debug output compiled out, no RST $18
-CFLAGS ?= -DZXN_CSPECT
+CFLAGS ?= -DNGE_CSPECT
 
 export PATH := $(Z88DK_ROOT)/bin:$(PATH)
 export ZCCCFG
@@ -63,7 +40,7 @@ build: $(BIN_TARGET).nex
 
 $(OBJDIR)/%.o: src/%.c
 	@mkdir -p $(dir $@)
-	$(ZCC) -c +zxn -clib=sdcc_iy $(CFLAGS) $< -o $@
+	$(ZCC) -c +zxn -clib=sdcc_iy $(INCLUDES) $(CFLAGS) $< -o $@
 
 $(OBJDIR)/%.o: src/%.asm
 	@mkdir -p $(dir $@)
@@ -86,7 +63,7 @@ $(BIN_TARGET).nex: $(OBJS)
 check:
 	./scripts/check-toolchain.sh
 
-# PC tests for the zxn library; see tests/Makefile
+# PC tests for the nge library; see tests/Makefile
 test:
 	$(MAKE) -C tests Z88DK_ROOT=$(Z88DK_ROOT)
 

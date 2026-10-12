@@ -11,7 +11,9 @@ The build produces `bin/main.nex`. Generated compiler and emulator files are ign
 ## Development conventions
 
 - Keep the program entry point in `src/main.c` until the build layout is deliberately changed.
-- Put reusable game code and headers under `src/`.
+- Put reusable engine code in the nge library under `src/nge/<folder>/` (prefix `nge_`/`NGE_`); follow the naming and layering rules in `src/nge/README.md`.
+- Put Jetset-specific code in `src/game/` and graphics and other data in `src/data/`. The Makefiles find new files automatically.
+- Add a PC test `tests/test_<module>.c` for new nge modules and run `make test`.
 - Target Spectrum Next hardware and the z88dk `+zxn` target; do not substitute a desktop C runtime.
 - Keep changes small and build after changes to C code.
 - Use the `-clib=sdcc_iy` flag to select the SDCC-based compiler with the IY register reserved.

@@ -1,11 +1,11 @@
-/* zxn_palette.c: palette register writes. */
+/* nge_palette.c: palette register writes. */
 #include "test.h"
 
-#include "zxn_palette.h"
+#include "hw/nge_palette.h"
 
 int main(void)
 {
-    static const zxn_palette_entry_9_t three[] = { {0x11, 1}, {0x22, 0}, {0x33, 1} };
+    static const nge_palette_entry_9_t three[] = { {0x11, 1}, {0x22, 0}, {0x33, 1} };
     int i;
     int all_0x44 = 1;
 
@@ -13,7 +13,7 @@ int main(void)
 
     /* Layer 2 palette 1 was selected for writing; display bits set */
     test_regs[0x43] = 0x5F;
-    zxn_write_palette9(RPC_SELECT_TILEMAP_PALETTE_0, 5, three, 3);
+    nge_write_palette9(RPC_SELECT_TILEMAP_PALETTE_0, 5, three, 3);
 
     /* Selection replaced, display bits kept, auto-increment left on */
     CHECK(test_reg_log_reg[0] == 0x43 && test_reg_log_val[0] == 0x3F);
@@ -30,7 +30,7 @@ int main(void)
     CHECK(test_reg_log_val[6] == 0x33 && test_reg_log_val[7] == 1);
 
     /* Writing past entry 255 is caught */
-    TEST_EXPECT_HALT(zxn_write_palette9(RPC_SELECT_TILEMAP_PALETTE_0, 254, three, 3));
+    TEST_EXPECT_HALT(nge_write_palette9(RPC_SELECT_TILEMAP_PALETTE_0, 254, three, 3));
     CHECK(test_halt_count == 1);
 
     return test_summary("palette");

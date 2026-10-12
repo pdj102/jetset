@@ -34,8 +34,8 @@ slots as permanently mapped rather than as general data slots.
 
 | Address | Page | Contents | Defined in |
 |---|---|---|---|
-| `$4000`-`$49FF` | 10 | Tilemap: 40x32 cells, 2 bytes each | `ZXN_TILEMAP_BASE`, [zxn_tilemap.h](../src/zxn/zxn_tilemap.h) |
-| `$4A00`-`$5FFF` | 10 | Tile definitions, tiles 0-175 | [tile_defs_data.asm](../src/tile_defs_data.asm) (`SECTION BANK_5`, `org 0x4A00`) |
+| `$4000`-`$49FF` | 10 | Tilemap: 40x32 cells, 2 bytes each | `NGE_TILEMAP_BASE`, [nge_tilemap.h](../src/nge/tilemap/nge_tilemap.h) |
+| `$4A00`-`$5FFF` | 10 | Tile definitions, tiles 0-175 | [tile_defs_data.asm](../src/data/tile_defs_data.asm) (`SECTION BANK_5`, `org 0x4A00`) |
 | `$6000`-`$69FF` | 11 | Tile definitions, tiles 176-255 | |
 | `$6A00`-`$7FFF` | 11 | **Free, 5.5K**: non-banked game data | |
 
@@ -123,15 +123,15 @@ runs. That makes them ideal banked data:
    page pair.
 2. Hide sprites, or wait for vblank, so patterns don't change while they are
    being drawn.
-3. Map the graphics pages in with `zxn_mmu_map()`, which returns the page
+3. Map the graphics pages in with `nge_mmu_map()`, which returns the page
    that was there before.
 4. Upload:
-   - Sprite patterns: `zxn_sprite_load_patterns()` or
-     `zxn_sprite_load_patterns4()` select the first pattern with port `$303B`,
+   - Sprite patterns: `nge_sprite_load_patterns()` or
+     `nge_sprite_load_patterns4()` select the first pattern with port `$303B`,
      then write the bytes to port `$5B` (zxnDMA could do this faster later).
      The pattern RAM is 16K: 64 patterns of 16x16 at 8 bits per pixel, or 128
      at 4 bits.
-   - Palettes: `zxn_write_palette9()` reads from any pointer, so it works on
+   - Palettes: `nge_write_palette9()` reads from any pointer, so it works on
      banked data while the page is mapped. A full 256-entry 9-bit palette is
      512 bytes.
    - Tile definitions: copy into `$4A00` (slot 2 and 3 stay mapped, so the
@@ -139,18 +139,16 @@ runs. That makes them ideal banked data:
 5. Map the saved pages back.
 
 The demo in [main.c](../src/main.c) does this with its graphics in
-[sprite_data.asm](../src/sprite_data.asm) (`SECTION PAGE_32`):
+[sprite_data.asm](../src/data/sprite_data.asm) (`SECTION PAGE_32`):
 
 ```c
-uint8_t old = zxn_mmu_map(ZXN_MMU_SLOT_BANKED_0, DEMO_SPRITE_PAGE);
+uint8_t old = nge_mmu_map(DEMO_SPRITE_SLOT, DEMO_SPRITE_PAGE);
 
-zxn_sprite_load_patterns(0, demo_sprite_patterns, DEMO_SPRITE_PATTERNS);
-zxn_write_palette9(RPC_SELECT_SPRITES_PALETTE_0, 0, demo_sprite_palette, DEMO_SPRITE_COLOURS);
+nge_sprite_load_patterns(0, demo_sprite_patterns, DEMO_SPRITE_PATTERNS);
+nge_write_palette9(RPC_SELECT_SPRITES_PALETTE_0, 0, demo_sprite_palette, DEMO_SPRITE_COLOURS);
 
-zxn_mmu_map(ZXN_MMU_SLOT_BANKED_0, old);
+nge_mmu_map(DEMO_SPRITE_SLOT, old);
 ```
-
-`zxn_mmu_map()` asserts if asked to change slots 2-5.
 
 The upload code, its stack and its local variables are all in slots 4 and 5,
 so they stay mapped throughout. Saving and restoring the previous pages,
@@ -159,8 +157,8 @@ rather than restoring fixed defaults, lets these calls nest.
 Keep in non-banked memory anything used after the upload:
 
 - the sprite attribute table (128 sprites x 5 bytes = 640 bytes, a static
-  array in [zxn_sprite.c](../src/zxn/zxn_sprite.c), so in BSS), sent to port
-  `$57` by `zxn_sprite_update()` every frame;
+  array in [nge_sprite.c](../src/nge/sprite/nge_sprite.c), so in BSS), sent to port
+  `$57` by `nge_sprite_update()` every frame;
 - a palette copy used for fades or palette cycling;
 - pointers into banked data are valid only while their page is mapped, so
   copy any values needed later before unmapping.
@@ -180,7 +178,7 @@ or data, with these consequences:
 
 - **Interrupts:** `$0038` (IM1) and `$0066` (NMI) are now game memory. Keep
   interrupts disabled (the z88dk startup code runs `di`, and
-  `zxn_video_init()` turns off the ULA interrupt) or use IM2 with a vector
+  `nge_video_init()` turns off the ULA interrupt) or use IM2 with a vector
   table in slots 4/5.
 - **NextZXOS and esxDOS calls** (`rst $08`, file loading) need the ROM. Map
   `$FF` back into slots 0 and 1 for the duration of a call.

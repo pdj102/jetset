@@ -3,8 +3,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "zxn_stream_dev.h"
-#include "zxn_util.h"
+#include "output/nge_stream_dev.h"
+#include "core/nge_util.h"
 
 /* ---- Checks ---- */
 
@@ -50,7 +50,7 @@ void test_halt(void)
     }
     /* An assert fired that no test expected; its message is on stdout */
     failures++;
-    printf("  FAIL unexpected halt (zxn_util_assert or zxn_util_abort)\n");
+    printf("  FAIL unexpected halt (nge_util_assert or nge_util_abort)\n");
     exit(test_summary("(aborted)") | 1);
 }
 
@@ -59,7 +59,7 @@ void test_halt(void)
 static char capture[4096];
 static size_t capture_len;
 
-static int capture_put(uint8_t c, ZXN_FILE *stream)
+static int capture_put(uint8_t c, NGE_FILE *stream)
 {
     (void)stream;
     if (capture_len < sizeof(capture) - 1) {
@@ -69,9 +69,9 @@ static int capture_put(uint8_t c, ZXN_FILE *stream)
     return c;
 }
 
-ZXN_FILE *test_capture_open(void)
+NGE_FILE *test_capture_open(void)
 {
-    return zxn_stream_alloc(capture_put, NULL);
+    return nge_stream_alloc(capture_put, NULL);
 }
 
 const char *test_capture_text(void)
@@ -87,7 +87,7 @@ void test_capture_reset(void)
 
 /* ---- Debug output to stdout, so unexpected asserts are visible ---- */
 
-static int stdout_put(uint8_t c, ZXN_FILE *stream)
+static int stdout_put(uint8_t c, NGE_FILE *stream)
 {
     (void)stream;
     /* Messages from asserts a test triggers on purpose are not shown */
@@ -160,14 +160,14 @@ void test_port_reset(void)
 
 /* ---- Tilemap memory ---- */
 
-unsigned char test_tilemap_mem[ZXN_TILEMAP_WIDTH * ZXN_TILEMAP_HEIGHT * sizeof(zxn_tile_t)];
+unsigned char test_tilemap_mem[NGE_TILEMAP_WIDTH * NGE_TILEMAP_HEIGHT * sizeof(nge_tile_t)];
 
 void test_tilemap_row(uint8_t y, uint8_t x1, uint8_t x2, char *out)
 {
     uint8_t x;
 
     for (x = x1; x <= x2; x++) {
-        *out++ = (char)test_tilemap[y * ZXN_TILEMAP_WIDTH + x].tile_id;
+        *out++ = (char)test_tilemap[y * NGE_TILEMAP_WIDTH + x].tile_id;
     }
     *out = 0;
 }
@@ -178,7 +178,7 @@ char test_cspect_lines[TEST_CSPECT_MAX_LINES][128];
 int test_cspect_count;
 void (*test_cspect_hook)(void);
 
-void zxn_cspect_print(const char *s)
+void nge_cspect_print(const char *s)
 {
     if (test_cspect_count < TEST_CSPECT_MAX_LINES) {
         strncpy(test_cspect_lines[test_cspect_count], s, sizeof(test_cspect_lines[0]) - 1);
@@ -202,5 +202,5 @@ void test_init(void)
     test_cspect_hook = NULL;
 
     /* Unexpected assert messages appear in the test output */
-    zxn_util_set_debug_stream(zxn_stream_alloc(stdout_put, NULL));
+    nge_util_set_debug_stream(nge_stream_alloc(stdout_put, NULL));
 }

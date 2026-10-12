@@ -1,5 +1,5 @@
 /*
- * Minimal test framework for the zxn library PC tests.
+ * Minimal test framework for the nge library PC tests.
  *
  * Each tests/test_<name>.c is a separate program:
  *
@@ -17,8 +17,8 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "zxn_stream.h"
-#include "zxn_tilemap.h"
+#include "output/nge_stream.h"
+#include "tilemap/nge_tilemap.h"
 
 /* ---- Checks ---- */
 
@@ -31,13 +31,13 @@
 void test_check(int ok, const char *expr, const char *file, int line);
 void test_check_str(const char *got, const char *exp, const char *expr, const char *file, int line);
 
-/** Reset all fakes; sends zxn_util debug output to stdout. Call first in main. */
+/** Reset all fakes; sends nge_util debug output to stdout. Call first in main. */
 void test_init(void);
 
 /** Print a summary; returns the process exit status (0 if every check passed). */
 int test_summary(const char *name);
 
-/* ---- Halts from zxn_util_assert / zxn_util_abort ---- */
+/* ---- Halts from nge_util_assert / nge_util_abort ---- */
 
 extern jmp_buf test_halt_jmp;
 extern int test_halt_armed;
@@ -57,7 +57,7 @@ extern int test_halt_count;
 /* ---- Capture stream: a stream device that appends to a string ---- */
 
 /** Open a capture stream; its output is read with test_capture_text(). */
-ZXN_FILE *test_capture_open(void);
+NGE_FILE *test_capture_open(void);
 const char *test_capture_text(void);
 void test_capture_reset(void);
 
@@ -90,20 +90,20 @@ void test_port_reset(void);
 
 /* ---- Tilemap memory (replaces 0x4000) ---- */
 
-/** The tilemap as tiles: test_tilemap[y * ZXN_TILEMAP_WIDTH + x]. */
-#define test_tilemap  ((zxn_tile_t *) test_tilemap_mem)
+/** The tilemap as tiles: test_tilemap[y * NGE_TILEMAP_WIDTH + x]. */
+#define test_tilemap  ((nge_tile_t *) test_tilemap_mem)
 
 /** Copy tile ids of row y, columns x1..x2, into out as a string. */
 void test_tilemap_row(uint8_t y, uint8_t x1, uint8_t x2, char *out);
 
-/* ---- CSpect DebugOut: the fake zxn_cspect_print() records each call ---- */
+/* ---- CSpect DebugOut: the fake nge_cspect_print() records each call ---- */
 
 #define TEST_CSPECT_MAX_LINES 16
 
 extern char test_cspect_lines[TEST_CSPECT_MAX_LINES][128];
 extern int test_cspect_count;
 
-/** If set, called from zxn_cspect_print() after recording (e.g. to inject faults). */
+/** If set, called from nge_cspect_print() after recording (e.g. to inject faults). */
 extern void (*test_cspect_hook)(void);
 
 #endif
