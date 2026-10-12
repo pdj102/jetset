@@ -17,9 +17,6 @@ uint8_t zxn_mmu_map(uint8_t slot, uint8_t page)
 {
     uint8_t old;
 
-    /* Slots 2-5: tilemap and tile definitions, program, stack (never banked) */
-    zxn_util_assert(slot < 2 || (slot >= ZXN_MMU_SLOT_BANKED_0 && slot < ZXN_MMU_SLOTS));
-
     old = ZXN_READ_REG(REG_MMU0 + slot);
     ZXN_WRITE_REG(REG_MMU0 + slot, page);
     return old;
