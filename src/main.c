@@ -32,7 +32,7 @@ static const nge_tile_t empty_tile_entry = {
 
 /* Demo map: 80 x 48 tiles, resident in slot 1 ($2000) with the ROM swapped out */
 #define DEMO_MAP_SLOT    1
-#define DEMO_MAP_PAGE    34
+#define DEMO_MAP_PAGE    88
 #define DEMO_MAP_W       80
 #define DEMO_MAP_H       48
 #define WALL_TILE        2       /* a game graphics tile (palette bank 0) */
@@ -217,7 +217,7 @@ int main(void)
     nge_putu16(99, hud);
     nge_tm_clreol(hud);
 
-    /* Sprites: graphics come from page 41, mapped in only while loading */
+    /* Sprites: graphics come from page 89, mapped in only while loading */
     nge_sprite_init();
     load_sprite_graphics();
 

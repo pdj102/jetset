@@ -124,16 +124,39 @@ n is odd (`CRT_ORG_PAGE_n` in `zxn_rules.inc`), and is loaded into page n by
 the NEX file. A 16K set uses an even/odd pair, mapped together into slots 6
 and 7.
 
-Choosing page numbers:
+### Page allocation
 
-- Avoid pages 10, 11 (video and the start of the program) and 4, 5 (the
-  program).
-- Page 34 holds the demo map (see [Slots 0 and 1](#slots-0-and-1)).
-- Avoid the Layer 2 banks if Layer 2 is used.
-- Starting game data at page 32 (bank 16) leaves room below for those.
-- Pages holding banked code are listed in
-  [src/nge/banks.inc](../src/nge/banks.inc). Bank 20 is page 40 (nge banked
-  code) and page 41 (the demo sprite patterns and palette).
+The target is a 2MB Next: pages 0-223. Every module that has banked code
+gets a pair of pages: the even page for its code (an 8K `PAGE_n` section),
+the odd page for data private to it. The allocation is kept in
+[src/nge/banks.inc](../src/nge/banks.inc), which also sets the origins of the
+code pages.
+
+| Pages | Owner |
+|---|---|
+| 0-31 | System: program (4-5), video (10-11), bank 7 (14-15), Layer 2 (16-31) |
+| 32-39 | Spare |
+| 40/41 | nge `output` (`nge_print`, `nge_printf`) |
+| 42/43 | nge `sprite` (setup functions and loaders) |
+| 44/45 | nge `map` (reserved; its code runs every frame and is in common memory) |
+| 46/47 | nge `event` (reserved) |
+| 48-67 | nge `ecs` (reserved: 10 pairs) |
+| 68-87 | Further nge modules (reserved: 10 pairs) |
+| 88-223 | Game code and assets; the demo uses 88 (map, slot 1) and 89 (sprites) |
+
+- **Module code:** the even page. 8K per module: if it grows past 8K, the
+  linker stops the build ("Section PAGE_n overlaps section PAGE_n+1"); split
+  the module across another pair from its range.
+- **Module data:** the odd page is mapped into slot 7 whenever the module's
+  code runs, so the module reads it directly. It is private: only that
+  module's code may use it. A pointer to it passed to another banked module
+  (for example a string passed to `nge_printf()`) would be read after
+  `banked_call` has mapped the other module's pair over it. Shared data and
+  anything passed to other modules stays in common memory, which is where
+  SDCC puts `const` data and string literals unless a file says otherwise
+  (`#pragma constseg`).
+- **Game assets** (sprite sets, maps, level data) go in the game range, not
+  in nge module pages. The sprite loaders accept any odd page.
 
 ### Banked code
 
@@ -195,7 +218,7 @@ page.
 - **Split a module when only part of it can be banked.** A `.c` file is in
   one section, so `sprite/` is two files sharing `nge_sprite_internal.h`:
   `nge_sprite.c` (common: per-frame functions) and `nge_sprite_setup.c`
-  (page 40: setup and loading).
+  (page 42: setup and loading).
 - **Use even `PAGE_n` sections, or 16K `BANK_n` sections.** `banked_call`
   maps the page into slot 6, so code in an odd page (assembled for `$E000`)
   would be in the wrong slot.
@@ -233,17 +256,16 @@ nge_sprite_load_palette(DEMO_SPRITE_PAGE, 0, demo_sprite_palette, DEMO_SPRITE_CO
 ```
 
 The loaders (`nge_sprite_load_patterns()`, `nge_sprite_load_patterns4()`,
-`nge_sprite_load_palette()`) are banked in page 40. Each maps the data page
+`nge_sprite_load_palette()`) are banked in page 42. Each maps the data page
 into slot 7, uploads, and maps the previous page back; nothing is mapped by
 the caller. Pass `NGE_SPRITE_DATA_COMMON` for data in common memory.
 
 - One call reads at most 8K from one page: 32 8-bit patterns. The pattern
   memory is 16K (64 patterns of 16x16 at 8 bits per pixel, or 128 at 4
   bits), so a full set takes two pages and two calls.
-- The demo's graphics are in page 41
-  ([sprite_data.asm](../src/data/sprite_data.asm)), the upper half of bank 20,
-  so loading them maps page 41 into slot 7, where `banked_call` already put
-  it. A game with several sprite sets puts each in its own odd page.
+- The demo's graphics are in page 89, in the game range
+  ([sprite_data.asm](../src/data/sprite_data.asm), `SECTION PAGE_89`). A
+  game with several sprite sets puts each in its own odd page.
 - Hide sprites, or load during vblank, so patterns don't change while they
   are being drawn.
 - Tile definitions can be copied into `$4A00` the same way: slots 2 and 3
@@ -280,10 +302,10 @@ The area maps its map's page into slot 1 when it starts, and the page stays
 there while the area is active. A map of up to 80 x 48 tiles (7.5K, see
 `NGE_MAP_STRIDE` and `NGE_MAP_MAX_HEIGHT` in
 [nge_map.h](../src/nge/map/nge_map.h)) fits in the slot. The demo in
-[main.c](../src/main.c) maps page 34 there and builds its map at startup:
+[main.c](../src/main.c) maps page 88 there and builds its map at startup:
 
 ```c
-nge_mmu_map(DEMO_MAP_SLOT, DEMO_MAP_PAGE);          /* slot 1, page 34 */
+nge_mmu_map(DEMO_MAP_SLOT, DEMO_MAP_PAGE);          /* slot 1, page 88 */
 build_demo_map((nge_tile_t *)NGE_MMU_SLOT_ADDR(DEMO_MAP_SLOT));
 nge_map_init(&map, (nge_tile_t *)NGE_MMU_SLOT_ADDR(DEMO_MAP_SLOT),
              DEMO_MAP_W, DEMO_MAP_H, &game_area);

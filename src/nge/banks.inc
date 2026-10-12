@@ -1,17 +1,30 @@
-// Pages that hold banked code (NGE_BANKED functions), and their origins.
+// Page allocation, and the origins of pages that hold banked code.
 //
 // Read by the linker (-pragma-include in the Makefile). A banked call maps
 // the page in bits 16-23 of the function's address into slot 6 and the next
 // page into slot 7, so an origin is (page << 16) | $C000: for an 8K section
 // PAGE_n (n even) the page is n, for a 16K section BANK_n it is 2n.
 // scripts/check-banks.sh fails the build if banked code is in a section
-// missing from this list. See docs/memory_map.md.
+// missing from this list. See "Page allocation" in docs/memory_map.md.
 //
-// Page 34: demo map (slot 1)
+// Target: 2MB Next, pages 0-223. Each module gets a pair of pages: the even
+// page for its banked code (8K, PAGE_n), the odd page for data private to it,
+// which is mapped into slot 7 whenever its code runs.
+//
+//   0-31    system: program (4-5), video (10-11), bank 7 (14-15), Layer 2 (16-31)
+//   32-39   spare
+//   40/41   nge output
+//   42/43   nge sprite
+//   44/45   nge map (reserved: map code is per-frame and in common memory)
+//   46/47   nge event (reserved)
+//   48-67   nge ecs (reserved: 10 pairs)
+//   68-87   further nge modules (reserved: 10 pairs)
+//   88-223  game code and assets
+//             88  demo map (slot 1)
+//             89  demo sprite patterns and palette (slot 7, via the loaders)
 
-// Page 40: nge banked code (output formatting, sprite setup). 8K: the linker
-// stops the build if it grows into page 41.
+// nge output: nge_print, nge_printf
 #pragma define CRT_ORG_PAGE_40 = 0x28C000
 
-// Page 41: sprite patterns and palette (sprite_data.asm), assembled for slot
-// 7 ($E000). Mapped by the nge sprite loaders, which run from page 40.
+// nge sprite: setup functions and loaders
+#pragma define CRT_ORG_PAGE_42 = 0x2AC000

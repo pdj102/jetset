@@ -2,11 +2,11 @@
  * Sprite setup functions: banked, called through banked_call (see
  * core/nge_bank.h). The per-frame functions are in nge_sprite.c.
  *
- * This code must stay in page 40 (slot 6 during the call): the loaders map
+ * This code must stay in page 42 (slot 6 during the call): the loaders map
  * the data page into slot 7, which would unmap any code there.
  */
 #ifdef __SDCC
-#pragma codeseg PAGE_40
+#pragma codeseg PAGE_42
 #endif
 
 #include "sprite/nge_sprite_internal.h"

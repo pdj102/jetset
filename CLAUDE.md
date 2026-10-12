@@ -14,7 +14,7 @@ The build produces `bin/main.nex`. Generated compiler and emulator files are ign
 - Put reusable engine code in the nge library under `src/nge/<folder>/` (prefix `nge_`/`NGE_`); follow the naming and layering rules in `src/nge/README.md`.
 - Put Jetset-specific code in `src/game/` and graphics and other data in `src/data/`. The Makefiles find new files automatically.
 - Add a PC test `tests/test_<module>.c` for new nge modules and run `make test`.
-- Banked code (`NGE_BANKED`) must have its bank listed in `src/nge/banks.inc` and follow the rules in "Banked code" in `docs/memory_map.md`: call `nge_hw_init()` first, and never call banked functions while a page is mapped by hand in slot 6 or 7.
+- Banked code (`NGE_BANKED`) goes in its module's page pair from the allocation table in `src/nge/banks.inc` (even page for code, odd page for its private data), must have its origin listed there, and follow the rules in "Banked code" in `docs/memory_map.md`: call `nge_hw_init()` first, and never call banked functions while a page is mapped by hand in slot 6 or 7.
 - Target Spectrum Next hardware and the z88dk `+zxn` target; do not substitute a desktop C runtime.
 - Keep changes small and build after changes to C code.
 - Use the `-clib=sdcc_iy` flag to select the SDCC-based compiler with the IY register reserved.

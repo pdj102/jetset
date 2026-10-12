@@ -66,7 +66,9 @@ code" in [docs/memory_map.md](../../docs/memory_map.md)):
 - List the section in [banks.inc](banks.inc). The build fails if it is
   missing (`scripts/check-banks.sh`).
 - Bank whole modules whose functions are called occasionally, such as
-  `output/nge_print` and `output/nge_printf` (page 40). A module with both
+  `output/nge_print` and `output/nge_printf` (page 40). Each module has its
+  own pair of pages from the allocation in [banks.inc](banks.inc): the even
+  page for code, the odd page for data private to it. A module with both
   per-frame and setup functions is split into two files, as `sprite/` is
   (`nge_sprite.c` common, `nge_sprite_setup.c` banked).
 - A banked function that needs data from another page takes the page as an

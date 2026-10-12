@@ -20,7 +20,7 @@
  *
  * Banking: the setup functions (init, set_transparency, the loaders, set,
  * set4, set_scale, hide_all, set_clip, clear_clip) are banked (NGE_BANKED,
- * page 40): call nge_hw_init() before them, and not while game code has its
+ * page 42): call nge_hw_init() before them, and not while game code has its
  * own page mapped in slot 6 or 7. The per-frame functions (move, set_pattern,
  * set_pattern4, set_flags, show, update, status) are in common memory.
  */
