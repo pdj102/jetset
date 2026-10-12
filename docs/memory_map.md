@@ -59,8 +59,9 @@ anything that has to be reachable at any time belongs in the program:
 - interrupt handlers and the IM2 vector table, when added
 - `banked_call`, and everything else that must stay in common memory (see
   [Banked code](#banked-code))
-- data used every frame: the sprite attribute table, input state, the
-  stream pool, game state
+- data used every frame: the sprite attribute table, the entity tables
+  (`nge_entity`: 7 bytes per entity, `NGE_ENTITY_MAX` entities), input
+  state, the stream pool, game state
 
 Starting at `$6A00` rather than z88dk's default `$8000` adds 5.5K. The tile
 definitions can therefore no longer grow past `$69FF`.
@@ -69,10 +70,10 @@ The current CSpect build (`bin/main.map`) uses:
 
 | Address | Contents |
 |---|---|
-| `$6A00`-`$9417` | Code and constant data (`CODE`) |
-| `$9418`-`$9436` | Initialised data (`DATA`) |
-| `$9437`-`$9766` | Uninitialised data (`BSS`), including the 640-byte sprite attribute table |
-| `$9767`-`$BDFF` | Free, about 9.6K (about 13K in the hardware build, without asserts) |
+| `$6A00`-`$98C3` | Code and constant data (`CODE`) |
+| `$98C4`-`$98E2` | Initialised data (`DATA`) |
+| `$98E3`-`$9ED1` | Uninitialised data (`BSS`), including the sprite attribute table (640 bytes) and the entity tables (about 700 bytes) |
+| `$9ED2`-`$BDFF` | Free, about 7.8K (about 12K in the hardware build, without asserts) |
 | `$BE00`-`$BFFF` | Stack, 512 bytes |
 
 The link step checks `__BSS_END_tail` in the map file and fails the build if

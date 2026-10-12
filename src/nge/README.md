@@ -36,11 +36,13 @@ Includes are written from `src/nge`, with the folder:
 | `hw/` | Hardware setup, frame sync, MMU paging, palettes |
 | `tilemap/` | Tilemap layer |
 | `sprite/` | Hardware sprites |
+| `map/` | A tile map larger than the screen, shown through a tilemap window |
 | `devices/` | Raw device drivers (CSpect DebugOut, UART), no streams |
 | `output/` | Streams, print and printf, and the stream devices for the tilemap, CSpect and UART |
+| `ecs/` | Entity component system: `nge_entity` (IDs, lifecycle, flags, component masks) |
 
-Planned: `input/` (keyboard, joystick), `sound/` (AY), `map/` (rooms, tile
-collision), `event/` (event queue), `ecs/` (entities and components).
+Planned: `input/` (keyboard, joystick), `sound/` (AY), `event/` (event
+queue), more of `ecs/` (components, systems, deferred clean-up).
 
 A folder may include only the folders before it in this chain:
 
