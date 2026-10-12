@@ -9,10 +9,11 @@
 # section origins for the Next ($C000/$E000) have no page in them, so every
 # banked call would map page 0 and jump into the wrong code. Each bank that
 # holds code needs its origin set in src/nge/banks.inc, e.g.
-#   #pragma define CRT_ORG_BANK_20 = 0x28C000     (bank 20 = page 40 = 0x28)
+#   #pragma define CRT_ORG_PAGE_40 = 0x28C000     (page 40 = 0x28)
 #
 # Symbols from C files (module names ending in _c) in BANK_n or PAGE_n
-# sections are banked code: their page must be 2n (BANK_n) or n (PAGE_n).
+# sections are banked code: their page must be 2n (BANK_n) or n (PAGE_n),
+# and a PAGE_n section must be an even page.
 # Data in .asm files is mapped by hand and is not checked.
 
 map="$1"
@@ -22,7 +23,7 @@ if [ ! -f "$map" ]; then
 fi
 
 awk '
-# _name = $28C000 ; addr, public, , module_c, BANK_20, file.c:12
+# _name = $28C000 ; addr, public, , module_c, PAGE_40, file.c:12
 $2 == "=" && $3 ~ /^\$/ && $5 == "addr," {
     module = $8; sub(/,$/, "", module)
     section = $9; sub(/,$/, "", section)
@@ -30,6 +31,18 @@ $2 == "=" && $3 ~ /^\$/ && $5 == "addr," {
     if (section ~ /^BANK_[0-9]+$/) { n = substr(section, 6); want = 2 * n }
     else if (section ~ /^PAGE_[0-9]+$/) { n = substr(section, 6); want = n + 0 }
     else next
+
+    # banked_call maps the page into slot 6 ($C000); an odd page is
+    # assembled for slot 7 ($E000), so its code would be in the wrong place
+    if (section ~ /^PAGE_/ && want % 2 == 1) {
+        if (!(section in odd_reported)) {
+            printf "error: banked C code (%s) in %s: banked code must be in an even page (or a BANK_n section)\n", \
+                   module, section
+            odd_reported[section] = 1
+        }
+        bad = 1
+        next
+    }
 
     hex = toupper(substr($3, 2)); value = 0
     for (i = 1; i <= length(hex); i++) {

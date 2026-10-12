@@ -1,6 +1,6 @@
 /* Banked: called through banked_call (see core/nge_bank.h) */
 #ifdef __SDCC
-#pragma codeseg BANK_20
+#pragma codeseg PAGE_40
 #endif
 
 #include "output/nge_printf.h"

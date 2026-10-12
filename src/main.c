@@ -116,15 +116,11 @@ static void place_entity(const demo_entity_t *e)
     nge_sprite_show(e->sprite, visible);
 }
 
-/* Load the demo sprite graphics from their banked page. */
+/* Load the demo sprite graphics: the loaders map their page into slot 7. */
 static void load_sprite_graphics(void)
 {
-    uint8_t old = nge_mmu_map(DEMO_SPRITE_SLOT, DEMO_SPRITE_PAGE);
-
-    nge_sprite_load_patterns(0, demo_sprite_patterns, DEMO_SPRITE_PATTERNS);
-    nge_write_palette9(RPC_SELECT_SPRITES_PALETTE_0, 0, demo_sprite_palette, DEMO_SPRITE_COLOURS);
-
-    nge_mmu_map(DEMO_SPRITE_SLOT, old);
+    nge_sprite_load_patterns(DEMO_SPRITE_PAGE, 0, demo_sprite_patterns, DEMO_SPRITE_PATTERNS);
+    nge_sprite_load_palette(DEMO_SPRITE_PAGE, 0, demo_sprite_palette, DEMO_SPRITE_COLOURS);
 }
 
 int main(void)
@@ -221,7 +217,7 @@ int main(void)
     nge_putu16(99, hud);
     nge_tm_clreol(hud);
 
-    /* Sprites: graphics come from banked page 32, mapped in only while loading */
+    /* Sprites: graphics come from page 41, mapped in only while loading */
     nge_sprite_init();
     load_sprite_graphics();
 

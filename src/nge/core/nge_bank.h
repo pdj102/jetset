@@ -9,11 +9,12 @@
  * file starts with the bank its code goes in:
  *
  *     #ifdef __SDCC
- *     #pragma codeseg BANK_20
+ *     #pragma codeseg PAGE_40
  *     #endif
  *
- * Calls then go through z88dk's banked_call, which maps the bank into slots 6
- * and 7 for the duration of the call. The bank must be listed in
+ * Calls then go through z88dk's banked_call, which maps the page into slot 6
+ * and the next page into slot 7 for the duration of the call. Use 8K
+ * sections in even pages (PAGE_n, n even) or 16K sections (BANK_n). The bank must be listed in
  * src/nge/banks.inc. See "Banked code" in docs/memory_map.md for what may and
  * may not be banked.
  */

@@ -151,19 +151,48 @@ int main(void)
         patterns[i] = (uint8_t)(i * 7);
     }
     test_port_reset();
-    nge_sprite_load_patterns(10, patterns, 3);
+    test_reg_log_count = 0;
+    nge_sprite_load_patterns(NGE_SPRITE_DATA_COMMON, 10, patterns, 3);
     CHECK(test_port_log_port[0] == __IO_SPRITE_SLOT && test_port_log_val[0] == 10);
     CHECK(port_writes(__IO_SPRITE_PATTERN) == 3 * NGE_SPRITE_PATTERN_SIZE);
     CHECK(memcmp(&test_port_log_val[1], patterns, sizeof(patterns)) == 0);
+    CHECK(test_reg_log_count == 0);                  /* common data: no mapping */
+
+    /* Data in a page: mapped into slot 7 for the upload, then mapped back */
+    test_regs[REG_MMU7] = 1;
+    test_port_reset();
+    test_reg_log_count = 0;
+    nge_sprite_load_patterns(41, 0, patterns, 1);
+    CHECK(test_reg_log_count == 2);
+    CHECK(test_reg_log_reg[0] == REG_MMU7 && test_reg_log_val[0] == 41);
+    CHECK(test_reg_log_reg[1] == REG_MMU7 && test_reg_log_val[1] == 1);
+    CHECK(port_writes(__IO_SPRITE_PATTERN) == NGE_SPRITE_PATTERN_SIZE);
 
     /* Odd 4-bit pattern: second half of 256-byte slot 2 */
     test_port_reset();
-    nge_sprite_load_patterns4(5, patterns, 2);
+    nge_sprite_load_patterns4(NGE_SPRITE_DATA_COMMON, 5, patterns, 2);
     CHECK(test_port_log_val[0] == (0x80 | 2));
     CHECK(port_writes(__IO_SPRITE_PATTERN) == 2 * NGE_SPRITE_PATTERN4_SIZE);
     test_port_reset();
-    nge_sprite_load_patterns4(4, patterns, 1);
+    nge_sprite_load_patterns4(NGE_SPRITE_DATA_COMMON, 4, patterns, 1);
     CHECK(test_port_log_val[0] == 2);
+    test_reg_log_count = 0;
+    nge_sprite_load_patterns4(43, 4, patterns, 1);
+    CHECK(test_reg_log_count == 2 && test_reg_log_val[0] == 43 && test_reg_log_val[1] == 1);
+
+    /* ---- sprite palette ---- */
+    {
+        static const nge_palette_entry_9_t pal[] = { {0x11, 1}, {0x22, 0} };
+
+        test_reg_log_count = 0;
+        nge_sprite_load_palette(41, 16, pal, 2);
+        CHECK(test_reg_log_reg[0] == REG_MMU7 && test_reg_log_val[0] == 41);
+        CHECK(test_reg_log_reg[1] == 0x43 && (test_reg_log_val[1] & 0x70) == RPC_SELECT_SPRITES_PALETTE_0);
+        CHECK(test_reg_log_reg[2] == 0x40 && test_reg_log_val[2] == 16);
+        CHECK(test_reg_log_val[3] == 0x11 && test_reg_log_val[6] == 0);
+        CHECK(test_reg_log_reg[7] == REG_MMU7 && test_reg_log_val[7] == 1);
+        CHECK(test_reg_log_count == 8);
+    }
 
     /* ---- clip window ---- */
     test_reg_log_count = 0;
@@ -195,11 +224,13 @@ int main(void)
     CHECK(test_halt_count == 1);
     TEST_EXPECT_HALT(nge_sprite_set4(0, 0, 0, NGE_SPRITE_PATTERNS4, 0));
     CHECK(test_halt_count == 1);
-    TEST_EXPECT_HALT(nge_sprite_load_patterns(63, patterns, 2));
+    TEST_EXPECT_HALT(nge_sprite_load_patterns(NGE_SPRITE_DATA_COMMON, 63, patterns, 2));
     CHECK(test_halt_count == 1);
-    TEST_EXPECT_HALT(nge_sprite_load_patterns4(127, patterns, 2));
+    TEST_EXPECT_HALT(nge_sprite_load_patterns4(NGE_SPRITE_DATA_COMMON, 127, patterns, 2));
     CHECK(test_halt_count == 1);
-    TEST_EXPECT_HALT(nge_sprite_load_patterns(0, NULL, 1));
+    TEST_EXPECT_HALT(nge_sprite_load_patterns(NGE_SPRITE_DATA_COMMON, 0, NULL, 1));
+    CHECK(test_halt_count == 1);
+    TEST_EXPECT_HALT(nge_sprite_load_patterns(40, 0, patterns, 1));   /* even page */
     CHECK(test_halt_count == 1);
 
     return test_summary("sprite");

@@ -69,10 +69,10 @@ The current CSpect build (`bin/main.map`) uses:
 
 | Address | Contents |
 |---|---|
-| `$6A00`-`$96D7` | Code and constant data (`CODE`) |
-| `$96D8`-`$96F6` | Initialised data (`DATA`) |
-| `$96F7`-`$9A26` | Uninitialised data (`BSS`), including the 640-byte sprite attribute table |
-| `$9A27`-`$BDFF` | Free, about 9K (about 12.6K in the hardware build, without asserts) |
+| `$6A00`-`$9417` | Code and constant data (`CODE`) |
+| `$9418`-`$9436` | Initialised data (`DATA`) |
+| `$9437`-`$9766` | Uninitialised data (`BSS`), including the 640-byte sprite attribute table |
+| `$9767`-`$BDFF` | Free, about 9.6K (about 13K in the hardware build, without asserts) |
 | `$BE00`-`$BFFF` | Stack, 512 bytes |
 
 The link step checks `__BSS_END_tail` in the map file and fails the build if
@@ -131,16 +131,18 @@ Choosing page numbers:
 - Page 34 holds the demo map (see [Slots 0 and 1](#slots-0-and-1)).
 - Avoid the Layer 2 banks if Layer 2 is used.
 - Starting game data at page 32 (bank 16) leaves room below for those.
-- Banks holding banked code are listed in
-  [src/nge/banks.inc](../src/nge/banks.inc); bank 20 (pages 40-41) holds nge
-  code.
+- Pages holding banked code are listed in
+  [src/nge/banks.inc](../src/nge/banks.inc). Bank 20 is page 40 (nge banked
+  code) and page 41 (the demo sprite patterns and palette).
 
 ### Banked code
 
-Functions that don't need to be in memory all the time can live in a 16K
-bank and be called through z88dk's `banked_call`. On each call it maps the
-function's bank into slots 6 and 7, calls it, and maps the previous bank
-back. Bank 20 holds `nge_print` and `nge_printf` (about 1.7K).
+Functions that don't need to be in memory all the time can live in a banked
+page and be called through z88dk's `banked_call`. On each call it maps the
+function's page into slot 6 and the next page into slot 7, calls it, and maps
+the previous pages back. Page 40 holds `nge_print`, `nge_printf` and the
+sprite setup functions, including the loaders (`output/nge_print.c`,
+`output/nge_printf.c`, `sprite/nge_sprite_setup.c`; about 2.8K of 8K).
 
 How a module is banked:
 
@@ -148,16 +150,20 @@ How a module is banked:
    [core/nge_bank.h](../src/nge/core/nge_bank.h)) in its header and
    definitions. Callers must see the declaration, so being banked is part of
    a function's interface.
-2. Its `.c` file starts with the bank its code goes in:
+2. Its `.c` file starts with the section its code goes in:
 
    ```c
    #ifdef __SDCC
-   #pragma codeseg BANK_20
+   #pragma codeseg PAGE_40
    #endif
    ```
 
-3. The bank is listed in [src/nge/banks.inc](../src/nge/banks.inc) with its
-   origin: `#pragma define CRT_ORG_BANK_20 = 0x28C000`.
+3. The section is listed in [src/nge/banks.inc](../src/nge/banks.inc) with
+   its origin: `#pragma define CRT_ORG_PAGE_40 = 0x28C000`.
+
+nge uses an 8K `PAGE_40` section rather than a 16K `BANK_20` section, so page
+41 is free for data. If page 40's code grows past 8K, the linker stops the
+build ("Section PAGE_40 overlaps section PAGE_41").
 
 **Why the origin carries the page.** After each `call banked_call`, SDCC
 stores the 32-bit address of the function, and `banked_call` uses bits 16-23
@@ -166,7 +172,8 @@ every call would map page 0 and jump into the wrong code. The origin
 `(page << 16) | $C000` gives the right page; the CPU uses only the low 16 bits
 and the NEX file is built from the section name, so nothing else changes.
 [scripts/check-banks.sh](../scripts/check-banks.sh) runs after every link and
-fails the build if banked C code doesn't carry its bank's page.
+fails the build if banked C code doesn't carry its page, or is in an odd
+page.
 
 **Rules:**
 
@@ -176,22 +183,30 @@ fails the build if banked C code doesn't carry its bank's page.
   which writes the system variables over tiles 144-149. `nge_hw_init()`
   itself therefore stays in common memory.
 - **Don't mix banked calls with pages mapped by hand.** `banked_call` maps
-  back the bank it last mapped itself, not whatever was in slots 6 and 7
-  before. While game code has its own page mapped there (for example sprite
-  data being uploaded), it must not call a banked function, including the
-  banked printing functions, and banked code must never call
-  `nge_mmu_map()` for slot 6 or 7: it would map itself out.
-- **Better: load data from inside its bank.** A loader function in the same
-  bank as its data (for example the sprite upload code next to the sprite
-  patterns) is called as a banked function, and its data is mapped in with
-  it, so nothing is mapped by hand.
-- **Use 16K `BANK_n` sections, or even `PAGE_n` sections.** `banked_call`
-  maps page n into slot 6, so code in an odd page (assembled for `$E000`)
+  back the pages it last mapped itself, not whatever was in slots 6 and 7
+  before. While game code has its own page mapped there, it must not call a
+  banked function, including the banked printing functions. Pass the page to
+  a banked loader instead (below).
+- **Banked code may map slot 7, but never slot 6.** Banked code in an 8K
+  `PAGE_n` section runs from slot 6, so slot 7 is free: the sprite loaders
+  map their data page into slot 7, upload, and map the previous page back.
+  While it is mapped they call no banked function. Code in a 16K `BANK_n`
+  section may extend into slot 7, so it must not do this.
+- **Split a module when only part of it can be banked.** A `.c` file is in
+  one section, so `sprite/` is two files sharing `nge_sprite_internal.h`:
+  `nge_sprite.c` (common: per-frame functions) and `nge_sprite_setup.c`
+  (page 40: setup and loading).
+- **Use even `PAGE_n` sections, or 16K `BANK_n` sections.** `banked_call`
+  maps the page into slot 6, so code in an odd page (assembled for `$E000`)
   would be in the wrong slot.
 - **Keep these in common memory:**
   - code that runs every frame (`nge_sprite_update`, `nge_map_update`, the
     tilemap stream, `nge_putc`): each banked call costs about 150-250
     T-states;
+  - functions that read data the caller has mapped into slot 6 or 7, such
+    as `nge_write_palette9()`: a banked function would map its own page over
+    that data (banked loaders take the data's page instead, as the sprite
+    loaders do);
   - functions called through a pointer, such as stream `put` and `flush`
     functions: a pointer to a banked function doesn't switch banks;
   - `__z88dk_fastcall` functions: `banked_call` overwrites HL, which holds
@@ -203,47 +218,36 @@ fails the build if banked C code doesn't carry its bank's page.
 - Return values in HL and DE (up to 32 bits) and stack arguments, including
   variadic ones, work as normal.
 
-### Sprite and palette data: map, upload, unmap
+### Sprite and palette data: loaders that map their own page
 
 Sprite patterns and palettes are copied into the FPGA's own memory, not read
 from RAM by the video hardware. The source RAM is only needed while the upload
-runs. That makes them ideal banked data:
+runs, which makes them ideal banked data.
 
-1. Keep a level's graphics together: sprite patterns, the sprite palette, and
-   (if they change per level) tile definitions and the tilemap palette, in one
-   page pair.
-2. Hide sprites, or wait for vblank, so patterns don't change while they are
-   being drawn.
-3. Map the graphics pages in with `nge_mmu_map()`, which returns the page
-   that was there before.
-4. Upload:
-   - Sprite patterns: `nge_sprite_load_patterns()` or
-     `nge_sprite_load_patterns4()` select the first pattern with port `$303B`,
-     then write the bytes to port `$5B` (zxnDMA could do this faster later).
-     The pattern RAM is 16K: 64 patterns of 16x16 at 8 bits per pixel, or 128
-     at 4 bits.
-   - Palettes: `nge_write_palette9()` reads from any pointer, so it works on
-     banked data while the page is mapped. A full 256-entry 9-bit palette is
-     512 bytes.
-   - Tile definitions: copy into `$4A00` (slot 2 and 3 stay mapped, so the
-     copy goes directly from slots 6/7 into video memory).
-5. Map the saved pages back.
-
-The demo in [main.c](../src/main.c) does this with its graphics in
-[sprite_data.asm](../src/data/sprite_data.asm) (`SECTION PAGE_32`):
+Put them in an odd page (`SECTION PAGE_n`, n odd), which z88dk assembles for
+slot 7 (`$E000`), and pass that page to the loaders:
 
 ```c
-uint8_t old = nge_mmu_map(DEMO_SPRITE_SLOT, DEMO_SPRITE_PAGE);
-
-nge_sprite_load_patterns(0, demo_sprite_patterns, DEMO_SPRITE_PATTERNS);
-nge_write_palette9(RPC_SELECT_SPRITES_PALETTE_0, 0, demo_sprite_palette, DEMO_SPRITE_COLOURS);
-
-nge_mmu_map(DEMO_SPRITE_SLOT, old);
+nge_sprite_load_patterns(DEMO_SPRITE_PAGE, 0, demo_sprite_patterns, DEMO_SPRITE_PATTERNS);
+nge_sprite_load_palette(DEMO_SPRITE_PAGE, 0, demo_sprite_palette, DEMO_SPRITE_COLOURS);
 ```
 
-The upload code, its stack and its local variables are all in the program and stack (slots 3-5),
-so they stay mapped throughout. Saving and restoring the previous pages,
-rather than restoring fixed defaults, lets these calls nest.
+The loaders (`nge_sprite_load_patterns()`, `nge_sprite_load_patterns4()`,
+`nge_sprite_load_palette()`) are banked in page 40. Each maps the data page
+into slot 7, uploads, and maps the previous page back; nothing is mapped by
+the caller. Pass `NGE_SPRITE_DATA_COMMON` for data in common memory.
+
+- One call reads at most 8K from one page: 32 8-bit patterns. The pattern
+  memory is 16K (64 patterns of 16x16 at 8 bits per pixel, or 128 at 4
+  bits), so a full set takes two pages and two calls.
+- The demo's graphics are in page 41
+  ([sprite_data.asm](../src/data/sprite_data.asm)), the upper half of bank 20,
+  so loading them maps page 41 into slot 7, where `banked_call` already put
+  it. A game with several sprite sets puts each in its own odd page.
+- Hide sprites, or load during vblank, so patterns don't change while they
+  are being drawn.
+- Tile definitions can be copied into `$4A00` the same way: slots 2 and 3
+  stay mapped, so a copy goes directly from slot 7 into video memory.
 
 Keep in non-banked memory anything used after the upload:
 

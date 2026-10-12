@@ -57,16 +57,21 @@ core  <-  hw  <-  tilemap, sprite, devices, input, sound  <-  output  <-  map, e
 
 ## Banked code
 
-Code that isn't needed all the time can live in a 16K bank (see "Banked
+Code that isn't needed all the time can live in a banked page (see "Banked
 code" in [docs/memory_map.md](../../docs/memory_map.md)):
 
 - Declare its functions `NGE_BANKED` (from `core/nge_bank.h`) in the header
   and the definitions, and start the `.c` file with a guarded
-  `#pragma codeseg BANK_n`.
-- List the bank in [banks.inc](banks.inc). The build fails if a bank is
+  `#pragma codeseg PAGE_n` (n even).
+- List the section in [banks.inc](banks.inc). The build fails if it is
   missing (`scripts/check-banks.sh`).
 - Bank whole modules whose functions are called occasionally, such as
-  `output/nge_print` and `output/nge_printf` (bank 20). Keep per-frame code,
+  `output/nge_print` and `output/nge_printf` (page 40). A module with both
+  per-frame and setup functions is split into two files, as `sprite/` is
+  (`nge_sprite.c` common, `nge_sprite_setup.c` banked).
+- A banked function that needs data from another page takes the page as an
+  argument and maps it into slot 7 itself (see the sprite loaders); its own
+  code must be in an 8K `PAGE_n` section so slot 7 holds no code. Keep per-frame code,
   callbacks (stream `put`/`flush`), fastcall functions, `hw/nge_mmu`,
   `nge_hw_init` and interrupt code in common memory.
 - Being banked is part of a function's interface: a caller in common code
