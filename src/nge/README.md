@@ -12,6 +12,7 @@ A lightweight game library for the ZX Spectrum Next, built with z88dk
 | Stream type | stdio style | `NGE_FILE`, `nge_printf` |
 | Macros and constants | `NGE_<MODULE>_<NAME>` | `NGE_SPRITE_MAX` |
 | Files | `<folder>/nge_<module>.[ch]` | `sprite/nge_sprite.c` |
+| Banked functions | `NGE_BANKED` after the parameters, in header and definition | `int nge_puts(const char *s, NGE_FILE *stream) NGE_BANKED;` |
 
 File names keep the `nge_` prefix inside their folders: z88dk object and
 symbol names are global and the PC tests link everything together, so base
@@ -31,7 +32,7 @@ Includes are written from `src/nge`, with the folder:
 
 | Folder | Contents |
 |---|---|
-| `core/` | Basic types (`nge_types.h`), asserts and debug output (`nge_util`) |
+| `core/` | Basic types (`nge_types.h`), banked-function marker (`nge_bank.h`), asserts and debug output (`nge_util`) |
 | `hw/` | Hardware setup, frame sync, MMU paging, palettes |
 | `tilemap/` | Tilemap layer |
 | `sprite/` | Hardware sprites |
@@ -53,6 +54,26 @@ core  <-  hw  <-  tilemap, sprite, devices, input, sound  <-  output  <-  map, e
   tested entirely on the PC.
 - One exception: `core/nge_util` prints asserts and debug output to a
   stream, so it includes `output/nge_printf.h` and `output/nge_stream.h`.
+
+## Banked code
+
+Code that isn't needed all the time can live in a 16K bank (see "Banked
+code" in [docs/memory_map.md](../../docs/memory_map.md)):
+
+- Declare its functions `NGE_BANKED` (from `core/nge_bank.h`) in the header
+  and the definitions, and start the `.c` file with a guarded
+  `#pragma codeseg BANK_n`.
+- List the bank in [banks.inc](banks.inc). The build fails if a bank is
+  missing (`scripts/check-banks.sh`).
+- Bank whole modules whose functions are called occasionally, such as
+  `output/nge_print` and `output/nge_printf` (bank 20). Keep per-frame code,
+  callbacks (stream `put`/`flush`), fastcall functions, `hw/nge_mmu`,
+  `nge_hw_init` and interrupt code in common memory.
+- Being banked is part of a function's interface: a caller in common code
+  must not call it while it has its own page mapped in slot 6 or 7.
+
+On the PC tests `NGE_BANKED` is empty and the pragma is skipped, so banked
+modules are tested like any other.
 
 ## Building and testing
 

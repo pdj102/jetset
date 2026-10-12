@@ -1,4 +1,4 @@
-#include <stdio.h>
+#include <stddef.h>
 #include <arch/zxn.h>
 
 #include "output/nge_cspect_stream.h"
@@ -142,6 +142,13 @@ int main(void)
     uint8_t frame = 0;
     demo_entity_t *walker = &entities[ENTITY_WALKER];
 
+    /*
+     * First, before any banked call: banked_call re-enables interrupts, and
+     * nge_hw_init() turns off the ULA interrupt, whose ROM handler would
+     * write the system variables over tiles 144-149.
+     */
+    nge_hw_init();
+
     /* Send asserts and debug output to the CSpect console (NULL on hardware) */
     nge_util_set_debug_stream(nge_open_cspect_debug());
 
@@ -152,8 +159,6 @@ int main(void)
     nge_mmu_map(DEMO_MAP_SLOT, DEMO_MAP_PAGE);
 
     nge_util_debugf("jetset start 3, %u streams\n", NGE_FILE_MAX);
-
-    nge_hw_init();
     nge_write_palette9(RPC_SELECT_TILEMAP_PALETTE_0, 0, tile_palette, 4);
     nge_tm_load_ink_palette();
 

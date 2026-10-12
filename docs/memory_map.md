@@ -57,6 +57,8 @@ anything that has to be reachable at any time belongs in the program:
 - code, constant data, initialised data and BSS
 - the code that changes the MMU (it must not page itself out)
 - interrupt handlers and the IM2 vector table, when added
+- `banked_call`, and everything else that must stay in common memory (see
+  [Banked code](#banked-code))
 - data used every frame: the sprite attribute table, input state, the
   stream pool, game state
 
@@ -67,27 +69,36 @@ The current CSpect build (`bin/main.map`) uses:
 
 | Address | Contents |
 |---|---|
-| `$6A00`-`$A9B2` | Code and constant data (`CODE`) |
-| `$A9B3`-`$AAA3` | Initialised data (`DATA`) |
-| `$AAA4`-`$ADCC` | Uninitialised data (`BSS`), including the 640-byte sprite attribute table |
-| `$ADCD`-`$BDFF` | Free, about 4K (about 7.7K in the hardware build, without asserts) |
+| `$6A00`-`$96D7` | Code and constant data (`CODE`) |
+| `$96D8`-`$96F6` | Initialised data (`DATA`) |
+| `$96F7`-`$9A26` | Uninitialised data (`BSS`), including the 640-byte sprite attribute table |
+| `$9A27`-`$BDFF` | Free, about 9K (about 12.6K in the hardware build, without asserts) |
 | `$BE00`-`$BFFF` | Stack, 512 bytes |
 
 The link step checks `__BSS_END_tail` in the map file and fails the build if
 the program reaches the stack; otherwise it prints how much space is left.
 
+The program is linked with z88dk's startup 31, which creates no `stdin` or
+`stdout`. The default startup links z88dk's console drivers (about 3.3K),
+which nothing uses and which would print to the ULA screen memory under the
+tilemap. Don't use the C library's `stdio` functions; use `output/`.
+
 ## The stack
 
 SP is set to `$C000`. The stack grows down from the top of slot 5, so its
-512 bytes are `$BE00`-`$BFFF`, inside the slots that never change. The first
-push writes `$BFFE`-`$BFFF`.
+512 bytes are `$BE00`-`$BFFF`, inside the slots that never change.
+
+At startup `banked_call` takes the top 32 bytes, `$BFE0`-`$BFFF`, as its own
+stack of saved banks and return addresses (4 bytes per nested banked call,
+`CLIB_BANKING_STACK_SIZE`). The program's stack starts below it, at `$BFE0`.
 
 The link command in the [Makefile](../Makefile) sets this (`LDFLAGS`):
 
 ```make
 -pragma-define:CRT_ORG_CODE=0x6A00 \
 -pragma-define:REGISTER_SP=0xC000 -pragma-define:CRT_STACK_SIZE=512 \
--pragma-define:CLIB_MALLOC_HEAP_SIZE=0 -pragma-define:CLIB_STDIO_HEAP_SIZE=0
+-pragma-define:CLIB_MALLOC_HEAP_SIZE=0 -pragma-define:CLIB_STDIO_HEAP_SIZE=0 \
+-pragma-define:CLIB_BANKING_STACK_SIZE=32
 ```
 
 z88dk's own defaults would put the stack at `$FF58`, in slot 7 ("under UDGs",
@@ -100,7 +111,12 @@ the end of BSS to the bottom of the stack. The engine doesn't use `malloc` or
 Nothing may hold a pointer to a stack variable in a banked slot, and nothing
 in a banked slot may call back into code that changes the same slot.
 
-## Slots 6 and 7: banked data
+## Slots 6 and 7: banked data and code
+
+Slots 6 and 7 are shared by two users: game code that maps a data page in by
+hand and maps it out again, and banked functions, whose bank `banked_call`
+maps in for each call. The two must not overlap; see
+[Banked code](#banked-code).
 
 z88dk already supports this layout. Assembly or C data placed in
 `SECTION PAGE_n` is assembled for `$C000` when n is even and for `$E000` when
@@ -115,6 +131,77 @@ Choosing page numbers:
 - Page 34 holds the demo map (see [Slots 0 and 1](#slots-0-and-1)).
 - Avoid the Layer 2 banks if Layer 2 is used.
 - Starting game data at page 32 (bank 16) leaves room below for those.
+- Banks holding banked code are listed in
+  [src/nge/banks.inc](../src/nge/banks.inc); bank 20 (pages 40-41) holds nge
+  code.
+
+### Banked code
+
+Functions that don't need to be in memory all the time can live in a 16K
+bank and be called through z88dk's `banked_call`. On each call it maps the
+function's bank into slots 6 and 7, calls it, and maps the previous bank
+back. Bank 20 holds `nge_print` and `nge_printf` (about 1.7K).
+
+How a module is banked:
+
+1. Its functions are declared `NGE_BANKED` (from
+   [core/nge_bank.h](../src/nge/core/nge_bank.h)) in its header and
+   definitions. Callers must see the declaration, so being banked is part of
+   a function's interface.
+2. Its `.c` file starts with the bank its code goes in:
+
+   ```c
+   #ifdef __SDCC
+   #pragma codeseg BANK_20
+   #endif
+   ```
+
+3. The bank is listed in [src/nge/banks.inc](../src/nge/banks.inc) with its
+   origin: `#pragma define CRT_ORG_BANK_20 = 0x28C000`.
+
+**Why the origin carries the page.** After each `call banked_call`, SDCC
+stores the 32-bit address of the function, and `banked_call` uses bits 16-23
+as the page to map. z88dk's default origin for the Next is a plain `$C000`, so
+every call would map page 0 and jump into the wrong code. The origin
+`(page << 16) | $C000` gives the right page; the CPU uses only the low 16 bits
+and the NEX file is built from the section name, so nothing else changes.
+[scripts/check-banks.sh](../scripts/check-banks.sh) runs after every link and
+fails the build if banked C code doesn't carry its bank's page.
+
+**Rules:**
+
+- **Call `nge_hw_init()` before the first banked call.** `banked_call`
+  re-enables interrupts (`ei`) after every call. Until `nge_hw_init()` has
+  turned off the ULA interrupt, that lets the ROM's interrupt handler run,
+  which writes the system variables over tiles 144-149. `nge_hw_init()`
+  itself therefore stays in common memory.
+- **Don't mix banked calls with pages mapped by hand.** `banked_call` maps
+  back the bank it last mapped itself, not whatever was in slots 6 and 7
+  before. While game code has its own page mapped there (for example sprite
+  data being uploaded), it must not call a banked function, including the
+  banked printing functions, and banked code must never call
+  `nge_mmu_map()` for slot 6 or 7: it would map itself out.
+- **Better: load data from inside its bank.** A loader function in the same
+  bank as its data (for example the sprite upload code next to the sprite
+  patterns) is called as a banked function, and its data is mapped in with
+  it, so nothing is mapped by hand.
+- **Use 16K `BANK_n` sections, or even `PAGE_n` sections.** `banked_call`
+  maps page n into slot 6, so code in an odd page (assembled for `$E000`)
+  would be in the wrong slot.
+- **Keep these in common memory:**
+  - code that runs every frame (`nge_sprite_update`, `nge_map_update`, the
+    tilemap stream, `nge_putc`): each banked call costs about 150-250
+    T-states;
+  - functions called through a pointer, such as stream `put` and `flush`
+    functions: a pointer to a banked function doesn't switch banks;
+  - `__z88dk_fastcall` functions: `banked_call` overwrites HL, which holds
+    their argument;
+  - `nge_mmu`, `nge_hw_init` and interrupt code.
+- **Constant data stays in common memory.** SDCC puts `const` tables and
+  string literals of a banked file in the common `rodata_compiler` section,
+  so they can be passed to and read by any code.
+- Return values in HL and DE (up to 32 bits) and stack arguments, including
+  variadic ones, work as normal.
 
 ### Sprite and palette data: map, upload, unmap
 

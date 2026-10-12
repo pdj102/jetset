@@ -52,17 +52,26 @@ $(OBJDIR)/%.o: src/%.asm
 #   stack: 512 bytes below $C000, at the top of slot 5, which is never banked
 #   heaps: none; the engine doesn't use malloc or fopen, and z88dk's default
 #          heap would fill all memory up to the stack
+#   startup 31: no stdin/stdout. The default startup links z88dk's console
+#          drivers (about 3.3K), which nothing uses and which would print to
+#          the ULA screen memory under the tilemap
+#   banks: origins of banks holding banked code are in src/nge/banks.inc;
+#          scripts/check-banks.sh fails the link if one is missing
 CODE_ORG := 0x6A00
 STACK_BOTTOM := 0xBE00
+BANKS_INC := src/nge/banks.inc
 
 LDFLAGS := \
+	-startup=31 \
 	-pragma-define:CRT_ORG_CODE=$(CODE_ORG) \
 	-pragma-define:REGISTER_SP=0xC000 \
 	-pragma-define:CRT_STACK_SIZE=512 \
 	-pragma-define:CLIB_MALLOC_HEAP_SIZE=0 \
-	-pragma-define:CLIB_STDIO_HEAP_SIZE=0
+	-pragma-define:CLIB_STDIO_HEAP_SIZE=0 \
+	-pragma-define:CLIB_BANKING_STACK_SIZE=32 \
+	-pragma-include:$(BANKS_INC)
 
-$(BIN_TARGET).nex: $(OBJS)
+$(BIN_TARGET).nex: $(OBJS) $(BANKS_INC)
 	@mkdir -p $(BINDIR)
 	$(ZCC) +zxn -subtype=nex -clib=sdcc_iy $(LDFLAGS) $(OBJS) -o $(BIN_TARGET) -m -create-app
 	@end=$$(sed -n 's/^__BSS_END_tail *= \$$\([0-9A-Fa-f]*\).*/\1/p' $(BIN_TARGET).map); \
@@ -72,6 +81,7 @@ $(BIN_TARGET).nex: $(OBJS)
 		rm -f $@; exit 1; \
 	fi; \
 	echo "program ends at \$$$$end; $$(( $(STACK_BOTTOM) - 0x$$end )) bytes free below the stack"
+	@./scripts/check-banks.sh $(BIN_TARGET).map || { rm -f $@; exit 1; }
 
 check:
 	./scripts/check-toolchain.sh

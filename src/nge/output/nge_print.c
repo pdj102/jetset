@@ -1,9 +1,14 @@
+/* Banked: called through banked_call (see core/nge_bank.h) */
+#ifdef __SDCC
+#pragma codeseg BANK_20
+#endif
+
 #include "output/nge_print.h"
 
 static const uint16_t pow10[] = { 10000, 1000, 100, 10, 1 };
 static const char hex_digits[] = "0123456789ABCDEF";
 
-int nge_write(const void *buf, uint16_t len, NGE_FILE *stream)
+int nge_write(const void *buf, uint16_t len, NGE_FILE *stream) NGE_BANKED
 {
     const uint8_t *p = (const uint8_t *)buf;
     uint16_t n;
@@ -16,7 +21,7 @@ int nge_write(const void *buf, uint16_t len, NGE_FILE *stream)
     return (int)len;
 }
 
-int nge_puts(const char *s, NGE_FILE *stream)
+int nge_puts(const char *s, NGE_FILE *stream) NGE_BANKED
 {
     const char *p = s;
 
@@ -28,7 +33,7 @@ int nge_puts(const char *s, NGE_FILE *stream)
     return (int)(p - s);
 }
 
-void nge_putu16w(uint16_t v, uint8_t width, uint8_t pad, NGE_FILE *stream)
+void nge_putu16w(uint16_t v, uint8_t width, uint8_t pad, NGE_FILE *stream) NGE_BANKED
 {
     uint8_t digits = 5;
     uint8_t i;
@@ -55,12 +60,12 @@ void nge_putu16w(uint16_t v, uint8_t width, uint8_t pad, NGE_FILE *stream)
     }
 }
 
-void nge_putu16(uint16_t v, NGE_FILE *stream)
+void nge_putu16(uint16_t v, NGE_FILE *stream) NGE_BANKED
 {
     nge_putu16w(v, 0, ' ', stream);
 }
 
-void nge_puti16(int16_t v, NGE_FILE *stream)
+void nge_puti16(int16_t v, NGE_FILE *stream) NGE_BANKED
 {
     uint16_t u = (uint16_t)v;
 
@@ -71,13 +76,13 @@ void nge_puti16(int16_t v, NGE_FILE *stream)
     nge_putu16w(u, 0, ' ', stream);
 }
 
-void nge_puthex8(uint8_t v, NGE_FILE *stream)
+void nge_puthex8(uint8_t v, NGE_FILE *stream) NGE_BANKED
 {
     nge_putc((uint8_t)hex_digits[v >> 4], stream);
     nge_putc((uint8_t)hex_digits[v & 0x0F], stream);
 }
 
-void nge_puthex16(uint16_t v, NGE_FILE *stream)
+void nge_puthex16(uint16_t v, NGE_FILE *stream) NGE_BANKED
 {
     nge_puthex8((uint8_t)(v >> 8), stream);
     nge_puthex8((uint8_t)v, stream);
