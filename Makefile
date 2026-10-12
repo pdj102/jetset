@@ -47,10 +47,16 @@ $(OBJDIR)/%.o: src/%.asm
 	$(ZCC) -c +zxn $< -o $@
 
 # Memory layout (see docs/memory_map.md):
+#   code:  from $6A00, straight after the tile definitions in page 11, up to
+#          the stack; the link fails if the program grows into the stack
 #   stack: 512 bytes below $C000, at the top of slot 5, which is never banked
 #   heaps: none; the engine doesn't use malloc or fopen, and z88dk's default
 #          heap would fill all memory up to the stack
+CODE_ORG := 0x6A00
+STACK_BOTTOM := 0xBE00
+
 LDFLAGS := \
+	-pragma-define:CRT_ORG_CODE=$(CODE_ORG) \
 	-pragma-define:REGISTER_SP=0xC000 \
 	-pragma-define:CRT_STACK_SIZE=512 \
 	-pragma-define:CLIB_MALLOC_HEAP_SIZE=0 \
@@ -58,7 +64,14 @@ LDFLAGS := \
 
 $(BIN_TARGET).nex: $(OBJS)
 	@mkdir -p $(BINDIR)
-	$(ZCC) +zxn -subtype=nex -clib=sdcc_iy $(LDFLAGS) $(OBJS) -o $(BIN_TARGET) -create-app
+	$(ZCC) +zxn -subtype=nex -clib=sdcc_iy $(LDFLAGS) $(OBJS) -o $(BIN_TARGET) -m -create-app
+	@end=$$(sed -n 's/^__BSS_END_tail *= \$$\([0-9A-Fa-f]*\).*/\1/p' $(BIN_TARGET).map); \
+	if [ -z "$$end" ]; then echo "error: __BSS_END_tail not found in $(BIN_TARGET).map"; rm -f $@; exit 1; fi; \
+	if [ $$((0x$$end)) -gt $$(($(STACK_BOTTOM))) ]; then \
+		echo "error: the program ends at \$$$$end, past the bottom of the stack at $(STACK_BOTTOM)"; \
+		rm -f $@; exit 1; \
+	fi; \
+	echo "program ends at \$$$$end; $$(( $(STACK_BOTTOM) - 0x$$end )) bytes free below the stack"
 
 check:
 	./scripts/check-toolchain.sh

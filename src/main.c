@@ -6,6 +6,7 @@
 #include "hw/nge_hw.h"
 #include "hw/nge_mmu.h"
 #include "hw/nge_palette.h"
+#include "map/nge_map.h"
 #include "output/nge_print.h"
 #include "output/nge_printf.h"
 #include "sprite/nge_sprite.h"
@@ -29,11 +30,12 @@ static const nge_tile_t empty_tile_entry = {
     .tile_attr = 0,
 };
 
-/* A game graphics tile (palette bank 0) */
-static const nge_tile_t game_tile_entry = {
-    .tile_id = 2,
-    .tile_attr = 0,
-};
+/* Demo map: 80 x 48 tiles, resident in slot 1 ($2000) with the ROM swapped out */
+#define DEMO_MAP_SLOT    1
+#define DEMO_MAP_PAGE    34
+#define DEMO_MAP_W       80
+#define DEMO_MAP_H       48
+#define WALL_TILE        2       /* a game graphics tile (palette bank 0) */
 
 /* Sprite ids in the demo */
 #define SPR_STANDING  0
@@ -41,9 +43,78 @@ static const nge_tile_t game_tile_entry = {
 #define SPR_BIG       2
 #define SPR_RECOLOUR  3
 
-#define WALK_Y          NGE_SPRITE_FROM_TILE(20)  /* feet on the game area (row 22) */
-#define WALK_X_MAX      (NGE_SPRITE_FROM_TILE(40) - 16)
-#define WALK_FRAME_SHIFT 3                        /* 8 frames per animation step */
+#define WALK_ROW         20                            /* map row the walker's head is on */
+#define WALK_Y           (WALK_ROW * NGE_MAP_TILE_PIXELS)  /* map pixels */
+#define WALK_FRAME_SHIFT 3                             /* 8 frames per animation step */
+#define SPRITE_SIZE      16
+
+/* A sprite placed in map pixels; it moves with the map */
+typedef struct demo_entity {
+    uint8_t sprite;
+    uint16_t x;
+    uint16_t y;
+    uint8_t size;    /* pixels, including any scaling */
+} demo_entity_t;
+
+static demo_entity_t entities[] = {
+    { SPR_STANDING, 4 * NGE_MAP_TILE_PIXELS,  WALK_Y, SPRITE_SIZE },
+    { SPR_WALKER,   1 * NGE_MAP_TILE_PIXELS,  WALK_Y, SPRITE_SIZE },
+    { SPR_BIG,      30 * NGE_MAP_TILE_PIXELS, WALK_Y - SPRITE_SIZE, 2 * SPRITE_SIZE },
+    { SPR_RECOLOUR, 50 * NGE_MAP_TILE_PIXELS, WALK_Y, SPRITE_SIZE },
+};
+#define ENTITY_WALKER  1   /* index in entities[] */
+
+static nge_map_t map;
+
+/*
+ * Fill the demo map: walls round the edge, and digit columns every 10 tiles
+ * (the tens of the column number) with rows of dashes, coloured by row, so
+ * camera movement is easy to follow. Tile 0 is transparent.
+ */
+static void build_demo_map(nge_tile_t *tiles)
+{
+    uint8_t x;
+    uint8_t y;
+    nge_tile_t *t;
+
+    for (y = 0; y < DEMO_MAP_H; y++) {
+        t = tiles + (uint16_t)y * NGE_MAP_STRIDE;
+        for (x = 0; x < DEMO_MAP_W; x++, t++) {
+            t->tile_attr = (uint8_t)((NGE_INK_WHITE + (y >> 2) % 4) << 4);
+            if (x == 0 || y == 0 || x == DEMO_MAP_W - 1 || y == DEMO_MAP_H - 1) {
+                t->tile_id = WALL_TILE;
+                t->tile_attr = 0;
+            } else if (x % 10 == 0) {
+                t->tile_id = '0' + x / 10;
+            } else if (y % 4 == 0) {
+                t->tile_id = '-';
+            } else {
+                t->tile_id = 0;
+            }
+        }
+    }
+}
+
+/*
+ * Place an entity's sprite on screen, or hide it when no part of it is in
+ * the view. Sprites smaller than the view overlap it only if one of their
+ * corners is in it. The sprite clip window cuts off the parts outside.
+ */
+static void place_entity(const demo_entity_t *e)
+{
+    uint16_t sx;
+    uint16_t sy;
+    uint16_t ignore;
+    uint8_t last = e->size - 1;
+    uint8_t visible;
+
+    visible = nge_map_to_screen(&map, e->x + last, e->y, &ignore, &ignore)
+            | nge_map_to_screen(&map, e->x, e->y + last, &ignore, &ignore)
+            | nge_map_to_screen(&map, e->x + last, e->y + last, &ignore, &ignore)
+            | nge_map_to_screen(&map, e->x, e->y, &sx, &sy);
+    nge_sprite_move(e->sprite, sx, sy);
+    nge_sprite_show(e->sprite, visible);
+}
 
 /* Load the demo sprite graphics from their banked page. */
 static void load_sprite_graphics(void)
@@ -67,13 +138,20 @@ int main(void)
     NGE_FILE *uart;
     NGE_FILE *hud;
     uint8_t i;
-    uint16_t walk_x = 0;
     int8_t walk_dx = 1;
     uint8_t frame = 0;
+    demo_entity_t *walker = &entities[ENTITY_WALKER];
 
     /* Send asserts and debug output to the CSpect console (NULL on hardware) */
     nge_util_set_debug_stream(nge_open_cspect_debug());
-    nge_util_debugf("jetset start, %u streams\n", NGE_FILE_MAX);
+
+    /*
+     * The map lives in slot 1 for as long as it is used, replacing the upper
+     * 8K of the ROM. (Slot 0 keeps the ROM: CSpect's debug output needs it.)
+     */
+    nge_mmu_map(DEMO_MAP_SLOT, DEMO_MAP_PAGE);
+
+    nge_util_debugf("jetset start 3, %u streams\n", NGE_FILE_MAX);
 
     nge_hw_init();
     nge_write_palette9(RPC_SELECT_TILEMAP_PALETTE_0, 0, tile_palette, 4);
@@ -83,8 +161,10 @@ int main(void)
     nge_tilemap_clear(&empty_tile_entry);
     nge_tilemap_set_scroll(0, 0);
 
-    /* Game graphics in their own area, next to the text windows */
-    nge_tilemap_fill(&game_area, &game_tile_entry);
+    /* The map is shown in the game area, below the text windows */
+    build_demo_map((nge_tile_t *)NGE_MMU_SLOT_ADDR(DEMO_MAP_SLOT));
+    nge_map_init(&map, (nge_tile_t *)NGE_MMU_SLOT_ADDR(DEMO_MAP_SLOT),
+                 DEMO_MAP_W, DEMO_MAP_H, &game_area);
 
     left = nge_open_tilemap(&left_area, 0);
     right = nge_open_tilemap(&right_area, 0);
@@ -140,33 +220,41 @@ int main(void)
     nge_sprite_init();
     load_sprite_graphics();
 
-    /* Standing on the game area, exactly on tile (4, 20) */
-    nge_sprite_set(SPR_STANDING, NGE_SPRITE_FROM_TILE(4), WALK_Y, 0, 0);
-    /* Double size, below the left text window */
-    nge_sprite_set(SPR_BIG, NGE_SPRITE_FROM_TILE(8), NGE_SPRITE_FROM_TILE(12), 0, 0);
+    /* Sprites are entities on the map, cut off at the edges of its window */
+    nge_sprite_set(SPR_STANDING, 0, 0, 0, 0);
+    nge_sprite_set(SPR_WALKER, 0, 0, 0, 0);
+    /* Double size */
+    nge_sprite_set(SPR_BIG, 0, 0, 0, 0);
     nge_sprite_set_scale(SPR_BIG, NGE_SPRITE_SCALE_X2 | NGE_SPRITE_SCALE_Y2);
-    /* Palette offset 1 recolours the same pattern; mirrored, in the left border area */
-    nge_sprite_set(SPR_RECOLOUR, 0, NGE_SPRITE_FROM_TILE(17), 0,
-                  NGE_SPRITE_PALETTE(1) | NGE_SPRITE_MIRROR_X);
-    /* Walks back and forth along the game area */
-    nge_sprite_set(SPR_WALKER, walk_x, WALK_Y, 0, 0);
+    /* Palette offset 1 recolours the same pattern; mirrored */
+    nge_sprite_set(SPR_RECOLOUR, 0, 0, 0, NGE_SPRITE_PALETTE(1) | NGE_SPRITE_MIRROR_X);
+    nge_map_clip_sprites(&map);
 
     nge_util_info("init done");
 
     while (1)
     {
         nge_frame_wait_vblank();
-        /* First thing in the blanking period, so no sprite changes mid-frame */
+        /* First thing in the blanking period, so nothing changes mid-frame */
         nge_sprite_update();
+        nge_map_update(&map);
 
+        /* Walk until the tile ahead is a wall, then turn round */
         frame++;
-        walk_x += walk_dx;
-        if (walk_x == 0 || walk_x == WALK_X_MAX) {
+        if (NGE_MAP_TILE(&map, (walk_dx > 0 ? walker->x + SPRITE_SIZE : walker->x - 1)
+                               / NGE_MAP_TILE_PIXELS, WALK_ROW).tile_id == WALL_TILE) {
             walk_dx = -walk_dx;
         }
-        nge_sprite_move(SPR_WALKER, walk_x, WALK_Y);
+        walker->x += walk_dx;
         /* The pattern faces right; mirror it when walking left */
         nge_sprite_set_flags(SPR_WALKER, walk_dx < 0 ? NGE_SPRITE_MIRROR_X : 0);
         nge_sprite_set_pattern(SPR_WALKER, (uint8_t)(frame >> WALK_FRAME_SHIFT) & 1);
+
+        /* The camera follows the walker a tile at a time */
+        nge_map_centre_camera(&map, (walker->x + SPRITE_SIZE / 2) / NGE_MAP_TILE_PIXELS, WALK_ROW);
+
+        for (i = 0; i < sizeof(entities) / sizeof(entities[0]); i++) {
+            place_entity(&entities[i]);
+        }
     }
 }

@@ -41,7 +41,13 @@ int main(void)
     CHECK(nge_mmu_map(0, 50) == NGE_MMU_PAGE_ROM && test_regs[REG_MMU0] == 50);
     CHECK(nge_mmu_map(1, NGE_MMU_PAGE_ROM) == 0 && test_regs[REG_MMU1] == NGE_MMU_PAGE_ROM);
 
-    /* Slots past 7 are refused */
+    /* Slots past 7 are refused, including a register number by mistake */
+    test_reg_log_count = 0;
+    TEST_EXPECT_HALT(nge_mmu_map(8, 32));
+    CHECK(test_halt_count == 1);
+    TEST_EXPECT_HALT(nge_mmu_map(REG_MMU0, 32));
+    CHECK(test_halt_count == 1);
+    CHECK(test_reg_log_count == 0);
     TEST_EXPECT_HALT(nge_mmu_get(8));
     CHECK(test_halt_count == 1);
 

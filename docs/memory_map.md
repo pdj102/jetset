@@ -13,12 +13,12 @@ it reads physical memory or its own on-chip RAM, whatever the slots show.
 
 | Slot | Address | Default page | Use |
 |---|---|---|---|
-| 0 | `$0000`-`$1FFF` | ROM | Game code and data, with the ROM swapped out (see [Slots 0 and 1](#slots-0-and-1-rom-swapped-out)) |
-| 1 | `$2000`-`$3FFF` | ROM | Game code and data, with the ROM swapped out |
+| 0 | `$0000`-`$1FFF` | ROM | **Keeps the ROM** (see [Slots 0 and 1](#slots-0-and-1)) |
+| 1 | `$2000`-`$3FFF` | ROM | The active area's map (`nge_map`), with the ROM's upper half swapped out |
 | 2 | `$4000`-`$5FFF` | 10 | Tilemap and tile definitions. Free space: none |
-| 3 | `$6000`-`$7FFF` | 11 | End of the tile definitions, then free game code and data |
-| 4 | `$8000`-`$9FFF` | 4 | Non-banked game code and data (program start) |
-| 5 | `$A000`-`$BFFF` | 5 | Non-banked game code and data, **stack at the top** |
+| 3 | `$6000`-`$7FFF` | 11 | End of the tile definitions, then the **start of the program** at `$6A00` |
+| 4 | `$8000`-`$9FFF` | 4 | Program (code and data) |
+| 5 | `$A000`-`$BFFF` | 5 | Program, free space, **stack at the top** |
 | 6 | `$C000`-`$DFFF` | 0 | Banked game data: mapped in, used, mapped out |
 | 7 | `$E000`-`$FFFF` | 1 | Banked game data: mapped in, used, mapped out |
 
@@ -37,7 +37,7 @@ slots as permanently mapped rather than as general data slots.
 | `$4000`-`$49FF` | 10 | Tilemap: 40x32 cells, 2 bytes each | `NGE_TILEMAP_BASE`, [nge_tilemap.h](../src/nge/tilemap/nge_tilemap.h) |
 | `$4A00`-`$5FFF` | 10 | Tile definitions, tiles 0-175 | [tile_defs_data.asm](../src/data/tile_defs_data.asm) (`SECTION BANK_5`, `org 0x4A00`) |
 | `$6000`-`$69FF` | 11 | Tile definitions, tiles 176-255 | |
-| `$6A00`-`$7FFF` | 11 | **Free, 5.5K**: non-banked game data | |
+| `$6A00`-`$7FFF` | 11 | Start of the program (see below) | `CODE_ORG` in the [Makefile](../Makefile) |
 
 The tile definitions cross from page 10 into page 11, so the tiles depend on
 both pages, not just page 10.
@@ -48,32 +48,33 @@ variables at `$5C00`-`$5CB5` once the ROM is unused. They overlap tiles 112-135
 and 144-149. Never call ROM routines or enable the ROM's IM1 interrupt
 handler: both write to the system variables and would corrupt those tiles.
 
-### Slots 4 and 5: non-banked code, data and stack
+### The program: `$6A00` to the stack
 
-These two slots never change. Anything that has to be reachable at any time
-belongs here:
+The program starts straight after the tile definitions, at `$6A00`, and runs
+through slots 3, 4 and 5 up to the stack. None of these slots ever changes, so
+anything that has to be reachable at any time belongs in the program:
 
-- the program: code, constant data, initialised data and BSS
-- the stack
+- code, constant data, initialised data and BSS
 - the code that changes the MMU (it must not page itself out)
 - interrupt handlers and the IM2 vector table, when added
 - data used every frame: the sprite attribute table, input state, the
   stream pool, game state
 
-The current build (map file, `zcc -m`) uses:
+Starting at `$6A00` rather than z88dk's default `$8000` adds 5.5K. The tile
+definitions can therefore no longer grow past `$69FF`.
+
+The current CSpect build (`bin/main.map`) uses:
 
 | Address | Contents |
 |---|---|
-| `$8000`-`$B4E9` | Code and constant data (`CODE`) |
-| `$B4EA`-`$B5C2` | Initialised data (`DATA`) |
-| `$B5C3`-`$B8DE` | Uninitialised data (`BSS`), including the 640-byte sprite attribute table |
-| `$B8DF`-`$BDFF` | Free, about 1.3K |
+| `$6A00`-`$A9B2` | Code and constant data (`CODE`) |
+| `$A9B3`-`$AAA3` | Initialised data (`DATA`) |
+| `$AAA4`-`$ADCC` | Uninitialised data (`BSS`), including the 640-byte sprite attribute table |
+| `$ADCD`-`$BDFF` | Free, about 4K (about 7.7K in the hardware build, without asserts) |
 | `$BE00`-`$BFFF` | Stack, 512 bytes |
 
-At about 14.5K of the 16K, the program will outgrow these slots soon. Use the
-free space in slot 3 for non-banked data next, then slots 0 and 1. If the
-program grows into the stack, nothing reports it: check `__BSS_END_tail` in
-the map file (`zcc -m`) stays below `$BE00`.
+The link step checks `__BSS_END_tail` in the map file and fails the build if
+the program reaches the stack; otherwise it prints how much space is left.
 
 ## The stack
 
@@ -84,6 +85,7 @@ push writes `$BFFE`-`$BFFF`.
 The link command in the [Makefile](../Makefile) sets this (`LDFLAGS`):
 
 ```make
+-pragma-define:CRT_ORG_CODE=0x6A00 \
 -pragma-define:REGISTER_SP=0xC000 -pragma-define:CRT_STACK_SIZE=512 \
 -pragma-define:CLIB_MALLOC_HEAP_SIZE=0 -pragma-define:CLIB_STDIO_HEAP_SIZE=0
 ```
@@ -108,7 +110,9 @@ and 7.
 
 Choosing page numbers:
 
-- Avoid pages 10, 11 (video, bank 5) and 4, 5 (the program).
+- Avoid pages 10, 11 (video and the start of the program) and 4, 5 (the
+  program).
+- Page 34 holds the demo map (see [Slots 0 and 1](#slots-0-and-1)).
 - Avoid the Layer 2 banks if Layer 2 is used.
 - Starting game data at page 32 (bank 16) leaves room below for those.
 
@@ -150,7 +154,7 @@ nge_write_palette9(RPC_SELECT_SPRITES_PALETTE_0, 0, demo_sprite_palette, DEMO_SP
 nge_mmu_map(DEMO_SPRITE_SLOT, old);
 ```
 
-The upload code, its stack and its local variables are all in slots 4 and 5,
+The upload code, its stack and its local variables are all in the program and stack (slots 3-5),
 so they stay mapped throughout. Saving and restoring the previous pages,
 rather than restoring fixed defaults, lets these calls nest.
 
@@ -165,26 +169,44 @@ Keep in non-banked memory anything used after the upload:
 
 ### Other banked data
 
-Room layouts, text and level tables can use the same pattern: map the page,
-copy or decode what the current room needs into non-banked RAM or the
-tilemap, then unmap. Read-only data that is used often, such as the current
-room's collision map, should be copied out rather than read while banked.
+Text and level tables can use the same pattern: map the page, copy or decode
+what is needed, then unmap. The active area's map is the exception: it is
+read constantly (drawing and collision checks), so it stays mapped in slot 1
+instead.
 
-## Slots 0 and 1: ROM swapped out
+## Slots 0 and 1
 
-Writing a RAM page number to registers `0x50`/`0x51` replaces the ROM with
-writable RAM; writing `$FF` restores the ROM. Doing so frees 16K for game code
-or data, with these consequences:
+Writing a RAM page number to registers `0x50`/`0x51` replaces that half of
+the ROM with writable RAM; writing `$FF` restores the ROM.
 
-- **Interrupts:** `$0038` (IM1) and `$0066` (NMI) are now game memory. Keep
-  interrupts disabled (the z88dk startup code runs `di`, and
+**Slot 0 keeps the ROM.** CSpect's debug output (`rst $18`) stops working
+when slot 0 holds RAM (tested); it keeps working with RAM in slot 1. Slot 0
+also holds the RST and interrupt entry points (`$0038` IM1, `$0066` NMI).
+
+**Slot 1 holds the active area's map.** Map data is read constantly, by
+drawing and by collision checks, so it can't be mapped in and out per access.
+The area maps its map's page into slot 1 when it starts, and the page stays
+there while the area is active. A map of up to 80 x 48 tiles (7.5K, see
+`NGE_MAP_STRIDE` and `NGE_MAP_MAX_HEIGHT` in
+[nge_map.h](../src/nge/map/nge_map.h)) fits in the slot. The demo in
+[main.c](../src/main.c) maps page 34 there and builds its map at startup:
+
+```c
+nge_mmu_map(DEMO_MAP_SLOT, DEMO_MAP_PAGE);          /* slot 1, page 34 */
+build_demo_map((nge_tile_t *)NGE_MMU_SLOT_ADDR(DEMO_MAP_SLOT));
+nge_map_init(&map, (nge_tile_t *)NGE_MMU_SLOT_ADDR(DEMO_MAP_SLOT),
+             DEMO_MAP_W, DEMO_MAP_H, &game_area);
+```
+
+Consequences:
+
+- **NextZXOS and esxDOS calls** (`rst $08`, file loading) need the whole ROM.
+  Map `$FF` back into slot 1 for the duration of a call, for example while
+  loading the next area.
+- **Interrupts:** keep them disabled (the z88dk startup code runs `di`, and
   `nge_video_init()` turns off the ULA interrupt) or use IM2 with a vector
-  table in slots 4/5.
-- **NextZXOS and esxDOS calls** (`rst $08`, file loading) need the ROM. Map
-  `$FF` back into slots 0 and 1 for the duration of a call.
-- **CSpect DebugOut** uses `rst $18`. Check that the CSpect console still
-  shows debug output with RAM in slot 0; if it doesn't, map the ROM back in
-  CSpect builds or put a `ret` at `$0018`.
-- **Placing code here:** a `PAGE_n` section with `CRT_ORG_PAGE_n` set to
-  `0x0000` or `0x2000` (with `-pragma-define`) is assembled for slot 0 or 1;
-  map it at startup, before anything in it is called.
+  table in the program; never the ROM's IM1 handler.
+- **Map data from the NEX file:** a `PAGE_n` section with `CRT_ORG_PAGE_n`
+  set to `0x2000` (with `-pragma-define`) is assembled for slot 1.
+  Alternatively, an area copies or decompresses its map into the slot-1 page
+  when it starts, as the demo does.
