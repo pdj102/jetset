@@ -9,8 +9,10 @@
 //
 // Target: 2MB Next, pages 0-223. Each module gets a pair of pages: the even
 // page for its banked code and its string literals and constants (8K,
-// codeseg and constseg PAGE_n), the odd page for large data sets private to
-// it, which is mapped into slot 7 whenever its code runs.
+// codeseg and constseg PAGE_n), the odd page for large variables and tables
+// private to it (its page data file, nge_<module>_pdata.c, with the marker
+// /* nge-dataseg: PAGE_n */), which is mapped into slot 7 whenever its code
+// runs.
 //
 //   0-31    system: program (4-5), video (10-11), bank 7 (14-15), Layer 2 (16-31)
 //   32-39   spare

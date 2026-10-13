@@ -19,6 +19,14 @@
 # (a module's large private data sets, at $E000), which needs no page in its
 # address; banked code must not be there, which is checked in the sources
 # (#pragma codeseg). Data in .asm files is mapped by hand and is not checked.
+#
+# Page data files (modules named *_pdata_c, see "Page data" in
+# docs/memory_map.md) must have every symbol in an odd PAGE_n section: an
+# initialised variable, a missing nge-dataseg marker or a missing constseg
+# pragma would silently put it in common memory instead.
+#
+# Every PAGE_n section must fit in its 8K page: the linker reports an even
+# page growing into a non-empty odd page, but not other overflows.
 
 map="$1"
 srcdir="${2:-src}"
@@ -43,6 +51,33 @@ if [ -n "$odd" ]; then
 fi
 
 awk '
+function hexval(h,    v, i) {
+    h = toupper(h); v = 0
+    for (i = 1; i <= length(h); i++) v = v * 16 + index("0123456789ABCDEF", substr(h, i, 1)) - 1
+    return v
+}
+
+# __PAGE_n_head = $E000 ; const, ...   (and _tail): section bounds
+$1 ~ /^__PAGE_[0-9]+_(head|tail)$/ && $2 == "=" {
+    name = $1; sub(/^__/, "", name)
+    end = name; sub(/^PAGE_[0-9]+_/, "", end)
+    sub(/_(head|tail)$/, "", name)
+    bound[name, end] = hexval(substr($3, 2))
+    pages[name] = 1
+}
+
+# Page data files: every symbol in an odd page
+$2 == "=" && $3 ~ /^\$/ && $5 == "addr," {
+    module = $8; sub(/,$/, "", module)
+    section = $9; sub(/,$/, "", section)
+    # (every C module also has a local label "zxn" in no section: not data)
+    if (module ~ /_pdata_c$/ && section != "" && !(section ~ /^PAGE_[0-9]*[13579]$/)) {
+        printf "error: %s (%s) is in %s, not its odd page: page data files may hold only uninitialised variables (with the nge-dataseg marker) and const data (with #pragma constseg)\n", \
+               $1, module, section
+        bad = 1
+    }
+}
+
 # banked_call must be the nge version (src/nge/core/nge_banked_call.asm), which
 # preserves the interrupt state; the z88dk version enables interrupts on every call
 $1 == "banked_call" && $2 == "=" {
@@ -78,5 +113,14 @@ $2 == "=" && $3 ~ /^\$/ && $5 == "addr," {
         bad = 1
     }
 }
-END { exit bad }
+END {
+    for (p in pages) {
+        size = bound[p, "tail"] - bound[p, "head"]
+        if (size > 8192) {
+            printf "error: %s holds %d bytes, more than its 8K page\n", p, size
+            bad = 1
+        }
+    }
+    exit bad
+}
 ' "$map"

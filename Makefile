@@ -39,9 +39,14 @@ all: build
 
 build: $(BIN_TARGET).nex
 
+# A module's page data file (<module>/nge_<module>_pdata.c) starts with the
+# marker /* nge-dataseg: PAGE_n */: its uninitialised variables go in page n
+# (--dataseg) instead of common memory. See "Page data" in docs/memory_map.md.
+dataseg = $(shell sed -n '1,5s|^/\* *nge-dataseg: *\(PAGE_[0-9]*\) *\*/.*|-Cs--dataseg\1|p' $(1))
+
 $(OBJDIR)/%.o: src/%.c
 	@mkdir -p $(dir $@)
-	$(ZCC) -c +zxn -clib=sdcc_iy $(INCLUDES) $(CFLAGS) $< -o $@
+	$(ZCC) -c +zxn -clib=sdcc_iy $(INCLUDES) $(CFLAGS) $(call dataseg,$<) $< -o $@
 
 $(OBJDIR)/%.o: src/%.asm
 	@mkdir -p $(dir $@)

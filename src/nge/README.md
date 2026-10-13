@@ -73,6 +73,11 @@ code" in [docs/memory_map.md](../../docs/memory_map.md)):
   module has its own pair of pages from the allocation in
   [banks.inc](banks.inc): the even page for code, literals and constants,
   the odd page for large private data sets.
+- Large private variables and tables go in the module's odd page, in its
+  page data file `nge_<module>_pdata.c`, which starts with the marker
+  `/* nge-dataseg: PAGE_n */` (uninitialised variables only) and
+  `#pragma constseg PAGE_n` (tables). See "Page data" in
+  `docs/memory_map.md`.
 - The output path (`core/nge_util`, `output/`, `devices/nge_cspect`) stays
   in common memory, so banked code can print its own literals. Banked
   literals and data may be passed only to common code or code in the same

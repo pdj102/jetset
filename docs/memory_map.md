@@ -154,10 +154,9 @@ code pages.
   split the module across another pair from its range.
 - **Large private data sets:** the odd page, mapped into slot 7 whenever the
   module's code runs, so the module reads it directly. Not every constant
-  goes here, only data sets big enough to matter. `constseg` applies to a
-  whole file, so a data set gets its own file: a `.c` file with only
-  `#pragma constseg PAGE_<odd>`, or an `.asm` file with
-  `SECTION PAGE_<odd>`. Only the module's own code reads it.
+  goes here, only data sets big enough to matter. They go in the module's
+  page data file (see [Page data](#page-data-a-modules-variables-and-tables-in-its-odd-page)).
+  Only the module's own code uses them.
 - **Banked literals and data are passed only to common code** (the output
   path, `nge_util`) **or code in the same page,** and not kept after the
   call returns. A function in another bank would be called through
@@ -258,6 +257,54 @@ or if a `#pragma codeseg` names an odd page.
   alone cost about 45 bytes per assert site in CSpect builds.
 - Return values in HL and DE (up to 32 bits) and stack arguments, including
   variadic ones, work as normal.
+
+### Page data: a module's variables and tables in its odd page
+
+A module's large private variables and tables go in its odd page, in one
+**page data file**, `<module>/nge_<module>_pdata.c`:
+
+```c
+/* nge-dataseg: PAGE_43 */
+#ifdef __SDCC
+#pragma constseg PAGE_43
+#endif
+#include "sprite/nge_sprite_internal.h"
+
+nge_sprite_cache_t nge_sprite_cache;            /* variables: page 43 */
+const uint8_t nge_sprite_lookup[256] = { ... };  /* tables: page 43 */
+```
+
+- **Variables:** SDCC can't move variables with a `#pragma`, but its
+  `--dataseg` option moves a file's uninitialised variables. The Makefile
+  reads the `nge-dataseg` marker in the first lines of a file and passes
+  `--dataseg PAGE_n` for that file only.
+- **Tables:** `#pragma constseg` moves the file's `const` data.
+- **No initialised variables.** z88dk keeps the initial values of
+  initialised variables in common memory, so they can't be moved. The NEX
+  file loads the page as zeros; the module's banked `init` function sets
+  every value it needs, which also covers restarting a game.
+- **Declare the variables `extern`** in the module's internal header. Only
+  the module's own banked code uses them, while its page pair is mapped;
+  common code would read whatever page is in slot 7. This rule is not
+  checked automatically.
+- **On the PC tests** the marker and pragma have no effect: the variables
+  are ordinary globals.
+
+[scripts/check-banks.sh](../scripts/check-banks.sh) checks after every link
+that:
+
+- every symbol of a `*_pdata.c` file is in an odd page: an initialised
+  variable, a missing marker or a missing `constseg` would otherwise put it
+  in common memory without any warning;
+- every `PAGE_n` section fits in 8K: the linker reports an even page growing
+  into a non-empty odd page, but not a page growing into the next bank.
+
+Other ways were considered and rejected: `__at(0xE000)` variables are
+invisible to the linker, so nothing stops them overlapping other data in the
+page or overflowing it; data in an `.asm` file duplicates the C layout by
+hand (use it only for byte buffers or generated data, which can also have
+initial values loaded from the NEX file); writing to `const` data through a
+cast is undefined behaviour that SDCC's optimiser can break.
 
 ### Sprite and palette data: loaders that map their own page
 
