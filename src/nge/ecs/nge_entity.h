@@ -23,9 +23,17 @@
  * Iterate the alive list with NGE_ENTITY_FOR_EACH_ALIVE: it goes backwards,
  * so destroying the current entity and creating entities inside the loop
  * are both safe.
+ *
+ * Banking: the lifecycle functions (init, create, destroy, next_dying,
+ * release, free_count, dying_count) are banked (NGE_BANKED, page 48, with
+ * their bookkeeping in page 49): don't call them while game code has its own
+ * page mapped in slot 6 or 7. The tables and the flag and component
+ * functions are in common memory.
  */
 
 #include <stdint.h>
+
+#include "core/nge_bank.h"
 
 #ifndef NGE_ENTITY_MAX
 /** Number of entities, at most 250 (checked at compile time). */
@@ -86,14 +94,14 @@ extern uint8_t              nge_entity_alive_count;                /**< Entries 
 /* ---- Lifecycle ---- */
 
 /** @brief Make every entity free, with no flags or components. */
-void nge_entity_init(void);
+void nge_entity_init(void) NGE_BANKED;
 
 /**
  * @brief Create an entity: alive, with no flags or components.
  * @return Its ID, or NGE_ENTITY_INVALID if all NGE_ENTITY_MAX are in use.
  *         IDs are handed out 0, 1, 2... after nge_entity_init().
  */
-nge_entity_id_t nge_entity_create(void);
+nge_entity_id_t nge_entity_create(void) NGE_BANKED;
 
 /**
  * @brief Request an alive entity's destruction: it becomes dying, leaves the
@@ -101,26 +109,26 @@ nge_entity_id_t nge_entity_create(void);
  * @return 1 if it became dying; 0 if it was already dying or is persistent
  *         (clear NGE_ENTITY_PERSISTENT first to destroy it).
  */
-uint8_t nge_entity_destroy(nge_entity_id_t id);
+uint8_t nge_entity_destroy(nge_entity_id_t id) NGE_BANKED;
 
 /**
  * @brief Take the next entity waiting for clean-up off the dying stack.
  * @return Its ID, or NGE_ENTITY_INVALID when none is waiting.
  */
-nge_entity_id_t nge_entity_next_dying(void);
+nge_entity_id_t nge_entity_next_dying(void) NGE_BANKED;
 
 /**
  * @brief Return a dying entity, after clean-up, to the free stack.
  *
  * The entity must have been taken with nge_entity_next_dying().
  */
-void nge_entity_release(nge_entity_id_t id);
+void nge_entity_release(nge_entity_id_t id) NGE_BANKED;
 
 /** @brief Number of free entities. */
-uint8_t nge_entity_free_count(void);
+uint8_t nge_entity_free_count(void) NGE_BANKED;
 
 /** @brief Number of entities waiting on the dying stack. */
-uint8_t nge_entity_dying_count(void);
+uint8_t nge_entity_dying_count(void) NGE_BANKED;
 
 /* ---- Checked flag and component access ---- */
 

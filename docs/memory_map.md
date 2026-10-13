@@ -60,7 +60,9 @@ anything that has to be reachable at any time belongs in the program:
 - `banked_call`, and everything else that must stay in common memory (see
   [Banked code](#banked-code))
 - data used every frame: the sprite attribute table, the entity tables
-  (`nge_entity`: 7 bytes per entity, `NGE_ENTITY_MAX` entities), input
+  (`nge_entity` flags, components and alive list: 4 bytes per entity,
+  `NGE_ENTITY_MAX` entities; its lifecycle bookkeeping, 3 bytes per entity,
+  is page data in page 49), input
   state, the stream pool, game state
 
 Starting at `$6A00` rather than z88dk's default `$8000` adds 5.5K. The tile
@@ -70,10 +72,10 @@ The current CSpect build (`bin/main.map`) uses:
 
 | Address | Contents |
 |---|---|
-| `$6A00`-`$9EF5` | Code and constant data (`CODE`) |
-| `$9EF6`-`$9F14` | Initialised data (`DATA`) |
-| `$9F15`-`$A503` | Uninitialised data (`BSS`), including the sprite attribute table (640 bytes) and the entity tables (about 700 bytes) |
-| `$A504`-`$BDFF` | Free, about 6.2K (about 10K in the hardware build, without asserts) |
+| `$6A00`-`$9D13` | Code and constant data (`CODE`) |
+| `$9D14`-`$9D32` | Initialised data (`DATA`) |
+| `$9D33`-`$A1F3` | Uninitialised data (`BSS`), including the sprite attribute table (640 bytes) and the entity tables (about 400 bytes) |
+| `$A1F4`-`$BDFF` | Free, about 7K (about 10.8K in the hardware build, without asserts) |
 | `$BE00`-`$BFFF` | Stack, 512 bytes |
 
 The link step checks `__BSS_END_tail` in the map file and fails the build if
@@ -142,7 +144,7 @@ code pages.
 | 42/43 | nge `sprite` (setup functions and loaders) |
 | 44/45 | nge `map` (reserved; its code runs every frame and is in common memory) |
 | 46/47 | nge `event` (reserved) |
-| 48-67 | nge `ecs` (reserved: 10 pairs) |
+| 48-67 | nge `ecs` (10 pairs): 48/49 `entity` (lifecycle code / lifecycle bookkeeping) |
 | 68-87 | Further nge modules (reserved: 10 pairs) |
 | 88-223 | Game code and assets; the demo uses 88 (map, slot 1) and 89 (sprites) |
 
@@ -173,9 +175,12 @@ code pages.
 Functions that don't need to be in memory all the time can live in a banked
 page and be called through z88dk's `banked_call`. On each call it maps the
 function's page into slot 6 and the next page into slot 7, calls it, and maps
-the previous pages back. Page 42 holds the sprite setup functions,
-including the loaders, with their string literals
-(`sprite/nge_sprite_setup.c`; about 1.3K of 8K).
+the previous pages back. Banked so far:
+
+| Pages | Module | Code (even page) | Page data (odd page) |
+|---|---|---|---|
+| 42/43 | `sprite` | setup functions and loaders, with literals (`nge_sprite_setup.c`, about 1.3K) | none |
+| 48/49 | `ecs` entity | lifecycle functions, with literals (`nge_entity_life.c`, about 0.5K) | lifecycle bookkeeping: free and dying stacks, alive positions (`nge_entity_pdata.c`, 302 bytes) |
 
 How a module is banked:
 
@@ -233,7 +238,10 @@ or if a `#pragma codeseg` names an odd page.
 - **Split a module when only part of it can be banked.** A `.c` file is in
   one section, so `sprite/` is two files sharing `nge_sprite_internal.h`:
   `nge_sprite.c` (common: per-frame functions) and `nge_sprite_setup.c`
-  (page 42: setup and loading).
+  (page 42: setup and loading). `ecs/nge_entity` is three, sharing
+  `nge_entity_internal.h`: `nge_entity.c` (common: tables used every frame,
+  flag and component functions), `nge_entity_life.c` (page 48: lifecycle)
+  and `nge_entity_pdata.c` (page 49: the lifecycle's page data).
 - **Use even `PAGE_n` sections, or 16K `BANK_n` sections.** `banked_call`
   maps the page into slot 6, so code in an odd page (assembled for `$E000`)
   would be in the wrong slot.
