@@ -25,7 +25,7 @@ Z88DK_ARCH_H := $(Z88DK_ROOT)/include/_DEVELOPMENT/common/arch/zxn.h
 Z88DK_CONFIG_DIR := $(Z88DK_ROOT)/libsrc/newlib/target/zxn
 
 # Library code that cannot run on the PC
-LIB_EXCLUDE := devices/nge_cspect.c
+LIB_EXCLUDE := devices/nge_cspect_trap.c
 
 LIB_SRCS := $(filter-out $(addprefix $(SRCDIR)/,$(LIB_EXCLUDE)),$(wildcard $(SRCDIR)/*/*.c))
 LIB_OBJS := $(patsubst $(SRCDIR)/%.c,$(BUILD)/lib/%.o,$(LIB_SRCS))

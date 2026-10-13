@@ -201,11 +201,15 @@ page.
 
 **Rules:**
 
-- **Call `nge_hw_init()` before the first banked call.** `banked_call`
-  re-enables interrupts (`ei`) after every call. Until `nge_hw_init()` has
-  turned off the ULA interrupt, that lets the ROM's interrupt handler run,
-  which writes the system variables over tiles 144-149. `nge_hw_init()`
-  itself therefore stays in common memory.
+- **Banked calls never enable interrupts.** z88dk's `banked_call` ends
+  with `ei`, which would let an interrupt jump to `$0038`, game data once
+  slot 0 holds RAM. nge defines its own `banked_call`
+  ([core/nge_banked_call.asm](../src/nge/core/nge_banked_call.asm), a
+  modified copy of z88dk's): it keeps the interrupt state it was called
+  with, both for the called function and on return. The `di` around its
+  stack switch stays, so it is also correct once an interrupt handler
+  enables interrupts. `scripts/check-banks.sh` fails the build if the map
+  shows z88dk's version (module `zxn_banked_call`).
 - **Don't mix banked calls with pages mapped by hand.** `banked_call` maps
   back the pages it last mapped itself, not whatever was in slots 6 and 7
   before. While game code has its own page mapped there, it must not call a
@@ -293,9 +297,22 @@ instead.
 Writing a RAM page number to registers `0x50`/`0x51` replaces that half of
 the ROM with writable RAM; writing `$FF` restores the ROM.
 
-**Slot 0 keeps the ROM.** CSpect's debug output (`rst $18`) stops working
-when slot 0 holds RAM (tested); it keeps working with RAM in slot 1. Slot 0
-also holds the RST and interrupt entry points (`$0038` IM1, `$0066` NMI).
+**Slot 0 may hold RAM** (for common game data, from `$0000`), because:
+
+- **No maskable interrupt can happen.** `nge_hw_init()` runs `di` and clears
+  the interrupt enable registers `$C4`-`$C6` (expansion bus `/INT`, line and
+  ULA interrupts, CTC, UARTs), and nge's `banked_call` never enables
+  interrupts (see [Banked code](#banked-code)). Nothing reaches `$0038`.
+- **CSpect debug output maps the ROM in around each print.** CSpect only
+  prints `rst $18` with the ROM in slot 0; with RAM there it jumps to
+  `$0018` like a real Z80, so a `RET` stub does not help (tested with
+  `rst18test`). `nge_cspect_print()` maps the ROM into slot 0 for the
+  `rst $18` and maps the previous page back, so strings printed must not be
+  in slot 0.
+- **NMI is not handled, by choice.** It cannot be masked and jumps to
+  `$0066`, which is game data, so pressing the NMI button crashes the game.
+
+Slot 0 still holds the ROM until the game maps a page there.
 
 **Slot 1 holds the active area's map.** Map data is read constantly, by
 drawing and by collision checks, so it can't be mapped in and out per access.
@@ -317,9 +334,8 @@ Consequences:
 - **NextZXOS and esxDOS calls** (`rst $08`, file loading) need the whole ROM.
   Map `$FF` back into slot 1 for the duration of a call, for example while
   loading the next area.
-- **Interrupts:** keep them disabled (the z88dk startup code runs `di`, and
-  `nge_video_init()` turns off the ULA interrupt) or use IM2 with a vector
-  table in the program; never the ROM's IM1 handler.
+- **Interrupts** are disabled (above). A future interrupt module will use
+  IM2 with a vector table in the program, never the ROM's IM1 handler.
 - **Map data from the NEX file:** a `PAGE_n` section with `CRT_ORG_PAGE_n`
   set to `0x2000` (with `-pragma-define`) is assembled for slot 1.
   Alternatively, an area copies or decompresses its map into the slot-1 page

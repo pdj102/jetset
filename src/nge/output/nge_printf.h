@@ -11,9 +11,8 @@
  * For an unknown conversion such as %q, the character after % is written.
  *
  * The functions are banked (NGE_BANKED, page 40): each call maps pages 40-41
- * into slots 6-7 and back. Call nge_hw_init() before the first one, and don't call
- * them while game code has its own page mapped in slot 6 or 7 (see
- * core/nge_bank.h).
+ * into slots 6-7 and back. Don't call them while game code has its own page
+ * mapped in slot 6 or 7 (see core/nge_bank.h).
  */
 
 #include "core/nge_bank.h"

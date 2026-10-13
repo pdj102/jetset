@@ -175,13 +175,16 @@ void test_tilemap_row(uint8_t y, uint8_t x1, uint8_t x2, char *out)
 /* ---- CSpect DebugOut ---- */
 
 char test_cspect_lines[TEST_CSPECT_MAX_LINES][128];
+uint8_t test_cspect_slot0[TEST_CSPECT_MAX_LINES];
 int test_cspect_count;
 void (*test_cspect_hook)(void);
 
-void nge_cspect_print(const char *s)
+/* Replaces the RST $18 trap: the real nge_cspect_print() calls this */
+void nge_cspect_trap(const char *s)
 {
     if (test_cspect_count < TEST_CSPECT_MAX_LINES) {
         strncpy(test_cspect_lines[test_cspect_count], s, sizeof(test_cspect_lines[0]) - 1);
+        test_cspect_slot0[test_cspect_count] = test_regs[0x50];   /* REG_MMU0 */
         test_cspect_count++;
     }
     if (test_cspect_hook) {

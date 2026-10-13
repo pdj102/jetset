@@ -14,6 +14,7 @@ BINDIR := bin
 SRCS := \
 	src/main.c \
 	$(sort $(wildcard src/nge/*/*.c)) \
+	$(sort $(wildcard src/nge/*/*.asm)) \
 	$(sort $(wildcard src/game/*.c)) \
 	$(sort $(wildcard src/data/*.asm))
 

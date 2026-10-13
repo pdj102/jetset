@@ -11,6 +11,8 @@
 # holds code needs its origin set in src/nge/banks.inc, e.g.
 #   #pragma define CRT_ORG_PAGE_40 = 0x28C000     (page 40 = 0x28)
 #
+# It also checks that banked_call is nge's own, not z88dk's.
+#
 # Symbols from C files (module names ending in _c) in BANK_n or PAGE_n
 # sections are banked code: their page must be 2n (BANK_n) or n (PAGE_n),
 # and a PAGE_n section must be an even page.
@@ -23,6 +25,16 @@ if [ ! -f "$map" ]; then
 fi
 
 awk '
+# banked_call must be the nge version (src/nge/core/nge_banked_call.asm), which
+# preserves the interrupt state; the z88dk version enables interrupts on every call
+$1 == "banked_call" && $2 == "=" {
+    module = $8; sub(/,$/, "", module)
+    if (module != "nge_banked_call_asm") {
+        printf "error: banked_call comes from module %s, not nge_banked_call_asm: z88dk%ss version enables interrupts on every banked call.\n", module, "\047"
+        bad = 1
+    }
+}
+
 # _name = $28C000 ; addr, public, , module_c, PAGE_40, file.c:12
 $2 == "=" && $3 ~ /^\$/ && $5 == "addr," {
     module = $8; sub(/,$/, "", module)

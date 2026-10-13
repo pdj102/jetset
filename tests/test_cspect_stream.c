@@ -1,6 +1,8 @@
 /* nge_cspect_stream.c: CSpect DebugOut stream (the RST $18 trap is faked). */
 #include "test.h"
 
+#include <arch/zxn.h>
+
 #include "output/nge_cspect_stream.h"
 #include "output/nge_printf.h"
 #include "output/nge_print.h"
@@ -74,12 +76,36 @@ static void test_flush_and_close(void)
     CHECK(nge_putc('q', d) == NGE_EOF);
 }
 
+/* RAM in slot 0 (game data): the ROM is mapped in only around each trap */
+static void test_slot0(void)
+{
+    reset();
+    test_regs[REG_MMU0] = 88;
+    test_reg_log_count = 0;
+    nge_puts("one\ntwo\n", d);
+    CHECK(test_cspect_count == 2);
+    CHECK(test_cspect_slot0[0] == 0xFF && test_cspect_slot0[1] == 0xFF);
+    CHECK(test_regs[REG_MMU0] == 88);
+    /* Per line: ROM in, then the saved page back */
+    CHECK(test_reg_log_count == 4);
+    CHECK(test_reg_log_reg[0] == REG_MMU0 && test_reg_log_val[0] == 0xFF);
+    CHECK(test_reg_log_reg[1] == REG_MMU0 && test_reg_log_val[1] == 88);
+    CHECK_STR(test_cspect_lines[1], "two");
+
+    /* ROM already in slot 0: still the ROM afterwards */
+    reset();
+    test_regs[REG_MMU0] = 0xFF;
+    nge_puts("rom\n", d);
+    CHECK(test_cspect_slot0[0] == 0xFF && test_regs[REG_MMU0] == 0xFF);
+}
+
 int main(void)
 {
     test_init();
     d = nge_open_cspect_debug();
     CHECK(d != NULL);
     test_lines();
-    test_flush_and_close();
+    test_slot0();
+    test_flush_and_close();             /* closes d: last */
     return test_summary("cspect_stream");
 }

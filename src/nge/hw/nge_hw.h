@@ -22,9 +22,22 @@ enum nge_hw_cpu_speed
 /**
  * @brief Initialize the hardware defaults required by the game.
  *
- * Sets the CPU to 28 MHz, disables contention, and initializes video and audio.
+ * Disables interrupts and every interrupt source, sets the CPU to 28 MHz,
+ * disables contention, and initializes video and audio.
  */
 void nge_hw_init(void);
+
+/**
+ * @brief Disable interrupts (di) and every maskable interrupt source.
+ *
+ * Clears the interrupt enable registers $C4-$C6: expansion bus /INT, line
+ * and ULA interrupts, CTC channels and UARTs. Even if code executes ei, no
+ * maskable interrupt can arrive, so slot 0 may hold RAM instead of the ROM's
+ * IM1 handler at $0038. NMI cannot be masked: with game data at $0066, an
+ * NMI (the NMI button) crashes the game. An interrupt module will enable
+ * the sources it handles, with its own IM2 handler.
+ */
+void nge_hw_disable_interrupts(void);
 
 /**
  * @brief Clear the ULA display to black and disable unused video interrupts.

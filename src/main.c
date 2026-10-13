@@ -138,11 +138,7 @@ int main(void)
     uint8_t frame = 0;
     demo_entity_t *walker = &entities[ENTITY_WALKER];
 
-    /*
-     * First, before any banked call: banked_call re-enables interrupts, and
-     * nge_hw_init() turns off the ULA interrupt, whose ROM handler would
-     * write the system variables over tiles 144-149.
-     */
+    /* Disables interrupts and every interrupt source first (see nge_hw.h) */
     nge_hw_init();
 
     /* Send asserts and debug output to the CSpect console (NULL on hardware) */

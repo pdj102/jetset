@@ -96,14 +96,15 @@ void test_port_reset(void);
 /** Copy tile ids of row y, columns x1..x2, into out as a string. */
 void test_tilemap_row(uint8_t y, uint8_t x1, uint8_t x2, char *out);
 
-/* ---- CSpect DebugOut: the fake nge_cspect_print() records each call ---- */
+/* ---- CSpect DebugOut: the fake nge_cspect_trap() records each call ---- */
 
 #define TEST_CSPECT_MAX_LINES 16
 
 extern char test_cspect_lines[TEST_CSPECT_MAX_LINES][128];
+extern uint8_t test_cspect_slot0[TEST_CSPECT_MAX_LINES];   /**< Page in slot 0 at each trap. */
 extern int test_cspect_count;
 
-/** If set, called from nge_cspect_print() after recording (e.g. to inject faults). */
+/** If set, called from the fake trap after recording (e.g. to inject faults). */
 extern void (*test_cspect_hook)(void);
 
 #endif

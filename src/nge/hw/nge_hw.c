@@ -2,9 +2,32 @@
 
 #include <arch/zxn.h>
 
+/*
+ * Interrupt enable registers (core 3.1.5+; not named by z88dk). Clearing a
+ * bit puts that device in polled mode: it no longer raises interrupts.
+ */
+#define NGE_REG_INT_EN_0  0xC4  /* bit 7 expansion bus /INT, bit 1 line, bit 0 ULA (reset $81) */
+#define NGE_REG_INT_EN_1  0xC5  /* bits 7-0: CTC channels 7-0 (reset $00) */
+#define NGE_REG_INT_EN_2  0xC6  /* bits 6,5,4: UART1 Tx empty, Rx near full, Rx available;
+                                   bits 2,1,0: the same for UART0 (reset $00) */
+
+/* Disable interrupts and every maskable interrupt source. */
+void nge_hw_disable_interrupts(void)
+{
+#ifdef __SDCC
+    __asm
+        di
+    __endasm;
+#endif
+    ZXN_WRITE_REG(NGE_REG_INT_EN_0, 0);
+    ZXN_WRITE_REG(NGE_REG_INT_EN_1, 0);
+    ZXN_WRITE_REG(NGE_REG_INT_EN_2, 0);
+}
+
 /* Initialize the hardware defaults required by the game. */
 void nge_hw_init(void)
 {
+    nge_hw_disable_interrupts();
     nge_hw_set_cpu_speed(NGE_HW_CPU_28MHZ);
     nge_hw_disable_contention();
     nge_video_init();
