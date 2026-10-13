@@ -21,7 +21,8 @@
 //   44/45   nge map (reserved: map code is per-frame and in common memory)
 //   46/47   nge event (reserved)
 //   48-67   nge ecs (10 pairs)
-//             48/49  entity: lifecycle code / lifecycle bookkeeping
+//             48/49  entity and owner: lifecycle and ownership code /
+//                    lifecycle bookkeeping
 //   68-87   further nge modules (reserved: 10 pairs)
 //   88-223  game code and assets
 //             88  demo map (slot 1)
@@ -30,5 +31,5 @@
 // nge sprite: setup functions and loaders
 #pragma define CRT_ORG_PAGE_42 = 0x2AC000
 
-// nge ecs entity: lifecycle functions
+// nge ecs entity and owner: lifecycle and ownership functions
 #pragma define CRT_ORG_PAGE_48 = 0x30C000

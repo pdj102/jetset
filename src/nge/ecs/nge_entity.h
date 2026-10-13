@@ -16,6 +16,9 @@
  *           nge_entity_release(id);
  *       }
  *
+ * Every entity has an owner (ecs/nge_owner.h): a new entity is owned by
+ * NGE_OWNER_WORLD, and an entity must own nothing when it is released.
+ *
  * The macros read the tables directly, with no checks: use them in loops
  * that run every frame. The functions are the checked versions (asserts on
  * the ID and state).
@@ -93,11 +96,12 @@ extern uint8_t              nge_entity_alive_count;                /**< Entries 
 
 /* ---- Lifecycle ---- */
 
-/** @brief Make every entity free, with no flags or components. */
+/** @brief Make every entity free, with no flags or components, owned by the world. */
 void nge_entity_init(void) NGE_BANKED;
 
 /**
- * @brief Create an entity: alive, with no flags or components.
+ * @brief Create an entity: alive, with no flags or components, owned by
+ *        NGE_OWNER_WORLD.
  * @return Its ID, or NGE_ENTITY_INVALID if all NGE_ENTITY_MAX are in use.
  *         IDs are handed out 0, 1, 2... after nge_entity_init().
  */
@@ -120,7 +124,8 @@ nge_entity_id_t nge_entity_next_dying(void) NGE_BANKED;
 /**
  * @brief Return a dying entity, after clean-up, to the free stack.
  *
- * The entity must have been taken with nge_entity_next_dying().
+ * The entity must have been taken with nge_entity_next_dying() and must own
+ * no entities (nge_owner_count() is 0).
  */
 void nge_entity_release(nge_entity_id_t id) NGE_BANKED;
 

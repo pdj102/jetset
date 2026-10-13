@@ -60,9 +60,9 @@ anything that has to be reachable at any time belongs in the program:
 - `banked_call`, and everything else that must stay in common memory (see
   [Banked code](#banked-code))
 - data used every frame: the sprite attribute table, the entity tables
-  (`nge_entity` flags, components and alive list: 4 bytes per entity,
-  `NGE_ENTITY_MAX` entities; its lifecycle bookkeeping, 3 bytes per entity,
-  is page data in page 49), input
+  (`nge_entity` flags, components and alive list, and the `nge_owner`
+  owner table: 5 bytes per entity, `NGE_ENTITY_MAX` entities; the
+  lifecycle bookkeeping, 3 bytes per entity, is page data in page 49), input
   state, the stream pool, game state
 
 Starting at `$6A00` rather than z88dk's default `$8000` adds 5.5K. The tile
@@ -144,7 +144,7 @@ code pages.
 | 42/43 | nge `sprite` (setup functions and loaders) |
 | 44/45 | nge `map` (reserved; its code runs every frame and is in common memory) |
 | 46/47 | nge `event` (reserved) |
-| 48-67 | nge `ecs` (10 pairs): 48/49 `entity` (lifecycle code / lifecycle bookkeeping) |
+| 48-67 | nge `ecs` (10 pairs): 48/49 `entity` and `owner` (lifecycle and ownership code / lifecycle bookkeeping) |
 | 68-87 | Further nge modules (reserved: 10 pairs) |
 | 88-223 | Game code and assets; the demo uses 88 (map, slot 1) and 89 (sprites) |
 
@@ -180,7 +180,7 @@ the previous pages back. Banked so far:
 | Pages | Module | Code (even page) | Page data (odd page) |
 |---|---|---|---|
 | 42/43 | `sprite` | setup functions and loaders, with literals (`nge_sprite_setup.c`, about 1.3K) | none |
-| 48/49 | `ecs` entity | lifecycle functions, with literals (`nge_entity_life.c`, about 0.5K) | lifecycle bookkeeping: free and dying stacks, alive positions (`nge_entity_pdata.c`, 302 bytes) |
+| 48/49 | `ecs` entity, owner | lifecycle functions (`nge_entity_life.c`) and the ownership functions that change or search the owner table (`nge_owner_set.c`), with literals, about 0.6K | lifecycle bookkeeping: free and dying stacks, alive positions (`nge_entity_pdata.c`, 302 bytes) |
 
 How a module is banked:
 
@@ -242,6 +242,9 @@ or if a `#pragma codeseg` names an odd page.
   `nge_entity_internal.h`: `nge_entity.c` (common: tables used every frame,
   flag and component functions), `nge_entity_life.c` (page 48: lifecycle)
   and `nge_entity_pdata.c` (page 49: the lifecycle's page data).
+  `ecs/nge_owner` is two: `nge_owner.c` (common: the owner table and
+  `nge_owner_get`) and `nge_owner_set.c` (page 48, beside the lifecycle
+  that uses it).
 - **Use even `PAGE_n` sections, or 16K `BANK_n` sections.** `banked_call`
   maps the page into slot 6, so code in an odd page (assembled for `$E000`)
   would be in the wrong slot.

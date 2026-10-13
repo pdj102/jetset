@@ -9,6 +9,7 @@
 #endif
 
 #include "ecs/nge_entity_internal.h"
+#include "ecs/nge_owner.h"
 
 #include "core/nge_util.h"
 
@@ -20,6 +21,7 @@ void nge_entity_init(void) NGE_BANKED
     for (i = 0; i < NGE_ENTITY_MAX; i++) {
         nge_entity_flags[i] = NGE_ENTITY_FREE;
         nge_entity_components[i] = 0;
+        nge_owner_of[i] = NGE_OWNER_WORLD;
         nge_entity_free_stack[i] = NGE_ENTITY_MAX - 1 - i;
     }
     nge_entity_free_top = NGE_ENTITY_MAX;
@@ -38,6 +40,7 @@ nge_entity_id_t nge_entity_create(void) NGE_BANKED
 
     nge_entity_flags[id] = NGE_ENTITY_ALIVE;
     nge_entity_components[id] = 0;
+    nge_owner_of[id] = NGE_OWNER_WORLD;
     nge_entity_alive_pos[id] = nge_entity_alive_count;
     nge_entity_alive[nge_entity_alive_count++] = id;
     return id;
@@ -78,6 +81,7 @@ void nge_entity_release(nge_entity_id_t id) NGE_BANKED
 {
     nge_util_assert(id < NGE_ENTITY_MAX);
     nge_util_assert(NGE_ENTITY_STATE(id) == NGE_ENTITY_DYING);
+    nge_util_assert(nge_owner_count(id) == 0);   /* see nge_owner.h */
 
     nge_entity_flags[id] = NGE_ENTITY_FREE;
     nge_entity_components[id] = 0;
