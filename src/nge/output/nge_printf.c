@@ -1,8 +1,3 @@
-/* Banked: called through banked_call (see core/nge_bank.h) */
-#ifdef __SDCC
-#pragma codeseg PAGE_40
-#endif
-
 #include "output/nge_printf.h"
 
 #include <stdarg.h>
@@ -67,7 +62,7 @@ static uint8_t put_repeat(uint8_t c, uint8_t n, NGE_FILE *stream)
     return n;
 }
 
-int nge_printf(NGE_FILE *stream, const char *fmt, ...) NGE_BANKED
+int nge_printf(NGE_FILE *stream, const char *fmt, ...)
 {
     va_list ap;
     char buf[6];

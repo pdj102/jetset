@@ -1,7 +1,7 @@
 #!/bin/sh
 # Check that banked C code carries its page in its address.
 #
-# usage: check-banks.sh <file.map>
+# usage: check-banks.sh <file.map> [source dir, default src]
 #
 # A call to an NGE_BANKED (__banked) function stores the function's address
 # after "call banked_call"; banked_call maps the page in bits 16-23 of that
@@ -9,18 +9,32 @@
 # section origins for the Next ($C000/$E000) have no page in them, so every
 # banked call would map page 0 and jump into the wrong code. Each bank that
 # holds code needs its origin set in src/nge/banks.inc, e.g.
-#   #pragma define CRT_ORG_PAGE_40 = 0x28C000     (page 40 = 0x28)
+#   #pragma define CRT_ORG_PAGE_42 = 0x2AC000     (page 42 = 0x2A)
 #
 # It also checks that banked_call is nge's own, not z88dk's.
 #
-# Symbols from C files (module names ending in _c) in BANK_n or PAGE_n
-# sections are banked code: their page must be 2n (BANK_n) or n (PAGE_n),
-# and a PAGE_n section must be an even page.
-# Data in .asm files is mapped by hand and is not checked.
+# Symbols from C files (module names ending in _c) in BANK_n sections and
+# even PAGE_n sections are banked code or its literals and constants: their
+# page must be 2n (BANK_n) or n (PAGE_n). Odd PAGE_n sections hold data only
+# (a module's large private data sets, at $E000), which needs no page in its
+# address; banked code must not be there, which is checked in the sources
+# (#pragma codeseg). Data in .asm files is mapped by hand and is not checked.
 
 map="$1"
+srcdir="${2:-src}"
 if [ ! -f "$map" ]; then
     echo "check-banks: map file '$map' not found" >&2
+    exit 1
+fi
+
+# banked_call maps the page into slot 6 ($C000); an odd page is assembled for
+# slot 7 ($E000), so code placed there would be in the wrong place
+odd=$(grep -rnE '^[[:space:]]*#pragma[[:space:]]+codeseg[[:space:]]+PAGE_[0-9]*[13579]\b' \
+      --include='*.c' "$srcdir")
+if [ -n "$odd" ]; then
+    echo "$odd" | while IFS= read -r line; do
+        echo "error: $line: banked code must be in an even page (or a BANK_n section)"
+    done
     exit 1
 fi
 
@@ -44,17 +58,8 @@ $2 == "=" && $3 ~ /^\$/ && $5 == "addr," {
     else if (section ~ /^PAGE_[0-9]+$/) { n = substr(section, 6); want = n + 0 }
     else next
 
-    # banked_call maps the page into slot 6 ($C000); an odd page is
-    # assembled for slot 7 ($E000), so its code would be in the wrong place
-    if (section ~ /^PAGE_/ && want % 2 == 1) {
-        if (!(section in odd_reported)) {
-            printf "error: banked C code (%s) in %s: banked code must be in an even page (or a BANK_n section)\n", \
-                   module, section
-            odd_reported[section] = 1
-        }
-        bad = 1
-        next
-    }
+    # Odd pages: private data only, read from slot 7 by its own module
+    if (section ~ /^PAGE_/ && want % 2 == 1) next
 
     hex = toupper(substr($3, 2)); value = 0
     for (i = 1; i <= length(hex); i++) {

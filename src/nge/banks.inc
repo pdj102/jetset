@@ -8,12 +8,13 @@
 // missing from this list. See "Page allocation" in docs/memory_map.md.
 //
 // Target: 2MB Next, pages 0-223. Each module gets a pair of pages: the even
-// page for its banked code (8K, PAGE_n), the odd page for data private to it,
-// which is mapped into slot 7 whenever its code runs.
+// page for its banked code and its string literals and constants (8K,
+// codeseg and constseg PAGE_n), the odd page for large data sets private to
+// it, which is mapped into slot 7 whenever its code runs.
 //
 //   0-31    system: program (4-5), video (10-11), bank 7 (14-15), Layer 2 (16-31)
 //   32-39   spare
-//   40/41   nge output
+//   40/41   nge output (reserved: the output path stays in common memory)
 //   42/43   nge sprite
 //   44/45   nge map (reserved: map code is per-frame and in common memory)
 //   46/47   nge event (reserved)
@@ -22,9 +23,6 @@
 //   88-223  game code and assets
 //             88  demo map (slot 1)
 //             89  demo sprite patterns and palette (slot 7, via the loaders)
-
-// nge output: nge_print, nge_printf
-#pragma define CRT_ORG_PAGE_40 = 0x28C000
 
 // nge sprite: setup functions and loaders
 #pragma define CRT_ORG_PAGE_42 = 0x2AC000

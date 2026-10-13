@@ -70,10 +70,10 @@ The current CSpect build (`bin/main.map`) uses:
 
 | Address | Contents |
 |---|---|
-| `$6A00`-`$98C3` | Code and constant data (`CODE`) |
-| `$98C4`-`$98E2` | Initialised data (`DATA`) |
-| `$98E3`-`$9ED1` | Uninitialised data (`BSS`), including the sprite attribute table (640 bytes) and the entity tables (about 700 bytes) |
-| `$9ED2`-`$BDFF` | Free, about 7.8K (about 12K in the hardware build, without asserts) |
+| `$6A00`-`$9EF5` | Code and constant data (`CODE`) |
+| `$9EF6`-`$9F14` | Initialised data (`DATA`) |
+| `$9F15`-`$A503` | Uninitialised data (`BSS`), including the sprite attribute table (640 bytes) and the entity tables (about 700 bytes) |
+| `$A504`-`$BDFF` | Free, about 6.2K (about 10K in the hardware build, without asserts) |
 | `$BE00`-`$BFFF` | Stack, 512 bytes |
 
 The link step checks `__BSS_END_tail` in the map file and fails the build if
@@ -128,8 +128,9 @@ and 7.
 ### Page allocation
 
 The target is a 2MB Next: pages 0-223. Every module that has banked code
-gets a pair of pages: the even page for its code (an 8K `PAGE_n` section),
-the odd page for data private to it. The allocation is kept in
+gets a pair of pages: the even page for its code, string literals and
+constants (8K: `codeseg` and `constseg PAGE_n`), the odd page for large data
+sets private to it. The allocation is kept in
 [src/nge/banks.inc](../src/nge/banks.inc), which also sets the origins of the
 code pages.
 
@@ -137,7 +138,7 @@ code pages.
 |---|---|
 | 0-31 | System: program (4-5), video (10-11), bank 7 (14-15), Layer 2 (16-31) |
 | 32-39 | Spare |
-| 40/41 | nge `output` (`nge_print`, `nge_printf`) |
+| 40/41 | nge `output` (reserved; the output path stays in common memory) |
 | 42/43 | nge `sprite` (setup functions and loaders) |
 | 44/45 | nge `map` (reserved; its code runs every frame and is in common memory) |
 | 46/47 | nge `event` (reserved) |
@@ -145,17 +146,26 @@ code pages.
 | 68-87 | Further nge modules (reserved: 10 pairs) |
 | 88-223 | Game code and assets; the demo uses 88 (map, slot 1) and 89 (sprites) |
 
-- **Module code:** the even page. 8K per module: if it grows past 8K, the
-  linker stops the build ("Section PAGE_n overlaps section PAGE_n+1"); split
-  the module across another pair from its range.
-- **Module data:** the odd page is mapped into slot 7 whenever the module's
-  code runs, so the module reads it directly. It is private: only that
-  module's code may use it. A pointer to it passed to another banked module
-  (for example a string passed to `nge_printf()`) would be read after
-  `banked_call` has mapped the other module's pair over it. Shared data and
-  anything passed to other modules stays in common memory, which is where
-  SDCC puts `const` data and string literals unless a file says otherwise
-  (`#pragma constseg`).
+- **Module code, string literals and constants:** the even page. A banked
+  `.c` file sets both `#pragma codeseg PAGE_n` and `#pragma constseg
+  PAGE_n`, so its literals (assert messages included) and constants are in
+  its own page, not in common memory. 8K per module: if it grows past 8K,
+  the linker stops the build ("Section PAGE_n overlaps section PAGE_n+1");
+  split the module across another pair from its range.
+- **Large private data sets:** the odd page, mapped into slot 7 whenever the
+  module's code runs, so the module reads it directly. Not every constant
+  goes here, only data sets big enough to matter. `constseg` applies to a
+  whole file, so a data set gets its own file: a `.c` file with only
+  `#pragma constseg PAGE_<odd>`, or an `.asm` file with
+  `SECTION PAGE_<odd>`. Only the module's own code reads it.
+- **Banked literals and data are passed only to common code** (the output
+  path, `nge_util`) **or code in the same page,** and not kept after the
+  call returns. A function in another bank would be called through
+  `banked_call`, which maps its pages over them. The whole output path stays
+  in common memory for this reason: `core/nge_util`, `output/` (streams,
+  `nge_print`, `nge_printf`) and `devices/nge_cspect`. The streams use each
+  character at once (the CSpect line buffer copies it; the tilemap stream
+  draws it), so no stream keeps a pointer to a string.
 - **Game assets** (sprite sets, maps, level data) go in the game range, not
   in nge module pages. The sprite loaders accept any odd page.
 
@@ -164,9 +174,9 @@ code pages.
 Functions that don't need to be in memory all the time can live in a banked
 page and be called through z88dk's `banked_call`. On each call it maps the
 function's page into slot 6 and the next page into slot 7, calls it, and maps
-the previous pages back. Page 40 holds `nge_print`, `nge_printf` and the
-sprite setup functions, including the loaders (`output/nge_print.c`,
-`output/nge_printf.c`, `sprite/nge_sprite_setup.c`; about 2.8K of 8K).
+the previous pages back. Page 42 holds the sprite setup functions,
+including the loaders, with their string literals
+(`sprite/nge_sprite_setup.c`; about 1.3K of 8K).
 
 How a module is banked:
 
@@ -174,20 +184,22 @@ How a module is banked:
    [core/nge_bank.h](../src/nge/core/nge_bank.h)) in its header and
    definitions. Callers must see the declaration, so being banked is part of
    a function's interface.
-2. Its `.c` file starts with the section its code goes in:
+2. Its `.c` file starts with the page its code, literals and constants go
+   in:
 
    ```c
    #ifdef __SDCC
-   #pragma codeseg PAGE_40
+   #pragma codeseg PAGE_42
+   #pragma constseg PAGE_42
    #endif
    ```
 
-3. The section is listed in [src/nge/banks.inc](../src/nge/banks.inc) with
-   its origin: `#pragma define CRT_ORG_PAGE_40 = 0x28C000`.
+3. The page is listed in [src/nge/banks.inc](../src/nge/banks.inc) with its
+   origin: `#pragma define CRT_ORG_PAGE_42 = 0x2AC000`.
 
-nge uses an 8K `PAGE_40` section rather than a 16K `BANK_20` section, so page
-41 is free for data. If page 40's code grows past 8K, the linker stops the
-build ("Section PAGE_40 overlaps section PAGE_41").
+nge uses 8K `PAGE_n` sections rather than 16K `BANK_n` sections, so the odd
+page is free for data. If a page's code grows past 8K, the linker stops the
+build ("Section PAGE_42 overlaps section PAGE_43").
 
 **Why the origin carries the page.** After each `call banked_call`, SDCC
 stores the 32-bit address of the function, and `banked_call` uses bits 16-23
@@ -196,8 +208,8 @@ every call would map page 0 and jump into the wrong code. The origin
 `(page << 16) | $C000` gives the right page; the CPU uses only the low 16 bits
 and the NEX file is built from the section name, so nothing else changes.
 [scripts/check-banks.sh](../scripts/check-banks.sh) runs after every link and
-fails the build if banked C code doesn't carry its page, or is in an odd
-page.
+fails the build if banked C code or its literals don't carry their page,
+or if a `#pragma codeseg` names an odd page.
 
 **Rules:**
 
@@ -213,8 +225,7 @@ page.
 - **Don't mix banked calls with pages mapped by hand.** `banked_call` maps
   back the pages it last mapped itself, not whatever was in slots 6 and 7
   before. While game code has its own page mapped there, it must not call a
-  banked function, including the banked printing functions. Pass the page to
-  a banked loader instead (below).
+  banked function. Pass the page to a banked loader instead (below).
 - **Banked code may map slot 7, but never slot 6.** Banked code in an 8K
   `PAGE_n` section runs from slot 6, so slot 7 is free: the sprite loaders
   map their data page into slot 7, upload, and map the previous page back.
@@ -239,10 +250,12 @@ page.
     functions: a pointer to a banked function doesn't switch banks;
   - `__z88dk_fastcall` functions: `banked_call` overwrites HL, which holds
     their argument;
+  - the output path (`core/nge_util`, `output/`, `devices/nge_cspect`), so
+    banked code can print its own literals;
   - `nge_mmu`, `nge_hw_init` and interrupt code.
-- **Constant data stays in common memory.** SDCC puts `const` tables and
-  string literals of a banked file in the common `rodata_compiler` section,
-  so they can be passed to and read by any code.
+- **Literals and constants live in the module's page** (`constseg`, above).
+  Without `constseg`, SDCC would put them in common memory: assert messages
+  alone cost about 45 bytes per assert site in CSpect builds.
 - Return values in HL and DE (up to 32 bits) and stack arguments, including
   variadic ones, work as normal.
 

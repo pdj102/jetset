@@ -7,6 +7,7 @@
  */
 #ifdef __SDCC
 #pragma codeseg PAGE_42
+#pragma constseg PAGE_42    /* string literals (assert messages) and constants too */
 #endif
 
 #include "sprite/nge_sprite_internal.h"

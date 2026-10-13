@@ -63,14 +63,20 @@ Code that isn't needed all the time can live in a banked page (see "Banked
 code" in [docs/memory_map.md](../../docs/memory_map.md)):
 
 - Declare its functions `NGE_BANKED` (from `core/nge_bank.h`) in the header
-  and the definitions, and start the `.c` file with a guarded
-  `#pragma codeseg PAGE_n` (n even).
+  and the definitions, and start the `.c` file with guarded
+  `#pragma codeseg PAGE_n` and `#pragma constseg PAGE_n` (n even), so its
+  string literals and constants are in its page too.
 - List the section in [banks.inc](banks.inc). The build fails if it is
   missing (`scripts/check-banks.sh`).
 - Bank whole modules whose functions are called occasionally, such as
-  `output/nge_print` and `output/nge_printf` (page 40). Each module has its
-  own pair of pages from the allocation in [banks.inc](banks.inc): the even
-  page for code, the odd page for data private to it. A module with both
+  the sprite setup functions (`sprite/nge_sprite_setup.c`, page 42). Each
+  module has its own pair of pages from the allocation in
+  [banks.inc](banks.inc): the even page for code, literals and constants,
+  the odd page for large private data sets.
+- The output path (`core/nge_util`, `output/`, `devices/nge_cspect`) stays
+  in common memory, so banked code can print its own literals. Banked
+  literals and data may be passed only to common code or code in the same
+  page. A module with both
   per-frame and setup functions is split into two files, as `sprite/` is
   (`nge_sprite.c` common, `nge_sprite_setup.c` banked).
 - A banked function that needs data from another page takes the page as an

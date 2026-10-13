@@ -10,12 +10,11 @@
  * Numbers are 16-bit; there are no long, precision or floating-point forms.
  * For an unknown conversion such as %q, the character after % is written.
  *
- * The functions are banked (NGE_BANKED, page 40): each call maps pages 40-41
- * into slots 6-7 and back. Don't call them while game code has its own page
- * mapped in slot 6 or 7 (see core/nge_bank.h).
+ * In common memory, like the rest of the output path, so banked code can
+ * pass its own string literals (which are in its banked page) to these
+ * functions: nothing is remapped before the strings are read.
  */
 
-#include "core/nge_bank.h"
 #include "output/nge_stream.h"
 
 /**
@@ -24,6 +23,6 @@
  * @param fmt Format string.
  * @return Number of characters written, or NGE_EOF on error.
  */
-int nge_printf(NGE_FILE *stream, const char *fmt, ...) NGE_BANKED;
+int nge_printf(NGE_FILE *stream, const char *fmt, ...);
 
 #endif
