@@ -26,6 +26,10 @@ if [ ! -f "$map" ]; then
     echo "check-banks: map file '$map' not found" >&2
     exit 1
 fi
+if [ ! -d "$srcdir" ]; then
+    echo "check-banks: source directory '$srcdir' not found" >&2
+    exit 1
+fi
 
 # banked_call maps the page into slot 6 ($C000); an odd page is assembled for
 # slot 7 ($E000), so code placed there would be in the wrong place
