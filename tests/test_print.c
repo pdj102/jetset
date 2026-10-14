@@ -1,7 +1,7 @@
 /* nge_print.c: strings, raw writes and number formatting. */
 #include "test.h"
 
-#include "output/nge_print.h"
+#include "io/nge_print.h"
 
 static NGE_FILE *cap;
 

@@ -5,8 +5,8 @@
 
 #include "core/nge_util.h"
 #include "hw/nge_palette.h"
-#include "output/nge_print.h"
-#include "output/nge_tm_stream.h"
+#include "io/nge_print.h"
+#include "io/nge_tm_stream.h"
 #include "tilemap/nge_tilemap.h"
 
 const nge_rect_t screen_map_view = { .x1 = 0, .x2 = 27, .y1 = 0, .y2 = 26 };

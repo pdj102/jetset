@@ -1,9 +1,9 @@
-#include "output/nge_tm_stream.h"
+#include "io/nge_tm_stream.h"
 
 #include <stddef.h>
 
 #include "hw/nge_palette.h"
-#include "output/nge_stream_dev.h"
+#include "io/nge_stream_dev.h"
 #include "tilemap/nge_tilemap.h"
 
 #define BLANK_TILE_ID  0x20

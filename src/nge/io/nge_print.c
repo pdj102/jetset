@@ -1,4 +1,4 @@
-#include "output/nge_print.h"
+#include "io/nge_print.h"
 
 static const uint16_t pow10[] = { 10000, 1000, 100, 10, 1 };
 static const char hex_digits[] = "0123456789ABCDEF";

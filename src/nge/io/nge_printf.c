@@ -1,4 +1,4 @@
-#include "output/nge_printf.h"
+#include "io/nge_printf.h"
 
 #include <stdarg.h>
 #include <stdint.h>

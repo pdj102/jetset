@@ -15,7 +15,7 @@
  * functions: nothing is remapped before the strings are read.
  */
 
-#include "output/nge_stream.h"
+#include "io/nge_stream.h"
 
 /**
  * @brief Write formatted output to a stream.

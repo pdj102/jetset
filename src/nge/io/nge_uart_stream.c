@@ -1,8 +1,8 @@
-#include "output/nge_uart_stream.h"
+#include "io/nge_uart_stream.h"
 
 #include <stddef.h>
 
-#include "output/nge_stream_dev.h"
+#include "io/nge_stream_dev.h"
 #include "devices/nge_uart.h"
 
 /* UART device output function. */

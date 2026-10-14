@@ -3,9 +3,9 @@
 
 #include <arch/zxn.h>
 
-#include "output/nge_cspect_stream.h"
-#include "output/nge_printf.h"
-#include "output/nge_print.h"
+#include "io/nge_cspect_stream.h"
+#include "io/nge_printf.h"
+#include "io/nge_print.h"
 
 static NGE_FILE *d;
 

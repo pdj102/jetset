@@ -1,4 +1,4 @@
-#include "output/nge_stream_dev.h"
+#include "io/nge_stream_dev.h"
 
 #include <stddef.h>
 

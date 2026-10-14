@@ -1,4 +1,4 @@
-#include "output/nge_cspect_stream.h"
+#include "io/nge_cspect_stream.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -6,7 +6,7 @@
 #ifdef NGE_CSPECT
 
 #include "devices/nge_cspect.h"
-#include "output/nge_stream_dev.h"
+#include "io/nge_stream_dev.h"
 
 /* Shared by all debug streams; one extra byte for the NUL */
 static char line[NGE_CSPECT_LINE_MAX + 1];

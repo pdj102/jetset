@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 
-#include "output/nge_printf.h"
+#include "io/nge_printf.h"
 
 static NGE_FILE *cap;
 

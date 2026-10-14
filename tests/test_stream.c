@@ -1,8 +1,8 @@
 /* Stream core (nge_stream.c) and the UART stream device. */
 #include "test.h"
 
-#include "output/nge_stream_dev.h"
-#include "output/nge_uart_stream.h"
+#include "io/nge_stream_dev.h"
+#include "io/nge_uart_stream.h"
 
 static int flush_calls;
 

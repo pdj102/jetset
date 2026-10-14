@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 
-#include "output/nge_cspect_stream.h"
+#include "io/nge_cspect_stream.h"
 #include "core/nge_util.h"
 
 static NGE_FILE *cap;

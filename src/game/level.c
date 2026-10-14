@@ -2,7 +2,7 @@
 
 #include "game/screen.h"
 #include "hw/nge_mmu.h"
-#include "output/nge_tm_stream.h"
+#include "io/nge_tm_stream.h"
 
 nge_map_t level_map;
 

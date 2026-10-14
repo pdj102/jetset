@@ -34,7 +34,7 @@
 
 #include <stdint.h>
 
-#include "output/nge_stream.h"
+#include "io/nge_stream.h"
 #include "core/nge_util.h"
 
 #define NGE_CTRL_CLREOL 0x05 /**< Clear to end of line. */

@@ -83,7 +83,7 @@ the program reaches the stack; otherwise it prints how much space is left.
 The program is linked with z88dk's startup 31, which creates no `stdin` or
 `stdout`. The default startup links z88dk's console drivers (about 3.3K),
 which nothing uses and which would print to the ULA screen memory under the
-tilemap. Don't use the C library's `stdio` functions; use `output/`.
+tilemap. Don't use the C library's `stdio` functions; use `io/`.
 
 ## The stack
 
@@ -162,7 +162,7 @@ code pages.
   path, `nge_util`) **or code in the same page,** and not kept after the
   call returns. A function in another bank would be called through
   `banked_call`, which maps its pages over them. The whole output path stays
-  in common memory for this reason: `core/nge_util`, `output/` (streams,
+  in common memory for this reason: `core/nge_util`, `io/` (streams,
   `nge_print`, `nge_printf`) and `devices/nge_cspect`. The streams use each
   character at once (the CSpect line buffer copies it; the tilemap stream
   draws it), so no stream keeps a pointer to a string.
@@ -262,7 +262,7 @@ or if a `#pragma codeseg` names an odd page.
     functions: a pointer to a banked function doesn't switch banks;
   - `__z88dk_fastcall` functions: `banked_call` overwrites HL, which holds
     their argument;
-  - the output path (`core/nge_util`, `output/`, `devices/nge_cspect`), so
+  - the output path (`core/nge_util`, `io/`, `devices/nge_cspect`), so
     banked code can print its own literals;
   - `nge_mmu`, `nge_hw_init` and interrupt code.
 - **Literals and constants live in the module's page** (`constseg`, above).

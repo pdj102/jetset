@@ -12,7 +12,7 @@
 
 #include <stdint.h>
 
-#include "output/nge_stream.h"
+#include "io/nge_stream.h"
 
 /**
  * @brief Write raw bytes to a stream.

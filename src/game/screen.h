@@ -20,7 +20,7 @@
  */
 
 #include "core/nge_types.h"
-#include "output/nge_stream.h"
+#include "io/nge_stream.h"
 
 /** The map view, in tilemap tiles (the window of the level's map). */
 extern const nge_rect_t screen_map_view;

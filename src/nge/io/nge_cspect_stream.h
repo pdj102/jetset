@@ -14,7 +14,7 @@
  * nge_open_cspect_debug() returns NULL.
  */
 
-#include "output/nge_stream.h"
+#include "io/nge_stream.h"
 
 /** Maximum characters sent to the console in one line. */
 #ifndef NGE_CSPECT_LINE_MAX

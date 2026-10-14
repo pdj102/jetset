@@ -38,7 +38,7 @@ Includes are written from `src/nge`, with the folder:
 | `sprite/` | Hardware sprites |
 | `map/` | A tile map larger than the screen, shown through a tilemap window |
 | `devices/` | Raw device drivers (CSpect DebugOut, UART), no streams |
-| `output/` | Streams, print and printf, and the stream devices for the tilemap, CSpect and UART |
+| `io/` | Streams (output and input), print and printf, and the stream devices for the tilemap, CSpect and UART |
 | `ecs/` | Entity component system core, data every entity has: `nge_entity` (IDs, lifecycle, flags, component masks; lifecycle banked in pages 48/49), `nge_owner` (the owner of every entity: an entity, the world or an area; changes banked in page 48), `nge_ecs` (ECS start-up: the ECS data page in slot 0 and its guard area) |
 | `ecs/components/` | Components shared by several systems, with their data in slot 0: `nge_location` (tile and pixel position) |
 | `ecs/systems/` | Systems, each with its private components as page data: `nge_render` (draws the sprite component as hardware sprites; pages 52/53) |
@@ -55,16 +55,16 @@ core, and the core neither.
 A folder may include only the folders before it in this chain:
 
 ```
-core  <-  hw  <-  tilemap, sprite, devices, input, sound  <-  output  <-  map, event  <-  ecs  <-  game
+core  <-  hw  <-  tilemap, sprite, devices, input, sound  <-  io  <-  map, event  <-  ecs  <-  game
 ```
 
-- Stream devices live in `output/`, not with the hardware they drive, so
+- Stream devices live in `io/`, not with the hardware they drive, so
   `tilemap/` and `devices/` work without streams.
 - `map/`, `event/` and `ecs/` don't touch hardware registers themselves (the
   render system drives sprites through `sprite/`), so they can be tested
   entirely on the PC.
 - One exception: `core/nge_util` prints asserts and debug output to a
-  stream, so it includes `output/nge_printf.h` and `output/nge_stream.h`.
+  stream, so it includes `io/nge_printf.h` and `io/nge_stream.h`.
 
 ## Banked code
 
@@ -91,7 +91,7 @@ code" in [docs/memory_map.md](../../docs/memory_map.md)):
   module's ECS data file `nge_<module>_cdata.c` with the marker
   `/* nge-dataseg: PAGE_50 */` (uninitialised variables only). See "ECS
   data in slot 0" in `docs/memory_map.md` for which data goes where.
-- The output path (`core/nge_util`, `output/`, `devices/nge_cspect`) stays
+- The output path (`core/nge_util`, `io/`, `devices/nge_cspect`) stays
   in common memory, so banked code can print its own literals. Banked
   literals and data may be passed only to common code or code in the same
   page. A module with both

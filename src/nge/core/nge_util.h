@@ -13,8 +13,8 @@
 #include "core/nge_types.h"
 /* The assert and debug output is printed to a stream: the one place where
    core depends on a higher layer (see src/nge/README.md) */
-#include "output/nge_printf.h"
-#include "output/nge_stream.h"
+#include "io/nge_printf.h"
+#include "io/nge_stream.h"
 
 /***************************************************
  * public defines

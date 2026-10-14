@@ -10,7 +10,7 @@
 #include "hw/nge_frame.h"
 #include "hw/nge_hw.h"
 #include "map/nge_map.h"
-#include "output/nge_cspect_stream.h"
+#include "io/nge_cspect_stream.h"
 #include "sprite/nge_sprite.h"
 
 #include "game/actors.h"

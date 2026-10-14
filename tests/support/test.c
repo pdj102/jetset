@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "output/nge_stream_dev.h"
+#include "io/nge_stream_dev.h"
 #include "core/nge_util.h"
 
 /* ---- Checks ---- */

@@ -3,8 +3,8 @@
 
 #include <stdlib.h>
 
-#include "output/nge_print.h"
-#include "output/nge_tm_stream.h"
+#include "io/nge_print.h"
+#include "io/nge_tm_stream.h"
 
 static char row[NGE_TILEMAP_WIDTH + 1];
 

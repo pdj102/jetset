@@ -11,7 +11,7 @@
 
 #include <stdint.h>
 
-#include "output/nge_stream.h"
+#include "io/nge_stream.h"
 #include "tilemap/nge_tilemap.h"
 #include "core/nge_util.h"
 
