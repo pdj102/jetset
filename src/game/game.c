@@ -9,7 +9,7 @@
 #include "map/nge_map.h"
 
 #include "game/actors.h"
-#include "game/level.h"
+#include "game/level/level.h"
 #include "game/screen.h"
 
 /* Characters of the movement keys (nge_key_ascii): cursor keys */

@@ -10,13 +10,13 @@ BINDIR := bin
 #   src/main.c        entry point
 #   src/nge/*/        the nge game engine library (see src/nge/README.md),
 #                     and one level of subfolders (ecs/components, ecs/systems)
-#   src/game/         Jetset game code
+#   src/game/         game code, and one level of subfolders (banked game modules)
 #   src/data/         graphics and other data (.asm)
 SRCS := \
 	src/main.c \
 	$(sort $(wildcard src/nge/*/*.c src/nge/*/*/*.c)) \
 	$(sort $(wildcard src/nge/*/*.asm src/nge/*/*/*.asm)) \
-	$(sort $(wildcard src/game/*.c)) \
+	$(sort $(wildcard src/game/*.c src/game/*/*.c)) \
 	$(sort $(wildcard src/data/*.asm))
 
 OBJS := $(patsubst src/%,$(OBJDIR)/%.o,$(basename $(SRCS)))

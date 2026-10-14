@@ -1,18 +1,19 @@
-#include "game/level.h"
+/*
+ * Setting up and building a level: banked in page 102 with its literals and
+ * constants (the first banked game module, see "Banked code" in
+ * docs/memory_map.md). It runs once per level. The map and the per-turn
+ * checks are in common memory, in level.c.
+ */
+#ifdef __SDCC
+#pragma codeseg PAGE_102
+#pragma constseg PAGE_102
+#endif
+
+#include "game/level/level_internal.h"
 
 #include "game/screen.h"
 #include "hw/nge_mmu.h"
 #include "io/nge_tm_stream.h"
-
-nge_map_t level_map;
-
-/* Map cells: an ASCII font tile and its text colour (palette bank, attribute bits 7-4) */
-#define ROCK      0      /* tile 0: transparent */
-#define WALL_H    '-'
-#define WALL_V    '|'
-#define FLOOR     '.'
-#define DOOR      '+'
-#define CORRIDOR  '#'
 
 static void put(uint8_t x, uint8_t y, uint8_t id, uint8_t ink)
 {
@@ -31,11 +32,11 @@ static void room(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2)
     for (y = y1; y <= y2; y++) {
         for (x = x1; x <= x2; x++) {
             if (y == y1 || y == y2) {
-                put(x, y, WALL_H, NGE_INK_WHITE);
+                put(x, y, LEVEL_WALL_H, NGE_INK_WHITE);
             } else if (x == x1 || x == x2) {
-                put(x, y, WALL_V, NGE_INK_WHITE);
+                put(x, y, LEVEL_WALL_V, NGE_INK_WHITE);
             } else {
-                put(x, y, FLOOR, NGE_INK_YELLOW);
+                put(x, y, LEVEL_FLOOR, NGE_INK_YELLOW);
             }
         }
     }
@@ -43,21 +44,21 @@ static void room(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2)
 
 static void door(uint8_t x, uint8_t y)
 {
-    put(x, y, DOOR, NGE_INK_RED);
+    put(x, y, LEVEL_DOOR, NGE_INK_RED);
 }
 
 /* Corridors: horizontal from x1 to x2 on row y, vertical from y1 to y2 in column x */
 static void corridor_h(uint8_t x1, uint8_t x2, uint8_t y)
 {
     for (; x1 <= x2; x1++) {
-        put(x1, y, CORRIDOR, NGE_INK_CYAN);
+        put(x1, y, LEVEL_CORRIDOR, NGE_INK_CYAN);
     }
 }
 
 static void corridor_v(uint8_t x, uint8_t y1, uint8_t y2)
 {
     for (; y1 <= y2; y1++) {
-        put(x, y1, CORRIDOR, NGE_INK_CYAN);
+        put(x, y1, LEVEL_CORRIDOR, NGE_INK_CYAN);
     }
 }
 
@@ -74,7 +75,7 @@ static void build_test_layout(void)
 
     for (y = 0; y < LEVEL_HEIGHT; y++) {
         for (x = 0; x < LEVEL_WIDTH; x++) {
-            put(x, y, ROCK, 0);
+            put(x, y, LEVEL_ROCK, 0);
         }
     }
 
@@ -97,18 +98,11 @@ static void build_test_layout(void)
     door(15, 20);
 }
 
-void level_init(void)
+void level_init(void) NGE_BANKED
 {
     nge_mmu_map(LEVEL_MAP_SLOT, LEVEL_MAP_PAGE);
     nge_map_init(&level_map, (nge_tile_t *)NGE_MMU_SLOT_ADDR(LEVEL_MAP_SLOT),
                  LEVEL_WIDTH, LEVEL_HEIGHT, &screen_map_view);
     build_test_layout();
     nge_map_clip_sprites(&level_map);
-}
-
-uint8_t level_is_open(uint8_t x, uint8_t y)
-{
-    uint8_t id = NGE_MAP_TILE(&level_map, x, y).tile_id;
-
-    return id == FLOOR || id == DOOR || id == CORRIDOR;
 }

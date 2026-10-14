@@ -6,9 +6,20 @@ Game code: the basis of a classic roguelike.
 |---|---|
 | `game.{h,c}` | The main loop (pre-update, the current state's update, post-update) and the game states: title, play, inventory, targeting, dead |
 | `screen.{h,c}` | Screen layout: the map view, the stats window and the message window |
-| `level.{h,c}` | The current level: one area, its map in slot 1, a test layout |
+| `level/` | The current level: one area, its map in slot 1, a test layout. Banked: `level.c` (common) and `level_bank.c` (page 102) |
 | `actors.{h,c}` | The level's entities: the player and a test object |
 
 Code here uses the nge library (`src/nge`); nge never includes anything from
 here. New `.c` files are built automatically (see the Makefile). Includes are
-written from `src`: `#include "game/level.h"`.
+written from `src`: `#include "game/level/level.h"`.
+
+## Banked game modules
+
+A module with code that runs rarely is banked: it moves into its own folder,
+`src/game/<module>/`, with `<module>.c` (common: per-frame and per-turn code
+and data), `<module>_bank.c` (its even page: rarely run code with its
+literals) and, if needed, `<module>_pdata.c` (its odd page: large private
+data). Its page pair comes from the game code range in
+`src/nge/banks.inc` (102-131). See "Banked game modules" in
+`docs/memory_map.md` for the rules. Modules not yet banked stay single files
+here.

@@ -7,10 +7,11 @@
 // scripts/check-banks.sh fails the build if banked code is in a section
 // missing from this list. See "Page allocation" in docs/memory_map.md.
 //
-// Target: 2MB Next, pages 0-223. Each module gets a pair of pages: the even
-// page for its banked code and its string literals and constants (8K,
-// codeseg and constseg PAGE_n), the odd page for large variables and tables
-// private to it (its page data file, nge_<module>_pdata.c, with the marker
+// Target: 2MB Next, pages 0-223. Each module with banked code, nge's or the
+// game's, gets a pair of pages: the even page for its banked code and its
+// string literals and constants (8K, codeseg and constseg PAGE_n), the odd
+// page for large variables and tables private to it (its page data file,
+// nge_<module>_pdata.c or, in the game, <module>_pdata.c, with the marker
 // /* nge-dataseg: PAGE_n */), which is mapped into slot 7 whenever its code
 // runs.
 //
@@ -29,9 +30,12 @@
 //             52/53  render system: code / sprite component and working data
 //   88-99   further nge modules (6 pairs)
 //             88/89  input: setup, ASCII tables and waiting / (unused)
-//   100-223 game code and assets
-//             100  demo map (slot 1)
-//             101  demo sprite patterns and palette (slot 7, via the loaders)
+//   100-223 game
+//             100      level map (slot 1)
+//             101      sprite patterns and palette (slot 7, via the loaders)
+//             102-131  game code pairs (15), from 102 up:
+//                        102/103  level: setting up and building a level / (unused)
+//             132-223  game assets (maps, graphics, level data)
 
 // nge sprite: setup functions and loaders
 #pragma define CRT_ORG_PAGE_42 = 0x2AC000
@@ -48,3 +52,6 @@
 
 // nge input: setup, ASCII tables and waiting
 #pragma define CRT_ORG_PAGE_88 = 0x58C000
+
+// game level: setting up and building a level
+#pragma define CRT_ORG_PAGE_102 = 0x66C000

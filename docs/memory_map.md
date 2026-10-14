@@ -71,10 +71,10 @@ The current CSpect build (`bin/main.map`) uses:
 
 | Address | Contents |
 |---|---|
-| `$6A00`-`$AE49` | Code and constant data (`CODE`) |
-| `$AE4A`-`$AE5B` | Initialised data (`DATA`) |
-| `$AE5C`-`$AF40` | Uninitialised data (`BSS`) |
-| `$AF41`-`$BDFF` | Free, about 3.7K (about 9.1K in the hardware build, without asserts and their messages) |
+| `$6A00`-`$AC44` | Code and constant data (`CODE`) |
+| `$AC45`-`$AC56` | Initialised data (`DATA`) |
+| `$AC57`-`$AD3B` | Uninitialised data (`BSS`) |
+| `$AD3C`-`$BDFF` | Free, about 4.2K (about 9.6K in the hardware build, without asserts and their messages) |
 | `$BE00`-`$BFFF` | Stack, 512 bytes |
 
 The link step checks `__BSS_END_tail` in the map file and fails the build if
@@ -128,8 +128,8 @@ and 7.
 
 ### Page allocation
 
-The target is a 2MB Next: pages 0-223. Every module that has banked code
-gets a pair of pages: the even page for its code, string literals and
+The target is a 2MB Next: pages 0-223. Every module that has banked code,
+nge's or the game's, gets a pair of pages: the even page for its code, string literals and
 constants (8K: `codeseg` and `constseg PAGE_n`), the odd page for large data
 sets private to it. The allocation is kept in
 [src/nge/banks.inc](../src/nge/banks.inc), which also sets the origins of the
@@ -145,7 +145,10 @@ code pages.
 | 46/47 | nge `event` (reserved) |
 | 48-87 | nge `ecs` (20 pairs): 48/49 `entity` and `owner` (lifecycle and ownership code / lifecycle bookkeeping); 50 ECS data, mapped permanently into slot 0 (see [ECS data in slot 0](#ecs-data-in-slot-0)); 51 reserved; 52/53 `render` system |
 | 88-99 | Further nge modules (6 pairs): 88/89 `input` (setup, ASCII tables and waiting / unused) |
-| 100-223 | Game code and assets; the game uses 100 (level map, slot 1) and 101 (sprites) |
+| 100 | Game: the level map (slot 1) |
+| 101 | Game: sprite patterns and palette (slot 7, through the loaders) |
+| 102-131 | Game code pairs (15), allocated from 102 up: 102/103 `level` (setting up and building a level / unused) |
+| 132-223 | Game assets: maps, graphics, level data |
 
 - **Module code, string literals and constants:** the even page. A banked
   `.c` file sets both `#pragma codeseg PAGE_n` and `#pragma constseg
@@ -174,7 +177,9 @@ code pages.
 Functions that don't need to be in memory all the time can live in a banked
 page and be called through z88dk's `banked_call`. On each call it maps the
 function's page into slot 6 and the next page into slot 7, calls it, and maps
-the previous pages back. Banked so far:
+the previous pages back. The same mechanism and rules apply to nge modules
+and to game modules (see [Banked game modules](#banked-game-modules)).
+Banked so far:
 
 | Pages | Module | Code (even page) | Page data (odd page) |
 |---|---|---|---|
@@ -182,6 +187,7 @@ the previous pages back. Banked so far:
 | 48/49 | `ecs` entity, owner | lifecycle functions (`nge_entity_life.c`) and the ownership functions that change or search the owner table (`nge_owner_set.c`), with literals, about 0.6K | lifecycle bookkeeping: free and dying stacks, alive positions (`nge_entity_pdata.c`, 302 bytes) |
 | 52/53 | `ecs` render system | the system (`ecs/systems/nge_render.c`), with literals, about 2.4K | the sprite component (10 bytes per entity), the sprite records for hardware sprites 0 to `NGE_RENDER_SPRITES`-1, and its working data (`nge_render_pdata.c`, about 1.8K) |
 | 88/89 | `input` | setup, the key-to-ASCII tables and waiting (`input/nge_input_setup.c`, about 0.5K) | none |
+| 102/103 | game `level` | setting up and building a level, with literals (`game/level/level_bank.c`, about 0.5K) | none yet |
 
 How a module is banked:
 
@@ -271,6 +277,46 @@ or if a `#pragma codeseg` names an odd page.
   alone cost about 45 bytes per assert site in CSpect builds.
 - Return values in HL and DE (up to 32 bits) and stack arguments, including
   variadic ones, work as normal.
+
+### Banked game modules
+
+Game code is banked the same way as nge's, with a module's pair from the
+game code range (102-131) and its origin in
+[banks.inc](../src/nge/banks.inc). `level` is the first. A banked game
+module lives in its own folder, `src/game/<module>/`, split by where each
+part runs:
+
+| File | Memory | Contents |
+|---|---|---|
+| `<module>.h` | | the public interface; banked functions declared `NGE_BANKED` |
+| `<module>_internal.h` | | shared between the module's files only |
+| `<module>.c` | common | code run every frame or every turn, and data others read |
+| `<module>_bank.c` | even page | rarely run code (set-up, generation, menus), with `#pragma codeseg` and `constseg PAGE_n` |
+| `<module>_pdata.c` | odd page | large private variables and tables, with the `nge-dataseg` marker; only when needed |
+
+```text
+src/game/level/
+  level.h, level_internal.h
+  level.c          common: level_map, level_is_open()   (every frame / every turn)
+  level_bank.c     page 102: level_init() and the layout builder   (once per level)
+```
+
+- **What stays common:** anything called every frame or many times a turn
+  (`level_is_open()` is called for every move, and will be for every monster
+  move), and data read by common code (`level_map`, read by the map and
+  render systems every frame).
+- **A game function that receives literals or data from a banked module
+  stays common,** or is in the same page. `screen_message()` is common, so
+  `level_bank.c` can pass it its own literals; a banked `screen` module
+  would map its own page over them.
+- **Base names stay unique across the project** (`level.c`,
+  `level_bank.c`): z88dk object and symbol names are global.
+- The Makefile builds `src/game/*/*.c` automatically, and
+  [scripts/check-banks.sh](../scripts/check-banks.sh) checks game modules as
+  it checks nge's. Game modules are not covered by the PC tests; check them
+  in CSpect.
+- Game modules not yet banked stay as single files in `src/game/` and move
+  into a folder when they are banked.
 
 ### Page data: a module's variables and tables in its odd page
 
@@ -486,7 +532,7 @@ The area maps its map's page into slot 1 when it starts, and the page stays
 there while the area is active. A map of up to 80 x 48 tiles (7.5K, see
 `NGE_MAP_STRIDE` and `NGE_MAP_MAX_HEIGHT` in
 [nge_map.h](../src/nge/map/nge_map.h)) fits in the slot. The game's level
-([level.c](../src/game/level.c)) maps page 100 there and builds its test
+([level_bank.c](../src/game/level/level_bank.c)) maps page 100 there and builds its test
 layout at startup:
 
 ```c

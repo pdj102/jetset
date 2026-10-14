@@ -5,7 +5,7 @@
 #include "ecs/components/nge_location.h"
 #include "ecs/nge_owner.h"
 #include "ecs/systems/nge_render.h"
-#include "game/level.h"
+#include "game/level/level.h"
 #include "game/screen.h"
 #include "sprite/nge_sprite.h"
 

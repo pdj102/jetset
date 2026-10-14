@@ -16,7 +16,7 @@
 
 #include "game/actors.h"
 #include "game/game.h"
-#include "game/level.h"
+#include "game/level/level.h"
 #include "game/screen.h"
 
 int main(void)
