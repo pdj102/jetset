@@ -18,6 +18,9 @@
 /** Device-specific character output function. */
 typedef int (*nge_put_fn)(uint8_t c, NGE_FILE *stream);
 
+/** Device-specific character input function: a character, or NGE_EOF if none is waiting. */
+typedef int (*nge_get_fn)(NGE_FILE *stream);
+
 /** Device-specific function that sends any buffered output. */
 typedef void (*nge_flush_fn)(NGE_FILE *stream);
 
@@ -39,7 +42,8 @@ typedef struct nge_tm_state {
  * @brief An output stream.
  */
 struct nge_file {
-    nge_put_fn put;     /**< Device output function; NULL for a free slot. */
+    nge_put_fn put;     /**< Device output function; NULL for an input-only stream. */
+    nge_get_fn get;     /**< Device input function; NULL for an output-only stream. */
     nge_flush_fn flush; /**< Device flush function; NULL if unbuffered. */
     union {
         nge_tm_state_t tm; /**< Tilemap window state. */
@@ -47,11 +51,13 @@ struct nge_file {
 };
 
 /**
- * @brief Claim a free stream slot for a device.
- * @param put Device output function.
+ * @brief Claim a free stream slot for a device. A slot is free when it has
+ *        neither a put nor a get function.
+ * @param put Device output function, or NULL for an input-only device.
+ * @param get Device input function, or NULL for an output-only device.
  * @param flush Device flush function, or NULL if the device is unbuffered.
  * @return The stream, or NULL if no slot is free.
  */
-NGE_FILE *nge_stream_alloc(nge_put_fn put, nge_flush_fn flush);
+NGE_FILE *nge_stream_alloc(nge_put_fn put, nge_get_fn get, nge_flush_fn flush);
 
 #endif

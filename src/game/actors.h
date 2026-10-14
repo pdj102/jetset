@@ -11,6 +11,7 @@
  */
 
 #include "ecs/nge_entity.h"
+#include "input/nge_input.h"
 
 /* Render layers: higher layers are drawn on top */
 #define LAYER_OBJECTS  1
@@ -25,5 +26,12 @@ extern nge_entity_id_t actor_potion;
  * Call after nge_sprite_init(), level_init(), nge_ecs_init() and nge_render_init().
  */
 void actors_init(void);
+
+/**
+ * @brief Carry out a player command from a key event: the cursor keys
+ *        (and CAPS+5-8) or h j k l move one tile, blocked by walls; the
+ *        camera follows. Other keys are ignored.
+ */
+void actors_player_command(nge_key_event_t ev);
 
 #endif

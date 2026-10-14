@@ -27,7 +27,8 @@
 //                    $0000-$00FF is a guard area against null pointers)
 //             51     reserved (e.g. a second set of ECS data)
 //             52/53  render system: code / sprite component and working data
-//   88-99   further nge modules (reserved: 6 pairs)
+//   88-99   further nge modules (6 pairs)
+//             88/89  input: setup, ASCII tables and waiting / (unused)
 //   100-223 game code and assets
 //             100  demo map (slot 1)
 //             101  demo sprite patterns and palette (slot 7, via the loaders)
@@ -44,3 +45,6 @@
 
 // nge ecs render system
 #pragma define CRT_ORG_PAGE_52 = 0x34C000
+
+// nge input: setup, ASCII tables and waiting
+#pragma define CRT_ORG_PAGE_88 = 0x58C000

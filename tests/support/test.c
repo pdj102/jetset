@@ -71,7 +71,7 @@ static int capture_put(uint8_t c, NGE_FILE *stream)
 
 NGE_FILE *test_capture_open(void)
 {
-    return nge_stream_alloc(capture_put, NULL);
+    return nge_stream_alloc(capture_put, NULL, NULL);
 }
 
 const char *test_capture_text(void)
@@ -205,5 +205,5 @@ void test_init(void)
     test_cspect_hook = NULL;
 
     /* Unexpected assert messages appear in the test output */
-    nge_util_set_debug_stream(nge_stream_alloc(stdout_put, NULL));
+    nge_util_set_debug_stream(nge_stream_alloc(stdout_put, NULL, NULL));
 }

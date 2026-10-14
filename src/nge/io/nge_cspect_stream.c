@@ -48,7 +48,7 @@ static int cspect_put(uint8_t c, NGE_FILE *stream)
 
 NGE_FILE *nge_open_cspect_debug(void)
 {
-    return nge_stream_alloc(cspect_put, cspect_flush);
+    return nge_stream_alloc(cspect_put, NULL, cspect_flush);
 }
 
 #else

@@ -25,15 +25,15 @@ static void test_pool(void)
     int i;
 
     /* Open until the pool is full; test_init() already used one slot */
-    while (n <= NGE_FILE_MAX && (s[n] = nge_stream_alloc(dummy_put, NULL)) != NULL) {
+    while (n <= NGE_FILE_MAX && (s[n] = nge_stream_alloc(dummy_put, NULL, NULL)) != NULL) {
         n++;
     }
     CHECK(n == NGE_FILE_MAX - 1);
 
     /* Closing a slot lets the next open reuse it */
     nge_close(s[2]);
-    CHECK(nge_stream_alloc(dummy_put, NULL) == s[2]);
-    CHECK(nge_stream_alloc(dummy_put, NULL) == NULL);
+    CHECK(nge_stream_alloc(dummy_put, NULL, NULL) == s[2]);
+    CHECK(nge_stream_alloc(dummy_put, NULL, NULL) == NULL);
 
     for (i = 0; i < n; i++) {
         nge_close(s[i]);
@@ -42,7 +42,7 @@ static void test_pool(void)
 
 static void test_putc_and_close(void)
 {
-    NGE_FILE *s = nge_stream_alloc(dummy_put, NULL);
+    NGE_FILE *s = nge_stream_alloc(dummy_put, NULL, NULL);
 
     CHECK(nge_putc('A', s) == 'A');
     nge_close(s);
@@ -56,7 +56,7 @@ static void test_putc_and_close(void)
 
 static void test_flush_hook(void)
 {
-    NGE_FILE *s = nge_stream_alloc(dummy_put, count_flush);
+    NGE_FILE *s = nge_stream_alloc(dummy_put, NULL, count_flush);
 
     flush_calls = 0;
     nge_flush(s);
@@ -67,7 +67,7 @@ static void test_flush_hook(void)
     CHECK(flush_calls == 2);
 
     /* Devices without a flush hook */
-    s = nge_stream_alloc(dummy_put, NULL);
+    s = nge_stream_alloc(dummy_put, NULL, NULL);
     nge_flush(s);
     nge_close(s);
 }

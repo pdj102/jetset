@@ -4,14 +4,17 @@
 
 static NGE_FILE streams[NGE_FILE_MAX];
 
-NGE_FILE *nge_stream_alloc(nge_put_fn put, nge_flush_fn flush)
+NGE_FILE *nge_stream_alloc(nge_put_fn put, nge_get_fn get, nge_flush_fn flush)
 {
     NGE_FILE *s = streams;
     uint8_t i;
 
+    nge_util_assert(put != NULL || get != NULL);
+
     for (i = NGE_FILE_MAX; i; i--, s++) {
-        if (s->put == NULL) {
+        if (s->put == NULL && s->get == NULL) {
             s->put = put;
+            s->get = get;
             s->flush = flush;
             return s;
         }
@@ -25,6 +28,14 @@ int nge_putc(uint8_t c, NGE_FILE *stream)
         return NGE_EOF;
     }
     return stream->put(c, stream);
+}
+
+int nge_getc(NGE_FILE *stream)
+{
+    if (stream == NULL || stream->get == NULL) {
+        return NGE_EOF;
+    }
+    return stream->get(stream);
 }
 
 void nge_flush(NGE_FILE *stream)
@@ -42,4 +53,5 @@ void nge_close(NGE_FILE *stream)
     }
     nge_flush(stream);
     stream->put = NULL;
+    stream->get = NULL;
 }

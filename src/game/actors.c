@@ -6,6 +6,7 @@
 #include "ecs/nge_owner.h"
 #include "ecs/systems/nge_render.h"
 #include "game/level.h"
+#include "game/screen.h"
 #include "sprite/nge_sprite.h"
 
 #define PLAYER_FRAME_RATE  25   /* frames per animation step: two steps a second */
@@ -39,4 +40,51 @@ void actors_init(void)
 
     /* A test object in room C */
     actor_potion = create(14, 24, DEMO_SPRITE_POTION, LAYER_OBJECTS);
+}
+
+/* Characters of the movement keys (nge_key_ascii): cursor keys and h j k l */
+#define CHAR_LEFT   8
+#define CHAR_RIGHT  9
+#define CHAR_DOWN   10
+#define CHAR_UP     11
+
+void actors_player_command(nge_key_event_t ev)
+{
+    int8_t dx = 0;
+    int8_t dy = 0;
+    uint8_t x;
+    uint8_t y;
+
+    switch (nge_key_ascii(ev)) {
+    case CHAR_LEFT:
+    case 'h':
+        dx = -1;
+        break;
+    case CHAR_RIGHT:
+    case 'l':
+        dx = 1;
+        break;
+    case CHAR_UP:
+    case 'k':
+        dy = -1;
+        break;
+    case CHAR_DOWN:
+    case 'j':
+        dy = 1;
+        break;
+    default:
+        return;
+    }
+
+    x = (uint8_t)(NGE_LOCATION_X(actor_player) + dx);
+    y = (uint8_t)(NGE_LOCATION_Y(actor_player) + dy);
+    if (!level_is_open(x, y)) {
+        screen_message("You bump into a wall.");
+        return;
+    }
+    nge_location_set(actor_player, x, y);
+    nge_map_centre_camera(&level_map, x, y);
+    if (x == NGE_LOCATION_X(actor_potion) && y == NGE_LOCATION_Y(actor_potion)) {
+        screen_message("You see a potion here.");
+    }
 }

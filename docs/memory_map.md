@@ -71,10 +71,10 @@ The current CSpect build (`bin/main.map`) uses:
 
 | Address | Contents |
 |---|---|
-| `$6A00`-`$A228` | Code and constant data (`CODE`) |
-| `$A229`-`$A22F` | Initialised data (`DATA`) |
-| `$A230`-`$A2E2` | Uninitialised data (`BSS`) |
-| `$A2E3`-`$BDFF` | Free, about 6.8K (about 11.7K in the hardware build, without asserts and their messages) |
+| `$6A00`-`$AB9B` | Code and constant data (`CODE`) |
+| `$AB9C`-`$ABAC` | Initialised data (`DATA`) |
+| `$ABAD`-`$AC8E` | Uninitialised data (`BSS`) |
+| `$AC8F`-`$BDFF` | Free, about 4.4K (about 9.8K in the hardware build, without asserts and their messages) |
 | `$BE00`-`$BFFF` | Stack, 512 bytes |
 
 The link step checks `__BSS_END_tail` in the map file and fails the build if
@@ -139,12 +139,12 @@ code pages.
 |---|---|
 | 0-31 | System: program (4-5), video (10-11), bank 7 (14-15), Layer 2 (16-31) |
 | 32-39 | Spare |
-| 40/41 | nge `output` (reserved; the output path stays in common memory) |
+| 40/41 | nge `io` (reserved; the output path stays in common memory) |
 | 42/43 | nge `sprite` (setup functions and loaders) |
 | 44/45 | nge `map` (reserved; its code runs every frame and is in common memory) |
 | 46/47 | nge `event` (reserved) |
 | 48-87 | nge `ecs` (20 pairs): 48/49 `entity` and `owner` (lifecycle and ownership code / lifecycle bookkeeping); 50 ECS data, mapped permanently into slot 0 (see [ECS data in slot 0](#ecs-data-in-slot-0)); 51 reserved; 52/53 `render` system |
-| 88-99 | Further nge modules (reserved: 6 pairs) |
+| 88-99 | Further nge modules (6 pairs): 88/89 `input` (setup, ASCII tables and waiting / unused) |
 | 100-223 | Game code and assets; the game uses 100 (level map, slot 1) and 101 (sprites) |
 
 - **Module code, string literals and constants:** the even page. A banked
@@ -181,6 +181,7 @@ the previous pages back. Banked so far:
 | 42/43 | `sprite` | hardware set-up functions and loaders, with literals (`nge_sprite_setup.c`, about 1.1K) | none |
 | 48/49 | `ecs` entity, owner | lifecycle functions (`nge_entity_life.c`) and the ownership functions that change or search the owner table (`nge_owner_set.c`), with literals, about 0.6K | lifecycle bookkeeping: free and dying stacks, alive positions (`nge_entity_pdata.c`, 302 bytes) |
 | 52/53 | `ecs` render system | the system (`ecs/systems/nge_render.c`), with literals, about 2.4K | the sprite component (10 bytes per entity), the sprite records for hardware sprites 0 to `NGE_RENDER_SPRITES`-1, and its working data (`nge_render_pdata.c`, about 1.8K) |
+| 88/89 | `input` | setup, the key-to-ASCII tables and waiting (`input/nge_input_setup.c`, about 0.5K) | none |
 
 How a module is banked:
 

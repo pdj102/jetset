@@ -37,13 +37,14 @@ Includes are written from `src/nge`, with the folder:
 | `tilemap/` | Tilemap layer |
 | `sprite/` | Hardware sprites |
 | `map/` | A tile map larger than the screen, shown through a tilemap window |
+| `input/` | Keyboard: a per-frame snapshot of the keys (held, pressed, released), key events with auto-repeat, ASCII (`nge_input`; setup and tables banked in page 88) |
 | `devices/` | Raw device drivers (CSpect DebugOut, UART), no streams |
-| `io/` | Streams (output and input), print and printf, and the stream devices for the tilemap, CSpect and UART |
+| `io/` | Streams (output and input), print and printf, the stream devices for the tilemap, CSpect, UART and keyboard, and the line editor (`nge_line`) |
 | `ecs/` | Entity component system core, data every entity has: `nge_entity` (IDs, lifecycle, flags, component masks; lifecycle banked in pages 48/49), `nge_owner` (the owner of every entity: an entity, the world or an area; changes banked in page 48), `nge_ecs` (ECS start-up: the ECS data page in slot 0 and its guard area) |
 | `ecs/components/` | Components shared by several systems, with their data in slot 0: `nge_location` (tile and pixel position) |
 | `ecs/systems/` | Systems, each with its private components as page data: `nge_render` (draws the sprite component as hardware sprites; pages 52/53) |
 
-Planned: `input/` (keyboard, joystick), `sound/` (AY), `event/` (event
+Planned: more of `input/` (joysticks, actions), `sound/` (AY), `event/` (event
 queue), more of `ecs/` (components, systems, deferred clean-up).
 
 Where an ECS file goes follows where its data goes: a component shared by

@@ -3,11 +3,13 @@
 
 /**
  * @file nge_stream.h
- * @brief Device-independent character output streams.
+ * @brief Device-independent character streams, for output and input.
  *
- * Streams are opened by a device driver (see nge_tm_stream.h and
- * nge_uart_stream.h) and written through nge_putc() or the helpers in
- * nge_print.h.
+ * Streams are opened by a device driver (see nge_tm_stream.h,
+ * nge_uart_stream.h and nge_kbd_stream.h). Output streams are written
+ * through nge_putc() or the helpers in nge_print.h; input streams are read
+ * with nge_getc(), which never waits, or the blocking helpers and the line
+ * editor in nge_line.h.
  */
 
 #include <stdint.h>
@@ -20,7 +22,7 @@
 /** Value returned on error. */
 #define NGE_EOF (-1)
 
-/** An output stream. Opaque outside device drivers. */
+/** A stream. Opaque outside device drivers. */
 typedef struct nge_file NGE_FILE;
 
 /**
@@ -30,6 +32,14 @@ typedef struct nge_file NGE_FILE;
  * @return c on success, or NGE_EOF on error.
  */
 int nge_putc(uint8_t c, NGE_FILE *stream);
+
+/**
+ * @brief Read a character from a stream, without waiting.
+ * @param stream Open stream.
+ * @return The next character, or NGE_EOF if none is waiting or the stream
+ *         is not an input stream.
+ */
+int nge_getc(NGE_FILE *stream);
 
 /**
  * @brief Send any output the device is holding in a buffer.

@@ -1,10 +1,13 @@
 #include "game/screen.h"
 
 #include <stddef.h>
+#include <string.h>
 #include <arch/zxn.h>
 
 #include "core/nge_util.h"
 #include "hw/nge_palette.h"
+#include "io/nge_kbd_stream.h"
+#include "io/nge_line.h"
 #include "io/nge_print.h"
 #include "io/nge_tm_stream.h"
 #include "tilemap/nge_tilemap.h"
@@ -15,6 +18,9 @@ static const nge_rect_t message_area = { .x1 = 0, .x2 = 39, .y1 = 27, .y2 = 31 }
 
 NGE_FILE *screen_stats;
 NGE_FILE *screen_messages;
+char screen_name[SCREEN_NAME_MAX + 1] = "Rogue";
+
+#define STATS_ROW_HELD  10   /* stats window row of the SPACE held marker */
 
 /* Game graphics palette (bank 0); text colours are banks 12-15 (nge_tm_load_ink_palette) */
 static const nge_palette_entry_9_t tile_palette[] = {
@@ -52,7 +58,9 @@ void screen_draw_stats(void)
 {
     nge_tm_cls(screen_stats);
     nge_tm_ink(NGE_INK_YELLOW, screen_stats);
-    nge_puts("Name: Paul\n\n", screen_stats);
+    nge_puts("Name: ", screen_stats);
+    nge_puts(screen_name, screen_stats);
+    nge_puts("\n\n", screen_stats);
     nge_tm_ink(NGE_INK_WHITE, screen_stats);
     nge_puts("HP    12/12\n", screen_stats);
     nge_puts("Str      16\n", screen_stats);
@@ -68,4 +76,30 @@ void screen_message(const char *text)
     nge_tm_ink(NGE_INK_WHITE, screen_messages);
     nge_puts(text, screen_messages);
     nge_putc(NGE_CTRL_LF, screen_messages);
+}
+
+void screen_ask_name(void)
+{
+    char name[SCREEN_NAME_MAX + 1];
+    NGE_FILE *keyboard = nge_open_keyboard();
+
+    nge_util_assert(keyboard != NULL);
+    nge_tm_ink(NGE_INK_YELLOW, screen_messages);
+    nge_puts("What is your name? ", screen_messages);
+    nge_tm_ink(NGE_INK_WHITE, screen_messages);
+    nge_gets(name, sizeof(name), keyboard, screen_messages);
+    nge_putc(NGE_CTRL_LF, screen_messages);
+    nge_close(keyboard);
+
+    if (name[0] != 0) {
+        strcpy(screen_name, name);
+    }
+}
+
+void screen_show_held(uint8_t held)
+{
+    nge_tm_at(STATS_ROW_HELD, 0, screen_stats);
+    nge_tm_ink(NGE_INK_RED, screen_stats);
+    nge_puts(held ? "SPACE held" : "", screen_stats);
+    nge_tm_clreol(screen_stats);
 }

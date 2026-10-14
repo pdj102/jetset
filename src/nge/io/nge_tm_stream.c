@@ -201,7 +201,7 @@ NGE_FILE *nge_open_tilemap(const nge_rect_t *area, uint8_t attr)
     nge_util_assert(area->x1 <= area->x2 && area->x2 < NGE_TILEMAP_WIDTH);
     nge_util_assert(area->y1 <= area->y2 && area->y2 < NGE_TILEMAP_HEIGHT);
 
-    NGE_FILE *s = nge_stream_alloc(tm_put, NULL);
+    NGE_FILE *s = nge_stream_alloc(tm_put, NULL, NULL);
 
     if (s != NULL) {
         nge_tm_state_t *tm = &s->u.tm;

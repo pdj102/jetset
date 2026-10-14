@@ -19,6 +19,8 @@
  * message windows are tilemap streams.
  */
 
+#include <stdint.h>
+
 #include "core/nge_types.h"
 #include "io/nge_stream.h"
 
@@ -31,6 +33,12 @@ extern NGE_FILE *screen_stats;
 /** Message window stream: new lines scroll older messages up. */
 extern NGE_FILE *screen_messages;
 
+/** Longest player name: it follows "Name: " on one stats line. */
+#define SCREEN_NAME_MAX  6
+
+/** The player's name, shown in the stats window. */
+extern char screen_name[SCREEN_NAME_MAX + 1];
+
 /** @brief Set up the tilemap, its palettes and the stats and message windows. */
 void screen_init(void);
 
@@ -39,5 +47,15 @@ void screen_draw_stats(void);
 
 /** @brief Add a line to the message window. */
 void screen_message(const char *text);
+
+/**
+ * @brief Ask for the player's name in the message window and read it from
+ *        the keyboard into screen_name (blocking: runs frames until ENTER).
+ *        An empty name stays "Rogue". Needs nge_input_init().
+ */
+void screen_ask_name(void);
+
+/** @brief Show or clear the "SPACE held" marker in the stats window. */
+void screen_show_held(uint8_t held);
 
 #endif
