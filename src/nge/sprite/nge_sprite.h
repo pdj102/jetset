@@ -5,9 +5,22 @@
  * @file nge_sprite.h
  * @brief ZX Next hardware sprites.
  *
- * The setters change a copy of the sprite attributes in RAM. nge_sprite_update()
- * sends the copy to the hardware; call it once per frame, straight after
- * nge_frame_wait_vblank(), so sprites never change while they are drawn.
+ * Two ways to drive the 128 hardware sprites, which a game can mix as long
+ * as each hardware sprite ID has one owner (the game manages the split):
+ *
+ * - Attribute records: fill nge_sprite_attr_t records anywhere with
+ *   nge_sprite_attr_build() and send a run of them to the hardware with
+ *   nge_sprite_upload(). The ECS render system (ecs/systems/nge_render.h)
+ *   works this way, with its records in its own page.
+ * - A sprite table defined by the game: register the game's array of
+ *   records for a range of hardware IDs with nge_sprite_table_init(), then
+ *   use the setters (nge_sprite_set(), nge_sprite_move()...) with hardware
+ *   IDs in that range, and nge_sprite_update() to send the table. For a HUD
+ *   or cursor, for example. Without a table the setters assert.
+ *
+ * Send attributes once per frame, straight after nge_frame_wait_vblank(),
+ * so sprites never change while they are drawn. With the default layer
+ * priority, higher sprite IDs are drawn on top of lower ones.
  *
  * Coordinates: sprites are shown over the border, so (0,0) is the top-left of
  * the 320x256 display, the same origin as the 40x32 tilemap. A sprite at
@@ -21,8 +34,9 @@
  * Banking: the setup functions (init, set_transparency, the loaders, set,
  * set4, set_scale, hide_all, set_clip, clear_clip) are banked (NGE_BANKED,
  * page 42): don't call them while game code has its own page mapped in
- * slot 6 or 7. The per-frame functions (move, set_pattern,
- * set_pattern4, set_flags, show, update, status) are in common memory.
+ * slot 6 or 7. The per-frame functions (attr_build, upload, table_init,
+ * move, set_pattern, set_pattern4, set_flags, show, update, status) are in
+ * common memory, so banked code can call them with records in its own page.
  */
 
 #include <stdint.h>
@@ -57,15 +71,31 @@
 #define NGE_SPRITE_SCALE_Y4   0x04
 #define NGE_SPRITE_SCALE_Y8   0x06
 
+/** Mode bit for nge_sprite_attr_build(): the pattern is a 4-bit pattern (0-127). */
+#define NGE_SPRITE_PATTERN4   0x80
+
 /* nge_sprite_status() bits */
 #define NGE_SPRITE_STATUS_COLLISION  0x01  /**< Non-transparent pixels of two sprites overlapped. */
 #define NGE_SPRITE_STATUS_LINE_FULL  0x02  /**< Too many sprites on a line; some were not drawn. */
 
+/** One hardware sprite's attributes, in the order the hardware takes them (5 bytes). */
+typedef struct nge_sprite_attr {
+    uint8_t x;       /**< X bits 0-7. */
+    uint8_t y;       /**< Y bits 0-7. */
+    uint8_t attr2;   /**< Palette offset, mirror, rotate, X bit 8. */
+    uint8_t attr3;   /**< Visible, 5-byte flag, pattern. */
+    uint8_t attr4;   /**< 4-bit pattern, N6, scale, Y bit 8. */
+} nge_sprite_attr_t;
+
+/** Hide the sprite in a record, keeping its other settings. */
+#define NGE_SPRITE_ATTR_HIDE(a)  ((a)->attr3 &= 0x7F)
+
 /**
- * @brief Hide all sprites, set the transparent pixel value and show the sprite layer.
+ * @brief Hide all 128 hardware sprites, set the transparent pixel value and show the sprite layer.
  *
  * Turns on the sprite layer and sprites over the border, keeping the layer
  * priority set by nge_video_init(). Call before the other sprite functions.
+ * Writes the hardware directly; a registered table is not changed.
  */
 void nge_sprite_init(void) NGE_BANKED;
 
@@ -121,9 +151,41 @@ void nge_sprite_load_patterns4(uint8_t page, uint8_t first, const uint8_t *data,
 void nge_sprite_load_palette(uint8_t page, uint8_t first, const nge_palette_entry_9_t *entries,
                              uint16_t count) NGE_BANKED;
 
+/* ---- Attribute records ---- */
+
 /**
- * @brief Show a sprite with an 8-bit pattern.
- * @param id Sprite 0-127; lower ids are drawn underneath higher ones.
+ * @brief Fill a record for a visible sprite.
+ * @param a Record to fill.
+ * @param x X position 0-511 (0-319 is on screen).
+ * @param y Y position 0-511 (0-255 is on screen).
+ * @param pattern 8-bit pattern 0-63, or 4-bit pattern 0-127 with NGE_SPRITE_PATTERN4.
+ * @param flags NGE_SPRITE_MIRROR_X, NGE_SPRITE_MIRROR_Y, NGE_SPRITE_ROTATE, NGE_SPRITE_PALETTE(n).
+ * @param mode NGE_SPRITE_SCALE_X* | NGE_SPRITE_SCALE_Y*, and NGE_SPRITE_PATTERN4.
+ */
+void nge_sprite_attr_build(nge_sprite_attr_t *a, uint16_t x, uint16_t y, uint8_t pattern,
+                           uint8_t flags, uint8_t mode);
+
+/**
+ * @brief Send records to hardware sprites first to first+count-1.
+ * @param attrs Records: in common memory, or in a banked caller's own page.
+ */
+void nge_sprite_upload(uint8_t first, const nge_sprite_attr_t *attrs, uint8_t count);
+
+/* ---- A sprite table defined by the game ---- */
+
+/**
+ * @brief Register the game's sprite table for hardware sprites first to
+ *        first+size-1, all hidden.
+ *
+ * The table must stay in common memory (or slot 0) while it is used; the
+ * banked setters read it. The table's range must not overlap sprites
+ * driven another way, such as the render system's (NGE_RENDER_SPRITES).
+ */
+void nge_sprite_table_init(nge_sprite_attr_t *table, uint8_t first, uint8_t size);
+
+/**
+ * @brief Show a sprite with an 8-bit pattern, keeping its scale.
+ * @param id Hardware sprite in the table's range; lower IDs are drawn underneath higher ones.
  * @param x X position 0-511 (0-319 is on screen).
  * @param y Y position 0-511 (0-255 is on screen).
  * @param pattern Pattern 0-63.
@@ -160,13 +222,17 @@ void nge_sprite_set_scale(uint8_t id, uint8_t scale) NGE_BANKED;
 /** @brief Show (on != 0) or hide a sprite, keeping its settings. */
 void nge_sprite_show(uint8_t id, uint8_t on);
 
-/** @brief Hide every sprite. */
+/**
+ * @brief Hide all 128 hardware sprites now, and every sprite in the table.
+ *
+ * Sprites driven by records (the render system) show again at their next
+ * upload.
+ */
 void nge_sprite_hide_all(void) NGE_BANKED;
 
 /**
- * @brief Send the sprite attributes to the hardware.
- *
- * Sends only sprites 0 to the highest id used since nge_sprite_init().
+ * @brief Send the table to the hardware: from its first sprite to the
+ *        highest one used since nge_sprite_table_init(). Nothing without a table.
  */
 void nge_sprite_update(void);
 

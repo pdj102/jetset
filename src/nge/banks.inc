@@ -26,6 +26,7 @@
 //             50     ECS data, mapped permanently into slot 0 ($0100-$1FFF;
 //                    $0000-$00FF is a guard area against null pointers)
 //             51     reserved (e.g. a second set of ECS data)
+//             52/53  render system: code / sprite component and working data
 //   88-99   further nge modules (reserved: 6 pairs)
 //   100-223 game code and assets
 //             100  demo map (slot 1)
@@ -40,3 +41,6 @@
 // nge ecs data: slot 0, above the guard area. Data only, so no page in the
 // address; scripts/check-banks.sh checks it stays in $0100-$1FFF.
 #pragma define CRT_ORG_PAGE_50 = 0x0100
+
+// nge ecs render system
+#pragma define CRT_ORG_PAGE_52 = 0x34C000

@@ -59,9 +59,10 @@ anything that has to be reachable at any time belongs in the program:
 - interrupt handlers and the IM2 vector table, when added
 - `banked_call`, and everything else that must stay in common memory (see
   [Banked code](#banked-code))
-- data used every frame that isn't ECS data: the sprite attribute table,
-  input state, the stream pool, game state (the ECS tables read every frame
-  are in slot 0, see [ECS data in slot 0](#ecs-data-in-slot-0))
+- data used every frame that isn't ECS data: a sprite table if the game
+  defines one, input state, the stream pool, game state (the ECS tables read
+  every frame are in slot 0, see [ECS data in slot 0](#ecs-data-in-slot-0);
+  the render system's sprite records are its page data in page 53)
 
 Starting at `$6A00` rather than z88dk's default `$8000` adds 5.5K. The tile
 definitions can therefore no longer grow past `$69FF`.
@@ -70,10 +71,10 @@ The current CSpect build (`bin/main.map`) uses:
 
 | Address | Contents |
 |---|---|
-| `$6A00`-`$9FD5` | Code and constant data (`CODE`) |
-| `$9FD6`-`$9FF4` | Initialised data (`DATA`) |
-| `$9FF5`-`$A324` | Uninitialised data (`BSS`), including the sprite attribute table (640 bytes) |
-| `$A325`-`$BDFF` | Free, about 6.7K (about 11K in the hardware build, without asserts) |
+| `$6A00`-`$A58C` | Code and constant data (`CODE`) |
+| `$A58D`-`$A593` | Initialised data (`DATA`) |
+| `$A594`-`$A647` | Uninitialised data (`BSS`) |
+| `$A648`-`$BDFF` | Free, about 5.9K (about 11.1K in the hardware build, without asserts and their messages) |
 | `$BE00`-`$BFFF` | Stack, 512 bytes |
 
 The link step checks `__BSS_END_tail` in the map file and fails the build if
@@ -142,7 +143,7 @@ code pages.
 | 42/43 | nge `sprite` (setup functions and loaders) |
 | 44/45 | nge `map` (reserved; its code runs every frame and is in common memory) |
 | 46/47 | nge `event` (reserved) |
-| 48-87 | nge `ecs` (20 pairs): 48/49 `entity` and `owner` (lifecycle and ownership code / lifecycle bookkeeping); 50 ECS data, mapped permanently into slot 0 (see [ECS data in slot 0](#ecs-data-in-slot-0)); 51 reserved |
+| 48-87 | nge `ecs` (20 pairs): 48/49 `entity` and `owner` (lifecycle and ownership code / lifecycle bookkeeping); 50 ECS data, mapped permanently into slot 0 (see [ECS data in slot 0](#ecs-data-in-slot-0)); 51 reserved; 52/53 `render` system |
 | 88-99 | Further nge modules (reserved: 6 pairs) |
 | 100-223 | Game code and assets; the demo uses 100 (map, slot 1) and 101 (sprites) |
 
@@ -179,6 +180,7 @@ the previous pages back. Banked so far:
 |---|---|---|---|
 | 42/43 | `sprite` | setup functions and loaders, with literals (`nge_sprite_setup.c`, about 1.3K) | none |
 | 48/49 | `ecs` entity, owner | lifecycle functions (`nge_entity_life.c`) and the ownership functions that change or search the owner table (`nge_owner_set.c`), with literals, about 0.6K | lifecycle bookkeeping: free and dying stacks, alive positions (`nge_entity_pdata.c`, 302 bytes) |
+| 52/53 | `ecs` render system | the system (`ecs/systems/nge_render.c`), with literals, about 2.4K | the sprite component (10 bytes per entity), the sprite records for hardware sprites 0 to `NGE_RENDER_SPRITES`-1, and its working data (`nge_render_pdata.c`, about 1.8K) |
 
 How a module is banked:
 
@@ -247,9 +249,11 @@ or if a `#pragma codeseg` names an odd page.
   maps the page into slot 6, so code in an odd page (assembled for `$E000`)
   would be in the wrong slot.
 - **Keep these in common memory:**
-  - code that runs every frame (`nge_sprite_update`, `nge_map_update`, the
-    tilemap stream, `nge_putc`): each banked call costs about 150-250
-    T-states;
+  - code called many times a frame (`nge_sprite_attr_build`,
+    `nge_sprite_upload`, `nge_map_update`, the tilemap stream, `nge_putc`):
+    each banked call costs about 150-250 T-states. A system that does a
+    whole frame's work in one call, such as `nge_render_update`, can be
+    banked;
   - functions that read data the caller has mapped into slot 6 or 7, such
     as `nge_write_palette9()`: a banked function would map its own page over
     that data (banked loaders take the data's page instead, as the sprite
@@ -345,11 +349,18 @@ the caller. Pass `NGE_SPRITE_DATA_COMMON` for data in common memory.
 - Tile definitions can be copied into `$4A00` the same way: slots 2 and 3
   stay mapped, so a copy goes directly from slot 7 into video memory.
 
+Sprite attributes are sent to port `$57` every frame from records in one of
+two places, so the sprite module itself holds no 640-byte table:
+
+- the render system's records, page data in page 53, for hardware sprites 0
+  to `NGE_RENDER_SPRITES`-1: `nge_render_upload()` is banked, so page 53 is
+  in slot 7 when it passes them to `nge_sprite_upload()` in common memory;
+- a table the game defines for the other sprites (`nge_sprite_table_init()`,
+  for a HUD for example), which must be in common memory or slot 0, since
+  the banked setters read it. The game keeps the two ranges apart.
+
 Keep in non-banked memory anything used after the upload:
 
-- the sprite attribute table (128 sprites x 5 bytes = 640 bytes, a static
-  array in [nge_sprite.c](../src/nge/sprite/nge_sprite.c), so in BSS), sent to port
-  `$57` by `nge_sprite_update()` every frame;
 - a palette copy used for fades or palette cycling;
 - pointers into banked data are valid only while their page is mapped, so
   copy any values needed later before unmapping.
@@ -372,7 +383,7 @@ data.
 | Address | Contents |
 |---|---|
 | `$0000`-`$00FF` | Guard area against null pointers |
-| `$0100`-`$1FFF` | ECS tables (`SECTION PAGE_50`, `CRT_ORG_PAGE_50 = 0x0100` in [banks.inc](../src/nge/banks.inc)): entity flags, components and alive list, owners, locations (about 0.7K at `NGE_ENTITY_MAX` 100) |
+| `$0100`-`$1FFF` | ECS tables (`SECTION PAGE_50`, `CRT_ORG_PAGE_50 = 0x0100` in [banks.inc](../src/nge/banks.inc)): entity flags, components and alive list, owners, locations (about 0.9K at `NGE_ENTITY_MAX` 100) |
 
 ### Where component data goes
 
@@ -383,7 +394,10 @@ data.
 - **Used by one system:** in that system's odd page, as page data. The
   system's update function is banked, so calling it maps its code into slot 6
   and its data into slot 7, and it runs a tight loop over its own data and
-  the shared data in slot 0 (and the map in slot 1).
+  the shared data in slot 0 (and the map in slot 1). Example: the sprite
+  component, page data of the render system
+  ([nge_render.h](../src/nge/ecs/systems/nge_render.h)), which builds every
+  sprite in one call per frame and uploads them in another.
 - **Shared but not hot** (used only when particular game events happen):
   in the page of the system that owns it, with banked `get` and `set`
   helpers for the others.

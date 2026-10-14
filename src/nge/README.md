@@ -39,21 +39,30 @@ Includes are written from `src/nge`, with the folder:
 | `map/` | A tile map larger than the screen, shown through a tilemap window |
 | `devices/` | Raw device drivers (CSpect DebugOut, UART), no streams |
 | `output/` | Streams, print and printf, and the stream devices for the tilemap, CSpect and UART |
-| `ecs/` | Entity component system: `nge_entity` (IDs, lifecycle, flags, component masks; lifecycle banked in pages 48/49), `nge_owner` (the owner of every entity: an entity, the world or an area; changes banked in page 48), `nge_location` (tile position component), `nge_ecs` (ECS start-up: the ECS data page in slot 0 and its guard area) |
+| `ecs/` | Entity component system core, data every entity has: `nge_entity` (IDs, lifecycle, flags, component masks; lifecycle banked in pages 48/49), `nge_owner` (the owner of every entity: an entity, the world or an area; changes banked in page 48), `nge_ecs` (ECS start-up: the ECS data page in slot 0 and its guard area) |
+| `ecs/components/` | Components shared by several systems, with their data in slot 0: `nge_location` (tile and pixel position) |
+| `ecs/systems/` | Systems, each with its private components as page data: `nge_render` (draws the sprite component as hardware sprites; pages 52/53) |
 
 Planned: `input/` (keyboard, joystick), `sound/` (AY), `event/` (event
 queue), more of `ecs/` (components, systems, deferred clean-up).
 
+Where an ECS file goes follows where its data goes: a component shared by
+several systems is in `components/` (slot 0), a component used by one system
+is part of that system in `systems/` (its page data). Within `ecs/`,
+`systems/` may include `components/` and the core, `components/` only the
+core, and the core neither.
+
 A folder may include only the folders before it in this chain:
 
 ```
-core  <-  hw  <-  tilemap, sprite, devices, input, sound  <-  output  <-  map, event, ecs  <-  game
+core  <-  hw  <-  tilemap, sprite, devices, input, sound  <-  output  <-  map, event  <-  ecs  <-  game
 ```
 
 - Stream devices live in `output/`, not with the hardware they drive, so
   `tilemap/` and `devices/` work without streams.
-- `map/`, `event/` and `ecs/` don't touch hardware registers, so they can be
-  tested entirely on the PC.
+- `map/`, `event/` and `ecs/` don't touch hardware registers themselves (the
+  render system drives sprites through `sprite/`), so they can be tested
+  entirely on the PC.
 - One exception: `core/nge_util` prints asserts and debug output to a
   stream, so it includes `output/nge_printf.h` and `output/nge_stream.h`.
 

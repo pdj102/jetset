@@ -2,7 +2,7 @@
 #include "test.h"
 
 #include "ecs/nge_entity.h"
-#include "ecs/nge_location.h"
+#include "ecs/components/nge_location.h"
 
 int main(void)
 {
@@ -43,6 +43,36 @@ int main(void)
     CHECK(NGE_LOCATION_X(b) == 1);
     nge_entity_release(nge_entity_next_dying());
     CHECK(nge_entity_create() == b && !NGE_ENTITY_HAS_COMPONENTS(b, NGE_COMPONENT_LOCATION));
+
+    /* ---- fine position and pixel moves ---- */
+    nge_entity_init();
+    a = nge_entity_create();
+    nge_location_set(a, 10, 20);
+    CHECK(NGE_LOCATION_FX(a) == 0 && NGE_LOCATION_FY(a) == 0);
+    CHECK(NGE_LOCATION_PX(a) == 80 && NGE_LOCATION_PY(a) == 160);
+    nge_location_set_fine(a, 7, 3);
+    CHECK(NGE_LOCATION_PX(a) == 87 && NGE_LOCATION_PY(a) == 163);
+    nge_location_move(a, 1, -4);                            /* carry right, borrow up */
+    CHECK(NGE_LOCATION_X(a) == 11 && NGE_LOCATION_FX(a) == 0);
+    CHECK(NGE_LOCATION_Y(a) == 19 && NGE_LOCATION_FY(a) == 7);
+    nge_location_move(a, -9, 17);
+    CHECK(NGE_LOCATION_PX(a) == 79 && NGE_LOCATION_PY(a) == 176);
+    CHECK(NGE_LOCATION_X(a) == 9 && NGE_LOCATION_FX(a) == 7 && NGE_LOCATION_Y(a) == 22 && NGE_LOCATION_FY(a) == 0);
+    nge_location_move(a, 0, 0);
+    CHECK(NGE_LOCATION_PX(a) == 79 && NGE_LOCATION_PY(a) == 176);
+    nge_location_set(a, 1, 1);                              /* set clears the fine position */
+    CHECK(NGE_LOCATION_FX(a) == 0 && NGE_LOCATION_FY(a) == 0);
+
+    TEST_EXPECT_HALT(nge_location_set_fine(a, 8, 0));
+    CHECK(test_halt_count == 1);
+    TEST_EXPECT_HALT(nge_location_set_fine(a, 0, 8));
+    CHECK(test_halt_count == 1);
+    nge_location_remove(a);
+    TEST_EXPECT_HALT(nge_location_move(a, 1, 0));           /* no location */
+    CHECK(test_halt_count == 1);
+    TEST_EXPECT_HALT(nge_location_set_fine(a, 0, 0));
+    CHECK(test_halt_count == 1);
+    b = nge_entity_create();
 
     /* ---- asserts ---- */
     TEST_EXPECT_HALT(nge_location_set(50, 0, 0));            /* free */

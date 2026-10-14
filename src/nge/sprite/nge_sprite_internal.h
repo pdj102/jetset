@@ -25,26 +25,20 @@
 #define ATTR4_SCALE    0x1E
 #define ATTR4_Y8       0x01  /* Y bit 8 */
 
-/* One sprite's attributes, in the order they are sent to the hardware */
-typedef struct nge_sprite {
-    uint8_t x;
-    uint8_t y;
-    uint8_t attr2;
-    uint8_t attr3;
-    uint8_t attr4;
-} nge_sprite_t;
-
-/* RAM copy of the attributes; sprites 0 to nge_sprite_count-1 are sent by
-   nge_sprite_update() */
-extern nge_sprite_t nge_sprite_table[NGE_SPRITE_MAX];
+/* The game's table (nge_sprite_table_init()): hardware sprites
+   nge_sprite_table_first to nge_sprite_table_first + nge_sprite_table_size - 1;
+   entries 0 to nge_sprite_count-1 are sent by nge_sprite_update() */
+extern nge_sprite_attr_t *nge_sprite_table;
+extern uint8_t nge_sprite_table_first;
+extern uint8_t nge_sprite_table_size;
 extern uint8_t nge_sprite_count;
 
 /* Helpers in nge_sprite.c (common memory, so banked code can call them) */
 
-/* Get a sprite's entry for changing; it is sent from now on. */
-nge_sprite_t *nge_sprite_entry(uint8_t id);
-void nge_sprite_entry_place(nge_sprite_t *s, uint16_t x, uint16_t y);
-void nge_sprite_entry_pattern(nge_sprite_t *s, uint8_t pattern);
-void nge_sprite_entry_pattern4(nge_sprite_t *s, uint8_t pattern);
+/* Get a hardware sprite's table entry for changing; it is sent from now on. */
+nge_sprite_attr_t *nge_sprite_entry(uint8_t id);
+void nge_sprite_entry_place(nge_sprite_attr_t *s, uint16_t x, uint16_t y);
+void nge_sprite_entry_pattern(nge_sprite_attr_t *s, uint8_t pattern);
+void nge_sprite_entry_pattern4(nge_sprite_attr_t *s, uint8_t pattern);
 
 #endif

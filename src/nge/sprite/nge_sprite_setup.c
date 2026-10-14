@@ -13,7 +13,6 @@
 #include "sprite/nge_sprite_internal.h"
 
 #include <arch/zxn.h>
-#include <string.h>
 
 #include "hw/nge_mmu.h"
 
@@ -80,17 +79,24 @@ void nge_sprite_load_palette(uint8_t page, uint8_t first, const nge_palette_entr
     data_unmap(page, old);
 }
 
-void nge_sprite_init(void) NGE_BANKED
+/* Hide all 128 hardware sprites, writing the hardware directly */
+static void hide_hardware(void)
 {
     uint8_t i;
 
-    memset(nge_sprite_table, 0, sizeof(nge_sprite_table));
+    IO_SPRITE_SLOT = 0;
     for (i = 0; i < NGE_SPRITE_MAX; i++) {
-        nge_sprite_table[i].attr3 = ATTR3_ATTR4;
+        IO_SPRITE_ATTRIBUTE = 0;
+        IO_SPRITE_ATTRIBUTE = 0;
+        IO_SPRITE_ATTRIBUTE = 0;
+        IO_SPRITE_ATTRIBUTE = ATTR3_ATTR4;   /* hidden, 5-byte */
+        IO_SPRITE_ATTRIBUTE = 0;
     }
-    nge_sprite_count = NGE_SPRITE_MAX;
-    nge_sprite_update();
-    nge_sprite_count = 0;
+}
+
+void nge_sprite_init(void) NGE_BANKED
+{
+    hide_hardware();
 
     nge_sprite_set_transparency(NGE_SPRITE_TRANSPARENT);
     ZXN_WRITE_REG(REG_SPRITE_LAYER_SYSTEM,
@@ -104,27 +110,21 @@ void nge_sprite_set_transparency(uint8_t index) NGE_BANKED
 
 void nge_sprite_set(uint8_t id, uint16_t x, uint16_t y, uint8_t pattern, uint8_t flags) NGE_BANKED
 {
-    nge_sprite_t *s = nge_sprite_entry(id);
+    nge_sprite_attr_t *s = nge_sprite_entry(id);
 
-    s->attr2 = flags & ATTR2_FLAGS;
-    nge_sprite_entry_place(s, x, y);
-    nge_sprite_entry_pattern(s, pattern);
-    s->attr3 |= ATTR3_VISIBLE;
+    nge_sprite_attr_build(s, x, y, pattern, flags, s->attr4 & ATTR4_SCALE);
 }
 
 void nge_sprite_set4(uint8_t id, uint16_t x, uint16_t y, uint8_t pattern, uint8_t flags) NGE_BANKED
 {
-    nge_sprite_t *s = nge_sprite_entry(id);
+    nge_sprite_attr_t *s = nge_sprite_entry(id);
 
-    s->attr2 = flags & ATTR2_FLAGS;
-    nge_sprite_entry_place(s, x, y);
-    nge_sprite_entry_pattern4(s, pattern);
-    s->attr3 |= ATTR3_VISIBLE;
+    nge_sprite_attr_build(s, x, y, pattern, flags, (s->attr4 & ATTR4_SCALE) | NGE_SPRITE_PATTERN4);
 }
 
 void nge_sprite_set_scale(uint8_t id, uint8_t scale) NGE_BANKED
 {
-    nge_sprite_t *s = nge_sprite_entry(id);
+    nge_sprite_attr_t *s = nge_sprite_entry(id);
 
     s->attr4 = (s->attr4 & (uint8_t)~ATTR4_SCALE) | (scale & ATTR4_SCALE);
 }
@@ -133,8 +133,9 @@ void nge_sprite_hide_all(void) NGE_BANKED
 {
     uint8_t i;
 
+    hide_hardware();
     for (i = 0; i < nge_sprite_count; i++) {
-        nge_sprite_table[i].attr3 &= (uint8_t)~ATTR3_VISIBLE;
+        NGE_SPRITE_ATTR_HIDE(&nge_sprite_table[i]);
     }
 }
 

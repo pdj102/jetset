@@ -8,8 +8,8 @@
 #   1. Create tests/test_<name>.c with a main() that calls test_init(),
 #      makes CHECK()s and returns test_summary("<name>") (see support/test.h).
 #   2. That's all: every tests/test_*.c is found automatically and linked with
-#      every library source in src/nge/*/, so new modules and folders are
-#      included too. Next register and IO port names come from z88dk's own
+#      every library source in src/nge/*/ and src/nge/*/*/, so new modules
+#      and folders are included too. Next register and IO port names come from z88dk's own
 #      headers.
 #   Library files that only work on the Next (inline asm traps) are listed in
 #   LIB_EXCLUDE and replaced by fakes in support/test.c.
@@ -27,7 +27,7 @@ Z88DK_CONFIG_DIR := $(Z88DK_ROOT)/libsrc/newlib/target/zxn
 # Library code that cannot run on the PC
 LIB_EXCLUDE := devices/nge_cspect_trap.c
 
-LIB_SRCS := $(filter-out $(addprefix $(SRCDIR)/,$(LIB_EXCLUDE)),$(wildcard $(SRCDIR)/*/*.c))
+LIB_SRCS := $(filter-out $(addprefix $(SRCDIR)/,$(LIB_EXCLUDE)),$(wildcard $(SRCDIR)/*/*.c $(SRCDIR)/*/*/*.c))
 LIB_OBJS := $(patsubst $(SRCDIR)/%.c,$(BUILD)/lib/%.o,$(LIB_SRCS))
 SUPPORT_OBJS := $(BUILD)/support/test.o $(BUILD)/support/zxn_io.o
 
@@ -97,4 +97,4 @@ $(GEN)/zxn_io.c: $(Z88DK_ARCH_H)
 clean:
 	rm -rf $(BUILD)
 
--include $(wildcard $(BUILD)/*.d $(BUILD)/lib/*/*.d $(BUILD)/support/*.d)
+-include $(wildcard $(BUILD)/*.d $(BUILD)/lib/*/*.d $(BUILD)/lib/*/*/*.d $(BUILD)/support/*.d)
