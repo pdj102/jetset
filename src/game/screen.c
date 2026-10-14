@@ -20,7 +20,7 @@ NGE_FILE *screen_stats;
 NGE_FILE *screen_messages;
 char screen_name[SCREEN_NAME_MAX + 1] = "Rogue";
 
-#define STATS_ROW_HELD  10   /* stats window row of the SPACE held marker */
+#define STATS_ROW_TURN  8    /* stats window row of the turn count */
 
 /* Game graphics palette (bank 0); text colours are banks 12-15 (nge_tm_load_ink_palette) */
 static const nge_palette_entry_9_t tile_palette[] = {
@@ -54,7 +54,7 @@ void screen_init(void)
     nge_tm_cls(screen_messages);
 }
 
-void screen_draw_stats(void)
+void screen_draw_stats(uint16_t turn)
 {
     nge_tm_cls(screen_stats);
     nge_tm_ink(NGE_INK_YELLOW, screen_stats);
@@ -68,7 +68,15 @@ void screen_draw_stats(void)
     nge_puts("Gold      0\n\n", screen_stats);
     nge_tm_ink(NGE_INK_CYAN, screen_stats);
     nge_puts("Depth     1\n", screen_stats);
-    nge_puts("Turn      0", screen_stats);
+    screen_show_turn(turn);
+}
+
+void screen_show_turn(uint16_t turn)
+{
+    nge_tm_at(STATS_ROW_TURN, 0, screen_stats);
+    nge_tm_ink(NGE_INK_CYAN, screen_stats);
+    nge_puts("Turn ", screen_stats);
+    nge_putu16w(turn, 6, ' ', screen_stats);
 }
 
 void screen_message(const char *text)
@@ -94,12 +102,4 @@ void screen_ask_name(void)
     if (name[0] != 0) {
         strcpy(screen_name, name);
     }
-}
-
-void screen_show_held(uint8_t held)
-{
-    nge_tm_at(STATS_ROW_HELD, 0, screen_stats);
-    nge_tm_ink(NGE_INK_RED, screen_stats);
-    nge_puts(held ? "SPACE held" : "", screen_stats);
-    nge_tm_clreol(screen_stats);
 }

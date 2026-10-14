@@ -4,6 +4,7 @@ Game code: the basis of a classic roguelike.
 
 | File | Contents |
 |---|---|
+| `game.{h,c}` | The main loop (pre-update, the current state's update, post-update) and the game states: title, play, inventory, targeting, dead |
 | `screen.{h,c}` | Screen layout: the map view, the stats window and the message window |
 | `level.{h,c}` | The current level: one area, its map in slot 1, a test layout |
 | `actors.{h,c}` | The level's entities: the player and a test object |

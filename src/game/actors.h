@@ -10,8 +10,9 @@
  * in the top-left of 16x16 patterns, so each covers exactly one map tile.
  */
 
+#include <stdint.h>
+
 #include "ecs/nge_entity.h"
-#include "input/nge_input.h"
 
 /* Render layers: higher layers are drawn on top */
 #define LAYER_OBJECTS  1
@@ -28,10 +29,10 @@ extern nge_entity_id_t actor_potion;
 void actors_init(void);
 
 /**
- * @brief Carry out a player command from a key event: the cursor keys
- *        (and CAPS+5-8) or h j k l move one tile, blocked by walls; the
- *        camera follows. Other keys are ignored.
+ * @brief Move the player one tile by (dx, dy), if the tile is open; the
+ *        camera follows. Bumping into a wall reports it.
+ * @return 1 if the player moved (the move takes a turn), 0 if not.
  */
-void actors_player_command(nge_key_event_t ev);
+uint8_t actors_move_player(int8_t dx, int8_t dy);
 
 #endif
