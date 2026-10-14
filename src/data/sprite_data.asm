@@ -1,11 +1,11 @@
-; Demo sprite graphics, in page 89 (game assets range, see src/nge/banks.inc),
+; Demo sprite graphics, in page 101 (game assets range, see src/nge/banks.inc),
 ; assembled for slot 7 ($E000). Load them with the nge sprite loaders, passing
 ; DEMO_SPRITE_PAGE (see sprite_data.h).
 ;
 ; Two 16x16 8-bit patterns (one byte per pixel): a figure walking.
 ; Pixel values: 0 transparent, 1 white, 2 yellow, 3 cyan, 4 red, 5 green.
 
-SECTION PAGE_89
+SECTION PAGE_101
 
 PUBLIC _demo_sprite_patterns
 PUBLIC _demo_sprite_palette

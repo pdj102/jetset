@@ -13,7 +13,7 @@ it reads physical memory or its own on-chip RAM, whatever the slots show.
 
 | Slot | Address | Default page | Use |
 |---|---|---|---|
-| 0 | `$0000`-`$1FFF` | ROM | **Keeps the ROM** (see [Slots 0 and 1](#slots-0-and-1)) |
+| 0 | `$0000`-`$1FFF` | ROM | ECS data, page 50, mapped by `nge_ecs_init()`: guard area `$0000`-`$00FF`, tables from `$0100` (see [ECS data in slot 0](#ecs-data-in-slot-0)) |
 | 1 | `$2000`-`$3FFF` | ROM | The active area's map (`nge_map`), with the ROM's upper half swapped out |
 | 2 | `$4000`-`$5FFF` | 10 | Tilemap and tile definitions. Free space: none |
 | 3 | `$6000`-`$7FFF` | 11 | End of the tile definitions, then the **start of the program** at `$6A00` |
@@ -59,11 +59,9 @@ anything that has to be reachable at any time belongs in the program:
 - interrupt handlers and the IM2 vector table, when added
 - `banked_call`, and everything else that must stay in common memory (see
   [Banked code](#banked-code))
-- data used every frame: the sprite attribute table, the entity tables
-  (`nge_entity` flags, components and alive list, and the `nge_owner`
-  owner table: 5 bytes per entity, `NGE_ENTITY_MAX` entities; the
-  lifecycle bookkeeping, 3 bytes per entity, is page data in page 49), input
-  state, the stream pool, game state
+- data used every frame that isn't ECS data: the sprite attribute table,
+  input state, the stream pool, game state (the ECS tables read every frame
+  are in slot 0, see [ECS data in slot 0](#ecs-data-in-slot-0))
 
 Starting at `$6A00` rather than z88dk's default `$8000` adds 5.5K. The tile
 definitions can therefore no longer grow past `$69FF`.
@@ -72,10 +70,10 @@ The current CSpect build (`bin/main.map`) uses:
 
 | Address | Contents |
 |---|---|
-| `$6A00`-`$9D13` | Code and constant data (`CODE`) |
-| `$9D14`-`$9D32` | Initialised data (`DATA`) |
-| `$9D33`-`$A1F3` | Uninitialised data (`BSS`), including the sprite attribute table (640 bytes) and the entity tables (about 400 bytes) |
-| `$A1F4`-`$BDFF` | Free, about 7K (about 10.8K in the hardware build, without asserts) |
+| `$6A00`-`$9FD5` | Code and constant data (`CODE`) |
+| `$9FD6`-`$9FF4` | Initialised data (`DATA`) |
+| `$9FF5`-`$A324` | Uninitialised data (`BSS`), including the sprite attribute table (640 bytes) |
+| `$A325`-`$BDFF` | Free, about 6.7K (about 11K in the hardware build, without asserts) |
 | `$BE00`-`$BFFF` | Stack, 512 bytes |
 
 The link step checks `__BSS_END_tail` in the map file and fails the build if
@@ -144,9 +142,9 @@ code pages.
 | 42/43 | nge `sprite` (setup functions and loaders) |
 | 44/45 | nge `map` (reserved; its code runs every frame and is in common memory) |
 | 46/47 | nge `event` (reserved) |
-| 48-67 | nge `ecs` (10 pairs): 48/49 `entity` and `owner` (lifecycle and ownership code / lifecycle bookkeeping) |
-| 68-87 | Further nge modules (reserved: 10 pairs) |
-| 88-223 | Game code and assets; the demo uses 88 (map, slot 1) and 89 (sprites) |
+| 48-87 | nge `ecs` (20 pairs): 48/49 `entity` and `owner` (lifecycle and ownership code / lifecycle bookkeeping); 50 ECS data, mapped permanently into slot 0 (see [ECS data in slot 0](#ecs-data-in-slot-0)); 51 reserved |
+| 88-99 | Further nge modules (reserved: 6 pairs) |
+| 100-223 | Game code and assets; the demo uses 100 (map, slot 1) and 101 (sprites) |
 
 - **Module code, string literals and constants:** the even page. A banked
   `.c` file sets both `#pragma codeseg PAGE_n` and `#pragma constseg
@@ -238,13 +236,13 @@ or if a `#pragma codeseg` names an odd page.
 - **Split a module when only part of it can be banked.** A `.c` file is in
   one section, so `sprite/` is two files sharing `nge_sprite_internal.h`:
   `nge_sprite.c` (common: per-frame functions) and `nge_sprite_setup.c`
-  (page 42: setup and loading). `ecs/nge_entity` is three, sharing
-  `nge_entity_internal.h`: `nge_entity.c` (common: tables used every frame,
-  flag and component functions), `nge_entity_life.c` (page 48: lifecycle)
-  and `nge_entity_pdata.c` (page 49: the lifecycle's page data).
-  `ecs/nge_owner` is two: `nge_owner.c` (common: the owner table and
-  `nge_owner_get`) and `nge_owner_set.c` (page 48, beside the lifecycle
-  that uses it).
+  (page 42: setup and loading). `ecs/nge_entity` is four, sharing
+  `nge_entity_internal.h`: `nge_entity.c` (common: flag and component
+  functions), `nge_entity_cdata.c` (slot 0: the tables used every frame),
+  `nge_entity_life.c` (page 48: lifecycle) and `nge_entity_pdata.c` (page
+  49: the lifecycle's page data). `ecs/nge_owner` is three: `nge_owner.c`
+  (common: `nge_owner_get`), `nge_owner_cdata.c` (slot 0: the owner table)
+  and `nge_owner_set.c` (page 48, beside the lifecycle that uses it).
 - **Use even `PAGE_n` sections, or 16K `BANK_n` sections.** `banked_call`
   maps the page into slot 6, so code in an odd page (assembled for `$E000`)
   would be in the wrong slot.
@@ -339,8 +337,8 @@ the caller. Pass `NGE_SPRITE_DATA_COMMON` for data in common memory.
 - One call reads at most 8K from one page: 32 8-bit patterns. The pattern
   memory is 16K (64 patterns of 16x16 at 8 bits per pixel, or 128 at 4
   bits), so a full set takes two pages and two calls.
-- The demo's graphics are in page 89, in the game range
-  ([sprite_data.asm](../src/data/sprite_data.asm), `SECTION PAGE_89`). A
+- The demo's graphics are in page 101, in the game range
+  ([sprite_data.asm](../src/data/sprite_data.asm), `SECTION PAGE_101`). A
   game with several sprite sets puts each in its own odd page.
 - Hide sprites, or load during vblank, so patterns don't change while they
   are being drawn.
@@ -363,12 +361,91 @@ what is needed, then unmap. The active area's map is the exception: it is
 read constantly (drawing and collision checks), so it stays mapped in slot 1
 instead.
 
+## ECS data in slot 0
+
+Slot 0 holds page 50, the **ECS data page**, for the whole game:
+`nge_ecs_init()` ([nge_ecs.h](../src/nge/ecs/nge_ecs.h)) maps it after
+`nge_hw_init()`. It holds the ECS tables that several systems read every
+frame, out of the program's common memory, which is left for code and other
+data.
+
+| Address | Contents |
+|---|---|
+| `$0000`-`$00FF` | Guard area against null pointers |
+| `$0100`-`$1FFF` | ECS tables (`SECTION PAGE_50`, `CRT_ORG_PAGE_50 = 0x0100` in [banks.inc](../src/nge/banks.inc)): entity flags, components and alive list, owners, locations (about 0.7K at `NGE_ENTITY_MAX` 100) |
+
+### Where component data goes
+
+- **Hot and shared:** in slot 0. Hot means read or written per entity, per
+  frame, by more than one system, or by per-frame code in common memory
+  (the `NGE_ENTITY_*`, `NGE_OWNER_*` and `NGE_LOCATION_*` macros). Examples:
+  the alive list, owner, location.
+- **Used by one system:** in that system's odd page, as page data. The
+  system's update function is banked, so calling it maps its code into slot 6
+  and its data into slot 7, and it runs a tight loop over its own data and
+  the shared data in slot 0 (and the map in slot 1).
+- **Shared but not hot** (used only when particular game events happen):
+  in the page of the system that owns it, with banked `get` and `set`
+  helpers for the others.
+- **Never call another system's helpers per entity per frame.** Each is a
+  banked call (two MMU writes each way plus the banking stack, a few hundred
+  T-states). Data that others need every frame is hot: it belongs in slot 0,
+  or the owning system provides one call that does the whole batch.
+- **One table per field, indexed by entity ID** (`nge_location_x[]`,
+  `nge_location_y[]`), not an array of structs: indexing a byte table is the
+  cheapest access on the Z80.
+
+### ECS data files
+
+A module's slot 0 tables are in its **ECS data file**,
+`<module>/nge_<module>_cdata.c`, which starts with the marker
+`/* nge-dataseg: PAGE_50 */` (the same mechanism as
+[page data](#page-data-a-modules-variables-and-tables-in-its-odd-page)).
+Game code can put its own hot shared components in slot 0 the same way.
+
+- **Uninitialised variables only:** the owning module's init or create
+  function sets them. No code and no `const` data in page 50.
+- **On the PC tests** the marker has no effect: the tables are ordinary
+  globals.
+- [scripts/check-banks.sh](../scripts/check-banks.sh) checks that every
+  symbol of a `*_cdata.c` file is in `PAGE_50` between `$0100` and `$1FFF`
+  (an initialised variable or a missing marker would otherwise put it in
+  common memory), that the section stays in `$0100`-`$1FFF`, and that no
+  source sets `#pragma codeseg` or `constseg PAGE_50`.
+
+### The guard area
+
+With RAM in slot 0, a write through a null pointer (or a small offset from
+one) no longer crashes: it would silently change ECS data. The tables
+therefore start at `$0100`. `nge_ecs_init()` fills `$0000`-`$00FF` with a
+pattern that varies by address, and `nge_ecs_check_guard()` (compiled out
+with `NDEBUG`) aborts with a message if it has changed; the demo calls it
+once a frame. It catches writes only: a read through a null pointer returns
+the pattern.
+
+### When slot 0 is mapped out
+
+ECS data is unavailable, and must not be read, while the ROM is in slot 0:
+
+- **CSpect debug output:** `nge_cspect_print()` maps the ROM in around each
+  `rst $18` (see below). Values passed to `nge_printf` are copied first, so
+  printing them is fine; a string printed with `%s` must not be in slot 0.
+- **NextZXOS and esxDOS calls** (file loading): the loader must not touch
+  ECS data during a call.
+- **A future IM2 interrupt handler** must not read slot 0, or debug output
+  must disable interrupts around the ROM swap.
+
+**Layer 2 must be accessed through the MMU only,** never by mapping it with
+port `$123B`: that overlays `$0000`-`$3FFF` (or more), hiding the ECS data
+and the map.
+
 ## Slots 0 and 1
 
 Writing a RAM page number to registers `0x50`/`0x51` replaces that half of
 the ROM with writable RAM; writing `$FF` restores the ROM.
 
-**Slot 0 may hold RAM** (for common game data, from `$0000`), because:
+**Slot 0 holds RAM** (the ECS data page, from `nge_ecs_init()`), which is
+safe because:
 
 - **No maskable interrupt can happen.** `nge_hw_init()` runs `di` and clears
   the interrupt enable registers `$C4`-`$C6` (expansion bus `/INT`, line and
@@ -383,7 +460,7 @@ the ROM with writable RAM; writing `$FF` restores the ROM.
 - **NMI is not handled, by choice.** It cannot be masked and jumps to
   `$0066`, which is game data, so pressing the NMI button crashes the game.
 
-Slot 0 still holds the ROM until the game maps a page there.
+Slot 0 holds the ROM until `nge_ecs_init()` maps the ECS data page there.
 
 **Slot 1 holds the active area's map.** Map data is read constantly, by
 drawing and by collision checks, so it can't be mapped in and out per access.
@@ -391,10 +468,10 @@ The area maps its map's page into slot 1 when it starts, and the page stays
 there while the area is active. A map of up to 80 x 48 tiles (7.5K, see
 `NGE_MAP_STRIDE` and `NGE_MAP_MAX_HEIGHT` in
 [nge_map.h](../src/nge/map/nge_map.h)) fits in the slot. The demo in
-[main.c](../src/main.c) maps page 88 there and builds its map at startup:
+[main.c](../src/main.c) maps page 100 there and builds its map at startup:
 
 ```c
-nge_mmu_map(DEMO_MAP_SLOT, DEMO_MAP_PAGE);          /* slot 1, page 88 */
+nge_mmu_map(DEMO_MAP_SLOT, DEMO_MAP_PAGE);          /* slot 1, page 100 */
 build_demo_map((nge_tile_t *)NGE_MMU_SLOT_ADDR(DEMO_MAP_SLOT));
 nge_map_init(&map, (nge_tile_t *)NGE_MMU_SLOT_ADDR(DEMO_MAP_SLOT),
              DEMO_MAP_W, DEMO_MAP_H, &game_area);

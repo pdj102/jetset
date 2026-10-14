@@ -1,7 +1,7 @@
 /*
  * Ownership functions that change or search the owner table: banked in
- * page 48 with the entity lifecycle. The table is in common memory
- * (nge_owner.c).
+ * page 48 with the entity lifecycle. The table is in slot 0
+ * (nge_owner_cdata.c).
  */
 #ifdef __SDCC
 #pragma codeseg PAGE_48

@@ -30,8 +30,9 @@
  * Banking: the lifecycle functions (init, create, destroy, next_dying,
  * release, free_count, dying_count) are banked (NGE_BANKED, page 48, with
  * their bookkeeping in page 49): don't call them while game code has its own
- * page mapped in slot 6 or 7. The tables and the flag and component
- * functions are in common memory.
+ * page mapped in slot 6 or 7. The flag and component functions are in common
+ * memory. The tables are in slot 0, in the ECS data page (ecs/nge_ecs.h):
+ * call nge_ecs_init() first, which maps it and calls nge_entity_init().
  */
 
 #include <stdint.h>
@@ -64,7 +65,15 @@ typedef uint16_t nge_component_mask_t; /**< One bit per component; uint32_t for 
 /** Component n (0-15) as a mask bit. */
 #define NGE_COMPONENT(n)  ((nge_component_mask_t)1 << (n))
 
-/* Tables: read-only for game code, written by the functions below */
+/*
+ * Component numbers 0-3 are nge's:
+ *   0  location (ecs/nge_location.h, NGE_COMPONENT_LOCATION)
+ *   1-3 reserved
+ * The game's are NGE_COMPONENT_USER (4) to 15.
+ */
+#define NGE_COMPONENT_USER  4
+
+/* Tables in slot 0 (nge_entity_cdata.c): read-only for game code, written by the functions below */
 extern nge_entity_flags_t   nge_entity_flags[NGE_ENTITY_MAX];      /**< Per entity. */
 extern nge_component_mask_t nge_entity_components[NGE_ENTITY_MAX]; /**< Per entity. */
 extern nge_entity_id_t      nge_entity_alive[NGE_ENTITY_MAX];      /**< Alive IDs, in no order. */

@@ -3,8 +3,9 @@
 
 /*
  * Shared by the entity module's files; not for use outside it:
- * - nge_entity.c (common memory): the public tables, used every frame, and
- *   the checked flag and component functions;
+ * - nge_entity.c (common memory): the checked flag and component functions;
+ * - nge_entity_cdata.c (slot 0, the ECS data page): the public tables, used
+ *   every frame;
  * - nge_entity_life.c (page 48): the lifecycle functions;
  * - nge_entity_pdata.c (page 49): the lifecycle bookkeeping below.
  */

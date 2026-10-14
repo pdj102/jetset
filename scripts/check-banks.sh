@@ -27,6 +27,12 @@
 #
 # Every PAGE_n section must fit in its 8K page: the linker reports an even
 # page growing into a non-empty odd page, but not other overflows.
+#
+# Page 50 is the ECS data page, mapped permanently into slot 0 and assembled
+# for $0100 (above the null-pointer guard area $0000-$00FF): data only, no
+# page in its addresses. ECS slot 0 data files (modules named *_cdata_c, see
+# "ECS data in slot 0" in docs/memory_map.md) must have every symbol in it,
+# between $0100 and $1FFF, and no code may be placed there.
 
 map="$1"
 srcdir="${2:-src}"
@@ -41,6 +47,15 @@ fi
 
 # banked_call maps the page into slot 6 ($C000); an odd page is assembled for
 # slot 7 ($E000), so code placed there would be in the wrong place
+ecs=$(grep -rnE '^[[:space:]]*#pragma[[:space:]]+(codeseg|constseg)[[:space:]]+PAGE_50\b' \
+      --include='*.c' "$srcdir")
+if [ -n "$ecs" ]; then
+    echo "$ecs" | while IFS= read -r line; do
+        echo "error: $line: page 50 is the ECS data page in slot 0: uninitialised variables only (nge-dataseg marker)"
+    done
+    exit 1
+fi
+
 odd=$(grep -rnE '^[[:space:]]*#pragma[[:space:]]+codeseg[[:space:]]+PAGE_[0-9]*[13579]\b' \
       --include='*.c' "$srcdir")
 if [ -n "$odd" ]; then
@@ -50,7 +65,7 @@ if [ -n "$odd" ]; then
     exit 1
 fi
 
-awk '
+awk -v ecs_page=50 -v ecs_lo=256 -v ecs_hi=8192 '
 function hexval(h,    v, i) {
     h = toupper(h); v = 0
     for (i = 1; i <= length(h); i++) v = v * 16 + index("0123456789ABCDEF", substr(h, i, 1)) - 1
@@ -78,6 +93,20 @@ $2 == "=" && $3 ~ /^\$/ && $5 == "addr," {
     }
 }
 
+# ECS slot 0 data files: every symbol in the ECS page, between $0100 and $1FFF
+$2 == "=" && $3 ~ /^\$/ && $5 == "addr," {
+    module = $8; sub(/,$/, "", module)
+    section = $9; sub(/,$/, "", section)
+    if (module ~ /_cdata_c$/ && section != "") {
+        addr = hexval(substr($3, 2))
+        if (section != "PAGE_" ecs_page || addr < ecs_lo || addr >= ecs_hi) {
+            printf "error: %s (%s) is in %s at %s, not in the ECS page PAGE_%d at $0100-$1FFF: ECS data files may hold only uninitialised variables (with the nge-dataseg marker)\n", \
+                   $1, module, section, $3, ecs_page
+            bad = 1
+        }
+    }
+}
+
 # banked_call must be the nge version (src/nge/core/nge_banked_call.asm), which
 # preserves the interrupt state; the z88dk version enables interrupts on every call
 $1 == "banked_call" && $2 == "=" {
@@ -99,6 +128,8 @@ $2 == "=" && $3 ~ /^\$/ && $5 == "addr," {
 
     # Odd pages: private data only, read from slot 7 by its own module
     if (section ~ /^PAGE_/ && want % 2 == 1) next
+    # The ECS page: data in slot 0, checked above
+    if (section == "PAGE_" ecs_page) next
 
     hex = toupper(substr($3, 2)); value = 0
     for (i = 1; i <= length(hex); i++) {
@@ -120,6 +151,13 @@ END {
             printf "error: %s holds %d bytes, more than its 8K page\n", p, size
             bad = 1
         }
+    }
+    p = "PAGE_" ecs_page
+    if ((p, "tail") in bound && bound[p, "tail"] > bound[p, "head"] &&
+        (bound[p, "head"] < ecs_lo || bound[p, "tail"] > ecs_hi)) {
+        printf "error: %s is at $%04X-$%04X, outside slot 0 above the guard area ($0100-$1FFF): check CRT_ORG_%s in src/nge/banks.inc and its size\n", \
+               p, bound[p, "head"], bound[p, "tail"] - 1, p
+        bad = 1
     }
     exit bad
 }

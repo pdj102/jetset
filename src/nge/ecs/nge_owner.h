@@ -28,8 +28,9 @@
  *       nge_entity_release(id);
  *
  * Banking: the functions that change or search ownership are banked
- * (NGE_BANKED, page 48, with the entity lifecycle). The table and
- * nge_owner_get() are in common memory.
+ * (NGE_BANKED, page 48, with the entity lifecycle). nge_owner_get() is in
+ * common memory; the table is in slot 0, in the ECS data page
+ * (ecs/nge_ecs.h).
  */
 
 #include <stdint.h>
@@ -56,7 +57,7 @@ typedef uint8_t nge_owner_t;   /**< An entity ID, NGE_OWNER_WORLD or NGE_OWNER_A
 /** The area number of an area owner. */
 #define NGE_OWNER_AREA_OF(o)    ((uint8_t)((o) - (NGE_ENTITY_MAX + 1)))
 
-/** Owner of each entity in use: read-only for game code. Not meaningful for free entities. */
+/** Owner of each entity in use, in slot 0 (nge_owner_cdata.c): read-only for game code. Not meaningful for free entities. */
 extern nge_owner_t nge_owner_of[NGE_ENTITY_MAX];
 
 /* ---- Unchecked macros ---- */

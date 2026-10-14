@@ -13,7 +13,7 @@
 
 #include "hw/nge_palette.h"
 
-#define DEMO_SPRITE_PAGE      89  /**< SECTION PAGE_89 in sprite_data.asm. */
+#define DEMO_SPRITE_PAGE      101 /**< SECTION PAGE_101 in sprite_data.asm. */
 #define DEMO_SPRITE_PATTERNS  2   /**< 8-bit patterns: two walking frames. */
 #define DEMO_SPRITE_COLOURS   32  /**< Palette entries, from index 0. */
 

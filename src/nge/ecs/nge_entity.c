@@ -1,7 +1,7 @@
 /*
- * Entity functions and tables in common memory: the tables read every frame
- * through the macros in nge_entity.h, and the checked flag and component
- * functions. The lifecycle functions are banked, in nge_entity_life.c.
+ * Entity functions in common memory: the checked flag and component
+ * functions. The tables are in slot 0 (nge_entity_cdata.c); the lifecycle
+ * functions are banked, in nge_entity_life.c.
  */
 #include "ecs/nge_entity_internal.h"
 
@@ -9,11 +9,6 @@
 
 /* IDs are uint8_t with 0xFF reserved for NGE_ENTITY_INVALID */
 typedef char nge_entity_max_check[(NGE_ENTITY_MAX >= 1 && NGE_ENTITY_MAX <= 250) ? 1 : -1];
-
-nge_entity_flags_t   nge_entity_flags[NGE_ENTITY_MAX];
-nge_component_mask_t nge_entity_components[NGE_ENTITY_MAX];
-nge_entity_id_t      nge_entity_alive[NGE_ENTITY_MAX];
-uint8_t              nge_entity_alive_count;
 
 /* An entity that may have flags and components: alive or dying */
 void nge_entity_check_in_use(nge_entity_id_t id)

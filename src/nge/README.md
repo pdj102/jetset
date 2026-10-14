@@ -39,7 +39,7 @@ Includes are written from `src/nge`, with the folder:
 | `map/` | A tile map larger than the screen, shown through a tilemap window |
 | `devices/` | Raw device drivers (CSpect DebugOut, UART), no streams |
 | `output/` | Streams, print and printf, and the stream devices for the tilemap, CSpect and UART |
-| `ecs/` | Entity component system: `nge_entity` (IDs, lifecycle, flags, component masks; lifecycle banked in pages 48/49), `nge_owner` (the owner of every entity: an entity, the world or an area; changes banked in page 48) |
+| `ecs/` | Entity component system: `nge_entity` (IDs, lifecycle, flags, component masks; lifecycle banked in pages 48/49), `nge_owner` (the owner of every entity: an entity, the world or an area; changes banked in page 48), `nge_location` (tile position component), `nge_ecs` (ECS start-up: the ECS data page in slot 0 and its guard area) |
 
 Planned: `input/` (keyboard, joystick), `sound/` (AY), `event/` (event
 queue), more of `ecs/` (components, systems, deferred clean-up).
@@ -78,6 +78,10 @@ code" in [docs/memory_map.md](../../docs/memory_map.md)):
   `/* nge-dataseg: PAGE_n */` (uninitialised variables only) and
   `#pragma constseg PAGE_n` (tables). See "Page data" in
   `docs/memory_map.md`.
+- ECS tables that several systems read every frame go in slot 0, in the
+  module's ECS data file `nge_<module>_cdata.c` with the marker
+  `/* nge-dataseg: PAGE_50 */` (uninitialised variables only). See "ECS
+  data in slot 0" in `docs/memory_map.md` for which data goes where.
 - The output path (`core/nge_util`, `output/`, `devices/nge_cspect`) stays
   in common memory, so banked code can print its own literals. Banked
   literals and data may be passed only to common code or code in the same

@@ -14,6 +14,7 @@
 #include "output/nge_tm_stream.h"
 #include "output/nge_uart_stream.h"
 #include "core/nge_util.h"
+#include "ecs/nge_ecs.h"
 
 #include "data/sprite_data.h"
 
@@ -32,7 +33,7 @@ static const nge_tile_t empty_tile_entry = {
 
 /* Demo map: 80 x 48 tiles, resident in slot 1 ($2000) with the ROM swapped out */
 #define DEMO_MAP_SLOT    1
-#define DEMO_MAP_PAGE    88
+#define DEMO_MAP_PAGE    100
 #define DEMO_MAP_W       80
 #define DEMO_MAP_H       48
 #define WALL_TILE        2       /* a game graphics tile (palette bank 0) */
@@ -213,7 +214,7 @@ int main(void)
     nge_putu16(99, hud);
     nge_tm_clreol(hud);
 
-    /* Sprites: graphics come from page 89, mapped in only while loading */
+    /* Sprites: graphics come from page 101, mapped in only while loading */
     nge_sprite_init();
     load_sprite_graphics();
 
@@ -227,6 +228,8 @@ int main(void)
     nge_sprite_set(SPR_RECOLOUR, 0, 0, 0, NGE_SPRITE_PALETTE(1) | NGE_SPRITE_MIRROR_X);
     nge_map_clip_sprites(&map);
 
+    nge_ecs_init();     /* ECS data page into slot 0; makes every entity free */
+
     nge_util_info("init done");
 
     while (1)
@@ -235,6 +238,7 @@ int main(void)
         /* First thing in the blanking period, so nothing changes mid-frame */
         nge_sprite_update();
         nge_map_update(&map);
+        nge_ecs_check_guard();
 
         /* Walk until the tile ahead is a wall, then turn round */
         frame++;

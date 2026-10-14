@@ -1,7 +1,7 @@
 /*
  * Entity lifecycle functions: banked in page 48, with their bookkeeping in
  * page 49 (nge_entity_pdata.c), which banked_call maps into slot 7 for each
- * call. The tables used every frame are in common memory (nge_entity.c).
+ * call. The tables used every frame are in slot 0 (nge_entity_cdata.c).
  */
 #ifdef __SDCC
 #pragma codeseg PAGE_48

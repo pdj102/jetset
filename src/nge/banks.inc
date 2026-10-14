@@ -20,16 +20,23 @@
 //   42/43   nge sprite
 //   44/45   nge map (reserved: map code is per-frame and in common memory)
 //   46/47   nge event (reserved)
-//   48-67   nge ecs (10 pairs)
+//   48-87   nge ecs (20 pairs)
 //             48/49  entity and owner: lifecycle and ownership code /
 //                    lifecycle bookkeeping
-//   68-87   further nge modules (reserved: 10 pairs)
-//   88-223  game code and assets
-//             88  demo map (slot 1)
-//             89  demo sprite patterns and palette (slot 7, via the loaders)
+//             50     ECS data, mapped permanently into slot 0 ($0100-$1FFF;
+//                    $0000-$00FF is a guard area against null pointers)
+//             51     reserved (e.g. a second set of ECS data)
+//   88-99   further nge modules (reserved: 6 pairs)
+//   100-223 game code and assets
+//             100  demo map (slot 1)
+//             101  demo sprite patterns and palette (slot 7, via the loaders)
 
 // nge sprite: setup functions and loaders
 #pragma define CRT_ORG_PAGE_42 = 0x2AC000
 
 // nge ecs entity and owner: lifecycle and ownership functions
 #pragma define CRT_ORG_PAGE_48 = 0x30C000
+
+// nge ecs data: slot 0, above the guard area. Data only, so no page in the
+// address; scripts/check-banks.sh checks it stays in $0100-$1FFF.
+#pragma define CRT_ORG_PAGE_50 = 0x0100
