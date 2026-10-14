@@ -1,76 +1,79 @@
 /*
- * Sprite functions kept in common memory: those called every frame (also by
- * banked code with records in its own page), and the helpers shared with
- * the banked setup functions in nge_sprite_setup.c.
+ * Sprite functions kept in common memory: the record functions and the
+ * upload, used every frame, also by banked code with records in its own
+ * page. The banked hardware set-up functions are in nge_sprite_setup.c.
  */
 #include "sprite/nge_sprite_internal.h"
 
 #include <arch/zxn.h>
 
-nge_sprite_attr_t *nge_sprite_table;
-uint8_t nge_sprite_table_first;
-uint8_t nge_sprite_table_size;
-uint8_t nge_sprite_count;
-
-nge_sprite_attr_t *nge_sprite_entry(uint8_t id)
+void nge_sprite_clear(nge_sprite_attr_t *a, uint8_t count)
 {
-    uint8_t i = id - nge_sprite_table_first;
+    nge_util_assert(a != NULL);
 
-    nge_util_assert(nge_sprite_table != NULL);   /* nge_sprite_table_init() first */
-    nge_util_assert(id >= nge_sprite_table_first && i < nge_sprite_table_size);
-
-    if (i >= nge_sprite_count) {
-        nge_sprite_count = i + 1;
+    while (count--) {
+        a->x = 0;
+        a->y = 0;
+        a->attr2 = 0;
+        a->attr3 = ATTR3_ATTR4;   /* hidden */
+        a->attr4 = 0;
+        a++;
     }
-    return &nge_sprite_table[i];
 }
 
-void nge_sprite_entry_place(nge_sprite_attr_t *s, uint16_t x, uint16_t y)
+void nge_sprite_set(nge_sprite_attr_t *a, uint16_t x, uint16_t y, uint8_t pattern,
+                    uint8_t flags, uint8_t mode)
 {
-    s->x = (uint8_t)x;
-    s->y = (uint8_t)y;
-    s->attr2 = (s->attr2 & ATTR2_FLAGS) | (uint8_t)((x >> 8) & ATTR2_X8);
-    s->attr4 = (s->attr4 & (uint8_t)~ATTR4_Y8) | (uint8_t)((y >> 8) & ATTR4_Y8);
+    a->attr2 = flags & ATTR2_FLAGS;
+    a->attr4 = mode & (ATTR4_4BIT | ATTR4_SCALE);
+    nge_sprite_move(a, x, y);
+    a->attr3 = ATTR3_VISIBLE;
+    nge_sprite_set_pattern(a, pattern);
 }
 
-void nge_sprite_entry_pattern(nge_sprite_attr_t *s, uint8_t pattern)
-{
-    nge_util_assert(pattern < NGE_SPRITE_PATTERNS);
-
-    s->attr3 = (s->attr3 & ATTR3_VISIBLE) | ATTR3_ATTR4 | pattern;
-    s->attr4 &= (uint8_t)~(ATTR4_4BIT | ATTR4_N6);
-}
-
-void nge_sprite_entry_pattern4(nge_sprite_attr_t *s, uint8_t pattern)
-{
-    nge_util_assert(pattern < NGE_SPRITE_PATTERNS4);
-
-    s->attr3 = (s->attr3 & ATTR3_VISIBLE) | ATTR3_ATTR4 | (pattern >> 1);
-    s->attr4 = (s->attr4 & (uint8_t)~ATTR4_N6) | ATTR4_4BIT | (uint8_t)((pattern & 1) ? ATTR4_N6 : 0);
-}
-
-void nge_sprite_attr_build(nge_sprite_attr_t *a, uint16_t x, uint16_t y, uint8_t pattern,
-                           uint8_t flags, uint8_t mode)
+void nge_sprite_move(nge_sprite_attr_t *a, uint16_t x, uint16_t y)
 {
     a->x = (uint8_t)x;
     a->y = (uint8_t)y;
-    a->attr2 = (flags & ATTR2_FLAGS) | (uint8_t)((x >> 8) & ATTR2_X8);
-    a->attr4 = (mode & (ATTR4_4BIT | ATTR4_SCALE)) | (uint8_t)((y >> 8) & ATTR4_Y8);
-    if (mode & NGE_SPRITE_PATTERN4) {
+    a->attr2 = (a->attr2 & ATTR2_FLAGS) | (uint8_t)((x >> 8) & ATTR2_X8);
+    a->attr4 = (a->attr4 & (uint8_t)~ATTR4_Y8) | (uint8_t)((y >> 8) & ATTR4_Y8);
+}
+
+void nge_sprite_set_pattern(nge_sprite_attr_t *a, uint8_t pattern)
+{
+    if (a->attr4 & ATTR4_4BIT) {
         nge_util_assert(pattern < NGE_SPRITE_PATTERNS4);
-        a->attr3 = ATTR3_VISIBLE | ATTR3_ATTR4 | (pattern >> 1);
-        if (pattern & 1) {
-            a->attr4 |= ATTR4_N6;
-        }
+        /* 4-bit pattern n is the (n & 1) half of 256-byte slot n >> 1 */
+        a->attr3 = (a->attr3 & ATTR3_VISIBLE) | ATTR3_ATTR4 | (pattern >> 1);
+        a->attr4 = (a->attr4 & (uint8_t)~ATTR4_N6) | (uint8_t)((pattern & 1) ? ATTR4_N6 : 0);
     } else {
         nge_util_assert(pattern < NGE_SPRITE_PATTERNS);
-        a->attr3 = ATTR3_VISIBLE | ATTR3_ATTR4 | pattern;
+        a->attr3 = (a->attr3 & ATTR3_VISIBLE) | ATTR3_ATTR4 | pattern;
     }
 }
 
-void nge_sprite_upload(uint8_t first, const nge_sprite_attr_t *attrs, uint8_t count)
+void nge_sprite_set_flags(nge_sprite_attr_t *a, uint8_t flags)
 {
-    const uint8_t *p = (const uint8_t *)attrs;
+    a->attr2 = (a->attr2 & ATTR2_X8) | (flags & ATTR2_FLAGS);
+}
+
+void nge_sprite_set_scale(nge_sprite_attr_t *a, uint8_t scale)
+{
+    a->attr4 = (a->attr4 & (uint8_t)~ATTR4_SCALE) | (scale & ATTR4_SCALE);
+}
+
+void nge_sprite_show(nge_sprite_attr_t *a, uint8_t on)
+{
+    if (on) {
+        a->attr3 |= ATTR3_VISIBLE;
+    } else {
+        a->attr3 &= (uint8_t)~ATTR3_VISIBLE;
+    }
+}
+
+void nge_sprite_upload(uint8_t first, const nge_sprite_attr_t *a, uint8_t count)
+{
+    const uint8_t *p = (const uint8_t *)a;
     uint16_t bytes = (uint16_t)count * sizeof(nge_sprite_attr_t);
 
     nge_util_assert((uint16_t)first + count <= NGE_SPRITE_MAX);
@@ -78,66 +81,6 @@ void nge_sprite_upload(uint8_t first, const nge_sprite_attr_t *attrs, uint8_t co
     IO_SPRITE_SLOT = first;
     while (bytes--) {
         IO_SPRITE_ATTRIBUTE = *p++;
-    }
-}
-
-void nge_sprite_table_init(nge_sprite_attr_t *table, uint8_t first, uint8_t size)
-{
-    uint8_t i;
-
-    nge_util_assert(table != NULL && size > 0);
-    nge_util_assert((uint16_t)first + size <= NGE_SPRITE_MAX);
-
-    for (i = 0; i < size; i++) {
-        table[i].x = 0;
-        table[i].y = 0;
-        table[i].attr2 = 0;
-        table[i].attr3 = ATTR3_ATTR4;   /* hidden */
-        table[i].attr4 = 0;
-    }
-    nge_sprite_table = table;
-    nge_sprite_table_first = first;
-    nge_sprite_table_size = size;
-    nge_sprite_count = 0;
-}
-
-void nge_sprite_move(uint8_t id, uint16_t x, uint16_t y)
-{
-    nge_sprite_entry_place(nge_sprite_entry(id), x, y);
-}
-
-void nge_sprite_set_pattern(uint8_t id, uint8_t pattern)
-{
-    nge_sprite_entry_pattern(nge_sprite_entry(id), pattern);
-}
-
-void nge_sprite_set_pattern4(uint8_t id, uint8_t pattern)
-{
-    nge_sprite_entry_pattern4(nge_sprite_entry(id), pattern);
-}
-
-void nge_sprite_set_flags(uint8_t id, uint8_t flags)
-{
-    nge_sprite_attr_t *s = nge_sprite_entry(id);
-
-    s->attr2 = (s->attr2 & ATTR2_X8) | (flags & ATTR2_FLAGS);
-}
-
-void nge_sprite_show(uint8_t id, uint8_t on)
-{
-    nge_sprite_attr_t *s = nge_sprite_entry(id);
-
-    if (on) {
-        s->attr3 |= ATTR3_VISIBLE;
-    } else {
-        s->attr3 &= (uint8_t)~ATTR3_VISIBLE;
-    }
-}
-
-void nge_sprite_update(void)
-{
-    if (nge_sprite_table != NULL) {
-        nge_sprite_upload(nge_sprite_table_first, nge_sprite_table, nge_sprite_count);
     }
 }
 

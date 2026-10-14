@@ -237,7 +237,7 @@ void nge_render_update(void) NGE_BANKED
                 nge_render_dropped_count++;
                 continue;
             }
-            nge_sprite_attr_build(&nge_render_attrs[--slot], nge_render_sx[k], nge_render_sy[k],
+            nge_sprite_set(&nge_render_attrs[--slot], nge_render_sx[k], nge_render_sy[k],
                                   nge_render_first[id] + nge_render_anim_frame[id],
                                   nge_render_flags[id], nge_render_mode[id]);
         }
@@ -249,7 +249,7 @@ void nge_render_update(void) NGE_BANKED
      */
     k = nge_render_used > nge_render_shown ? nge_render_used : nge_render_shown;
     while (k > n) {
-        NGE_SPRITE_ATTR_HIDE(&nge_render_attrs[--k]);
+        nge_sprite_show(&nge_render_attrs[--k], 0);
     }
     nge_render_used = n;
 }

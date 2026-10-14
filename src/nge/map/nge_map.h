@@ -21,7 +21,7 @@
  * nge_frame_wait_vblank(), to redraw it while the display is blanked:
  *
  *     nge_frame_wait_vblank();
- *     nge_render_upload();     (or nge_sprite_update())
+ *     nge_render_upload();     (or nge_sprite_upload(...))
  *     nge_map_update(&map);
  *     ...game logic: move entities, the camera, change tiles...
  */

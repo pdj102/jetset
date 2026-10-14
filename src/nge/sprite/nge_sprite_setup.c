@@ -1,6 +1,7 @@
 /*
- * Sprite setup functions: banked, called through banked_call (see
- * core/nge_bank.h). The per-frame functions are in nge_sprite.c.
+ * Sprite hardware set-up functions: banked, called through banked_call (see
+ * core/nge_bank.h). They never touch records, which may be in the caller's
+ * page; the record functions and the upload are in nge_sprite.c.
  *
  * This code must stay in page 42 (slot 6 during the call): the loaders map
  * the data page into slot 7, which would unmap any code there.
@@ -108,35 +109,9 @@ void nge_sprite_set_transparency(uint8_t index) NGE_BANKED
     ZXN_WRITE_REG(REG_SPRITE_TRANSPARENCY_INDEX, index);
 }
 
-void nge_sprite_set(uint8_t id, uint16_t x, uint16_t y, uint8_t pattern, uint8_t flags) NGE_BANKED
-{
-    nge_sprite_attr_t *s = nge_sprite_entry(id);
-
-    nge_sprite_attr_build(s, x, y, pattern, flags, s->attr4 & ATTR4_SCALE);
-}
-
-void nge_sprite_set4(uint8_t id, uint16_t x, uint16_t y, uint8_t pattern, uint8_t flags) NGE_BANKED
-{
-    nge_sprite_attr_t *s = nge_sprite_entry(id);
-
-    nge_sprite_attr_build(s, x, y, pattern, flags, (s->attr4 & ATTR4_SCALE) | NGE_SPRITE_PATTERN4);
-}
-
-void nge_sprite_set_scale(uint8_t id, uint8_t scale) NGE_BANKED
-{
-    nge_sprite_attr_t *s = nge_sprite_entry(id);
-
-    s->attr4 = (s->attr4 & (uint8_t)~ATTR4_SCALE) | (scale & ATTR4_SCALE);
-}
-
 void nge_sprite_hide_all(void) NGE_BANKED
 {
-    uint8_t i;
-
     hide_hardware();
-    for (i = 0; i < nge_sprite_count; i++) {
-        NGE_SPRITE_ATTR_HIDE(&nge_sprite_table[i]);
-    }
 }
 
 void nge_sprite_set_clip(const nge_rect_t *r) NGE_BANKED

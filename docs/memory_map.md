@@ -71,10 +71,10 @@ The current CSpect build (`bin/main.map`) uses:
 
 | Address | Contents |
 |---|---|
-| `$6A00`-`$A58C` | Code and constant data (`CODE`) |
-| `$A58D`-`$A593` | Initialised data (`DATA`) |
-| `$A594`-`$A647` | Uninitialised data (`BSS`) |
-| `$A648`-`$BDFF` | Free, about 5.9K (about 11.1K in the hardware build, without asserts and their messages) |
+| `$6A00`-`$A300` | Code and constant data (`CODE`) |
+| `$A301`-`$A307` | Initialised data (`DATA`) |
+| `$A308`-`$A3B6` | Uninitialised data (`BSS`) |
+| `$A3B7`-`$BDFF` | Free, about 6.6K (about 11.3K in the hardware build, without asserts and their messages) |
 | `$BE00`-`$BFFF` | Stack, 512 bytes |
 
 The link step checks `__BSS_END_tail` in the map file and fails the build if
@@ -178,7 +178,7 @@ the previous pages back. Banked so far:
 
 | Pages | Module | Code (even page) | Page data (odd page) |
 |---|---|---|---|
-| 42/43 | `sprite` | setup functions and loaders, with literals (`nge_sprite_setup.c`, about 1.3K) | none |
+| 42/43 | `sprite` | hardware set-up functions and loaders, with literals (`nge_sprite_setup.c`, about 1.1K) | none |
 | 48/49 | `ecs` entity, owner | lifecycle functions (`nge_entity_life.c`) and the ownership functions that change or search the owner table (`nge_owner_set.c`), with literals, about 0.6K | lifecycle bookkeeping: free and dying stacks, alive positions (`nge_entity_pdata.c`, 302 bytes) |
 | 52/53 | `ecs` render system | the system (`ecs/systems/nge_render.c`), with literals, about 2.4K | the sprite component (10 bytes per entity), the sprite records for hardware sprites 0 to `NGE_RENDER_SPRITES`-1, and its working data (`nge_render_pdata.c`, about 1.8K) |
 
@@ -249,7 +249,7 @@ or if a `#pragma codeseg` names an odd page.
   maps the page into slot 6, so code in an odd page (assembled for `$E000`)
   would be in the wrong slot.
 - **Keep these in common memory:**
-  - code called many times a frame (`nge_sprite_attr_build`,
+  - code called many times a frame (the sprite record functions,
     `nge_sprite_upload`, `nge_map_update`, the tilemap stream, `nge_putc`):
     each banked call costs about 150-250 T-states. A system that does a
     whole frame's work in one call, such as `nge_render_update`, can be
@@ -349,15 +349,18 @@ the caller. Pass `NGE_SPRITE_DATA_COMMON` for data in common memory.
 - Tile definitions can be copied into `$4A00` the same way: slots 2 and 3
   stay mapped, so a copy goes directly from slot 7 into video memory.
 
-Sprite attributes are sent to port `$57` every frame from records in one of
-two places, so the sprite module itself holds no 640-byte table:
+Sprite attributes are sent to port `$57` every frame from records
+(`nge_sprite_attr_t`) that their callers own, so the sprite module itself
+holds no 640-byte table. The record functions and `nge_sprite_upload()` are
+in common memory and take a pointer, so the records can be anywhere their
+caller can see them:
 
-- the render system's records, page data in page 53, for hardware sprites 0
-  to `NGE_RENDER_SPRITES`-1: `nge_render_upload()` is banked, so page 53 is
-  in slot 7 when it passes them to `nge_sprite_upload()` in common memory;
-- a table the game defines for the other sprites (`nge_sprite_table_init()`,
-  for a HUD for example), which must be in common memory or slot 0, since
-  the banked setters read it. The game keeps the two ranges apart.
+- the render system's records are page data in page 53, for hardware
+  sprites 0 to `NGE_RENDER_SPRITES`-1: its banked code has page 53 in slot 7
+  when it calls the record functions and the upload;
+- a game's own records for the other sprites (a HUD, for example) are an
+  array in common memory, or in its own page if its code is banked. The
+  game keeps the ranges apart.
 
 Keep in non-banked memory anything used after the upload:
 
