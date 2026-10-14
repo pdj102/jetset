@@ -11,6 +11,8 @@
 
 #include "game/level/level_internal.h"
 
+#include <stdlib.h>
+
 #include "game/screen.h"
 #include "hw/nge_mmu.h"
 #include "io/nge_tm_stream.h"
@@ -103,6 +105,8 @@ void level_init(void) NGE_BANKED
     nge_mmu_map(LEVEL_MAP_SLOT, LEVEL_MAP_PAGE);
     nge_map_init(&level_map, (nge_tile_t *)NGE_MMU_SLOT_ADDR(LEVEL_MAP_SLOT),
                  LEVEL_WIDTH, LEVEL_HEIGHT, &screen_map_view);
+
+    srand(0); /* reproducible test layout */
     build_test_layout();
     nge_map_clip_sprites(&level_map);
 }
