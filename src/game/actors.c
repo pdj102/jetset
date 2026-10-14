@@ -46,6 +46,7 @@ uint8_t actors_move_player(int8_t dx, int8_t dy)
 {
     uint8_t x = (uint8_t)(NGE_LOCATION_X(actor_player) + dx);
     uint8_t y = (uint8_t)(NGE_LOCATION_Y(actor_player) + dy);
+    nge_entity_id_t id;
 
     if (!level_is_open(x, y)) {
         screen_message("You bump into a wall.");
@@ -53,8 +54,13 @@ uint8_t actors_move_player(int8_t dx, int8_t dy)
     }
     nge_location_set(actor_player, x, y);
     nge_map_centre_camera(&level_map, x, y);
-    if (x == NGE_LOCATION_X(actor_potion) && y == NGE_LOCATION_Y(actor_potion)) {
-        screen_message("You see a potion here.");
+    /* Report what else is on the tile */
+    NGE_LOCATION_FOR_EACH_AT(id, LEVEL_AREA, x, y, 0) {
+        if (id == actor_potion) {
+            screen_message("You see a potion here.");
+        } else if (id != actor_player) {
+            screen_message("You see something here.");
+        }
     }
     return 1;
 }

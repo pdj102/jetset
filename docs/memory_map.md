@@ -71,10 +71,10 @@ The current CSpect build (`bin/main.map`) uses:
 
 | Address | Contents |
 |---|---|
-| `$6A00`-`$AC44` | Code and constant data (`CODE`) |
-| `$AC45`-`$AC56` | Initialised data (`DATA`) |
-| `$AC57`-`$AD3B` | Uninitialised data (`BSS`) |
-| `$AD3C`-`$BDFF` | Free, about 4.2K (about 9.6K in the hardware build, without asserts and their messages) |
+| `$6A00`-`$AD50` | Code and constant data (`CODE`) |
+| `$AD51`-`$AD66` | Initialised data (`DATA`) |
+| `$AD67`-`$AE4B` | Uninitialised data (`BSS`) |
+| `$AE4C`-`$BDFF` | Free, about 3.9K (about 9.4K in the hardware build, without asserts and their messages) |
 | `$BE00`-`$BFFF` | Stack, 512 bytes |
 
 The link step checks `__BSS_END_tail` in the map file and fails the build if

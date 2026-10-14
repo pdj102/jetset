@@ -25,6 +25,7 @@
 #include <stdint.h>
 
 #include "ecs/nge_entity.h"
+#include "ecs/nge_owner.h"
 
 /** Component bit: component number 0, reserved for nge (see nge_entity.h). */
 #define NGE_COMPONENT_LOCATION  NGE_COMPONENT(0)
@@ -49,6 +50,35 @@ extern uint8_t nge_location_fy[NGE_ENTITY_MAX];   /**< Pixel within the tile, 0-
 #define NGE_LOCATION_PX(id)  ((uint16_t)nge_location_x[id] * NGE_LOCATION_FINE + nge_location_fx[id])
 /** Y in map pixels. */
 #define NGE_LOCATION_PY(id)  ((uint16_t)nge_location_y[id] * NGE_LOCATION_FINE + nge_location_fy[id])
+
+/* ---- Entities at a tile ---- */
+
+/**
+ * @brief Find the next entity on tile (x, y) of an area, from ID `from` upwards.
+ *
+ * Matches alive entities with NGE_COMPONENT_LOCATION and every component in
+ * mask (0 for any), owned directly by area, at map column x and row y (the
+ * fine position is ignored). Fast: it searches the column table with
+ * memchr (CPIR on the Next), then checks only entities in column x.
+ *
+ * @param mask Components the entity must also have, e.g. a game's creature
+ *             or item component; 0 for any located entity.
+ * @param from First ID to consider: 0 for the first match.
+ * @return The entity, or NGE_ENTITY_INVALID if there are no more.
+ */
+nge_entity_id_t nge_location_find(nge_owner_t area, uint8_t x, uint8_t y,
+                                  nge_component_mask_t mask, nge_entity_id_t from);
+
+/**
+ * Loop over the entities on tile (x, y) of an area, by ID: id receives each
+ * one (see nge_location_find()). The next search starts after the current
+ * ID, so destroying the current entity or moving it away is safe; an
+ * entity moved onto the tile during the loop is visited only if its ID is
+ * higher.
+ */
+#define NGE_LOCATION_FOR_EACH_AT(id, area, x, y, mask) \
+    for ((id) = nge_location_find((area), (x), (y), (mask), 0); (id) != NGE_ENTITY_INVALID; \
+         (id) = nge_location_find((area), (x), (y), (mask), (nge_entity_id_t)((id) + 1)))
 
 /* ---- Checked functions ---- */
 

@@ -4,6 +4,9 @@
  */
 #include "ecs/components/nge_location.h"
 
+#include <stddef.h>
+#include <string.h>
+
 #include "core/nge_util.h"
 
 /* An entity in use with a location */
@@ -57,4 +60,28 @@ void nge_location_remove(nge_entity_id_t id)
     nge_util_assert(NGE_ENTITY_STATE(id) != NGE_ENTITY_FREE);
 
     nge_entity_components[id] &= (nge_component_mask_t)~NGE_COMPONENT_LOCATION;
+}
+
+nge_entity_id_t nge_location_find(nge_owner_t area, uint8_t x, uint8_t y,
+                                  nge_component_mask_t mask, nge_entity_id_t from)
+{
+    const uint8_t *p;
+    nge_entity_id_t id;
+
+    mask |= NGE_COMPONENT_LOCATION;
+    while (from < NGE_ENTITY_MAX) {
+        /* Next entity in column x: the only search over every entity */
+        p = memchr(&nge_location_x[from], x, NGE_ENTITY_MAX - from);
+        if (p == NULL) {
+            break;
+        }
+        id = (nge_entity_id_t)(p - nge_location_x);
+        /* Free entities keep old locations: check the rest only for this one */
+        if (nge_location_y[id] == y && NGE_ENTITY_IS_ALIVE(id) &&
+            NGE_ENTITY_HAS_COMPONENTS(id, mask) && nge_owner_of[id] == area) {
+            return id;
+        }
+        from = id + 1;
+    }
+    return NGE_ENTITY_INVALID;
 }
