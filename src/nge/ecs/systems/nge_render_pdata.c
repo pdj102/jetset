@@ -7,17 +7,19 @@
  */
 #include "ecs/systems/nge_render_internal.h"
 
-uint8_t nge_render_first[NGE_ENTITY_MAX];
-uint8_t nge_render_flags[NGE_ENTITY_MAX];
-uint8_t nge_render_mode[NGE_ENTITY_MAX];
-int8_t  nge_render_ox[NGE_ENTITY_MAX];
-int8_t  nge_render_oy[NGE_ENTITY_MAX];
-uint8_t nge_render_layer[NGE_ENTITY_MAX];
-uint8_t nge_render_anim_count[NGE_ENTITY_MAX];
-uint8_t nge_render_anim_rate[NGE_ENTITY_MAX];
-uint8_t nge_render_anim_tick[NGE_ENTITY_MAX];
-uint8_t nge_render_anim_frame[NGE_ENTITY_MAX];
+/* Sprite component */
+uint8_t nge_render_sprite_first[NGE_ENTITY_MAX];
+uint8_t nge_render_sprite_flags[NGE_ENTITY_MAX];
+uint8_t nge_render_sprite_mode[NGE_ENTITY_MAX];
+int8_t  nge_render_sprite_ox[NGE_ENTITY_MAX];
+int8_t  nge_render_sprite_oy[NGE_ENTITY_MAX];
+uint8_t nge_render_sprite_layer[NGE_ENTITY_MAX];
+uint8_t nge_render_sprite_anim_count[NGE_ENTITY_MAX];
+uint8_t nge_render_sprite_anim_rate[NGE_ENTITY_MAX];
+uint8_t nge_render_sprite_anim_tick[NGE_ENTITY_MAX];
+uint8_t nge_render_sprite_anim_frame[NGE_ENTITY_MAX];
 
+/* System working data */
 nge_sprite_attr_t nge_render_attrs[NGE_RENDER_SPRITES];
 nge_entity_id_t   nge_render_vis[NGE_ENTITY_MAX];
 uint16_t          nge_render_sx[NGE_ENTITY_MAX];

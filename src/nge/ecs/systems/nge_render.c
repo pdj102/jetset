@@ -44,11 +44,11 @@ static void check_patterns(uint8_t first, uint8_t count, uint8_t mode)
 
 static void still(nge_entity_id_t id, uint8_t pattern)
 {
-    nge_render_first[id] = pattern;
-    nge_render_anim_count[id] = 1;
-    nge_render_anim_rate[id] = 1;
-    nge_render_anim_tick[id] = 0;
-    nge_render_anim_frame[id] = 0;
+    nge_render_sprite_first[id] = pattern;
+    nge_render_sprite_anim_count[id] = 1;
+    nge_render_sprite_anim_rate[id] = 1;
+    nge_render_sprite_anim_tick[id] = 0;
+    nge_render_sprite_anim_frame[id] = 0;
 }
 
 void nge_render_init(void) NGE_BANKED
@@ -68,11 +68,11 @@ void nge_render_add(nge_entity_id_t id, uint8_t pattern, uint8_t flags, uint8_t 
     nge_util_assert(layer < NGE_RENDER_LAYERS);
 
     still(id, pattern);
-    nge_render_flags[id] = flags;
-    nge_render_mode[id] = mode;
-    nge_render_ox[id] = 0;
-    nge_render_oy[id] = 0;
-    nge_render_layer[id] = layer;
+    nge_render_sprite_flags[id] = flags;
+    nge_render_sprite_mode[id] = mode;
+    nge_render_sprite_ox[id] = 0;
+    nge_render_sprite_oy[id] = 0;
+    nge_render_sprite_layer[id] = layer;
     nge_entity_components[id] |= NGE_COMPONENT_SPRITE;
 }
 
@@ -86,7 +86,7 @@ void nge_render_remove(nge_entity_id_t id) NGE_BANKED
 void nge_render_set_pattern(nge_entity_id_t id, uint8_t pattern) NGE_BANKED
 {
     check_entity(id, 1);
-    check_patterns(pattern, 1, nge_render_mode[id]);
+    check_patterns(pattern, 1, nge_render_sprite_mode[id]);
 
     still(id, pattern);
 }
@@ -94,36 +94,36 @@ void nge_render_set_pattern(nge_entity_id_t id, uint8_t pattern) NGE_BANKED
 void nge_render_set_anim(nge_entity_id_t id, uint8_t first, uint8_t count, uint8_t rate) NGE_BANKED
 {
     check_entity(id, 1);
-    check_patterns(first, count, nge_render_mode[id]);
+    check_patterns(first, count, nge_render_sprite_mode[id]);
     nge_util_assert(rate >= 1);
 
-    nge_render_first[id] = first;
-    nge_render_anim_count[id] = count;
-    nge_render_anim_rate[id] = rate;
-    nge_render_anim_tick[id] = 0;
-    nge_render_anim_frame[id] = 0;
+    nge_render_sprite_first[id] = first;
+    nge_render_sprite_anim_count[id] = count;
+    nge_render_sprite_anim_rate[id] = rate;
+    nge_render_sprite_anim_tick[id] = 0;
+    nge_render_sprite_anim_frame[id] = 0;
 }
 
 void nge_render_set_flags(nge_entity_id_t id, uint8_t flags) NGE_BANKED
 {
     check_entity(id, 1);
 
-    nge_render_flags[id] = flags;
+    nge_render_sprite_flags[id] = flags;
 }
 
 void nge_render_set_scale(nge_entity_id_t id, uint8_t scale) NGE_BANKED
 {
     check_entity(id, 1);
 
-    nge_render_mode[id] = (nge_render_mode[id] & NGE_SPRITE_PATTERN4) | (scale & (uint8_t)~NGE_SPRITE_PATTERN4);
+    nge_render_sprite_mode[id] = (nge_render_sprite_mode[id] & NGE_SPRITE_PATTERN4) | (scale & (uint8_t)~NGE_SPRITE_PATTERN4);
 }
 
 void nge_render_set_offset(nge_entity_id_t id, int8_t ox, int8_t oy) NGE_BANKED
 {
     check_entity(id, 1);
 
-    nge_render_ox[id] = ox;
-    nge_render_oy[id] = oy;
+    nge_render_sprite_ox[id] = ox;
+    nge_render_sprite_oy[id] = oy;
 }
 
 void nge_render_set_layer(nge_entity_id_t id, uint8_t layer) NGE_BANKED
@@ -131,7 +131,7 @@ void nge_render_set_layer(nge_entity_id_t id, uint8_t layer) NGE_BANKED
     check_entity(id, 1);
     nge_util_assert(layer < NGE_RENDER_LAYERS);
 
-    nge_render_layer[id] = layer;
+    nge_render_sprite_layer[id] = layer;
 }
 
 void nge_render_set_view(nge_owner_t area, const nge_map_t *map) NGE_BANKED
@@ -145,10 +145,10 @@ void nge_render_set_view(nge_owner_t area, const nge_map_t *map) NGE_BANKED
 /* Advance an entity's animation by one frame */
 static void animate(nge_entity_id_t id)
 {
-    if (nge_render_anim_count[id] > 1 && ++nge_render_anim_tick[id] >= nge_render_anim_rate[id]) {
-        nge_render_anim_tick[id] = 0;
-        if (++nge_render_anim_frame[id] >= nge_render_anim_count[id]) {
-            nge_render_anim_frame[id] = 0;
+    if (nge_render_sprite_anim_count[id] > 1 && ++nge_render_sprite_anim_tick[id] >= nge_render_sprite_anim_rate[id]) {
+        nge_render_sprite_anim_tick[id] = 0;
+        if (++nge_render_sprite_anim_frame[id] >= nge_render_sprite_anim_count[id]) {
+            nge_render_sprite_anim_frame[id] = 0;
         }
     }
 }
@@ -182,10 +182,10 @@ static uint8_t collect(const nge_map_t *m)
         animate(id);
 
         /* Position relative to the view's top-left, in pixels */
-        rx = (int16_t)(NGE_LOCATION_PX(id) + nge_render_ox[id] - view_x);
-        ry = (int16_t)(NGE_LOCATION_PY(id) + nge_render_oy[id] - view_y);
+        rx = (int16_t)(NGE_LOCATION_PX(id) + nge_render_sprite_ox[id] - view_x);
+        ry = (int16_t)(NGE_LOCATION_PY(id) + nge_render_sprite_oy[id] - view_y);
         /* Size with scaling: X scale in mode bits 3-4, Y scale in bits 1-2 */
-        mode = nge_render_mode[id];
+        mode = nge_render_sprite_mode[id];
         w = SPRITE_PIXELS << ((mode >> 3) & 3);
         h = SPRITE_PIXELS << ((mode >> 1) & 3);
         if (rx <= -w || rx >= view_w || ry <= -h || ry >= view_h) {
@@ -230,7 +230,7 @@ void nge_render_update(void) NGE_BANKED
     while (layer-- > 0) {
         for (k = 0; k < v; k++) {
             id = nge_render_vis[k];
-            if (nge_render_layer[id] != layer) {
+            if (nge_render_sprite_layer[id] != layer) {
                 continue;
             }
             if (slot == 0) {
@@ -238,8 +238,8 @@ void nge_render_update(void) NGE_BANKED
                 continue;
             }
             nge_sprite_set(&nge_render_attrs[--slot], nge_render_sx[k], nge_render_sy[k],
-                                  nge_render_first[id] + nge_render_anim_frame[id],
-                                  nge_render_flags[id], nge_render_mode[id]);
+                                  nge_render_sprite_first[id] + nge_render_sprite_anim_frame[id],
+                                  nge_render_sprite_flags[id], nge_render_sprite_mode[id]);
         }
     }
 
