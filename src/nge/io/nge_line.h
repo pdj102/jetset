@@ -17,11 +17,25 @@
  *
  * The buffer always holds a 0-terminated string.
  *
- * Non-blocking: nge_line_begin(), then nge_line_update() once per frame
- * until it returns 1, so the game's frame loop keeps running. Blocking:
- * nge_gets() and nge_getc_wait() run frames themselves
- * (nge_frame_wait_vblank() and nge_input_update(), nothing else), so
- * sprites and the map stand still while they wait.
+ * Blocking or not:
+ *
+ * | Function           | Blocking? | Returns                                        |
+ * |--------------------|-----------|------------------------------------------------|
+ * | nge_line_begin()   | no        | at once: an empty line is ready to edit         |
+ * | nge_line_update()  | no        | at once: 1 if ENTER ended the line, 0 if not    |
+ * | nge_getc_wait()    | yes       | when a character arrives                        |
+ * | nge_gets()         | yes       | when ENTER ends the line                        |
+ *
+ * Non-blocking functions use only the input already waiting and return at
+ * once. Call nge_line_update() once per frame from the game's frame loop
+ * until it returns 1: the loop keeps running, so sprites animate and the
+ * map and screen keep updating while the player types.
+ *
+ * Blocking functions don't return until the input arrives. While they wait
+ * they run frames themselves, calling nge_frame_wait_vblank() and
+ * nge_input_update() and nothing else: the game's own frame work (the
+ * render system, map updates, animation) does not run, so the screen stands
+ * still. Use them for modal prompts, such as asking for a name at start-up.
  */
 
 #include <stdint.h>
@@ -38,7 +52,7 @@ typedef struct nge_line {
 } nge_line_t;
 
 /**
- * @brief Start editing an empty line.
+ * @brief Non-blocking: start editing an empty line.
  * @param buf Buffer for the line, in common memory.
  * @param size Buffer size, including the 0 (at least 1).
  * @param in Input stream.
@@ -47,20 +61,32 @@ typedef struct nge_line {
 void nge_line_begin(nge_line_t *l, char *buf, uint8_t size, NGE_FILE *in, NGE_FILE *echo);
 
 /**
- * @brief Read and edit with every character waiting, without waiting for more.
+ * @brief Non-blocking: edit the line with every character already waiting
+ *        in the input stream, then return without waiting for more.
+ *
+ * Call once per frame until it returns 1. Characters after the ENTER stay
+ * in the stream.
  * @return 1 when ENTER ends the line (the ENTER is not echoed), 0 otherwise.
  */
 uint8_t nge_line_update(nge_line_t *l);
 
 /**
- * @brief Read a character, running frames until one arrives.
- * @param in Input stream.
+ * @brief Blocking: read a character, waiting until one arrives.
+ *
+ * While it waits it runs frames (nge_frame_wait_vblank() and
+ * nge_input_update() only). nge_getc() is the non-blocking version.
+ * @param in Input stream (asserts if it is not an input stream, which
+ *           would never return a character).
  * @return The character.
  */
 int nge_getc_wait(NGE_FILE *in);
 
 /**
- * @brief Read a line, running frames until ENTER.
+ * @brief Blocking: read a line, waiting until ENTER ends it.
+ *
+ * While it waits it runs frames (nge_frame_wait_vblank() and
+ * nge_input_update() only). nge_line_begin() and nge_line_update() are the
+ * non-blocking version.
  * @see nge_line_begin() for the parameters.
  */
 void nge_gets(char *buf, uint8_t size, NGE_FILE *in, NGE_FILE *echo);

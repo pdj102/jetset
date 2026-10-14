@@ -7,9 +7,10 @@
  *
  * Streams are opened by a device driver (see nge_tm_stream.h,
  * nge_uart_stream.h and nge_kbd_stream.h). Output streams are written
- * through nge_putc() or the helpers in nge_print.h; input streams are read
- * with nge_getc(), which never waits, or the blocking helpers and the line
- * editor in nge_line.h.
+ * through nge_putc() or the helpers in nge_print.h. Input streams are read
+ * with nge_getc(), which is non-blocking (it returns at once, with NGE_EOF
+ * if nothing is waiting), or with the line editor and the blocking reads in
+ * nge_line.h (nge_getc_wait(), nge_gets()).
  */
 
 #include <stdint.h>
@@ -34,7 +35,9 @@ typedef struct nge_file NGE_FILE;
 int nge_putc(uint8_t c, NGE_FILE *stream);
 
 /**
- * @brief Read a character from a stream, without waiting.
+ * @brief Non-blocking: read a character from a stream, returning at once.
+ *
+ * nge_getc_wait() in nge_line.h is the blocking version.
  * @param stream Open stream.
  * @return The next character, or NGE_EOF if none is waiting or the stream
  *         is not an input stream.

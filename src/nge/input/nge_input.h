@@ -21,7 +21,13 @@
  *   held key repeats after a delay. A repeat is queued only while the queue
  *   is empty, so repeats never pile up while the game is busy. Up to
  *   NGE_KEY_QUEUE events wait; later ones are dropped.
- *   nge_key_wait() is the blocking version.
+ *
+ * Blocking or not: every function returns at once except nge_key_wait(),
+ * which doesn't return until an event arrives (or its timeout). While it
+ * waits it runs frames itself, calling nge_frame_wait_vblank() and
+ * nge_input_update() and nothing else, so the game's own frame work (the
+ * render system, map updates, animation) stops and the screen stands still.
+ * In the game's frame loop, call nge_key_get() once per frame instead.
  *
  * Text: nge_key_ascii() turns an event into a character, and the keyboard
  * stream (io/nge_kbd_stream.h) and line editor (io/nge_line.h) build on it.
@@ -125,7 +131,7 @@ typedef uint16_t nge_key_event_t;
 
 /* ---- Common memory: per frame ---- */
 
-/** @brief Read the keyboard and queue events: once per frame. */
+/** @brief Non-blocking: read the keyboard and queue events. Call once per frame. */
 void nge_input_update(void);
 
 /** @brief 1 if key k is held. */
@@ -137,7 +143,11 @@ uint8_t nge_key_pressed(uint8_t k);
 /** @brief 1 if key k was released this frame. */
 uint8_t nge_key_released(uint8_t k);
 
-/** @brief Take the next event, without waiting: NGE_KEY_NONE if there is none. */
+/**
+ * @brief Non-blocking: take the next event, returning at once.
+ * @return The event, or NGE_KEY_NONE if none is waiting. nge_key_wait() is
+ *         the blocking version.
+ */
 nge_key_event_t nge_key_get(void);
 
 /** @brief Throw away waiting events (for example when a menu opens or closes). */
@@ -170,8 +180,11 @@ void nge_input_set_repeat(uint8_t delay, uint8_t rate) NGE_BANKED;
 uint8_t nge_key_ascii(nge_key_event_t ev) NGE_BANKED;
 
 /**
- * @brief Wait for the next event, running frames (nge_frame_wait_vblank()
- *        and nge_input_update(), nothing else) until one arrives.
+ * @brief Blocking: wait for the next event.
+ *
+ * Returns at once if an event is already waiting. Otherwise it runs frames
+ * (nge_frame_wait_vblank() and nge_input_update() only) until one arrives
+ * or the timeout passes. nge_key_get() is the non-blocking version.
  * @param frames Frames to wait at most; 0 waits for ever.
  * @return The event, or NGE_KEY_NONE after the timeout.
  */

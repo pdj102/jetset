@@ -5,8 +5,10 @@
  * @file nge_kbd_stream.h
  * @brief Input stream on the keyboard: the characters of key events.
  *
- * nge_getc() takes key events (input/nge_input.h) and returns the first
- * with a character (nge_key_ascii()), or NGE_EOF when no event is waiting.
+ * nge_getc() is non-blocking: it takes key events (input/nge_input.h) and
+ * returns the first with a character (nge_key_ascii()) at once, or NGE_EOF
+ * when no event is waiting. To wait for a key, use nge_getc_wait() or the
+ * line editor in nge_line.h.
  * Events without a character, such as EXTEND, are skipped. The events come
  * from nge_input_update(), which must run once per frame.
  */
