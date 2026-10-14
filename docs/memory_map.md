@@ -71,10 +71,10 @@ The current CSpect build (`bin/main.map`) uses:
 
 | Address | Contents |
 |---|---|
-| `$6A00`-`$A300` | Code and constant data (`CODE`) |
-| `$A301`-`$A307` | Initialised data (`DATA`) |
-| `$A308`-`$A3B6` | Uninitialised data (`BSS`) |
-| `$A3B7`-`$BDFF` | Free, about 6.6K (about 11.3K in the hardware build, without asserts and their messages) |
+| `$6A00`-`$A228` | Code and constant data (`CODE`) |
+| `$A229`-`$A22F` | Initialised data (`DATA`) |
+| `$A230`-`$A2E2` | Uninitialised data (`BSS`) |
+| `$A2E3`-`$BDFF` | Free, about 6.8K (about 11.7K in the hardware build, without asserts and their messages) |
 | `$BE00`-`$BFFF` | Stack, 512 bytes |
 
 The link step checks `__BSS_END_tail` in the map file and fails the build if
@@ -145,7 +145,7 @@ code pages.
 | 46/47 | nge `event` (reserved) |
 | 48-87 | nge `ecs` (20 pairs): 48/49 `entity` and `owner` (lifecycle and ownership code / lifecycle bookkeeping); 50 ECS data, mapped permanently into slot 0 (see [ECS data in slot 0](#ecs-data-in-slot-0)); 51 reserved; 52/53 `render` system |
 | 88-99 | Further nge modules (reserved: 6 pairs) |
-| 100-223 | Game code and assets; the demo uses 100 (map, slot 1) and 101 (sprites) |
+| 100-223 | Game code and assets; the game uses 100 (level map, slot 1) and 101 (sprites) |
 
 - **Module code, string literals and constants:** the even page. A banked
   `.c` file sets both `#pragma codeseg PAGE_n` and `#pragma constseg
@@ -341,7 +341,7 @@ the caller. Pass `NGE_SPRITE_DATA_COMMON` for data in common memory.
 - One call reads at most 8K from one page: 32 8-bit patterns. The pattern
   memory is 16K (64 patterns of 16x16 at 8 bits per pixel, or 128 at 4
   bits), so a full set takes two pages and two calls.
-- The demo's graphics are in page 101, in the game range
+- The game's sprite graphics are in page 101, in the game range
   ([sprite_data.asm](../src/data/sprite_data.asm), `SECTION PAGE_101`). A
   game with several sprite sets puts each in its own odd page.
 - Hide sprites, or load during vblank, so patterns don't change while they
@@ -436,7 +436,7 @@ With RAM in slot 0, a write through a null pointer (or a small offset from
 one) no longer crashes: it would silently change ECS data. The tables
 therefore start at `$0100`. `nge_ecs_init()` fills `$0000`-`$00FF` with a
 pattern that varies by address, and `nge_ecs_check_guard()` (compiled out
-with `NDEBUG`) aborts with a message if it has changed; the demo calls it
+with `NDEBUG`) aborts with a message if it has changed; the game calls it
 once a frame. It catches writes only: a read through a null pointer returns
 the pattern.
 
@@ -484,14 +484,15 @@ drawing and by collision checks, so it can't be mapped in and out per access.
 The area maps its map's page into slot 1 when it starts, and the page stays
 there while the area is active. A map of up to 80 x 48 tiles (7.5K, see
 `NGE_MAP_STRIDE` and `NGE_MAP_MAX_HEIGHT` in
-[nge_map.h](../src/nge/map/nge_map.h)) fits in the slot. The demo in
-[main.c](../src/main.c) maps page 100 there and builds its map at startup:
+[nge_map.h](../src/nge/map/nge_map.h)) fits in the slot. The game's level
+([level.c](../src/game/level.c)) maps page 100 there and builds its test
+layout at startup:
 
 ```c
-nge_mmu_map(DEMO_MAP_SLOT, DEMO_MAP_PAGE);          /* slot 1, page 100 */
-build_demo_map((nge_tile_t *)NGE_MMU_SLOT_ADDR(DEMO_MAP_SLOT));
-nge_map_init(&map, (nge_tile_t *)NGE_MMU_SLOT_ADDR(DEMO_MAP_SLOT),
-             DEMO_MAP_W, DEMO_MAP_H, &game_area);
+nge_mmu_map(LEVEL_MAP_SLOT, LEVEL_MAP_PAGE);        /* slot 1, page 100 */
+nge_map_init(&level_map, (nge_tile_t *)NGE_MMU_SLOT_ADDR(LEVEL_MAP_SLOT),
+             LEVEL_WIDTH, LEVEL_HEIGHT, &screen_map_view);
+build_test_layout();
 ```
 
 Consequences:
@@ -504,4 +505,4 @@ Consequences:
 - **Map data from the NEX file:** a `PAGE_n` section with `CRT_ORG_PAGE_n`
   set to `0x2000` (with `-pragma-define`) is assembled for slot 1.
   Alternatively, an area copies or decompresses its map into the slot-1 page
-  when it starts, as the demo does.
+  when it starts, as the level does.

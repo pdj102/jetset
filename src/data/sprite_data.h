@@ -14,7 +14,12 @@
 #include "hw/nge_palette.h"
 
 #define DEMO_SPRITE_PAGE      101 /**< SECTION PAGE_101 in sprite_data.asm. */
-#define DEMO_SPRITE_PATTERNS  2   /**< 8-bit patterns: two walking frames. */
+#define DEMO_SPRITE_PATTERNS  5   /**< 8-bit patterns (see below). */
+
+/* Patterns */
+#define DEMO_SPRITE_WALKER    0   /**< 16x16 walking figure, 2 frames. */
+#define DEMO_SPRITE_PLAYER    2   /**< 8x8 player in the top-left, 2 frames. */
+#define DEMO_SPRITE_POTION    4   /**< 8x8 potion in the top-left. */
 #define DEMO_SPRITE_COLOURS   32  /**< Palette entries, from index 0. */
 
 extern const uint8_t demo_sprite_patterns[];
