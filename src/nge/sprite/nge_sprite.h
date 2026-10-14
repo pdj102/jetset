@@ -41,8 +41,7 @@
  * nge_sprite_status() are in common memory, so a banked caller can use them
  * on records in its own page. The hardware set-up functions, which never
  * touch records (init, hide_all, set_transparency, the loaders, set_clip,
- * clear_clip), are banked (NGE_BANKED, page 42): don't call them while game
- * code has its own page mapped in slot 6 or 7.
+ * clear_clip), are banked (NGE_BANKED, page 42). 
  */
 
 #include <stdint.h>

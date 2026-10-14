@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(make -B CFLAGS=-DNDEBUG)",
+      "Bash(make -B)",
+      "Bash(make test *)"
+    ]
+  }
+}
