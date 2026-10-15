@@ -19,19 +19,20 @@
 //   32-39   spare
 //   40/41   nge output (reserved: the output path stays in common memory)
 //   42/43   nge sprite
-//   44/45   nge map (reserved: map code is per-frame and in common memory)
+//   44/45   nge map: set-up code / (unused); its data is in page 51
 //   46/47   nge event (reserved)
 //   48-87   nge ecs (20 pairs)
 //             48/49  entity and owner: lifecycle and ownership code /
 //                    lifecycle bookkeeping
 //             50     ECS data, mapped permanently into slot 0 ($0100-$1FFF;
 //                    $0000-$00FF is a guard area against null pointers)
-//             51     reserved (e.g. a second set of ECS data)
+//             51     map data, mapped permanently into slot 1 ($2000-$3FFF):
+//                    the map's state, tiles and block table (nge_map_cdata.c)
 //             52/53  render system: code / sprite component and working data
 //   88-99   further nge modules (6 pairs)
 //             88/89  input: setup, ASCII tables and waiting / (unused)
 //   100-223 game
-//             100      level map (slot 1)
+//             100      free (game assets)
 //             101      sprite patterns and palette (slot 7, via the loaders)
 //             102-131  game code pairs (15), from 102 up:
 //                        102/103  level: setting up and building a level / (unused)
@@ -59,3 +60,10 @@
 
 // game title: the title state
 #pragma define CRT_ORG_PAGE_104 = 0x68C000
+
+// nge map: set-up functions
+#pragma define CRT_ORG_PAGE_44 = 0x2CC000
+
+// nge map data: slot 1. Data only, so no page in the address;
+// scripts/check-banks.sh checks it stays in $2000-$3FFF.
+#pragma define CRT_ORG_PAGE_51 = 0x2000

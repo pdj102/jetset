@@ -14,12 +14,11 @@
 #include <stdlib.h>
 
 #include "game/screen.h"
-#include "hw/nge_mmu.h"
 #include "io/nge_tm_stream.h"
 
 static void put(uint8_t x, uint8_t y, uint8_t id, uint8_t ink)
 {
-    nge_tile_t *t = NGE_MAP_ROW(&level_map, y) + x;
+    nge_tile_t *t = &NGE_MAP_TILE(x, y);
 
     t->tile_id = id;
     t->tile_attr = (uint8_t)(ink << 4);
@@ -109,21 +108,19 @@ static void build_test_layout(void)
  */
 static void set_up_blocks(void)
 {
-    nge_map_clear_blocks(&level_map, NGE_BLOCK_SOLID);
-    nge_map_set_block(&level_map, LEVEL_FLOOR, NGE_BLOCK_NONE);
-    nge_map_set_block(&level_map, LEVEL_FLOOR2, NGE_BLOCK_NONE);
-    nge_map_set_block(&level_map, LEVEL_DOOR, NGE_BLOCK_NONE);
-    nge_map_set_block(&level_map, LEVEL_CORRIDOR, NGE_BLOCK_NONE);
+    nge_map_clear_blocks(NGE_BLOCK_SOLID);
+    nge_map_set_block(LEVEL_FLOOR, NGE_BLOCK_NONE);
+    nge_map_set_block(LEVEL_FLOOR2, NGE_BLOCK_NONE);
+    nge_map_set_block(LEVEL_DOOR, NGE_BLOCK_NONE);
+    nge_map_set_block(LEVEL_CORRIDOR, NGE_BLOCK_NONE);
 }
 
 void level_init(void) NGE_BANKED
 {
-    nge_mmu_map(LEVEL_MAP_SLOT, LEVEL_MAP_PAGE);
-    nge_map_init(&level_map, (nge_tile_t *)NGE_MMU_SLOT_ADDR(LEVEL_MAP_SLOT),
-                 LEVEL_WIDTH, LEVEL_HEIGHT, &screen_map_view);
+    nge_map_init(LEVEL_WIDTH, LEVEL_HEIGHT, &screen_map_view);   /* maps the map's page into slot 1 */
 
     set_up_blocks();
     srand(0); /* reproducible test layout */
     build_test_layout();
-    nge_map_clip_sprites(&level_map);
+    nge_map_clip_sprites();
 }

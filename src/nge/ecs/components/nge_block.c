@@ -40,14 +40,14 @@ nge_entity_id_t nge_block_find(nge_owner_t area, uint8_t x, uint8_t y, nge_block
     return NGE_ENTITY_INVALID;
 }
 
-uint8_t nge_block_can_enter(const nge_map_t *m, nge_owner_t area, uint8_t x, uint8_t y,
-                            nge_block_t pass, nge_entity_id_t ignore, nge_entity_id_t *blocker)
+uint8_t nge_block_can_enter(nge_owner_t area, uint8_t x, uint8_t y, nge_block_t pass,
+                            nge_entity_id_t ignore, nge_entity_id_t *blocker)
 {
     nge_entity_id_t id = NGE_ENTITY_INVALID;
     uint8_t enter = 0;
 
     /* The map first: no entity search if a wall or the edge blocks */
-    if ((nge_map_block(m, x, y) & (nge_block_t)~pass) == 0) {
+    if ((nge_map_block(x, y) & (nge_block_t)~pass) == 0) {
         id = nge_block_find(area, x, y, pass, ignore);
         enter = id == NGE_ENTITY_INVALID;
     }

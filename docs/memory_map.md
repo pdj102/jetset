@@ -14,7 +14,7 @@ it reads physical memory or its own on-chip RAM, whatever the slots show.
 | Slot | Address | Default page | Use |
 |---|---|---|---|
 | 0 | `$0000`-`$1FFF` | ROM | ECS data, page 50, mapped by `nge_ecs_init()`: guard area `$0000`-`$00FF`, tables from `$0100` (see [ECS data in slot 0](#ecs-data-in-slot-0)) |
-| 1 | `$2000`-`$3FFF` | ROM | The active area's map (`nge_map`), with the ROM's upper half swapped out |
+| 1 | `$2000`-`$3FFF` | ROM | The map's data, page 51, mapped by `nge_map_init()`: block table, state, tiles (see [Always-mapped data pages](#always-mapped-data-pages)) |
 | 2 | `$4000`-`$5FFF` | 10 | Tilemap and tile definitions. Free space: none |
 | 3 | `$6000`-`$7FFF` | 11 | End of the tile definitions, then the **start of the program** at `$6A00` |
 | 4 | `$8000`-`$9FFF` | 4 | Program (code and data) |
@@ -71,10 +71,10 @@ The current CSpect build (`bin/main.map`) uses:
 
 | Address | Contents |
 |---|---|
-| `$6A00`-`$B209` | Code and constant data (`CODE`) |
-| `$B20A`-`$B21F` | Initialised data (`DATA`) |
-| `$B220`-`$B358` | Uninitialised data (`BSS`) |
-| `$B359`-`$BDFF` | Free, about 2.7K (about 8.6K in the hardware build, without asserts and their messages) |
+| `$6A00`-`$AD73` | Code and constant data (`CODE`) |
+| `$AD74`-`$AD89` | Initialised data (`DATA`) |
+| `$AD8A`-`$AEB3` | Uninitialised data (`BSS`) |
+| `$AEB4`-`$BDFF` | Free, about 3.8K (about 9.2K in the hardware build, without asserts and their messages) |
 | `$BE00`-`$BFFF` | Stack, 512 bytes |
 
 The link step checks `__BSS_END_tail` in the map file and fails the build if
@@ -141,11 +141,11 @@ code pages.
 | 32-39 | Spare |
 | 40/41 | nge `io` (reserved; the output path stays in common memory) |
 | 42/43 | nge `sprite` (setup functions and loaders) |
-| 44/45 | nge `map` (reserved; its code runs every frame and is in common memory) |
+| 44/45 | nge `map`: set-up code (init, block table, sprite clip) / unused. Its per-frame code is in common memory, its data in page 51 |
 | 46/47 | nge `event` (reserved; the event queue and its processing run every turn and are in common memory) |
-| 48-87 | nge `ecs` (20 pairs): 48/49 `entity` and `owner` (lifecycle and ownership code / lifecycle bookkeeping); 50 ECS data, mapped permanently into slot 0 (see [ECS data in slot 0](#ecs-data-in-slot-0)); 51 reserved; 52/53 `render` system |
+| 48-87 | nge `ecs` (20 pairs): 48/49 `entity` and `owner` (lifecycle and ownership code / lifecycle bookkeeping); 50 ECS data, mapped permanently into slot 0 (see [ECS data in slot 0](#ecs-data-in-slot-0)); 51 map data, mapped permanently into slot 1 (see [Always-mapped data pages](#always-mapped-data-pages)); 52/53 `render` system |
 | 88-99 | Further nge modules (6 pairs): 88/89 `input` (setup, ASCII tables and waiting / unused) |
-| 100 | Game: the level map (slot 1) |
+| 100 | Game: free (assets) |
 | 101 | Game: sprite patterns and palette (slot 7, through the loaders) |
 | 102-131 | Game code pairs (15), allocated from 102 up: 102/103 `level` (setting up and building a level / unused); 104/105 `title` (the title state / unused) |
 | 132-223 | Game assets: maps, graphics, level data |
@@ -184,6 +184,7 @@ Banked so far:
 | Pages | Module | Code (even page) | Page data (odd page) |
 |---|---|---|---|
 | 42/43 | `sprite` | hardware set-up functions and loaders, with literals (`nge_sprite_setup.c`, about 1.1K) | none |
+| 44/45 | `map` | set-up: `nge_map_init()` (maps page 51 into slot 1), the block table functions, the sprite clip (`nge_map_setup.c`, about 0.7K) | none |
 | 48/49 | `ecs` entity, owner | lifecycle functions (`nge_entity_life.c`) and the ownership functions that change or search the owner table (`nge_owner_set.c`), with literals, about 0.6K | lifecycle bookkeeping: free and dying stacks, alive positions (`nge_entity_pdata.c`, 302 bytes) |
 | 52/53 | `ecs` render system | the system (`ecs/systems/nge_render.c`), with literals, about 2.4K | the sprite component (10 bytes per entity), the sprite records for hardware sprites 0 to `NGE_RENDER_SPRITES`-1, and its working data (`nge_render_pdata.c`, about 1.8K) |
 | 88/89 | `input` | setup, the key-to-ASCII tables and waiting (`input/nge_input_setup.c`, about 0.5K) | none |
@@ -298,14 +299,13 @@ part runs:
 ```text
 src/game/level/
   level.h, level_internal.h
-  level.c          common: level_map, level_can_enter()   (every frame / every turn)
+  level.c          common: level_can_enter()   (every turn)
   level_bank.c     page 102: level_init() and the layout builder   (once per level)
 ```
 
 - **What stays common:** anything called every frame or many times a turn
   (`level_can_enter()` is called for every move, and will be for every
-  monster move), and data read by common code (`level_map`, read by the map and
-  render systems every frame).
+  monster move), and data read by common code every frame.
 - **A game function that receives literals or data from a banked module
   stays common,** or is in the same page. `screen_message()` is common, so
   `level_bank.c` can pass it its own literals; a banked `screen` module
@@ -427,6 +427,32 @@ what is needed, then unmap. The active area's map is the exception: it is
 read constantly (drawing and collision checks), so it stays mapped in slot 1
 instead.
 
+## Always-mapped data pages
+
+Two pages hold common data at fixed addresses outside the program, each
+mapped once at start-up and left in its slot:
+
+| Page | Slot | Addresses | Contents | Mapped by |
+|---|---|---|---|---|
+| 50 | 0 | `$0100`-`$1FFF` (guard area below) | ECS tables read every frame (below) | `nge_ecs_init()` |
+| 51 | 1 | `$2000`-`$3FFF` | the map: block table (`$2000`, 256 bytes), state (`nge_map`), tiles (80 x 48, 7.5K) | `nge_map_init()` |
+
+- **Common data files:** a module's tables for one of these pages are in its
+  `nge_<module>_cdata.c`, with the marker `/* nge-dataseg: PAGE_50 */` or
+  `PAGE_51`: uninitialised variables only, set up by the module's init.
+- **Origins without a page** (`CRT_ORG_PAGE_50 = 0x0100`,
+  `CRT_ORG_PAGE_51 = 0x2000` in [banks.inc](../src/nge/banks.inc)): the
+  data is addressed in its slot, never through `banked_call`.
+- [scripts/check-banks.sh](../scripts/check-banks.sh) checks that every
+  symbol of a `*_cdata.c` file is inside one of these pages and its range,
+  that each page's section stays in its range (the linker also stops a page
+  overflowing into the next), and that no source puts code or constants
+  there (`#pragma codeseg`/`constseg PAGE_50` or `PAGE_51`).
+- **One map:** with its data at fixed addresses, no map function takes a
+  pointer (`nge_map_set_camera(x, y)`, `NGE_MAP_TILE(x, y)`). A later level
+  system can keep each dungeon level's whole map (state, tiles, blocks) in a
+  page with the same layout and switch level with one MMU write.
+
 ## ECS data in slot 0
 
 Slot 0 holds page 50, the **ECS data page**, for the whole game:
@@ -531,24 +557,22 @@ safe because:
 
 Slot 0 holds the ROM until `nge_ecs_init()` maps the ECS data page there.
 
-**Slot 1 holds the active area's map.** Map data is read constantly, by
-drawing and by collision checks, so it can't be mapped in and out per access.
-The area maps its map's page into slot 1 when it starts, and the page stays
-there while the area is active. The page holds the map's buffer
-(`NGE_MAP_BUFFER_BYTES`, 7,936 bytes, checked at compile time): the tiles of
-a map of up to 80 x 48 (7.5K, see `NGE_MAP_STRIDE` and `NGE_MAP_MAX_HEIGHT`
-in [nge_map.h](../src/nge/map/nge_map.h)), then the 256-byte block table at
-`$3E00` (what each tile ID blocks: walls, pits; see "blocking flags" in
-nge_map.h), which the map module places and the game fills in with
-`nge_map_clear_blocks()` and `nge_map_set_block()`. The game's level
-([level_bank.c](../src/game/level/level_bank.c)) maps page 100 there and builds its test
-layout at startup:
+**Slot 1 holds the map.** Map data is read constantly, by drawing and by
+collision checks, so it can't be mapped in and out per access. All of it is
+in page 51 ([Always-mapped data pages](#always-mapped-data-pages)):
+`nge_map_blocks` (what each tile ID blocks: walls, pits; see "blocking
+flags" in [nge_map.h](../src/nge/map/nge_map.h)) at `$2000`, the state
+`nge_map`, and the tiles `nge_map_tiles` (a map of up to 80 x 48, see
+`NGE_MAP_STRIDE` and `NGE_MAP_MAX_HEIGHT`), 7,947 bytes. `nge_map_init()`
+maps the page into slot 1; the game then fills in the tiles and the block
+table. The game's level ([level_bank.c](../src/game/level/level_bank.c))
+does this at start-up:
 
 ```c
-nge_mmu_map(LEVEL_MAP_SLOT, LEVEL_MAP_PAGE);        /* slot 1, page 100 */
-nge_map_init(&level_map, (nge_tile_t *)NGE_MMU_SLOT_ADDR(LEVEL_MAP_SLOT),
-             LEVEL_WIDTH, LEVEL_HEIGHT, &screen_map_view);
-build_test_layout();
+nge_map_init(LEVEL_WIDTH, LEVEL_HEIGHT, &screen_map_view);   /* page 51 into slot 1 */
+set_up_blocks();          /* nge_map_clear_blocks(), nge_map_set_block() */
+build_test_layout();      /* NGE_MAP_TILE(x, y) = ... */
+nge_map_clip_sprites();
 ```
 
 Consequences:

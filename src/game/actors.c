@@ -68,7 +68,7 @@ uint8_t actors_move_player(int8_t dx, int8_t dy)
         return 0;
     }
     nge_location_set(actor_player, x, y);
-    nge_map_centre_camera(&level_map, x, y);
+    nge_map_centre_camera(x, y);
 
     /* Events: what happened, for the systems to react to */
     nge_event_post0(actor_player, EV_MOVED);

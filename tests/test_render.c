@@ -14,8 +14,6 @@
 #define AREA0       NGE_OWNER_AREA(0)
 #define AREA1       NGE_OWNER_AREA(1)
 
-static nge_tile_t tiles[NGE_MAP_BUFFER_BYTES / sizeof(nge_tile_t)];
-static nge_map_t map;
 /* Window: the whole width, rows 22-30 (as the demo); its top-left pixel is (0, 176) */
 static const nge_rect_t window = { .x1 = 0, .x2 = 39, .y1 = 22, .y2 = 30 };
 
@@ -63,9 +61,9 @@ static void reset(void)
 {
     nge_entity_init();
     nge_render_init();
-    nge_map_init(&map, tiles, 80, 48, &window);
-    nge_map_set_camera(&map, 0, 20);                          /* view: columns 0-39, rows 20-28 */
-    nge_render_set_view(AREA0, &map);
+    nge_map_init(80, 48, &window);
+    nge_map_set_camera(0, 20);                          /* view: columns 0-39, rows 20-28 */
+    nge_render_set_view(AREA0);
 }
 
 int main(void)
@@ -122,15 +120,15 @@ int main(void)
     id = make(AREA0, 6, 21, 6, 0);
     nge_entity_destroy(id);                                   /* dying */
     CHECK(frame() == 1 && attr(0, 3) == (0xC0 | 1));
-    nge_render_set_view(AREA1, &map);
+    nge_render_set_view(AREA1);
     CHECK(frame() == 1 && attr(0, 3) == (0xC0 | 2));
-    nge_render_set_view(AREA1, NULL);
-    CHECK(frame() == 1 && !visible(0));                       /* no map: hidden */
+    nge_render_set_view(NGE_RENDER_NO_VIEW);
+    CHECK(frame() == 1 && !visible(0));                       /* no view: hidden */
     CHECK(frame() == 0);
 
     /* ---- culling, allowing for the sprite's size ---- */
     reset();
-    nge_map_set_camera(&map, 10, 20);                         /* view: pixels 80-399, 160-231 */
+    nge_map_set_camera(10, 20);                         /* view: pixels 80-399, 160-231 */
     a = make(AREA0, 9, 21, 1, 0);                             /* x 72: 8 pixels left of the view */
     b = make(AREA0, 8, 21, 2, 0);                             /* x 64: 16 left, entirely outside */
     c = make(AREA0, 50, 21, 3, 0);                            /* x 400: right of the view */
@@ -235,7 +233,7 @@ int main(void)
     CHECK(test_halt_count == 1);
     TEST_EXPECT_HALT(nge_render_set_layer(a, NGE_RENDER_LAYERS));
     CHECK(test_halt_count == 1);
-    TEST_EXPECT_HALT(nge_render_set_view(NGE_OWNER_COUNT, &map));
+    TEST_EXPECT_HALT(nge_render_set_view(NGE_OWNER_COUNT));
     CHECK(test_halt_count == 1);
     nge_render_add(b, 100, 0, NGE_SPRITE_PATTERN4, 0);       /* 4-bit patterns go to 127 */
     nge_render_set_anim(b, 120, 8, 1);

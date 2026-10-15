@@ -28,11 +28,13 @@
 # Every PAGE_n section must fit in its 8K page: the linker reports an even
 # page growing into a non-empty odd page, but not other overflows.
 #
-# Page 50 is the ECS data page, mapped permanently into slot 0 and assembled
-# for $0100 (above the null-pointer guard area $0000-$00FF): data only, no
-# page in its addresses. ECS slot 0 data files (modules named *_cdata_c, see
-# "ECS data in slot 0" in docs/memory_map.md) must have every symbol in it,
-# between $0100 and $1FFF, and no code may be placed there.
+# Always-mapped data pages: data only, no page in their addresses, no code:
+# - page 50, the ECS data, permanently in slot 0, assembled for $0100 (above
+#   the null-pointer guard area $0000-$00FF): $0100-$1FFF;
+# - page 51, the map data, permanently in slot 1: $2000-$3FFF.
+# Common data files (modules named *_cdata_c, see "Always-mapped data pages"
+# in docs/memory_map.md) must have every symbol in one of them, inside its
+# range, and each page's section must stay inside its range.
 
 map="$1"
 srcdir="${2:-src}"
@@ -47,11 +49,11 @@ fi
 
 # banked_call maps the page into slot 6 ($C000); an odd page is assembled for
 # slot 7 ($E000), so code placed there would be in the wrong place
-ecs=$(grep -rnE '^[[:space:]]*#pragma[[:space:]]+(codeseg|constseg)[[:space:]]+PAGE_50\b' \
+fixed=$(grep -rnE '^[[:space:]]*#pragma[[:space:]]+(codeseg|constseg)[[:space:]]+PAGE_5[01]\b' \
       --include='*.c' "$srcdir")
-if [ -n "$ecs" ]; then
-    echo "$ecs" | while IFS= read -r line; do
-        echo "error: $line: page 50 is the ECS data page in slot 0: uninitialised variables only (nge-dataseg marker)"
+if [ -n "$fixed" ]; then
+    echo "$fixed" | while IFS= read -r line; do
+        echo "error: $line: pages 50 and 51 are always-mapped data pages (slots 0 and 1): uninitialised variables only (nge-dataseg marker)"
     done
     exit 1
 fi
@@ -65,7 +67,13 @@ if [ -n "$odd" ]; then
     exit 1
 fi
 
-awk -v ecs_page=50 -v ecs_lo=256 -v ecs_hi=8192 '
+awk '
+BEGIN {
+    # Always-mapped data pages: address range [lo, hi) and where it is
+    lo["PAGE_50"] = 256;   hi["PAGE_50"] = 8192;    where["PAGE_50"] = "slot 0 above the guard area ($0100-$1FFF)"
+    lo["PAGE_51"] = 8192;  hi["PAGE_51"] = 16384;   where["PAGE_51"] = "slot 1 ($2000-$3FFF)"
+}
+
 function hexval(h,    v, i) {
     h = toupper(h); v = 0
     for (i = 1; i <= length(h); i++) v = v * 16 + index("0123456789ABCDEF", substr(h, i, 1)) - 1
@@ -93,15 +101,15 @@ $2 == "=" && $3 ~ /^\$/ && $5 == "addr," {
     }
 }
 
-# ECS slot 0 data files: every symbol in the ECS page, between $0100 and $1FFF
+# Common data files: every symbol in an always-mapped data page, inside its range
 $2 == "=" && $3 ~ /^\$/ && $5 == "addr," {
     module = $8; sub(/,$/, "", module)
     section = $9; sub(/,$/, "", section)
     if (module ~ /_cdata_c$/ && section != "") {
         addr = hexval(substr($3, 2))
-        if (section != "PAGE_" ecs_page || addr < ecs_lo || addr >= ecs_hi) {
-            printf "error: %s (%s) is in %s at %s, not in the ECS page PAGE_%d at $0100-$1FFF: ECS data files may hold only uninitialised variables (with the nge-dataseg marker)\n", \
-                   $1, module, section, $3, ecs_page
+        if (!(section in lo) || addr < lo[section] || addr >= hi[section]) {
+            printf "error: %s (%s) is in %s at %s, not inside an always-mapped data page (PAGE_50 at $0100-$1FFF, PAGE_51 at $2000-$3FFF): common data files may hold only uninitialised variables (with the nge-dataseg marker)\n", \
+                   $1, module, section, $3
             bad = 1
         }
     }
@@ -128,8 +136,8 @@ $2 == "=" && $3 ~ /^\$/ && $5 == "addr," {
 
     # Odd pages: private data only, read from slot 7 by its own module
     if (section ~ /^PAGE_/ && want % 2 == 1) next
-    # The ECS page: data in slot 0, checked above
-    if (section == "PAGE_" ecs_page) next
+    # Always-mapped data pages: data, checked above
+    if (section in lo) next
 
     hex = toupper(substr($3, 2)); value = 0
     for (i = 1; i <= length(hex); i++) {
@@ -152,12 +160,13 @@ END {
             bad = 1
         }
     }
-    p = "PAGE_" ecs_page
-    if ((p, "tail") in bound && bound[p, "tail"] > bound[p, "head"] &&
-        (bound[p, "head"] < ecs_lo || bound[p, "tail"] > ecs_hi)) {
-        printf "error: %s is at $%04X-$%04X, outside slot 0 above the guard area ($0100-$1FFF): check CRT_ORG_%s in src/nge/banks.inc and its size\n", \
-               p, bound[p, "head"], bound[p, "tail"] - 1, p
-        bad = 1
+    for (p in lo) {
+        if ((p, "tail") in bound && bound[p, "tail"] > bound[p, "head"] &&
+            (bound[p, "head"] < lo[p] || bound[p, "tail"] > hi[p])) {
+            printf "error: %s is at $%04X-$%04X, outside %s: check CRT_ORG_%s in src/nge/banks.inc and its size\n", \
+                   p, bound[p, "head"], bound[p, "tail"] - 1, where[p], p
+            bad = 1
+        }
     }
     exit bad
 }

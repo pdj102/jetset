@@ -22,13 +22,11 @@
 #define PASS_GHOST   (NGE_BLOCK_SOLID | NGE_BLOCK_NO_FLOOR)
 #define PASS_CURSOR  ((nge_block_t)~NGE_BLOCK_EDGE)
 
-static nge_tile_t buffer[NGE_MAP_BUFFER_BYTES / sizeof(nge_tile_t)];
-static nge_map_t map;
 static const nge_rect_t window = { .x1 = 0, .x2 = 9, .y1 = 0, .y2 = 9 };
 
 static void tile(uint8_t x, uint8_t y, uint8_t id)
 {
-    NGE_MAP_TILE(&map, x, y).tile_id = id;
+    NGE_MAP_TILE(x, y).tile_id = id;
 }
 
 /* An alive entity in area at (x, y) with the block component */
@@ -45,7 +43,7 @@ static nge_entity_id_t put(nge_owner_t area, uint8_t x, uint8_t y, nge_block_t b
 /* The reference: combine every blocker's flags with the tile's, plainly */
 static uint8_t can_enter_slow(nge_owner_t area, uint8_t x, uint8_t y, nge_block_t pass, nge_entity_id_t ignore)
 {
-    nge_block_t block = nge_map_block(&map, x, y);
+    nge_block_t block = nge_map_block(x, y);
     int id;
 
     for (id = 0; id < NGE_ENTITY_MAX; id++) {
@@ -75,10 +73,10 @@ int main(void)
     CHECK(NGE_COMPONENT_BLOCK == NGE_COMPONENT(2));
 
     /* A 10 x 10 map: floor, a wall in two patterns, a pit */
-    nge_map_init(&map, buffer, 10, 10, &window);
-    nge_map_clear_blocks(&map, NGE_BLOCK_SOLID);             /* unknown tiles are solid */
-    nge_map_set_block(&map, FLOOR, NGE_BLOCK_NONE);
-    nge_map_set_block(&map, PIT, NGE_BLOCK_NO_FLOOR);
+    nge_map_init(10, 10, &window);
+    nge_map_clear_blocks(NGE_BLOCK_SOLID);             /* unknown tiles are solid */
+    nge_map_set_block(FLOOR, NGE_BLOCK_NONE);
+    nge_map_set_block(PIT, NGE_BLOCK_NO_FLOOR);
     for (y = 0; y < 10; y++) {
         for (x = 0; x < 10; x++) {
             tile((uint8_t)x, (uint8_t)y, FLOOR);
@@ -92,61 +90,61 @@ int main(void)
     nge_entity_init();
 
     /* ---- the map alone: each pass mask against each tile ---- */
-    CHECK(nge_block_can_enter(&map, AREA0, 0, 0, PASS_PLAYER, NGE_ENTITY_INVALID, NULL) == 1);
-    CHECK(nge_block_can_enter(&map, AREA0, 1, 1, PASS_PLAYER, NGE_ENTITY_INVALID, NULL) == 0);
-    CHECK(nge_block_can_enter(&map, AREA0, 2, 1, PASS_PLAYER, NGE_ENTITY_INVALID, NULL) == 0);
-    CHECK(nge_block_can_enter(&map, AREA0, 3, 1, PASS_PLAYER, NGE_ENTITY_INVALID, NULL) == 0);
-    CHECK(nge_block_can_enter(&map, AREA0, 4, 1, PASS_PLAYER, NGE_ENTITY_INVALID, NULL) == 0);
-    CHECK(nge_block_can_enter(&map, AREA0, 3, 1, PASS_BIRD, NGE_ENTITY_INVALID, NULL) == 1);
-    CHECK(nge_block_can_enter(&map, AREA0, 1, 1, PASS_BIRD, NGE_ENTITY_INVALID, NULL) == 0);
-    CHECK(nge_block_can_enter(&map, AREA0, 1, 1, PASS_GHOST, NGE_ENTITY_INVALID, NULL) == 1);
-    CHECK(nge_block_can_enter(&map, AREA0, 3, 1, PASS_GHOST, NGE_ENTITY_INVALID, NULL) == 1);
+    CHECK(nge_block_can_enter(AREA0, 0, 0, PASS_PLAYER, NGE_ENTITY_INVALID, NULL) == 1);
+    CHECK(nge_block_can_enter(AREA0, 1, 1, PASS_PLAYER, NGE_ENTITY_INVALID, NULL) == 0);
+    CHECK(nge_block_can_enter(AREA0, 2, 1, PASS_PLAYER, NGE_ENTITY_INVALID, NULL) == 0);
+    CHECK(nge_block_can_enter(AREA0, 3, 1, PASS_PLAYER, NGE_ENTITY_INVALID, NULL) == 0);
+    CHECK(nge_block_can_enter(AREA0, 4, 1, PASS_PLAYER, NGE_ENTITY_INVALID, NULL) == 0);
+    CHECK(nge_block_can_enter(AREA0, 3, 1, PASS_BIRD, NGE_ENTITY_INVALID, NULL) == 1);
+    CHECK(nge_block_can_enter(AREA0, 1, 1, PASS_BIRD, NGE_ENTITY_INVALID, NULL) == 0);
+    CHECK(nge_block_can_enter(AREA0, 1, 1, PASS_GHOST, NGE_ENTITY_INVALID, NULL) == 1);
+    CHECK(nge_block_can_enter(AREA0, 3, 1, PASS_GHOST, NGE_ENTITY_INVALID, NULL) == 1);
     /* The edge blocks everyone, even the cursor */
-    CHECK(nge_block_can_enter(&map, AREA0, 10, 0, PASS_CURSOR, NGE_ENTITY_INVALID, NULL) == 0);
-    CHECK(nge_block_can_enter(&map, AREA0, 0, 10, PASS_CURSOR, NGE_ENTITY_INVALID, NULL) == 0);
-    CHECK(nge_block_can_enter(&map, AREA0, 255, 255, 0xFF & PASS_CURSOR, NGE_ENTITY_INVALID, NULL) == 0);
-    CHECK(nge_block_can_enter(&map, AREA0, 1, 1, PASS_CURSOR, NGE_ENTITY_INVALID, NULL) == 1);
+    CHECK(nge_block_can_enter(AREA0, 10, 0, PASS_CURSOR, NGE_ENTITY_INVALID, NULL) == 0);
+    CHECK(nge_block_can_enter(AREA0, 0, 10, PASS_CURSOR, NGE_ENTITY_INVALID, NULL) == 0);
+    CHECK(nge_block_can_enter(AREA0, 255, 255, 0xFF & PASS_CURSOR, NGE_ENTITY_INVALID, NULL) == 0);
+    CHECK(nge_block_can_enter(AREA0, 1, 1, PASS_CURSOR, NGE_ENTITY_INVALID, NULL) == 1);
 
     /* ---- entities: a creature blocks, an item doesn't ---- */
     orc = put(AREA0, 5, 5, NGE_BLOCK_OCCUPIED, PASS_PLAYER);
     ring = put(AREA0, 6, 5, NGE_BLOCK_NONE, NGE_BLOCK_NONE);
     blocker = 0;
-    CHECK(nge_block_can_enter(&map, AREA0, 5, 5, PASS_PLAYER, NGE_ENTITY_INVALID, &blocker) == 0 && blocker == orc);
-    CHECK(nge_block_can_enter(&map, AREA0, 6, 5, PASS_PLAYER, NGE_ENTITY_INVALID, &blocker) == 1 &&
+    CHECK(nge_block_can_enter(AREA0, 5, 5, PASS_PLAYER, NGE_ENTITY_INVALID, &blocker) == 0 && blocker == orc);
+    CHECK(nge_block_can_enter(AREA0, 6, 5, PASS_PLAYER, NGE_ENTITY_INVALID, &blocker) == 1 &&
           blocker == NGE_ENTITY_INVALID);
     CHECK(nge_block_find(AREA0, 5, 5, PASS_PLAYER, NGE_ENTITY_INVALID) == orc);
     CHECK(nge_block_find(AREA0, 6, 5, PASS_PLAYER, NGE_ENTITY_INVALID) == NGE_ENTITY_INVALID);
     /* A ghost passes walls but not creatures; the cursor passes creatures */
-    CHECK(nge_block_can_enter(&map, AREA0, 5, 5, PASS_GHOST, NGE_ENTITY_INVALID, NULL) == 0);
-    CHECK(nge_block_can_enter(&map, AREA0, 5, 5, PASS_CURSOR, NGE_ENTITY_INVALID, NULL) == 1);
+    CHECK(nge_block_can_enter(AREA0, 5, 5, PASS_GHOST, NGE_ENTITY_INVALID, NULL) == 0);
+    CHECK(nge_block_can_enter(AREA0, 5, 5, PASS_CURSOR, NGE_ENTITY_INVALID, NULL) == 1);
     /* The map blocks first: no blocker reported for a wall */
     id = put(AREA0, 1, 1, NGE_BLOCK_OCCUPIED, PASS_GHOST);   /* a ghost in the wall */
     blocker = 0;
-    CHECK(nge_block_can_enter(&map, AREA0, 1, 1, PASS_PLAYER, NGE_ENTITY_INVALID, &blocker) == 0 &&
+    CHECK(nge_block_can_enter(AREA0, 1, 1, PASS_PLAYER, NGE_ENTITY_INVALID, &blocker) == 0 &&
           blocker == NGE_ENTITY_INVALID);
     blocker = 0;
-    CHECK(nge_block_can_enter(&map, AREA0, 1, 1, PASS_GHOST, NGE_ENTITY_INVALID, &blocker) == 0 && blocker == id);
+    CHECK(nge_block_can_enter(AREA0, 1, 1, PASS_GHOST, NGE_ENTITY_INVALID, &blocker) == 0 && blocker == id);
 
     /* ---- ignore: the mover doesn't block itself ---- */
-    CHECK(nge_block_can_enter(&map, AREA0, 5, 5, PASS_PLAYER, orc, NULL) == 1);
+    CHECK(nge_block_can_enter(AREA0, 5, 5, PASS_PLAYER, orc, NULL) == 1);
     player = put(AREA0, 5, 5, NGE_BLOCK_OCCUPIED, PASS_PLAYER);   /* sharing the orc's tile */
-    CHECK(nge_block_can_enter(&map, AREA0, 5, 5, PASS_PLAYER, orc, &blocker) == 0 && blocker == player);
+    CHECK(nge_block_can_enter(AREA0, 5, 5, PASS_PLAYER, orc, &blocker) == 0 && blocker == player);
 
     /* ---- what doesn't count: other areas, no component, dying ---- */
     put(AREA1, 7, 7, NGE_BLOCK_OCCUPIED, PASS_PLAYER);
-    CHECK(nge_block_can_enter(&map, AREA0, 7, 7, PASS_PLAYER, NGE_ENTITY_INVALID, NULL) == 1);
+    CHECK(nge_block_can_enter(AREA0, 7, 7, PASS_PLAYER, NGE_ENTITY_INVALID, NULL) == 1);
     nge_block_remove(orc);
     nge_entity_destroy(player);
-    CHECK(nge_block_can_enter(&map, AREA0, 5, 5, PASS_PLAYER, NGE_ENTITY_INVALID, NULL) == 1);
+    CHECK(nge_block_can_enter(AREA0, 5, 5, PASS_PLAYER, NGE_ENTITY_INVALID, NULL) == 1);
     nge_location_remove(ring);
     nge_block_set(ring, NGE_BLOCK_OCCUPIED, 0);              /* blocks, but has no location */
-    CHECK(nge_block_can_enter(&map, AREA0, 6, 5, PASS_PLAYER, NGE_ENTITY_INVALID, NULL) == 1);
+    CHECK(nge_block_can_enter(AREA0, 6, 5, PASS_PLAYER, NGE_ENTITY_INVALID, NULL) == 1);
 
     /* Game flags work like nge's */
     nge_entity_init();
     put(AREA0, 8, 8, NGE_BLOCK_USER, 0);                     /* e.g. water */
-    CHECK(nge_block_can_enter(&map, AREA0, 8, 8, PASS_PLAYER, NGE_ENTITY_INVALID, NULL) == 0);
-    CHECK(nge_block_can_enter(&map, AREA0, 8, 8, NGE_BLOCK_USER, NGE_ENTITY_INVALID, NULL) == 1);
+    CHECK(nge_block_can_enter(AREA0, 8, 8, PASS_PLAYER, NGE_ENTITY_INVALID, NULL) == 0);
+    CHECK(nge_block_can_enter(AREA0, 8, 8, NGE_BLOCK_USER, NGE_ENTITY_INVALID, NULL) == 1);
 
     /* ---- randomised: the same answers as combining every flag plainly ---- */
     srand(31);
@@ -182,7 +180,7 @@ int main(void)
         default:
             break;
         }
-        can = nge_block_can_enter(&map, area, tx, ty, pass, ignore, &blocker);
+        can = nge_block_can_enter(area, tx, ty, pass, ignore, &blocker);
         ok = can == can_enter_slow(area, tx, ty, pass, ignore) &&
              (can || blocker == NGE_ENTITY_INVALID ||
               (nge_block_of[blocker] & (nge_block_t)~pass) != 0);

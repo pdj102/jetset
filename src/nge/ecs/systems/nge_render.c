@@ -56,8 +56,7 @@ void nge_render_init(void) NGE_BANKED
     nge_render_used = 0;
     nge_render_shown = 0;
     nge_render_dropped_count = 0;
-    nge_render_area = NGE_OWNER_WORLD;
-    nge_render_map = NULL;
+    nge_render_area = NGE_RENDER_NO_VIEW;
 }
 
 void nge_render_add(nge_entity_id_t id, uint8_t pattern, uint8_t flags, uint8_t mode,
@@ -134,12 +133,11 @@ void nge_render_set_layer(nge_entity_id_t id, uint8_t layer) NGE_BANKED
     nge_render_sprite_layer[id] = layer;
 }
 
-void nge_render_set_view(nge_owner_t area, const nge_map_t *map) NGE_BANKED
+void nge_render_set_view(nge_owner_t area) NGE_BANKED
 {
-    nge_util_assert(area < NGE_OWNER_COUNT);
+    nge_util_assert(area < NGE_OWNER_COUNT || area == NGE_RENDER_NO_VIEW);
 
     nge_render_area = area;
-    nge_render_map = map;
 }
 
 /* Advance an entity's animation by one frame */
@@ -157,14 +155,14 @@ static void animate(nge_entity_id_t id)
  * Collect the visible entities and their screen positions in
  * nge_render_vis, nge_render_sx and nge_render_sy; returns how many.
  */
-static uint8_t collect(const nge_map_t *m)
+static uint8_t collect(void)
 {
-    uint16_t view_x = (uint16_t)m->cam_x * NGE_MAP_TILE_PIXELS;
-    uint16_t view_y = (uint16_t)m->cam_y * NGE_MAP_TILE_PIXELS;
-    int16_t view_w = (int16_t)m->view_w * NGE_MAP_TILE_PIXELS;
-    int16_t view_h = (int16_t)m->view_h * NGE_MAP_TILE_PIXELS;
-    uint16_t base_x = (uint16_t)m->window.x1 * NGE_MAP_TILE_PIXELS;
-    uint16_t base_y = (uint16_t)m->window.y1 * NGE_MAP_TILE_PIXELS;
+    uint16_t view_x = (uint16_t)nge_map.cam_x * NGE_MAP_TILE_PIXELS;
+    uint16_t view_y = (uint16_t)nge_map.cam_y * NGE_MAP_TILE_PIXELS;
+    int16_t view_w = (int16_t)nge_map.view_w * NGE_MAP_TILE_PIXELS;
+    int16_t view_h = (int16_t)nge_map.view_h * NGE_MAP_TILE_PIXELS;
+    uint16_t base_x = (uint16_t)nge_map.window.x1 * NGE_MAP_TILE_PIXELS;
+    uint16_t base_y = (uint16_t)nge_map.window.y1 * NGE_MAP_TILE_PIXELS;
     uint8_t i;
     uint8_t v = 0;
     uint8_t mode;
@@ -215,8 +213,8 @@ void nge_render_update(void) NGE_BANKED
     nge_entity_id_t id;
 
     nge_render_dropped_count = 0;
-    if (nge_render_map != NULL) {
-        v = collect(nge_render_map);
+    if (nge_render_area != NGE_RENDER_NO_VIEW) {
+        v = collect();
     }
 
     /*

@@ -65,15 +65,15 @@ nge_entity_id_t nge_block_find(nge_owner_t area, uint8_t x, uint8_t y, nge_block
  * @brief Can a mover with these pass flags enter tile (x, y): neither the
  *        map nor an entity on the tile blocks it?
  *
- * Checks the map first, then (only if the map lets it in) the entities.
- * @param m The map; outside it is NGE_BLOCK_EDGE.
+ * Checks the map (map/nge_map.h; outside it is NGE_BLOCK_EDGE) first, then
+ * (only if the map lets it in) the entities.
  * @param ignore An entity to skip (the mover itself), or NGE_ENTITY_INVALID.
  * @param blocker If not NULL, receives the blocking entity (for example to
  *                attack it), or NGE_ENTITY_INVALID if the map blocks or
  *                nothing does.
  * @return 1 if it can enter, 0 if not.
  */
-uint8_t nge_block_can_enter(const nge_map_t *m, nge_owner_t area, uint8_t x, uint8_t y,
-                            nge_block_t pass, nge_entity_id_t ignore, nge_entity_id_t *blocker);
+uint8_t nge_block_can_enter(nge_owner_t area, uint8_t x, uint8_t y, nge_block_t pass,
+                            nge_entity_id_t ignore, nge_entity_id_t *blocker);
 
 #endif

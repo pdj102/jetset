@@ -28,4 +28,3 @@ uint8_t           nge_render_used;
 uint8_t           nge_render_shown;
 uint8_t           nge_render_dropped_count;
 nge_owner_t       nge_render_area;
-const nge_map_t  *nge_render_map;

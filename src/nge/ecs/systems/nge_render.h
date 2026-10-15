@@ -91,12 +91,16 @@ void nge_render_set_offset(nge_entity_id_t id, int8_t ox, int8_t oy) NGE_BANKED;
 /** @brief Move the entity to another layer. */
 void nge_render_set_layer(nge_entity_id_t id, uint8_t layer) NGE_BANKED;
 
+/** set_view's area for drawing nothing (the state after nge_render_init()). */
+#define NGE_RENDER_NO_VIEW  0xFF
+
 /**
- * @brief Draw the entities owned by area, through map's camera and window.
- * @param area The area owner (NGE_OWNER_AREA(a)), or any other owner.
- * @param map The map shown, in common memory; NULL draws nothing.
+ * @brief Draw the entities owned by area, through the map's camera and
+ *        window (map/nge_map.h).
+ * @param area The area owner (NGE_OWNER_AREA(a)), any other owner, or
+ *             NGE_RENDER_NO_VIEW to draw nothing.
  */
-void nge_render_set_view(nge_owner_t area, const nge_map_t *map) NGE_BANKED;
+void nge_render_set_view(nge_owner_t area) NGE_BANKED;
 
 /** @brief Advance animations and build the sprites for the next nge_render_upload(). */
 void nge_render_update(void) NGE_BANKED;

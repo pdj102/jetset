@@ -3,7 +3,7 @@
 
 /**
  * @file nge_map.h
- * @brief A tile map, larger than the screen, shown through a window.
+ * @brief The map: a tile map, larger than the screen, shown through a window.
  *
  * Terms:
  * - map: the game's grid of tiles (map tile coordinates, (0,0) top-left).
@@ -11,10 +11,14 @@
  * - view: the part of the map that is visible; the same size as the window.
  * - camera: the top-left corner of the view, in map tiles.
  *
- * Map data stays resident while it is in use (in slot 1, see
- * docs/memory_map.md), so reads such as collision checks are plain memory
- * reads. Rows are NGE_MAP_STRIDE tiles apart whatever the map's width, so a
- * tile's address needs no multiply by an arbitrary width.
+ * There is one map. All its data (its state nge_map, its tiles
+ * nge_map_tiles and its block table nge_map_blocks) is in page
+ * NGE_MAP_PAGE, which nge_map_init() maps permanently into slot 1
+ * ($2000-$3FFF), so the data is at fixed addresses and no function takes a
+ * map pointer. Reads such as collision checks are plain memory reads. Rows
+ * are NGE_MAP_STRIDE tiles apart whatever the map's width, so a tile's
+ * address needs no multiply by an arbitrary width. See "Always-mapped data
+ * pages" in docs/memory_map.md.
  *
  * The camera functions and nge_map_set() only mark the view as needing a
  * redraw. Call nge_map_update() once per tick, straight after
@@ -22,12 +26,18 @@
  *
  *     nge_frame_wait_vblank();
  *     nge_render_upload();     (or nge_sprite_upload(...))
- *     nge_map_update(&map);
+ *     nge_map_update();
  *     ...game logic: move entities, the camera, change tiles...
+ *
+ * Banking: the set-up functions (init, clear_blocks, set_block,
+ * clip_sprites) are banked (NGE_BANKED, page 44): don't call them while game
+ * code has its own page mapped in slot 6 or 7. The rest, used every frame
+ * or every move, is in common memory.
  */
 
 #include <stdint.h>
 
+#include "core/nge_bank.h"
 #include "core/nge_types.h"
 #include "tilemap/nge_tilemap.h"
 
@@ -37,22 +47,16 @@
 #endif
 
 #ifndef NGE_MAP_MAX_HEIGHT
-/** Maximum map height in tiles. 80 x 48 tiles of 2 bytes fill 7.5K of an 8K slot. */
+/** Maximum map height in tiles. 80 x 48 tiles of 2 bytes fill 7.5K of the 8K page. */
 #define NGE_MAP_MAX_HEIGHT  48
 #endif
 
-/** Bytes needed for the tiles of a map of the maximum size. */
-#define NGE_MAP_MAX_BYTES  ((uint16_t)NGE_MAP_STRIDE * NGE_MAP_MAX_HEIGHT * sizeof(nge_tile_t))
+/** Page holding the map's data (src/nge/banks.inc), and the slot it is mapped into. */
+#define NGE_MAP_PAGE  51
+#define NGE_MAP_SLOT  1
 
 /** Entries in the block table: one per tile ID. */
 #define NGE_MAP_BLOCK_ENTRIES  256
-
-/**
- * Bytes of a map's buffer: the tiles of a map of the maximum size, then the
- * block table (at NGE_MAP_MAX_BYTES, whatever the map's size). 7,936 bytes:
- * it fits in an 8K page (checked at compile time).
- */
-#define NGE_MAP_BUFFER_BYTES  (NGE_MAP_MAX_BYTES + NGE_MAP_BLOCK_ENTRIES)
 
 /*
  * Blocking flags: what a tile (through the block table, by tile ID) or an
@@ -72,13 +76,8 @@ typedef uint8_t nge_block_t;
 /** Pixels per tile. */
 #define NGE_MAP_TILE_PIXELS  8
 
-/**
- * @brief A map shown in a tilemap window. Set up with nge_map_init(); the
- *        fields are read-only for the game.
- */
+/** @brief The map's state. Set up with nge_map_init(); read-only for the game. */
 typedef struct nge_map {
-    nge_tile_t *tiles;    /**< Row-major tiles, rows NGE_MAP_STRIDE tiles apart. */
-    nge_block_t *block;   /**< Block table: flags by tile ID (NGE_MAP_BLOCK_ENTRIES), in the buffer. */
     uint8_t width;        /**< Map width in tiles. */
     uint8_t height;       /**< Map height in tiles. */
     nge_rect_t window;    /**< Window on the hardware tilemap, inclusive tile coordinates. */
@@ -89,75 +88,88 @@ typedef struct nge_map {
     uint8_t dirty;        /**< The view needs redrawing. */
 } nge_map_t;
 
+/* The map's data, in page NGE_MAP_PAGE in slot 1 (nge_map_cdata.c) */
+extern nge_block_t nge_map_blocks[NGE_MAP_BLOCK_ENTRIES];        /**< What each tile ID blocks. */
+extern nge_map_t   nge_map;                                      /**< State: read-only for the game. */
+extern nge_tile_t  nge_map_tiles[NGE_MAP_STRIDE * NGE_MAP_MAX_HEIGHT];   /**< Row-major tiles. */
+
 /** Address of the first tile of map row y. */
-#define NGE_MAP_ROW(m, y)  ((m)->tiles + (uint16_t)(y) * NGE_MAP_STRIDE)
+#define NGE_MAP_ROW(y)  (nge_map_tiles + (uint16_t)(y) * NGE_MAP_STRIDE)
 
 /**
- * The tile at (x, y), read directly with no checks: for loops that test many
- * tiles, such as collision checks. nge_map_get() is the checked version.
+ * The tile at (x, y), read or written directly with no checks: for loops
+ * that test or build many tiles. nge_map_get() and nge_map_set() are the
+ * checked versions (nge_map_set() also marks the view for redrawing).
  */
-#define NGE_MAP_TILE(m, x, y)  (NGE_MAP_ROW(m, y)[x])
+#define NGE_MAP_TILE(x, y)  (NGE_MAP_ROW(y)[x])
 
 /**
  * The blocking flags of the tile at (x, y), read directly with no checks
  * (inside the map only). nge_map_block() is the checked version.
  */
-#define NGE_MAP_BLOCK(m, x, y)  ((m)->block[NGE_MAP_TILE(m, x, y).tile_id])
+#define NGE_MAP_BLOCK(x, y)  (nge_map_blocks[NGE_MAP_TILE(x, y).tile_id])
+
+/* ---- Set-up: banked ---- */
 
 /**
- * @brief Set up a map with its camera at (0,0), marked for drawing.
+ * @brief Map the map's page into slot 1 and set up the map with its camera
+ *        at (0,0), marked for drawing. Call before any other map function.
  *
- * The block table is at a fixed place in the buffer; set it up with
- * nge_map_clear_blocks() and nge_map_set_block().
+ * The tiles and the block table are not changed: fill them in (directly,
+ * with NGE_MAP_TILE(), and with nge_map_clear_blocks() and
+ * nge_map_set_block()).
  *
- * @param m Map to set up.
- * @param buffer The map's buffer, NGE_MAP_BUFFER_BYTES long (e.g. a page in
- *               slot 1): the tiles, height rows NGE_MAP_STRIDE tiles apart,
- *               then the block table. Must stay mapped in while the map is used.
  * @param width Map width in tiles, from the window width to NGE_MAP_STRIDE.
  * @param height Map height in tiles, from the window height to NGE_MAP_MAX_HEIGHT.
  * @param window Window on the hardware tilemap, inclusive tile coordinates.
  */
-void nge_map_init(nge_map_t *m, nge_tile_t *buffer, uint8_t width, uint8_t height,
-                  const nge_rect_t *window);
+void nge_map_init(uint8_t width, uint8_t height, const nge_rect_t *window) NGE_BANKED;
 
 /** @brief Set the blocking flags of every tile ID (e.g. NGE_BLOCK_SOLID as a safe default). */
-void nge_map_clear_blocks(nge_map_t *m, nge_block_t flags);
+void nge_map_clear_blocks(nge_block_t flags) NGE_BANKED;
 
 /** @brief Set the blocking flags of a tile ID: every tile with this ID has them. */
-void nge_map_set_block(nge_map_t *m, uint8_t tile_id, nge_block_t flags);
+void nge_map_set_block(uint8_t tile_id, nge_block_t flags) NGE_BANKED;
+
+/**
+ * @brief Clip sprites to the map window, so sprites partly outside the view
+ *        are cut off at its edges.
+ */
+void nge_map_clip_sprites(void) NGE_BANKED;
+
+/* ---- Common memory ---- */
 
 /**
  * @brief The blocking flags of the tile at (x, y).
  * @return The flags of its tile ID, or NGE_BLOCK_EDGE outside the map.
  */
-nge_block_t nge_map_block(const nge_map_t *m, uint8_t x, uint8_t y);
+nge_block_t nge_map_block(uint8_t x, uint8_t y);
 
 /**
  * @brief Move the camera to (x, y), clamped so the view stays inside the map.
  * @return 1 if the camera moved (the view will be redrawn), 0 if not.
  */
-uint8_t nge_map_set_camera(nge_map_t *m, uint8_t x, uint8_t y);
+uint8_t nge_map_set_camera(uint8_t x, uint8_t y);
 
 /**
  * @brief Move the camera by (dx, dy) tiles, clamped so the view stays inside the map.
  * @return 1 if the camera moved, 0 if not.
  */
-uint8_t nge_map_move_camera(nge_map_t *m, int8_t dx, int8_t dy);
+uint8_t nge_map_move_camera(int8_t dx, int8_t dy);
 
 /**
  * @brief Move the camera so map tile (x, y) is at the centre of the view, as
  *        far as the map edges allow.
  * @return 1 if the camera moved, 0 if not.
  */
-uint8_t nge_map_centre_camera(nge_map_t *m, uint8_t x, uint8_t y);
+uint8_t nge_map_centre_camera(uint8_t x, uint8_t y);
 
 /**
  * @brief Get the tile at map position (x, y).
  * @return Pointer to the tile in the map data. (A pointer, not a copy: SDCC
  *         cannot return structs by value.)
  */
-const nge_tile_t *nge_map_get(const nge_map_t *m, uint8_t x, uint8_t y);
+const nge_tile_t *nge_map_get(uint8_t x, uint8_t y);
 
 /**
  * @brief Change the tile at map position (x, y).
@@ -165,13 +177,13 @@ const nge_tile_t *nge_map_get(const nge_map_t *m, uint8_t x, uint8_t y);
  * If the position is in the view, the view is redrawn by the next
  * nge_map_update().
  */
-void nge_map_set(nge_map_t *m, uint8_t x, uint8_t y, const nge_tile_t *tile);
+void nge_map_set(uint8_t x, uint8_t y, const nge_tile_t *tile);
 
 /** @brief Redraw the view if it changed since it was last drawn. */
-void nge_map_update(nge_map_t *m);
+void nge_map_update(void);
 
 /** @brief Redraw the view now, whether it changed or not. */
-void nge_map_draw(nge_map_t *m);
+void nge_map_draw(void);
 
 /**
  * @brief Convert a map pixel position to screen (sprite) coordinates.
@@ -182,13 +194,6 @@ void nge_map_draw(nge_map_t *m);
  * @return 1 if the position is inside the view, 0 if not. The coordinates
  *         are set either way, so a sprite partly in view can still be placed.
  */
-uint8_t nge_map_to_screen(const nge_map_t *m, uint16_t map_x, uint16_t map_y,
-                          uint16_t *screen_x, uint16_t *screen_y);
-
-/**
- * @brief Clip sprites to the map window, so sprites partly outside the view
- *        are cut off at its edges.
- */
-void nge_map_clip_sprites(const nge_map_t *m);
+uint8_t nge_map_to_screen(uint16_t map_x, uint16_t map_y, uint16_t *screen_x, uint16_t *screen_y);
 
 #endif

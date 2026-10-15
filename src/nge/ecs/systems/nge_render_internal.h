@@ -36,6 +36,5 @@ extern uint8_t           nge_render_used;      /* sprites drawn by the last upda
 extern uint8_t           nge_render_shown;     /* sprites visible on the hardware after the last upload */
 extern uint8_t           nge_render_dropped_count;
 extern nge_owner_t       nge_render_area;
-extern const nge_map_t  *nge_render_map;
 
 #endif

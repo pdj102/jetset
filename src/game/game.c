@@ -185,7 +185,7 @@ void game_set_state(game_state_t state)
 static void pre_update(void)
 {
     nge_render_upload();
-    nge_map_update(&level_map);
+    nge_map_update();
     nge_input_update();
 }
 

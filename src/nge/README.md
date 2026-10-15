@@ -36,7 +36,7 @@ Includes are written from `src/nge`, with the folder:
 | `hw/` | Hardware setup, frame sync, MMU paging, palettes |
 | `tilemap/` | Tilemap layer |
 | `sprite/` | Hardware sprites |
-| `map/` | A tile map larger than the screen, shown through a tilemap window |
+| `map/` | The map: one tile map larger than the screen, shown through a tilemap window, with a block table by tile ID. Its data is in page 51, always in slot 1 (no map pointers); set-up banked in page 44 |
 | `input/` | Keyboard: a per-frame snapshot of the keys (held, pressed, released), key events with auto-repeat, ASCII (`nge_input`; setup and tables banked in page 88) |
 | `devices/` | Raw device drivers (CSpect DebugOut, UART), no streams |
 | `io/` | Streams (output and input), print and printf, the stream devices for the tilemap, CSpect, UART and keyboard, and the line editor (`nge_line`) |

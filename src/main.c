@@ -35,10 +35,10 @@ int main(void)
     /* Entities: the render system draws those in the level's area */
     nge_ecs_init();     /* ECS data page into slot 0; makes every entity free */
     nge_render_init();
-    nge_render_set_view(LEVEL_AREA, &level_map);
+    nge_render_set_view(LEVEL_AREA);
     actors_init();
 
-    nge_map_centre_camera(&level_map, NGE_LOCATION_X(actor_player), NGE_LOCATION_Y(actor_player));
+    nge_map_centre_camera(NGE_LOCATION_X(actor_player), NGE_LOCATION_Y(actor_player));
 
     nge_util_info("init done");
 

@@ -5,15 +5,15 @@
  * @file level.h
  * @brief The current level: one area with its map, shown in the map view.
  *
- * The map is resident in slot 1 (page LEVEL_MAP_PAGE) while the level is
- * active, so collision checks and drawing read it directly. Map cells are
+ * Its map is the map (map/nge_map.h: nge_map, nge_map_tiles), in slot 1, so
+ * collision checks and drawing read it directly. Map cells are
  * single tiles, drawn with the font's ASCII tiles in the classic roguelike
  * style: '|', '-' and '+' walls, '.' and ',' floor, ' doors, '#' corridors.
  * What each tile ID blocks is in the map's block table.
  *
  * Banking: level_init() is banked (NGE_BANKED, page 102): don't call it
- * while game code has its own page mapped in slot 6 or 7. level_map and
- * level_can_enter() are in common memory.
+ * while game code has its own page mapped in slot 6 or 7. level_can_enter()
+ * is in common memory.
  */
 
 #include <stdint.h>
@@ -25,17 +25,12 @@
 #include "map/nge_map.h"
 
 #define LEVEL_AREA      NGE_OWNER_AREA(0)   /**< Owner of the level's entities. */
-#define LEVEL_MAP_SLOT  1                   /**< $2000: the ROM's upper half swapped out. */
-#define LEVEL_MAP_PAGE  100                 /**< Game range (see src/nge/banks.inc). */
 #define LEVEL_WIDTH     60                  /**< Map size in tiles: larger than the view. */
 #define LEVEL_HEIGHT    40
 
-/** The level's map, shown in the map view. */
-extern nge_map_t level_map;
-
 /**
- * @brief Map the level's page into slot 1, build the test layout and set up
- *        the map in the map view, with sprites clipped to it.
+ * @brief Set up the map in the map view (nge_map_init(), which maps its
+ *        page into slot 1), build the test layout and clip sprites to it.
  *
  * Call after screen_init() and nge_sprite_init().
  */
