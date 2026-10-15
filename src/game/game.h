@@ -11,7 +11,8 @@
  *     1. pre-update:  upload the sprites, redraw the map if it changed,
  *                     read the keyboard (nge_input_update)
  *     2. update:      the current state's update function
- *     3. post-update: build the next frame's sprites, check the ECS guard
+ *     3. post-update: handle events, release destroyed entities, build the
+ *                     next frame's sprites, check the ECS guard
  *
  * Each state's update runs once per frame, takes at most what it needs from
  * the key events (nge_key_get()) and returns: nothing in it waits, so the
@@ -27,7 +28,7 @@
 /** Game states. */
 typedef enum game_state {
     GAME_TITLE,       /**< Title: any key starts a game (asks the player's name). */
-    GAME_PLAY,        /**< The player's turn: one command per frame. */
+    GAME_PLAY,        /**< Time passes (nge_timer) until the player's turn, then one command per frame. */
     GAME_INVENTORY,   /**< The inventory is shown; any key returns to play. */
     GAME_TARGET,      /**< Choosing a direction to fire in. */
     GAME_DEAD,        /**< The game is over; any key returns to the title. */
@@ -36,9 +37,6 @@ typedef enum game_state {
 
 /** The current state: read-only, change it with game_set_state(). */
 extern game_state_t game_state;
-
-/** Turns played: one for each command that takes time. */
-extern uint16_t game_turn;
 
 /** @brief Change state: flush the key events and run the new state's entry action. */
 void game_set_state(game_state_t state);

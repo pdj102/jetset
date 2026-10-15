@@ -143,7 +143,7 @@ code pages.
 | 42/43 | nge `sprite` (setup functions and loaders) |
 | 44/45 | nge `map`: set-up code (init, block table, sprite clip) / unused. Its per-frame code is in common memory, its data in page 51 |
 | 46/47 | nge `event` (reserved; the event queue and its processing run every turn and are in common memory) |
-| 48-87 | nge `ecs` (20 pairs): 48/49 `entity` and `owner` (lifecycle and ownership code / lifecycle bookkeeping); 50 ECS data, mapped permanently into slot 0 (see [ECS data in slot 0](#ecs-data-in-slot-0)); 51 map data, mapped permanently into slot 1 (see [Always-mapped data pages](#always-mapped-data-pages)); 52/53 `render` system |
+| 48-87 | nge `ecs` (20 pairs): 48/49 `entity` and `owner` (lifecycle and ownership code / lifecycle bookkeeping); 50 ECS data, mapped permanently into slot 0 (see [ECS data in slot 0](#ecs-data-in-slot-0)); 51 map data, mapped permanently into slot 1 (see [Always-mapped data pages](#always-mapped-data-pages)); 52/53 `render` system; 54/55 `timer` system |
 | 88-99 | Further nge modules (6 pairs): 88/89 `input` (setup, ASCII tables and waiting / unused) |
 | 100 | Game: free (assets) |
 | 101 | Game: sprite patterns and palette (slot 7, through the loaders) |
@@ -187,6 +187,7 @@ Banked so far:
 | 44/45 | `map` | set-up: `nge_map_init()` (maps page 51 into slot 1), the block table functions, the sprite clip (`nge_map_setup.c`, about 0.7K) | none |
 | 48/49 | `ecs` entity, owner | lifecycle functions (`nge_entity_life.c`) and the ownership functions that change or search the owner table (`nge_owner_set.c`), with literals, about 0.6K | lifecycle bookkeeping: free and dying stacks, alive positions (`nge_entity_pdata.c`, 302 bytes) |
 | 52/53 | `ecs` render system | the system (`ecs/systems/nge_render.c`), with literals, about 2.4K | the sprite component (10 bytes per entity), the sprite records for hardware sprites 0 to `NGE_RENDER_SPRITES`-1, and its working data (`nge_render_pdata.c`, about 1.8K) |
+| 54/55 | `ecs` timer system | the clock and firing timers (`ecs/systems/nge_timer.c`, about 0.7K, 1.6K with asserts) | none: its tables and the clock are in slot 0 |
 | 88/89 | `input` | setup, the key-to-ASCII tables and waiting (`input/nge_input_setup.c`, about 0.5K) | none |
 | 102/103 | game `level` | setting up and building a level, with literals (`game/level/level_bank.c`, about 0.7K) | none yet |
 | 104/105 | game `title` | the title state and the name prompt, with literals (`game/title/title_bank.c`, about 0.4K; no common part) | none |
@@ -464,7 +465,7 @@ data.
 | Address | Contents |
 |---|---|
 | `$0000`-`$00FF` | Guard area against null pointers |
-| `$0100`-`$1FFF` | ECS tables (`SECTION PAGE_50`, `CRT_ORG_PAGE_50 = 0x0100` in [banks.inc](../src/nge/banks.inc)): entity flags, components and alive list, owners, locations, block flags (about 1.1K at `NGE_ENTITY_MAX` 100) |
+| `$0100`-`$1FFF` | ECS tables (`SECTION PAGE_50`, `CRT_ORG_PAGE_50 = 0x0100` in [banks.inc](../src/nge/banks.inc)): entity flags, components and alive list, owners, locations, block flags, timers and the clock (about 1.5K at `NGE_ENTITY_MAX` 100) |
 
 ### Where component data goes
 
@@ -479,6 +480,11 @@ data.
   component, page data of the render system
   ([nge_render.h](../src/nge/ecs/systems/nge_render.h)), which builds every
   sprite in one call per frame and uploads them in another.
+- **Game state the clock drives:** the timer system's tables and the clock
+  are in slot 0 though only that system writes them
+  ([nge_timer.h](../src/nge/ecs/systems/nge_timer.h)): the game's common
+  code reads them (whose turn it is, the turn count), and the timers
+  belong with the rest of the saved ECS state.
 - **Shared but not hot** (used only when particular game events happen):
   in the page of the system that owns it, with banked `get` and `set`
   helpers for the others.

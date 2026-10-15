@@ -1,0 +1,196 @@
+/*
+ * Timer system: banked in page 54. Its tables and the clock are in slot 0
+ * (nge_timer_cdata.c); it calls the game's dispatch function, in common
+ * memory, which may call banked handlers in other pages.
+ */
+#ifdef __SDCC
+#pragma codeseg PAGE_54
+#pragma constseg PAGE_54
+#endif
+
+#include "ecs/systems/nge_timer.h"
+
+#include "core/nge_util.h"
+
+typedef char nge_timer_ticks_check[(NGE_TIMER_TICKS_PER_TURN >= 1 && NGE_TIMER_TICKS_PER_TURN <= 255) ? 1 : -1];
+
+/* Alive, with a timer: the entities the clock drives */
+#define HAS_TIMER(id) \
+    (NGE_ENTITY_IS_ALIVE(id) && (nge_entity_components[id] & NGE_COMPONENT_TIMER))
+
+/* An entity in use, with a timer unless adding one */
+static void check_entity(nge_entity_id_t id, uint8_t with_timer)
+{
+    (void)id;   /* unused when asserts are compiled out (NDEBUG) */
+    (void)with_timer;
+    nge_util_assert(id < NGE_ENTITY_MAX);
+    nge_util_assert(NGE_ENTITY_STATE(id) != NGE_ENTITY_FREE);
+    nge_util_assert(!with_timer || (nge_entity_components[id] & NGE_COMPONENT_TIMER));
+}
+
+/* The entity no longer holds the clock up */
+static void stop_waiting_for(nge_entity_id_t id)
+{
+    if (nge_timer_wait == id) {
+        nge_timer_wait = NGE_ENTITY_INVALID;
+    }
+}
+
+static void remove_timer(nge_entity_id_t id)
+{
+    nge_entity_components[id] &= (nge_component_mask_t)~NGE_COMPONENT_TIMER;
+    stop_waiting_for(id);
+}
+
+void nge_timer_init(void) NGE_BANKED
+{
+    nge_timer_turns = 0;
+    nge_timer_tick = 0;
+    nge_timer_wait = NGE_ENTITY_INVALID;
+}
+
+void nge_timer_add(nge_entity_id_t id, uint8_t kind, uint8_t delay, uint8_t period,
+                   uint8_t cycles) NGE_BANKED
+{
+    check_entity(id, 0);
+    nge_util_assert(delay >= 1 && delay <= NGE_TIMER_DELAY_MAX);
+    nge_util_assert(period <= NGE_TIMER_DELAY_MAX);
+
+    nge_timer_count[id] = delay;
+    nge_timer_period[id] = period;
+    nge_timer_cycles[id] = cycles;
+    nge_timer_kind[id] = kind;
+    nge_entity_components[id] |= NGE_COMPONENT_TIMER;
+    stop_waiting_for(id);
+}
+
+void nge_timer_set_delay(nge_entity_id_t id, uint8_t delay) NGE_BANKED
+{
+    check_entity(id, 1);
+    nge_util_assert(delay >= 1 && delay <= NGE_TIMER_DELAY_MAX);
+
+    nge_timer_count[id] = delay;
+    stop_waiting_for(id);
+}
+
+void nge_timer_remove(nge_entity_id_t id) NGE_BANKED
+{
+    check_entity(id, 0);
+
+    remove_timer(id);
+}
+
+/* Act on a fired timer's handler result */
+static void after_firing(nge_entity_id_t id, uint8_t next)
+{
+    uint8_t cycles = nge_timer_cycles[id];
+
+    if (next == NGE_TIMER_STOP) {
+        remove_timer(id);
+        return;
+    }
+    if (next == NGE_TIMER_WAIT) {
+        /* The count stays 0 until nge_timer_set_delay() */
+        nge_util_assert(cycles == 0);
+        nge_util_assert(nge_timer_wait == NGE_ENTITY_INVALID);
+        nge_timer_wait = id;
+        return;
+    }
+    if (next == NGE_TIMER_REPEAT) {
+        next = nge_timer_period[id];
+        nge_util_assert(next != 0);
+    }
+    nge_util_assert(next <= NGE_TIMER_DELAY_MAX);
+    nge_timer_count[id] = next;
+
+    if (cycles != 0) {
+        if (--cycles == 0) {
+            remove_timer(id);
+        } else {
+            nge_timer_cycles[id] = cycles;
+        }
+    }
+}
+
+uint8_t nge_timer_advance(nge_timer_dispatch_fn dispatch) NGE_BANKED
+{
+    nge_entity_id_t id;
+    uint8_t step = 0xFF;
+    uint8_t found = 0;
+    uint16_t tick;
+
+    nge_util_assert(dispatch != 0);
+
+    /* Waiting, unless the entity waited for has gone (died, or lost its timer) */
+    if (nge_timer_wait != NGE_ENTITY_INVALID) {
+        if (HAS_TIMER(nge_timer_wait)) {
+            return 0;
+        }
+        nge_timer_wait = NGE_ENTITY_INVALID;
+    }
+
+    /*
+     * Three passes, as handlers may change other timers: the step to the
+     * next timer due, moving every timer on by it, then firing in ID order
+     */
+    for (id = 0; id < NGE_ENTITY_MAX; id++) {
+        if (HAS_TIMER(id) && nge_timer_count[id] <= step) {
+            step = nge_timer_count[id];
+            found = 1;
+        }
+    }
+    if (!found) {
+        return 0;
+    }
+    nge_util_assert(step != 0);
+
+    for (id = 0; id < NGE_ENTITY_MAX; id++) {
+        if (HAS_TIMER(id)) {
+            nge_timer_count[id] -= step;
+        }
+    }
+
+    /*
+     * The game clock is kept in turns and ticks: nge_timer_turns whole
+     * turns plus nge_timer_tick ticks into the current turn, with
+     * NGE_TIMER_TICKS_PER_TURN ticks to a turn.
+     *
+     * Advance it by step ticks, as turns and ticks: add step to the ticks,
+     * then take each whole turn out of them and add it to the turns,
+     * leaving the ticks below NGE_TIMER_TICKS_PER_TURN. The sum is 16 bits,
+     * as it can pass 255 (up to 254 + 252); the loop runs at most 25 times
+     * at 10 ticks a turn, usually once or not at all: cheaper on the Z80
+     * than a division.
+     */
+    tick = (uint16_t)nge_timer_tick + step;
+    while (tick >= NGE_TIMER_TICKS_PER_TURN) {
+        tick -= NGE_TIMER_TICKS_PER_TURN;
+        nge_timer_turns++;
+    }
+    nge_timer_tick = (uint8_t)tick;
+
+    /*
+     * Fire the timers due now, those whose count has reached 0, in entity
+     * ID order: call the game's handler for each through dispatch, then act
+     * on its result (after_firing(): set the next delay, count a cycle,
+     * remove the timer, or stop the clock to wait). A handler may change
+     * other timers, so each timer is checked just before it fires, not
+     * from a list made beforehand: one removed, delayed or whose entity was
+     * destroyed by an earlier handler in this tick doesn't fire, and one
+     * added in this tick has a delay of at least 1 so waits for a later tick.
+     */
+    for (id = 0; id < NGE_ENTITY_MAX; id++) {
+        uint8_t next;
+
+        /* Skips timers removed, delayed or destroyed by earlier handlers */
+        if (!HAS_TIMER(id) || nge_timer_count[id] != 0) {
+            continue;
+        }
+        next = dispatch(id, nge_timer_kind[id], nge_timer_cycles[id]);
+        /* Unless the handler destroyed its entity or removed its timer: then the result is ignored */
+        if (HAS_TIMER(id)) {
+            after_firing(id, next);
+        }
+    }
+    return step;
+}

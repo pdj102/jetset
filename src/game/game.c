@@ -4,7 +4,9 @@
 
 #include "core/nge_util.h"
 #include "ecs/nge_ecs.h"
+#include "ecs/nge_owner.h"
 #include "ecs/systems/nge_render.h"
+#include "ecs/systems/nge_timer.h"
 #include "hw/nge_frame.h"
 #include "map/nge_map.h"
 
@@ -14,6 +16,7 @@
 #include "game/messages.h"
 #include "game/level/level.h"
 #include "game/screen.h"
+#include "game/timers.h"
 #include "game/title/title.h"
 
 /* Characters of the movement keys (nge_key_ascii): cursor keys */
@@ -22,8 +25,12 @@
 #define CHAR_DOWN   10
 #define CHAR_UP     11
 
+/* Clock steps (nge_timer_advance) per frame at most, so the screen keeps animating */
+#define ADVANCES_PER_FRAME  32
+
 game_state_t game_state = GAME_TITLE;
-uint16_t game_turn;
+
+static uint16_t shown_turn;   /* the turn count on the screen */
 
 uint8_t game_key_direction(nge_key_event_t ev, int8_t *dx, int8_t *dy)
 {
@@ -59,31 +66,73 @@ static void game_on_event(const nge_event_t *e)
     messages_on_event(e);
 }
 
+/* ---- Timers ---- */
+
+/*
+ * The dispatch function: the handler for each timer kind (game/timers.h).
+ * In common memory
+ */
+static uint8_t game_on_timer(nge_entity_id_t id, uint8_t kind, uint8_t cycles)
+{
+    switch (kind) {
+    case TIMER_PLAYER:
+        return NGE_TIMER_WAIT;   /* until the player's command */
+    case TIMER_GLOW:
+        return actors_on_glow(id, cycles);
+    default:
+        nge_util_abort("bad timer kind");
+        return NGE_TIMER_STOP;
+    }
+}
+
 /* ---- Turns ---- */
 
-/* After each command that takes time: its events, then (later) the monsters' turn */
-static void end_turn(void)
+/*
+ * Time passes until the clock waits for the player, each step's events
+ * handled before the next, up to ADVANCES_PER_FRAME steps a frame
+ */
+static void pass_time(void)
+{
+    uint8_t steps = ADVANCES_PER_FRAME;
+
+    while (steps-- > 0 && nge_timer_waiting() == NGE_ENTITY_INVALID &&
+           nge_timer_advance(game_on_timer)) {
+        nge_event_process(game_on_event);
+    }
+    if (nge_timer_turns != shown_turn) {
+        shown_turn = nge_timer_turns;
+        screen_show_turn(shown_turn);
+    }
+}
+
+/* After a command that takes time: its events, then time passes for its cost */
+static void player_acted(uint8_t cost)
 {
     nge_event_process(game_on_event);
-    game_turn++;
-    screen_show_turn(game_turn);
+    nge_timer_set_delay(actor_player, cost);
+    pass_time();
 }
 
 /* ---- States: entry actions and per-frame updates ---- */
 
-/* The player's turn: at most one command per frame, from the key events */
+/* Time passes until the player's turn, then at most one command per frame, from the key events */
 static void play_update(void)
 {
-    nge_key_event_t ev = nge_key_get();
+    nge_key_event_t ev;
     int8_t dx;
     int8_t dy;
 
+    pass_time();
+    if (nge_timer_waiting() != actor_player) {
+        return;
+    }
+    ev = nge_key_get();
     if (ev == NGE_KEY_NONE) {
         return;
     }
     if (game_key_direction(ev, &dx, &dy)) {
         if (actors_move_player(dx, dy)) {
-            end_turn();
+            player_acted(COST_MOVE);
         }
         return;
     }
@@ -189,10 +238,32 @@ static void pre_update(void)
     nge_input_update();
 }
 
+/*
+ * Release the entities destroyed this frame (after their events are
+ * handled). What they own goes too: for now only effects, so destroy them
+ * (later, carried items will be dropped instead)
+ */
+static void release_dying(void)
+{
+    nge_entity_id_t id;
+    nge_entity_id_t owned;
+    uint8_t i;
+
+    while ((id = nge_entity_next_dying()) != NGE_ENTITY_INVALID) {
+        NGE_OWNER_FOR_EACH_OWNED(i, owned, id) {
+            nge_entity_destroy(owned);
+        }
+        /* The dying ones it owns wait on the dying stack: pass them on until released */
+        nge_owner_move_all(id, NGE_OWNER_OF(id));
+        nge_entity_release(id);
+    }
+}
+
 /* 3. After the state's update */
 static void post_update(void)
 {
     nge_event_process(game_on_event);   /* events posted outside turns */
+    release_dying();
     nge_render_update();    /* build the sprites for the next frame */
     nge_ecs_check_guard();
 }

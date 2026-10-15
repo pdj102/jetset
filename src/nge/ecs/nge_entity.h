@@ -70,7 +70,7 @@ typedef uint16_t nge_component_mask_t; /**< One bit per component; uint32_t for 
  *   0  location (ecs/components/nge_location.h, NGE_COMPONENT_LOCATION)
  *   1  sprite (ecs/systems/nge_render.h, NGE_COMPONENT_SPRITE)
  *   2  block (ecs/components/nge_block.h, NGE_COMPONENT_BLOCK)
- *   3  reserved
+ *   3  timer (ecs/systems/nge_timer.h, NGE_COMPONENT_TIMER)
  * The game's are NGE_COMPONENT_USER (4) to 15.
  */
 #define NGE_COMPONENT_USER  4

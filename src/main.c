@@ -8,6 +8,7 @@
 #include "ecs/components/nge_location.h"
 #include "ecs/nge_ecs.h"
 #include "ecs/systems/nge_render.h"
+#include "ecs/systems/nge_timer.h"
 #include "hw/nge_hw.h"
 #include "input/nge_input.h"
 #include "map/nge_map.h"
@@ -36,6 +37,7 @@ int main(void)
     nge_ecs_init();     /* ECS data page into slot 0; makes every entity free */
     nge_render_init();
     nge_render_set_view(LEVEL_AREA);
+    nge_timer_init();   /* the clock: turn 0 */
     actors_init();
 
     nge_map_centre_camera(NGE_LOCATION_X(actor_player), NGE_LOCATION_Y(actor_player));

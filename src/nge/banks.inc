@@ -29,6 +29,7 @@
 //             51     map data, mapped permanently into slot 1 ($2000-$3FFF):
 //                    the map's state, tiles and block table (nge_map_cdata.c)
 //             52/53  render system: code / sprite component and working data
+//             54/55  timer system: code / (unused); its data is in page 50
 //   88-99   further nge modules (6 pairs)
 //             88/89  input: setup, ASCII tables and waiting / (unused)
 //   100-223 game
@@ -51,6 +52,9 @@
 
 // nge ecs render system
 #pragma define CRT_ORG_PAGE_52 = 0x34C000
+
+// nge ecs timer system
+#pragma define CRT_ORG_PAGE_54 = 0x36C000
 
 // nge input: setup, ASCII tables and waiting
 #pragma define CRT_ORG_PAGE_88 = 0x58C000

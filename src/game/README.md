@@ -6,11 +6,12 @@ Game code: the basis of a classic roguelike.
 |---|---|
 | `game.{h,c}` | The main loop (pre-update, the current state's update, post-update), the game states (title, play, inventory, targeting, dead) and the event dispatch function, which passes each event to every system's `on_event()` |
 | `events.h` | The game's event IDs (things that have happened) |
+| `timers.h` | The game's timer kinds (whose handler runs when an entity's timer fires) and action costs in ticks |
 | `messages.{h,c}` | The message window's reactions to events |
 | `title/` | The title state: the title message, the name prompt, then play. Banked: `title_bank.c` (page 104), no common part |
 | `screen.{h,c}` | Screen layout: the map view, the stats window and the message window |
 | `level/` | The current level: one area, its map in slot 1, a test layout. Banked: `level.c` (common) and `level_bank.c` (page 102) |
-| `actors.{h,c}` | The level's entities: the player and a test object |
+| `actors.{h,c}` | The level's entities: the player and a test object, and a demo effect on the player |
 
 Code here uses the nge library (`src/nge`); nge never includes anything from
 here. New `.c` files are built automatically (see the Makefile). Includes are

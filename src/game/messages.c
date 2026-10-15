@@ -23,6 +23,16 @@ void messages_on_event(const nge_event_t *e)
                                                      : "You see something here.");
         }
         break;
+    case EV_GLOWED:
+        if (e->target == actor_player) {
+            screen_message("A warm glow surrounds you.");
+        }
+        break;
+    case EV_GLOW_FADED:
+        if (e->target == actor_player) {
+            screen_message("The warm glow fades.");
+        }
+        break;
     default:
         break;
     }
