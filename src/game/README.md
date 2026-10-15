@@ -10,8 +10,9 @@ Game code: the basis of a classic roguelike.
 | `messages.{h,c}` | The message window's reactions to events |
 | `title/` | The title state: the title message, the name prompt, then play. Banked: `title_bank.c` (page 104), no common part |
 | `screen.{h,c}` | Screen layout: the map view, the stats window and the message window |
-| `level/` | The current level: one area, its map in slot 1, a test layout. Banked: `level.c` (common) and `level_bank.c` (page 102) |
-| `actors.{h,c}` | The level's entities: the player and a test object, and a demo effect on the player |
+| `level/` | The current level: one area, its map in slot 1, and the level generator (rooms in a 4x3 grid joined by corridors, items, the player). Banked: `level.c` (common), `level_bank.c` and `level_gen.c` (page 102), `level_pdata.c` (page 103: the room list) |
+| `items.h`, `items_cdata.c` | The item component: each item's kind (placeholder potion and sword), its table in slot 0 |
+| `actors.{h,c}` | The player (placed by the level generator) and a demo effect on the player |
 
 Code here uses the nge library (`src/nge`); nge never includes anything from
 here. New `.c` files are built automatically (see the Makefile). Includes are

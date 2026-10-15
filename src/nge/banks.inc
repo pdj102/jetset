@@ -36,7 +36,8 @@
 //             100      free (game assets)
 //             101      sprite patterns and palette (slot 7, via the loaders)
 //             102-131  game code pairs (15), from 102 up:
-//                        102/103  level: setting up and building a level / (unused)
+//                        102/103  level: setting up the map and generating levels /
+//                                 the room list
 //                        104/105  title: the title state / (unused)
 //             132-223  game assets (maps, graphics, level data)
 

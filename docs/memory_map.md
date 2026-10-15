@@ -147,7 +147,7 @@ code pages.
 | 88-99 | Further nge modules (6 pairs): 88/89 `input` (setup, ASCII tables and waiting / unused) |
 | 100 | Game: free (assets) |
 | 101 | Game: sprite patterns and palette (slot 7, through the loaders) |
-| 102-131 | Game code pairs (15), allocated from 102 up: 102/103 `level` (setting up and building a level / unused); 104/105 `title` (the title state / unused) |
+| 102-131 | Game code pairs (15), allocated from 102 up: 102/103 `level` (setting up the map and generating levels / the room list); 104/105 `title` (the title state / unused) |
 | 132-223 | Game assets: maps, graphics, level data |
 
 - **Module code, string literals and constants:** the even page. A banked
@@ -189,7 +189,7 @@ Banked so far:
 | 52/53 | `ecs` render system | the system (`ecs/systems/nge_render.c`), with literals, about 2.4K | the sprite component (10 bytes per entity), the sprite records for hardware sprites 0 to `NGE_RENDER_SPRITES`-1, and its working data (`nge_render_pdata.c`, about 1.8K) |
 | 54/55 | `ecs` timer system | the clock and firing timers (`ecs/systems/nge_timer.c`, about 0.7K, 1.6K with asserts) | none: its tables and the clock are in slot 0 |
 | 88/89 | `input` | setup, the key-to-ASCII tables and waiting (`input/nge_input_setup.c`, about 0.5K) | none |
-| 102/103 | game `level` | setting up and building a level, with literals (`game/level/level_bank.c`, about 0.7K) | none yet |
+| 102/103 | game `level` | setting up the map and the level generator, with literals (`game/level/level_bank.c`, `level_gen.c`, about 2.9K, 3.1K with asserts) | the room list and corridor links (`level_pdata.c`, 83 bytes) |
 | 104/105 | game `title` | the title state and the name prompt, with literals (`game/title/title_bank.c`, about 0.4K; no common part) | none |
 
 How a module is banked:
@@ -465,7 +465,7 @@ data.
 | Address | Contents |
 |---|---|
 | `$0000`-`$00FF` | Guard area against null pointers |
-| `$0100`-`$1FFF` | ECS tables (`SECTION PAGE_50`, `CRT_ORG_PAGE_50 = 0x0100` in [banks.inc](../src/nge/banks.inc)): entity flags, components and alive list, owners, locations, block flags, timers and the clock (about 1.5K at `NGE_ENTITY_MAX` 100) |
+| `$0100`-`$1FFF` | ECS tables (`SECTION PAGE_50`, `CRT_ORG_PAGE_50 = 0x0100` in [banks.inc](../src/nge/banks.inc)): entity flags, components and alive list, owners, locations, block flags, timers and the clock, and the game's components (`src/game/*_cdata.c`, e.g. the item kinds) (about 1.6K at `NGE_ENTITY_MAX` 100) |
 
 ### Where component data goes
 

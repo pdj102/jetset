@@ -2,6 +2,7 @@
 
 #include "game/actors.h"
 #include "game/events.h"
+#include "game/items.h"
 #include "game/screen.h"
 
 void messages_on_event(const nge_event_t *e)
@@ -19,8 +20,13 @@ void messages_on_event(const nge_event_t *e)
         break;
     case EV_STOOD_ON:
         if (e->source == actor_player) {
-            screen_message(e->target == actor_potion ? "You see a potion here."
-                                                     : "You see something here.");
+            if (!NGE_ENTITY_HAS_COMPONENTS(e->target, COMPONENT_ITEM)) {
+                screen_message("You see something here.");
+            } else if (item_kind[e->target] == ITEM_SWORD) {
+                screen_message("You see a sword here.");
+            } else {
+                screen_message("You see a potion here.");
+            }
         }
         break;
     case EV_GLOWED:

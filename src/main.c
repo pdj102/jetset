@@ -1,11 +1,10 @@
 /*
  * Entry point: the basis of a classic roguelike. Sets up the screen
- * (src/game/screen.h), one level with a test layout (src/game/level.h) and
- * its entities (src/game/actors.h), then runs the game loop
+ * (src/game/screen.h), the player (src/game/actors.h) and the first level,
+ * generated (src/game/level/level.h), then runs the game loop
  * (src/game/game.h).
  */
 #include "core/nge_util.h"
-#include "ecs/components/nge_location.h"
 #include "ecs/nge_ecs.h"
 #include "ecs/systems/nge_render.h"
 #include "ecs/systems/nge_timer.h"
@@ -39,8 +38,7 @@ int main(void)
     nge_render_set_view(LEVEL_AREA);
     nge_timer_init();   /* the clock: turn 0 */
     actors_init();
-
-    nge_map_centre_camera(NGE_LOCATION_X(actor_player), NGE_LOCATION_Y(actor_player));
+    level_generate(1, actor_player);   /* the first level; the camera on the player */
 
     nge_util_info("init done");
 

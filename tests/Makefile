@@ -11,6 +11,8 @@
 #      every library source in src/nge/*/ and src/nge/*/*/, so new modules
 #      and folders are included too. Next register and IO port names come from z88dk's own
 #      headers.
+#   Game code (src/game) is linked only into the tests listed with it below
+#   (LEVEL_GAME_SRCS for test_level).
 #   Library files that only work on the Next (inline asm traps) are listed in
 #   LIB_EXCLUDE and replaced by fakes in support/test.c.
 
@@ -31,6 +33,12 @@ LIB_SRCS := $(filter-out $(addprefix $(SRCDIR)/,$(LIB_EXCLUDE)),$(wildcard $(SRC
 LIB_OBJS := $(patsubst $(SRCDIR)/%.c,$(BUILD)/lib/%.o,$(LIB_SRCS))
 SUPPORT_OBJS := $(BUILD)/support/test.o $(BUILD)/support/zxn_io.o
 
+# Game code tested on the PC, linked only into the tests that need it
+GAMEDIR := ../src/game
+LEVEL_GAME_SRCS := $(addprefix $(GAMEDIR)/,level/level.c level/level_bank.c level/level_gen.c \
+                   level/level_pdata.c items_cdata.c)
+LEVEL_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(LEVEL_GAME_SRCS))
+
 TEST_SRCS := $(wildcard test_*.c)
 TESTS := $(patsubst %.c,$(BUILD)/%,$(TEST_SRCS))
 
@@ -38,7 +46,7 @@ TESTS := $(patsubst %.c,$(BUILD)/%,$(TEST_SRCS))
 # NGE_FILE_MAX: room for the stdout debug stream that test_init() opens.
 CPPFLAGS := -DNGE_CSPECT -DNGE_FILE_MAX=8 \
             -include support/test_config.h \
-            -Isupport -I$(GEN) -I$(SRCDIR) -I$(Z88DK_CONFIG_DIR)
+            -Isupport -I$(GEN) -I$(SRCDIR) -I$(SRCDIR)/.. -I$(Z88DK_CONFIG_DIR)
 CFLAGS := -std=gnu11 -O1 -g -Wall -MMD -MP
 
 .PHONY: all run clean
@@ -57,6 +65,13 @@ run: $(TESTS)
 
 $(BUILD)/test_%: $(BUILD)/test_%.o $(LIB_OBJS) $(SUPPORT_OBJS)
 	$(HOSTCC) $(CFLAGS) $^ -o $@
+
+$(BUILD)/test_level: $(BUILD)/test_level.o $(LIB_OBJS) $(SUPPORT_OBJS) $(LEVEL_GAME_OBJS)
+	$(HOSTCC) $(CFLAGS) $^ -o $@
+
+$(BUILD)/game/%.o: $(GAMEDIR)/%.c $(GEN)/zxn_names.h $(GEN)/zxn_io.h
+	@mkdir -p $(dir $@)
+	$(HOSTCC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 $(BUILD)/test_%.o: test_%.c $(GEN)/zxn_names.h $(GEN)/zxn_io.h
 	@mkdir -p $(dir $@)

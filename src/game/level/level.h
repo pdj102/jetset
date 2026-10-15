@@ -11,9 +11,12 @@
  * style: '|', '-' and '+' walls, '.' and ',' floor, ' doors, '#' corridors.
  * What each tile ID blocks is in the map's block table.
  *
- * Banking: level_init() is banked (NGE_BANKED, page 102): don't call it
- * while game code has its own page mapped in slot 6 or 7. level_can_enter()
- * is in common memory.
+ * level_generate() builds a level for a dungeon depth: rooms joined by
+ * corridors, every room reachable, items in the rooms and the player in one.
+ *
+ * Banking: level_init() and level_generate() are banked (NGE_BANKED, page
+ * 102, with their data in page 103): don't call them while game code has
+ * its own page mapped in slot 6 or 7. level_can_enter() is in common memory.
  */
 
 #include <stdint.h>
@@ -30,11 +33,29 @@
 
 /**
  * @brief Set up the map in the map view (nge_map_init(), which maps its
- *        page into slot 1), build the test layout and clip sprites to it.
+ *        page into slot 1), what each tile blocks, and clip sprites to it.
  *
- * Call after screen_init() and nge_sprite_init().
+ * Call once, after screen_init() and nge_sprite_init().
  */
 void level_init(void) NGE_BANKED;
+
+/**
+ * @brief Generate the level for a dungeon depth, and put the player in it.
+ *
+ * Destroys the entities the level's area owns except the player (the
+ * game releases them at the end of the frame), then builds the map: up to
+ * 10 rooms (LEVEL_ROOMS_MIN-LEVEL_ROOMS_MAX) in a grid, joined by corridors
+ * so every room can be reached; places 4 to 10 placeholder items
+ * (game/items.h) on free floor in the rooms; and moves the player onto free
+ * floor in a room, owned by LEVEL_AREA, with the camera on them.
+ *
+ * Seeds rand() with depth, so a depth's level is always the same (for
+ * development).
+ *
+ * Call after level_init(), nge_ecs_init() and nge_render_init().
+ * @param player The player: an entity in use, kept from level to level.
+ */
+void level_generate(uint8_t depth, nge_entity_id_t player) NGE_BANKED;
 
 /**
  * @brief Can entity id enter tile (x, y) of the level: neither the map nor
