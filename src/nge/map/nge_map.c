@@ -25,14 +25,18 @@ static uint8_t camera_to(nge_map_t *m, uint8_t x, uint8_t y)
     return 1;
 }
 
-void nge_map_init(nge_map_t *m, nge_tile_t *tiles, uint8_t width, uint8_t height,
+/* The buffer (tiles, then the block table) fits in an 8K page */
+typedef char nge_map_buffer_check[(NGE_MAP_BUFFER_BYTES <= 8192) ? 1 : -1];
+
+void nge_map_init(nge_map_t *m, nge_tile_t *buffer, uint8_t width, uint8_t height,
                   const nge_rect_t *window)
 {
-    nge_util_assert(m != NULL && tiles != NULL && window != NULL);
+    nge_util_assert(m != NULL && buffer != NULL && window != NULL);
     nge_util_assert(window->x1 <= window->x2 && window->x2 < NGE_TILEMAP_WIDTH);
     nge_util_assert(window->y1 <= window->y2 && window->y2 < NGE_TILEMAP_HEIGHT);
 
-    m->tiles = tiles;
+    m->tiles = buffer;
+    m->block = (nge_block_t *)buffer + NGE_MAP_MAX_BYTES;
     m->width = width;
     m->height = height;
     m->window = *window;
@@ -140,4 +144,22 @@ void nge_map_clip_sprites(const nge_map_t *m)
     clip.y1 = m->window.y1 * NGE_MAP_TILE_PIXELS;
     clip.y2 = m->window.y2 * NGE_MAP_TILE_PIXELS + (NGE_MAP_TILE_PIXELS - 1);
     nge_sprite_set_clip(&clip);
+}
+
+void nge_map_clear_blocks(nge_map_t *m, nge_block_t flags)
+{
+    memset(m->block, flags, NGE_MAP_BLOCK_ENTRIES);
+}
+
+void nge_map_set_block(nge_map_t *m, uint8_t tile_id, nge_block_t flags)
+{
+    m->block[tile_id] = flags;
+}
+
+nge_block_t nge_map_block(const nge_map_t *m, uint8_t x, uint8_t y)
+{
+    if (x >= m->width || y >= m->height) {
+        return NGE_BLOCK_EDGE;
+    }
+    return NGE_MAP_BLOCK(m, x, y);
 }

@@ -33,12 +33,15 @@ static void room(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2)
 
     for (y = y1; y <= y2; y++) {
         for (x = x1; x <= x2; x++) {
-            if (y == y1 || y == y2) {
+            if ((y == y1 || y == y2) && (x == x1 || x == x2)) {
+                put(x, y, LEVEL_CORNER, NGE_INK_WHITE);
+            } else if (y == y1 || y == y2) {
                 put(x, y, LEVEL_WALL_H, NGE_INK_WHITE);
             } else if (x == x1 || x == x2) {
                 put(x, y, LEVEL_WALL_V, NGE_INK_WHITE);
             } else {
-                put(x, y, LEVEL_FLOOR, NGE_INK_YELLOW);
+                /* Floor, with a variant pattern here and there */
+                put(x, y, (rand() & 7) == 0 ? LEVEL_FLOOR2 : LEVEL_FLOOR, NGE_INK_YELLOW);
             }
         }
     }
@@ -100,12 +103,26 @@ static void build_test_layout(void)
     door(15, 20);
 }
 
+/*
+ * What each tile ID blocks. Everything is solid unless set otherwise, so a
+ * tile that isn't listed (rock, a new wall pattern) can't be walked on.
+ */
+static void set_up_blocks(void)
+{
+    nge_map_clear_blocks(&level_map, NGE_BLOCK_SOLID);
+    nge_map_set_block(&level_map, LEVEL_FLOOR, NGE_BLOCK_NONE);
+    nge_map_set_block(&level_map, LEVEL_FLOOR2, NGE_BLOCK_NONE);
+    nge_map_set_block(&level_map, LEVEL_DOOR, NGE_BLOCK_NONE);
+    nge_map_set_block(&level_map, LEVEL_CORRIDOR, NGE_BLOCK_NONE);
+}
+
 void level_init(void) NGE_BANKED
 {
     nge_mmu_map(LEVEL_MAP_SLOT, LEVEL_MAP_PAGE);
     nge_map_init(&level_map, (nge_tile_t *)NGE_MMU_SLOT_ADDR(LEVEL_MAP_SLOT),
                  LEVEL_WIDTH, LEVEL_HEIGHT, &screen_map_view);
 
+    set_up_blocks();
     srand(0); /* reproducible test layout */
     build_test_layout();
     nge_map_clip_sprites(&level_map);

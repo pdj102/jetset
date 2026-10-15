@@ -6,7 +6,7 @@
 
 #include "map/nge_map.h"
 
-static nge_tile_t map_mem[NGE_MAP_STRIDE * NGE_MAP_MAX_HEIGHT];
+static nge_tile_t map_mem[NGE_MAP_BUFFER_BYTES / sizeof(nge_tile_t)];
 
 #define MARK_ID   0xEE   /* tilemap cells outside the window keep this */
 
@@ -239,6 +239,29 @@ int main(void)
     /* ---- randomised camera and drawing ---- */
     fill_map();
     random_camera();
+
+    /* ---- block table: after the largest map's tiles, flags by tile ID ---- */
+    CHECK(NGE_MAP_BUFFER_BYTES == NGE_MAP_MAX_BYTES + 256 && NGE_MAP_BUFFER_BYTES <= 8192);
+    fill_map();                                              /* tile ID = column */
+    nge_map_init(&m, map_mem, 60, 40, &window);
+    CHECK((uint8_t *)m.block == (uint8_t *)map_mem + NGE_MAP_MAX_BYTES);
+    nge_map_clear_blocks(&m, NGE_BLOCK_SOLID);
+    CHECK(m.block[0] == NGE_BLOCK_SOLID && m.block[255] == NGE_BLOCK_SOLID);
+    CHECK(map_mem[NGE_MAP_STRIDE * NGE_MAP_MAX_HEIGHT - 1].tile_id == NGE_MAP_STRIDE - 1);   /* tiles untouched */
+    nge_map_set_block(&m, 7, NGE_BLOCK_NONE);
+    nge_map_set_block(&m, 9, NGE_BLOCK_NO_FLOOR | NGE_BLOCK_USER);
+    CHECK(nge_map_block(&m, 7, 0) == NGE_BLOCK_NONE && nge_map_block(&m, 7, 39) == NGE_BLOCK_NONE);
+    CHECK(nge_map_block(&m, 9, 5) == (NGE_BLOCK_NO_FLOOR | NGE_BLOCK_USER));
+    CHECK(nge_map_block(&m, 8, 5) == NGE_BLOCK_SOLID && NGE_MAP_BLOCK(&m, 9, 5) == m.block[9]);
+    /* Outside the map: the edge, whatever the table says */
+    CHECK(nge_map_block(&m, 60, 0) == NGE_BLOCK_EDGE && nge_map_block(&m, 0, 40) == NGE_BLOCK_EDGE);
+    CHECK(nge_map_block(&m, 255, 255) == NGE_BLOCK_EDGE);
+    /* The table follows its own buffer, whatever the map's size */
+    nge_map_init(&m, map_mem, NGE_MAP_STRIDE, NGE_MAP_MAX_HEIGHT, &window);
+    CHECK(nge_map_block(&m, 9, NGE_MAP_MAX_HEIGHT - 1) == (NGE_BLOCK_NO_FLOOR | NGE_BLOCK_USER));
+    CHECK(nge_map_block(&m, NGE_MAP_STRIDE - 1, 0) == NGE_BLOCK_SOLID);
+    CHECK(nge_map_block(&m, NGE_MAP_STRIDE, 0) == NGE_BLOCK_EDGE);
+    nge_map_init(&m, map_mem, 60, 40, &window);
 
     /* ---- asserts ---- */
     TEST_EXPECT_HALT(nge_map_get(&m, 60, 0));

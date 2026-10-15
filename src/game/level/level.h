@@ -8,16 +8,19 @@
  * The map is resident in slot 1 (page LEVEL_MAP_PAGE) while the level is
  * active, so collision checks and drawing read it directly. Map cells are
  * single tiles, drawn with the font's ASCII tiles in the classic roguelike
- * style: '|' and '-' walls, '.' floor, '+' doors, '#' corridors.
+ * style: '|', '-' and '+' walls, '.' and ',' floor, ' doors, '#' corridors.
+ * What each tile ID blocks is in the map's block table.
  *
  * Banking: level_init() is banked (NGE_BANKED, page 102): don't call it
  * while game code has its own page mapped in slot 6 or 7. level_map and
- * level_is_open() are in common memory.
+ * level_can_enter() are in common memory.
  */
 
 #include <stdint.h>
 
 #include "core/nge_bank.h"
+#include "ecs/components/nge_block.h"
+#include "ecs/nge_entity.h"
 #include "ecs/nge_owner.h"
 #include "map/nge_map.h"
 
@@ -38,7 +41,16 @@ extern nge_map_t level_map;
  */
 void level_init(void) NGE_BANKED;
 
-/** @brief 1 if the tile at (x, y) can be walked on: floor, door or corridor. */
-uint8_t level_is_open(uint8_t x, uint8_t y);
+/**
+ * @brief Can entity id enter tile (x, y) of the level: neither the map nor
+ *        another entity there blocks it (nge_block_can_enter())?
+ *
+ * Uses the entity's pass flags (NGE_BLOCK_NONE without the block component)
+ * and ignores the entity itself.
+ * @param blocker If not NULL, receives the blocking entity, or
+ *                NGE_ENTITY_INVALID if the map blocks or nothing does.
+ * @return 1 if it can enter, 0 if not.
+ */
+uint8_t level_can_enter(nge_entity_id_t id, uint8_t x, uint8_t y, nge_entity_id_t *blocker);
 
 #endif

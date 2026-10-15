@@ -41,8 +41,33 @@
 #define NGE_MAP_MAX_HEIGHT  48
 #endif
 
-/** Bytes needed for a map of the maximum size. */
+/** Bytes needed for the tiles of a map of the maximum size. */
 #define NGE_MAP_MAX_BYTES  ((uint16_t)NGE_MAP_STRIDE * NGE_MAP_MAX_HEIGHT * sizeof(nge_tile_t))
+
+/** Entries in the block table: one per tile ID. */
+#define NGE_MAP_BLOCK_ENTRIES  256
+
+/**
+ * Bytes of a map's buffer: the tiles of a map of the maximum size, then the
+ * block table (at NGE_MAP_MAX_BYTES, whatever the map's size). 7,936 bytes:
+ * it fits in an 8K page (checked at compile time).
+ */
+#define NGE_MAP_BUFFER_BYTES  (NGE_MAP_MAX_BYTES + NGE_MAP_BLOCK_ENTRIES)
+
+/*
+ * Blocking flags: what a tile (through the block table, by tile ID) or an
+ * entity (ecs/components/nge_block.h) blocks. A mover with pass flags
+ * `pass` can enter a tile if (block & ~pass) == 0, where block is the
+ * tile's flags combined with those of every entity on it.
+ */
+typedef uint8_t nge_block_t;
+
+#define NGE_BLOCK_NONE      0x00   /**< Blocks nothing: floor, an item. */
+#define NGE_BLOCK_EDGE      0x01   /**< Blocks everything: outside the map. */
+#define NGE_BLOCK_SOLID     0x02   /**< Solid matter: walls, closed doors. */
+#define NGE_BLOCK_NO_FLOOR  0x04   /**< No floor to walk on: pits, chasms. */
+#define NGE_BLOCK_OCCUPIED  0x08   /**< A creature: other creatures can't share the tile. */
+#define NGE_BLOCK_USER      0x10   /**< First of the game's flags: 0x10 to 0x80. */
 
 /** Pixels per tile. */
 #define NGE_MAP_TILE_PIXELS  8
@@ -53,6 +78,7 @@
  */
 typedef struct nge_map {
     nge_tile_t *tiles;    /**< Row-major tiles, rows NGE_MAP_STRIDE tiles apart. */
+    nge_block_t *block;   /**< Block table: flags by tile ID (NGE_MAP_BLOCK_ENTRIES), in the buffer. */
     uint8_t width;        /**< Map width in tiles. */
     uint8_t height;       /**< Map height in tiles. */
     nge_rect_t window;    /**< Window on the hardware tilemap, inclusive tile coordinates. */
@@ -73,16 +99,39 @@ typedef struct nge_map {
 #define NGE_MAP_TILE(m, x, y)  (NGE_MAP_ROW(m, y)[x])
 
 /**
+ * The blocking flags of the tile at (x, y), read directly with no checks
+ * (inside the map only). nge_map_block() is the checked version.
+ */
+#define NGE_MAP_BLOCK(m, x, y)  ((m)->block[NGE_MAP_TILE(m, x, y).tile_id])
+
+/**
  * @brief Set up a map with its camera at (0,0), marked for drawing.
+ *
+ * The block table is at a fixed place in the buffer; set it up with
+ * nge_map_clear_blocks() and nge_map_set_block().
+ *
  * @param m Map to set up.
- * @param tiles Map data: height rows, NGE_MAP_STRIDE tiles apart. Must stay
- *              mapped in while the map is used.
+ * @param buffer The map's buffer, NGE_MAP_BUFFER_BYTES long (e.g. a page in
+ *               slot 1): the tiles, height rows NGE_MAP_STRIDE tiles apart,
+ *               then the block table. Must stay mapped in while the map is used.
  * @param width Map width in tiles, from the window width to NGE_MAP_STRIDE.
  * @param height Map height in tiles, from the window height to NGE_MAP_MAX_HEIGHT.
  * @param window Window on the hardware tilemap, inclusive tile coordinates.
  */
-void nge_map_init(nge_map_t *m, nge_tile_t *tiles, uint8_t width, uint8_t height,
+void nge_map_init(nge_map_t *m, nge_tile_t *buffer, uint8_t width, uint8_t height,
                   const nge_rect_t *window);
+
+/** @brief Set the blocking flags of every tile ID (e.g. NGE_BLOCK_SOLID as a safe default). */
+void nge_map_clear_blocks(nge_map_t *m, nge_block_t flags);
+
+/** @brief Set the blocking flags of a tile ID: every tile with this ID has them. */
+void nge_map_set_block(nge_map_t *m, uint8_t tile_id, nge_block_t flags);
+
+/**
+ * @brief The blocking flags of the tile at (x, y).
+ * @return The flags of its tile ID, or NGE_BLOCK_EDGE outside the map.
+ */
+nge_block_t nge_map_block(const nge_map_t *m, uint8_t x, uint8_t y);
 
 /**
  * @brief Move the camera to (x, y), clamped so the view stays inside the map.

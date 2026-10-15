@@ -12,6 +12,11 @@ void messages_on_event(const nge_event_t *e)
             screen_message("You bump into a wall.");
         }
         break;
+    case EV_BLOCKED:
+        if (e->source == actor_player) {
+            screen_message("Something is in the way.");
+        }
+        break;
     case EV_STOOD_ON:
         if (e->source == actor_player) {
             screen_message(e->target == actor_potion ? "You see a potion here."

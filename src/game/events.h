@@ -11,6 +11,7 @@
  * | EV_MOVED    | the entity moved  | -       | -        |
  * | EV_BUMPED   | the entity        | -       | -        |
  * | EV_STOOD_ON | what is stood on  | stander | -        |
+ * | EV_BLOCKED  | the blocker       | mover   | -        |
  */
 
 #include "event/nge_event.h"
@@ -18,5 +19,6 @@
 #define EV_MOVED     (NGE_EVENT_USER + 0)   /**< Moved one tile. */
 #define EV_BUMPED    (NGE_EVENT_USER + 1)   /**< Walked into a wall and didn't move. */
 #define EV_STOOD_ON  (NGE_EVENT_USER + 2)   /**< Stood on by the source (after a move onto its tile). */
+#define EV_BLOCKED   (NGE_EVENT_USER + 3)   /**< Stopped the source moving onto its tile. */
 
 #endif

@@ -71,10 +71,10 @@ The current CSpect build (`bin/main.map`) uses:
 
 | Address | Contents |
 |---|---|
-| `$6A00`-`$AF78` | Code and constant data (`CODE`) |
-| `$AF79`-`$AF8E` | Initialised data (`DATA`) |
-| `$AF8F`-`$B0C5` | Uninitialised data (`BSS`) |
-| `$B0C6`-`$BDFF` | Free, about 3.3K (about 9.0K in the hardware build, without asserts and their messages) |
+| `$6A00`-`$B371` | Code and constant data (`CODE`) |
+| `$B372`-`$B387` | Initialised data (`DATA`) |
+| `$B388`-`$B4C0` | Uninitialised data (`BSS`) |
+| `$B4C1`-`$BDFF` | Free, about 2.3K (about 8.3K in the hardware build, without asserts and their messages) |
 | `$BE00`-`$BFFF` | Stack, 512 bytes |
 
 The link step checks `__BSS_END_tail` in the map file and fails the build if
@@ -297,13 +297,13 @@ part runs:
 ```text
 src/game/level/
   level.h, level_internal.h
-  level.c          common: level_map, level_is_open()   (every frame / every turn)
+  level.c          common: level_map, level_can_enter()   (every frame / every turn)
   level_bank.c     page 102: level_init() and the layout builder   (once per level)
 ```
 
 - **What stays common:** anything called every frame or many times a turn
-  (`level_is_open()` is called for every move, and will be for every monster
-  move), and data read by common code (`level_map`, read by the map and
+  (`level_can_enter()` is called for every move, and will be for every
+  monster move), and data read by common code (`level_map`, read by the map and
   render systems every frame).
 - **A game function that receives literals or data from a banked module
   stays common,** or is in the same page. `screen_message()` is common, so
@@ -433,7 +433,7 @@ data.
 | Address | Contents |
 |---|---|
 | `$0000`-`$00FF` | Guard area against null pointers |
-| `$0100`-`$1FFF` | ECS tables (`SECTION PAGE_50`, `CRT_ORG_PAGE_50 = 0x0100` in [banks.inc](../src/nge/banks.inc)): entity flags, components and alive list, owners, locations (about 0.9K at `NGE_ENTITY_MAX` 100) |
+| `$0100`-`$1FFF` | ECS tables (`SECTION PAGE_50`, `CRT_ORG_PAGE_50 = 0x0100` in [banks.inc](../src/nge/banks.inc)): entity flags, components and alive list, owners, locations, block flags (about 1.1K at `NGE_ENTITY_MAX` 100) |
 
 ### Where component data goes
 
@@ -529,9 +529,13 @@ Slot 0 holds the ROM until `nge_ecs_init()` maps the ECS data page there.
 **Slot 1 holds the active area's map.** Map data is read constantly, by
 drawing and by collision checks, so it can't be mapped in and out per access.
 The area maps its map's page into slot 1 when it starts, and the page stays
-there while the area is active. A map of up to 80 x 48 tiles (7.5K, see
-`NGE_MAP_STRIDE` and `NGE_MAP_MAX_HEIGHT` in
-[nge_map.h](../src/nge/map/nge_map.h)) fits in the slot. The game's level
+there while the area is active. The page holds the map's buffer
+(`NGE_MAP_BUFFER_BYTES`, 7,936 bytes, checked at compile time): the tiles of
+a map of up to 80 x 48 (7.5K, see `NGE_MAP_STRIDE` and `NGE_MAP_MAX_HEIGHT`
+in [nge_map.h](../src/nge/map/nge_map.h)), then the 256-byte block table at
+`$3E00` (what each tile ID blocks: walls, pits; see "blocking flags" in
+nge_map.h), which the map module places and the game fills in with
+`nge_map_clear_blocks()` and `nge_map_set_block()`. The game's level
 ([level_bank.c](../src/game/level/level_bank.c)) maps page 100 there and builds its test
 layout at startup:
 

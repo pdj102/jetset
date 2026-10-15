@@ -14,7 +14,7 @@
 #define AREA0       NGE_OWNER_AREA(0)
 #define AREA1       NGE_OWNER_AREA(1)
 
-static nge_tile_t tiles[NGE_MAP_STRIDE * NGE_MAP_MAX_HEIGHT];
+static nge_tile_t tiles[NGE_MAP_BUFFER_BYTES / sizeof(nge_tile_t)];
 static nge_map_t map;
 /* Window: the whole width, rows 22-30 (as the demo); its top-left pixel is (0, 176) */
 static const nge_rect_t window = { .x1 = 0, .x2 = 39, .y1 = 22, .y2 = 30 };

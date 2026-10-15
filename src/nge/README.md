@@ -42,7 +42,7 @@ Includes are written from `src/nge`, with the folder:
 | `io/` | Streams (output and input), print and printf, the stream devices for the tilemap, CSpect, UART and keyboard, and the line editor (`nge_line`) |
 | `event/` | Events: a queue in common memory of things that have happened (target, event, source, two payloads), handled in order through the game's dispatch function (`nge_event`) |
 | `ecs/` | Entity component system core, data every entity has: `nge_entity` (IDs, lifecycle, flags, component masks; lifecycle banked in pages 48/49), `nge_owner` (the owner of every entity: an entity, the world or an area; changes banked in page 48), `nge_ecs` (ECS start-up: the ECS data page in slot 0 and its guard area) |
-| `ecs/components/` | Components shared by several systems, with their data in slot 0: `nge_location` (tile and pixel position) |
+| `ecs/components/` | Components shared by several systems, with their data in slot 0: `nge_location` (tile and pixel position; entities at a tile), `nge_block` (what an entity blocks and can enter; whether a tile can be entered, map and entities together) |
 | `ecs/systems/` | Systems, each with its private components as page data: `nge_render` (draws the sprite component as hardware sprites; pages 52/53) |
 
 Planned: more of `input/` (joysticks, actions), `sound/` (AY), more of
