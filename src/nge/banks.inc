@@ -35,6 +35,7 @@
 //             101      sprite patterns and palette (slot 7, via the loaders)
 //             102-131  game code pairs (15), from 102 up:
 //                        102/103  level: setting up and building a level / (unused)
+//                        104/105  title: the title state / (unused)
 //             132-223  game assets (maps, graphics, level data)
 
 // nge sprite: setup functions and loaders
@@ -55,3 +56,6 @@
 
 // game level: setting up and building a level
 #pragma define CRT_ORG_PAGE_102 = 0x66C000
+
+// game title: the title state
+#pragma define CRT_ORG_PAGE_104 = 0x68C000

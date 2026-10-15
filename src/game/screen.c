@@ -1,13 +1,10 @@
 #include "game/screen.h"
 
 #include <stddef.h>
-#include <string.h>
 #include <arch/zxn.h>
 
 #include "core/nge_util.h"
 #include "hw/nge_palette.h"
-#include "io/nge_kbd_stream.h"
-#include "io/nge_line.h"
 #include "io/nge_print.h"
 #include "io/nge_tm_stream.h"
 #include "tilemap/nge_tilemap.h"
@@ -84,22 +81,4 @@ void screen_message(const char *text)
     nge_tm_ink(NGE_INK_WHITE, screen_messages);
     nge_puts(text, screen_messages);
     nge_putc(NGE_CTRL_LF, screen_messages);
-}
-
-void screen_ask_name(void)
-{
-    char name[SCREEN_NAME_MAX + 1];
-    NGE_FILE *keyboard = nge_open_keyboard();
-
-    nge_util_assert(keyboard != NULL);
-    nge_tm_ink(NGE_INK_YELLOW, screen_messages);
-    nge_puts("What is your name? ", screen_messages);
-    nge_tm_ink(NGE_INK_WHITE, screen_messages);
-    nge_gets(name, sizeof(name), keyboard, screen_messages);
-    nge_putc(NGE_CTRL_LF, screen_messages);
-    nge_close(keyboard);
-
-    if (name[0] != 0) {
-        strcpy(screen_name, name);
-    }
 }

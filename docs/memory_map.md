@@ -71,10 +71,10 @@ The current CSpect build (`bin/main.map`) uses:
 
 | Address | Contents |
 |---|---|
-| `$6A00`-`$B371` | Code and constant data (`CODE`) |
-| `$B372`-`$B387` | Initialised data (`DATA`) |
-| `$B388`-`$B4C0` | Uninitialised data (`BSS`) |
-| `$B4C1`-`$BDFF` | Free, about 2.3K (about 8.3K in the hardware build, without asserts and their messages) |
+| `$6A00`-`$B209` | Code and constant data (`CODE`) |
+| `$B20A`-`$B21F` | Initialised data (`DATA`) |
+| `$B220`-`$B358` | Uninitialised data (`BSS`) |
+| `$B359`-`$BDFF` | Free, about 2.7K (about 8.6K in the hardware build, without asserts and their messages) |
 | `$BE00`-`$BFFF` | Stack, 512 bytes |
 
 The link step checks `__BSS_END_tail` in the map file and fails the build if
@@ -147,7 +147,7 @@ code pages.
 | 88-99 | Further nge modules (6 pairs): 88/89 `input` (setup, ASCII tables and waiting / unused) |
 | 100 | Game: the level map (slot 1) |
 | 101 | Game: sprite patterns and palette (slot 7, through the loaders) |
-| 102-131 | Game code pairs (15), allocated from 102 up: 102/103 `level` (setting up and building a level / unused) |
+| 102-131 | Game code pairs (15), allocated from 102 up: 102/103 `level` (setting up and building a level / unused); 104/105 `title` (the title state / unused) |
 | 132-223 | Game assets: maps, graphics, level data |
 
 - **Module code, string literals and constants:** the even page. A banked
@@ -187,7 +187,8 @@ Banked so far:
 | 48/49 | `ecs` entity, owner | lifecycle functions (`nge_entity_life.c`) and the ownership functions that change or search the owner table (`nge_owner_set.c`), with literals, about 0.6K | lifecycle bookkeeping: free and dying stacks, alive positions (`nge_entity_pdata.c`, 302 bytes) |
 | 52/53 | `ecs` render system | the system (`ecs/systems/nge_render.c`), with literals, about 2.4K | the sprite component (10 bytes per entity), the sprite records for hardware sprites 0 to `NGE_RENDER_SPRITES`-1, and its working data (`nge_render_pdata.c`, about 1.8K) |
 | 88/89 | `input` | setup, the key-to-ASCII tables and waiting (`input/nge_input_setup.c`, about 0.5K) | none |
-| 102/103 | game `level` | setting up and building a level, with literals (`game/level/level_bank.c`, about 0.5K) | none yet |
+| 102/103 | game `level` | setting up and building a level, with literals (`game/level/level_bank.c`, about 0.7K) | none yet |
+| 104/105 | game `title` | the title state and the name prompt, with literals (`game/title/title_bank.c`, about 0.4K; no common part) | none |
 
 How a module is banked:
 
@@ -316,7 +317,11 @@ src/game/level/
   it checks nge's. Game modules are not covered by the PC tests; check them
   in CSpect.
 - Game modules not yet banked stay as single files in `src/game/` and move
-  into a folder when they are banked.
+  into a folder when they are banked. A module that is all rarely run code
+  (`title`) has no `<module>.c`.
+- **Banked functions are called directly, never through a function pointer**
+  (a pointer to a banked function doesn't switch banks): `game.c` calls each
+  state's entry action and update from a `switch`, not a table of pointers.
 
 ### Page data: a module's variables and tables in its odd page
 

@@ -14,6 +14,7 @@
 #include "game/messages.h"
 #include "game/level/level.h"
 #include "game/screen.h"
+#include "game/title/title.h"
 
 /* Characters of the movement keys (nge_key_ascii): cursor keys */
 #define CHAR_LEFT   8
@@ -69,24 +70,6 @@ static void end_turn(void)
 }
 
 /* ---- States: entry actions and per-frame updates ---- */
-
-static void title_enter(void)
-{
-    screen_message("NGE ROGUE. Press any key to start.");
-}
-
-static void title_update(void)
-{
-    if (nge_key_get() == NGE_KEY_NONE) {
-        return;
-    }
-    screen_ask_name();   /* blocking: the screen stands still while the player types */
-    screen_draw_stats(game_turn);
-    screen_message("Welcome to the dungeon.");
-    screen_message("Move: cursor keys or h j k l.");
-    screen_message("i inventory, f fire, Q quit.");
-    game_set_state(GAME_PLAY);
-}
 
 /* The player's turn: at most one command per frame, from the key events */
 static void play_update(void)
@@ -166,23 +149,33 @@ static void dead_update(void)
     }
 }
 
-/* Entry actions, by state; NULL for none */
-static void (*const enter_fn[GAME_STATES])(void) = {
-    title_enter,
-    NULL,
-    inventory_enter,
-    target_enter,
-    dead_enter,
-};
-
 void game_set_state(game_state_t state)
 {
     nge_util_assert(state < GAME_STATES);
 
     nge_key_flush();
     game_state = state;
-    if (enter_fn[state] != NULL) {
-        enter_fn[state]();
+
+    /*
+     * The entry action: called directly, not through a table of function
+     * pointers, so banked states (the title) work: a pointer to a banked
+     * function doesn't switch banks
+     */
+    switch (state) {
+    case GAME_TITLE:
+        title_enter();
+        break;
+    case GAME_INVENTORY:
+        inventory_enter();
+        break;
+    case GAME_TARGET:
+        target_enter();
+        break;
+    case GAME_DEAD:
+        dead_enter();
+        break;
+    default:
+        break;   /* no entry action */
     }
 }
 

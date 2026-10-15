@@ -36,7 +36,7 @@ extern NGE_FILE *screen_messages;
 /** Longest player name: it follows "Name: " on one stats line. */
 #define SCREEN_NAME_MAX  6
 
-/** The player's name, shown in the stats window. */
+/** The player's name, shown in the stats window (asked for by the title, game/title/title.h). */
 extern char screen_name[SCREEN_NAME_MAX + 1];
 
 /** @brief Set up the tilemap, its palettes and the stats and message windows. */
@@ -50,12 +50,5 @@ void screen_show_turn(uint16_t turn);
 
 /** @brief Add a line to the message window. */
 void screen_message(const char *text);
-
-/**
- * @brief Ask for the player's name in the message window and read it from
- *        the keyboard into screen_name (blocking: runs frames until ENTER).
- *        An empty name stays "Rogue". Needs nge_input_init().
- */
-void screen_ask_name(void);
 
 #endif
