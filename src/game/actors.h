@@ -30,7 +30,8 @@ void actors_init(void);
 
 /**
  * @brief Move the player one tile by (dx, dy), if the tile is open; the
- *        camera follows. Bumping into a wall reports it.
+ *        camera follows. Posts EV_MOVED and an EV_STOOD_ON for each entity
+ *        on the new tile, or EV_BUMPED for a wall (see game/events.h).
  * @return 1 if the player moved (the move takes a turn), 0 if not.
  */
 uint8_t actors_move_player(int8_t dx, int8_t dy);

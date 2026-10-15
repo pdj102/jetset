@@ -5,8 +5,9 @@
 #include "ecs/components/nge_location.h"
 #include "ecs/nge_owner.h"
 #include "ecs/systems/nge_render.h"
+#include "event/nge_event.h"
+#include "game/events.h"
 #include "game/level/level.h"
-#include "game/screen.h"
 #include "sprite/nge_sprite.h"
 
 #define PLAYER_FRAME_RATE  25   /* frames per animation step: two steps a second */
@@ -49,17 +50,17 @@ uint8_t actors_move_player(int8_t dx, int8_t dy)
     nge_entity_id_t id;
 
     if (!level_is_open(x, y)) {
-        screen_message("You bump into a wall.");
+        nge_event_post0(actor_player, EV_BUMPED);
         return 0;
     }
     nge_location_set(actor_player, x, y);
     nge_map_centre_camera(&level_map, x, y);
-    /* Report what else is on the tile */
+
+    /* Events: what happened, for the systems to react to */
+    nge_event_post0(actor_player, EV_MOVED);
     NGE_LOCATION_FOR_EACH_AT(id, LEVEL_AREA, x, y, 0) {
-        if (id == actor_potion) {
-            screen_message("You see a potion here.");
-        } else if (id != actor_player) {
-            screen_message("You see something here.");
+        if (id != actor_player) {
+            nge_event_post(id, EV_STOOD_ON, actor_player, 0, 0);
         }
     }
     return 1;

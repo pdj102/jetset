@@ -8,7 +8,10 @@
 #include "hw/nge_frame.h"
 #include "map/nge_map.h"
 
+#include "event/nge_event.h"
+
 #include "game/actors.h"
+#include "game/messages.h"
 #include "game/level/level.h"
 #include "game/screen.h"
 
@@ -47,11 +50,20 @@ uint8_t game_key_direction(nge_key_event_t ev, int8_t *dx, int8_t *dy)
     }
 }
 
+/* ---- Events ---- */
+
+/* The dispatch function: each system's reaction, in a fixed order. In common memory */
+static void game_on_event(const nge_event_t *e)
+{
+    messages_on_event(e);
+}
+
 /* ---- Turns ---- */
 
-/* After each command that takes time: later, the monsters' turn */
+/* After each command that takes time: its events, then (later) the monsters' turn */
 static void end_turn(void)
 {
+    nge_event_process(game_on_event);
     game_turn++;
     screen_show_turn(game_turn);
 }
@@ -187,12 +199,14 @@ static void pre_update(void)
 /* 3. After the state's update */
 static void post_update(void)
 {
+    nge_event_process(game_on_event);   /* events posted outside turns */
     nge_render_update();    /* build the sprites for the next frame */
     nge_ecs_check_guard();
 }
 
 void game_run(void)
 {
+    nge_event_init();
     game_set_state(GAME_TITLE);
 
     while (1) {

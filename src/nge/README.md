@@ -40,12 +40,13 @@ Includes are written from `src/nge`, with the folder:
 | `input/` | Keyboard: a per-frame snapshot of the keys (held, pressed, released), key events with auto-repeat, ASCII (`nge_input`; setup and tables banked in page 88) |
 | `devices/` | Raw device drivers (CSpect DebugOut, UART), no streams |
 | `io/` | Streams (output and input), print and printf, the stream devices for the tilemap, CSpect, UART and keyboard, and the line editor (`nge_line`) |
+| `event/` | Events: a queue in common memory of things that have happened (target, event, source, two payloads), handled in order through the game's dispatch function (`nge_event`) |
 | `ecs/` | Entity component system core, data every entity has: `nge_entity` (IDs, lifecycle, flags, component masks; lifecycle banked in pages 48/49), `nge_owner` (the owner of every entity: an entity, the world or an area; changes banked in page 48), `nge_ecs` (ECS start-up: the ECS data page in slot 0 and its guard area) |
 | `ecs/components/` | Components shared by several systems, with their data in slot 0: `nge_location` (tile and pixel position) |
 | `ecs/systems/` | Systems, each with its private components as page data: `nge_render` (draws the sprite component as hardware sprites; pages 52/53) |
 
-Planned: more of `input/` (joysticks, actions), `sound/` (AY), `event/` (event
-queue), more of `ecs/` (components, systems, deferred clean-up).
+Planned: more of `input/` (joysticks, actions), `sound/` (AY), more of
+`ecs/` (components, systems, deferred clean-up).
 
 Where an ECS file goes follows where its data goes: a component shared by
 several systems is in `components/` (slot 0), a component used by one system

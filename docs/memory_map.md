@@ -71,10 +71,10 @@ The current CSpect build (`bin/main.map`) uses:
 
 | Address | Contents |
 |---|---|
-| `$6A00`-`$AD50` | Code and constant data (`CODE`) |
-| `$AD51`-`$AD66` | Initialised data (`DATA`) |
-| `$AD67`-`$AE4B` | Uninitialised data (`BSS`) |
-| `$AE4C`-`$BDFF` | Free, about 3.9K (about 9.4K in the hardware build, without asserts and their messages) |
+| `$6A00`-`$AF78` | Code and constant data (`CODE`) |
+| `$AF79`-`$AF8E` | Initialised data (`DATA`) |
+| `$AF8F`-`$B0C5` | Uninitialised data (`BSS`) |
+| `$B0C6`-`$BDFF` | Free, about 3.3K (about 9.0K in the hardware build, without asserts and their messages) |
 | `$BE00`-`$BFFF` | Stack, 512 bytes |
 
 The link step checks `__BSS_END_tail` in the map file and fails the build if
@@ -142,7 +142,7 @@ code pages.
 | 40/41 | nge `io` (reserved; the output path stays in common memory) |
 | 42/43 | nge `sprite` (setup functions and loaders) |
 | 44/45 | nge `map` (reserved; its code runs every frame and is in common memory) |
-| 46/47 | nge `event` (reserved) |
+| 46/47 | nge `event` (reserved; the event queue and its processing run every turn and are in common memory) |
 | 48-87 | nge `ecs` (20 pairs): 48/49 `entity` and `owner` (lifecycle and ownership code / lifecycle bookkeeping); 50 ECS data, mapped permanently into slot 0 (see [ECS data in slot 0](#ecs-data-in-slot-0)); 51 reserved; 52/53 `render` system |
 | 88-99 | Further nge modules (6 pairs): 88/89 `input` (setup, ASCII tables and waiting / unused) |
 | 100 | Game: the level map (slot 1) |
