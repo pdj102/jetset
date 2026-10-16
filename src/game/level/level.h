@@ -45,14 +45,16 @@ void level_init(void) NGE_BANKED;
  * Destroys the entities the level's area owns except the player (the
  * game releases them at the end of the frame), then builds the map: up to
  * 10 rooms (LEVEL_ROOMS_MIN-LEVEL_ROOMS_MAX) in a grid, joined by corridors
- * so every room can be reached; places 4 to 10 placeholder items
- * (game/items.h) on free floor in the rooms; and moves the player onto free
- * floor in a room, owned by LEVEL_AREA, with the camera on them.
+ * so every room can be reached; places 4 to 10 random items and 2 to 5
+ * random monsters for the depth (game/gen/gen.h) on free floor in the
+ * rooms; and moves the player onto free floor in a room, owned by
+ * LEVEL_AREA, with the camera on them.
  *
  * Seeds rand() with depth, so a depth's level is always the same (for
  * development).
  *
- * Call after level_init(), nge_ecs_init() and nge_render_init().
+ * Call after level_init(), nge_ecs_init(), nge_render_init() and
+ * nge_timer_init().
  * @param player The player: an entity in use, kept from level to level.
  */
 void level_generate(uint8_t depth, nge_entity_id_t player) NGE_BANKED;

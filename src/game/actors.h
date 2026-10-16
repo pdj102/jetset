@@ -16,8 +16,9 @@
 #include "ecs/nge_entity.h"
 
 /* Render layers: higher layers are drawn on top */
-#define LAYER_OBJECTS  1
-#define LAYER_PLAYER   2
+#define LAYER_OBJECTS   1
+#define LAYER_MONSTERS  2
+#define LAYER_PLAYER    3
 
 extern nge_entity_id_t actor_player;
 

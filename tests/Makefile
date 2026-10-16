@@ -12,7 +12,7 @@
 #      and folders are included too. Next register and IO port names come from z88dk's own
 #      headers.
 #   Game code (src/game) is linked only into the tests listed with it below
-#   (LEVEL_GAME_SRCS for test_level).
+#   (GEN_GAME_SRCS for test_gen, LEVEL_GAME_SRCS and those for test_level).
 #   Library files that only work on the Next (inline asm traps) are listed in
 #   LIB_EXCLUDE and replaced by fakes in support/test.c.
 
@@ -35,9 +35,14 @@ SUPPORT_OBJS := $(BUILD)/support/test.o $(BUILD)/support/zxn_io.o
 
 # Game code tested on the PC, linked only into the tests that need it
 GAMEDIR := ../src/game
+GEN_GAME_SRCS := $(addprefix $(GAMEDIR)/,gen/gen.c gen/gen_shared_bank.c \
+                 gen/gen_creature_bank.c gen/gen_creature_pdata.c \
+                 gen/gen_item_bank.c gen/gen_item_pdata.c components/kind.c \
+                 components/kind_cdata.c components/stats.c components/stats_cdata.c)
+GEN_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(GEN_GAME_SRCS))
 LEVEL_GAME_SRCS := $(addprefix $(GAMEDIR)/,level/level.c level/level_bank.c level/level_gen.c \
-                   level/level_pdata.c items_cdata.c)
-LEVEL_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(LEVEL_GAME_SRCS))
+                   level/level_pdata.c)
+LEVEL_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(LEVEL_GAME_SRCS)) $(GEN_GAME_OBJS)
 
 TEST_SRCS := $(wildcard test_*.c)
 TESTS := $(patsubst %.c,$(BUILD)/%,$(TEST_SRCS))
@@ -67,6 +72,9 @@ $(BUILD)/test_%: $(BUILD)/test_%.o $(LIB_OBJS) $(SUPPORT_OBJS)
 	$(HOSTCC) $(CFLAGS) $^ -o $@
 
 $(BUILD)/test_level: $(BUILD)/test_level.o $(LIB_OBJS) $(SUPPORT_OBJS) $(LEVEL_GAME_OBJS)
+	$(HOSTCC) $(CFLAGS) $^ -o $@
+
+$(BUILD)/test_gen: $(BUILD)/test_gen.o $(LIB_OBJS) $(SUPPORT_OBJS) $(GEN_GAME_OBJS)
 	$(HOSTCC) $(CFLAGS) $^ -o $@
 
 $(BUILD)/game/%.o: $(GAMEDIR)/%.c $(GEN)/zxn_names.h $(GEN)/zxn_io.h
@@ -112,4 +120,5 @@ $(GEN)/zxn_io.c: $(Z88DK_ARCH_H)
 clean:
 	rm -rf $(BUILD)
 
--include $(wildcard $(BUILD)/*.d $(BUILD)/lib/*/*.d $(BUILD)/lib/*/*/*.d $(BUILD)/support/*.d)
+-include $(wildcard $(BUILD)/*.d $(BUILD)/lib/*/*.d $(BUILD)/lib/*/*/*.d $(BUILD)/support/*.d \
+                    $(BUILD)/game/*/*.d)

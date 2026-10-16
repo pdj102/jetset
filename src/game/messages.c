@@ -1,41 +1,62 @@
 #include "game/messages.h"
 
+#include <string.h>
+
 #include "game/actors.h"
 #include "game/events.h"
-#include "game/items.h"
+#include "game/gen/gen.h"
 #include "game/screen.h"
+
+#define MESSAGE_MAX  41   /* a message window line, and its NUL */
+#define NAME_MAX     20   /* a kind's name, and its NUL */
+
+/* Show before + the entity's name + after, cut to one line */
+static void say_named(const char *before, nge_entity_id_t id, const char *after)
+{
+    char line[MESSAGE_MAX];
+    char name[NAME_MAX];
+
+    gen_name(id, name, sizeof(name));
+    line[0] = '\0';
+    strncat(line, before, sizeof(line) - 1);
+    strncat(line, name, sizeof(line) - 1 - strlen(line));
+    strncat(line, after, sizeof(line) - 1 - strlen(line));
+    screen_message(line);
+}
 
 void messages_on_event(const nge_event_t *e)
 {
+    /*
+     * The fields in locals: SDCC (z88dk, Oct 2026) reused HL for
+     * actor_player while it still expected it to point at e, so
+     * say_named(..., e->target, ...) passed the player instead
+     */
+    nge_entity_id_t target = e->target;
+    nge_entity_id_t source = e->source;
+
     switch (e->id) {
     case EV_BUMPED:
-        if (e->target == actor_player) {
+        if (target == actor_player) {
             screen_message("You bump into a wall.");
         }
         break;
     case EV_BLOCKED:
-        if (e->source == actor_player) {
-            screen_message("Something is in the way.");
+        if (source == actor_player) {
+            say_named("There is a ", target, " in the way.");
         }
         break;
     case EV_STOOD_ON:
-        if (e->source == actor_player) {
-            if (!NGE_ENTITY_HAS_COMPONENTS(e->target, COMPONENT_ITEM)) {
-                screen_message("You see something here.");
-            } else if (item_kind[e->target] == ITEM_SWORD) {
-                screen_message("You see a sword here.");
-            } else {
-                screen_message("You see a potion here.");
-            }
+        if (source == actor_player) {
+            say_named("You see a ", target, " here.");
         }
         break;
     case EV_GLOWED:
-        if (e->target == actor_player) {
+        if (target == actor_player) {
             screen_message("A warm glow surrounds you.");
         }
         break;
     case EV_GLOW_FADED:
-        if (e->target == actor_player) {
+        if (target == actor_player) {
             screen_message("The warm glow fades.");
         }
         break;

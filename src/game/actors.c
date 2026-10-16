@@ -7,14 +7,12 @@
 #include "ecs/components/nge_block.h"
 #include "ecs/components/nge_location.h"
 #include "ecs/nge_owner.h"
-#include "ecs/systems/nge_render.h"
 #include "event/nge_event.h"
 #include "game/events.h"
+#include "game/gen/gen.h"
 #include "game/timers.h"
 #include "game/level/level.h"
 #include "sprite/nge_sprite.h"
-
-#define PLAYER_FRAME_RATE  25   /* frames per animation step: two steps a second */
 
 /* The demo effect: every 5 turns, 4 times */
 #define GLOW_PERIOD  (5 * NGE_TIMER_TICKS_PER_TURN)
@@ -30,13 +28,9 @@ void actors_init(void)
     nge_sprite_load_patterns(DEMO_SPRITE_PAGE, 0, demo_sprite_patterns, DEMO_SPRITE_PATTERNS);
     nge_sprite_load_palette(DEMO_SPRITE_PAGE, 0, demo_sprite_palette, DEMO_SPRITE_COLOURS);
 
-    /* The player, two frames to show the frame loop is running: placed by level_generate() */
-    actor_player = nge_entity_create();
+    /* The player, from its base data (its turn first): placed by level_generate() */
+    actor_player = gen_creature(CR_PLAYER, NGE_OWNER_WORLD);
     nge_util_assert(actor_player != NGE_ENTITY_INVALID);
-    nge_block_set(actor_player, NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE);
-    nge_render_add(actor_player, DEMO_SPRITE_PLAYER, 0, NGE_SPRITE_SCALE_1, LAYER_PLAYER);
-    nge_render_set_anim(actor_player, DEMO_SPRITE_PLAYER, 2, PLAYER_FRAME_RATE);
-    nge_timer_add(actor_player, TIMER_PLAYER, 1, 0, 0);   /* its turn first */
 
     /* A demo effect on the player: an entity with a timer, owned by the player */
     glow = nge_entity_create();

@@ -20,13 +20,9 @@
 #include <stdlib.h>
 
 #include "core/nge_util.h"
-#include "data/sprite_data.h"
 #include "ecs/components/nge_location.h"
-#include "ecs/systems/nge_render.h"
-#include "game/actors.h"
-#include "game/items.h"
+#include "game/gen/gen.h"
 #include "io/nge_tm_stream.h"
-#include "sprite/nge_sprite.h"
 
 #define LOOPS_MAX       2    /* extra links after the tree: 0 to LOOPS_MAX */
 #define PLACE_ATTEMPTS  20   /* tries to find a free floor tile */
@@ -34,9 +30,6 @@
 /* A cell's column and row in the grid (unsigned: no sign handling in the division) */
 #define CELL_GX(cell)  ((uint8_t)((unsigned int)(cell) % LEVEL_GRID_W))
 #define CELL_GY(cell)  ((uint8_t)((unsigned int)(cell) / LEVEL_GRID_W))
-
-/* Sprite pattern of each item kind */
-static const uint8_t item_patterns[ITEM_KINDS] = { DEMO_SPRITE_POTION, DEMO_SPRITE_SWORD };
 
 /* A random number from 0 to n-1 */
 static uint8_t roll(uint8_t n)
@@ -383,30 +376,24 @@ static uint8_t free_floor(uint8_t *x, uint8_t *y)
     return 0;
 }
 
-/* A placeholder item on tile (x, y): the item generators will replace this */
-static void spawn_item(uint8_t kind, uint8_t x, uint8_t y)
+/*
+ * Up to n random entities (gen_item_random() or gen_creature_random()) for
+ * the depth, each on free floor in a room. A tile is found first, so an
+ * entity is only created where it can go
+ */
+static void place_random(uint8_t n, uint8_t depth, uint8_t creatures)
 {
-    nge_entity_id_t id = nge_entity_create();
-
-    if (id == NGE_ENTITY_INVALID) {
-        return;   /* no entities left: one item fewer */
-    }
-    nge_owner_set(id, LEVEL_AREA);
-    nge_location_set(id, x, y);
-    item_kind[id] = kind;
-    nge_entity_set_components(id, COMPONENT_ITEM);
-    nge_render_add(id, item_patterns[kind], 0, NGE_SPRITE_SCALE_1, LAYER_OBJECTS);
-}
-
-static void place_items(void)
-{
-    uint8_t items = roll_between(LEVEL_ITEMS_MIN, LEVEL_ITEMS_MAX);
+    nge_entity_id_t id;
     uint8_t x;
     uint8_t y;
 
-    while (items-- > 0) {
-        if (free_floor(&x, &y)) {
-            spawn_item(roll(ITEM_KINDS), x, y);
+    while (n-- > 0) {
+        if (!free_floor(&x, &y)) {
+            continue;
+        }
+        id = creatures ? gen_creature_random(depth, LEVEL_AREA) : gen_item_random(depth, LEVEL_AREA);
+        if (id != NGE_ENTITY_INVALID) {
+            nge_location_set(id, x, y);
         }
     }
 }
@@ -416,7 +403,7 @@ static void place_player(nge_entity_id_t player)
     uint8_t x;
     uint8_t y;
 
-    /* Rooms have at least 6 floor tiles and 10 items at most: keep looking */
+    /* Rooms have at least 6 floor tiles, and there are 15 entities at most: keep looking */
     while (!free_floor(&x, &y)) {
     }
     nge_owner_set(player, LEVEL_AREA);
@@ -435,6 +422,7 @@ void level_generate(uint8_t depth, nge_entity_id_t player) NGE_BANKED
     make_tree();
     make_loops();
     make_corridors();
-    place_items();
+    place_random(roll_between(LEVEL_ITEMS_MIN, LEVEL_ITEMS_MAX), depth, 0);
+    place_random(roll_between(LEVEL_MONSTERS_MIN, LEVEL_MONSTERS_MAX), depth, 1);
     place_player(player);
 }

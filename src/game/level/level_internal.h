@@ -37,10 +37,12 @@
 #define LEVEL_CELL_W    15     /* tiles */
 #define LEVEL_CELL_H    13
 
-#define LEVEL_ROOMS_MIN  5     /* rooms per level; the other cells are junctions */
-#define LEVEL_ROOMS_MAX  10
-#define LEVEL_ITEMS_MIN  4     /* items per level */
-#define LEVEL_ITEMS_MAX  10
+#define LEVEL_ROOMS_MIN     5  /* rooms per level; the other cells are junctions */
+#define LEVEL_ROOMS_MAX     10
+#define LEVEL_ITEMS_MIN     4  /* items per level */
+#define LEVEL_ITEMS_MAX     10
+#define LEVEL_MONSTERS_MIN  2  /* monsters per level */
+#define LEVEL_MONSTERS_MAX  5
 
 typedef char level_grid_check[(LEVEL_GRID_W * LEVEL_CELL_W <= LEVEL_WIDTH &&
                                LEVEL_GRID_H * LEVEL_CELL_H <= LEVEL_HEIGHT &&

@@ -45,7 +45,7 @@ extern nge_block_t nge_block_pass[NGE_ENTITY_MAX];   /**< What it can enter anyw
 #define NGE_BLOCK_PASS(id)  (nge_block_pass[id])
 
 /** @brief Give an entity in use the component: what it blocks and what it can enter. */
-void nge_block_set(nge_entity_id_t id, nge_block_t block, nge_block_t pass);
+void nge_block_add(nge_entity_id_t id, nge_block_t block, nge_block_t pass);
 
 /** @brief Remove the component: the entity blocks nothing. */
 void nge_block_remove(nge_entity_id_t id);

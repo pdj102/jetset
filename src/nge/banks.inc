@@ -39,6 +39,10 @@
 //                        102/103  level: setting up the map and generating levels /
 //                                 the room list
 //                        104/105  title: the title state / (unused)
+//                        106/107  gen creature: creature generator / base creatures
+//                        108/109  gen item: item generator / base items
+//                        110/111  gen shared: generator helpers and game components'
+//                                 add functions / (unused)
 //             132-223  game assets (maps, graphics, level data)
 
 // nge sprite: setup functions and loaders
@@ -65,6 +69,15 @@
 
 // game title: the title state
 #pragma define CRT_ORG_PAGE_104 = 0x68C000
+
+// game gen: the creature generator
+#pragma define CRT_ORG_PAGE_106 = 0x6AC000
+
+// game gen: the item generator
+#pragma define CRT_ORG_PAGE_108 = 0x6CC000
+
+// game gen: helpers shared by the generators, and game components' add functions
+#pragma define CRT_ORG_PAGE_110 = 0x6EC000
 
 // nge map: set-up functions
 #pragma define CRT_ORG_PAGE_44 = 0x2CC000

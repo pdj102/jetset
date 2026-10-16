@@ -36,7 +36,7 @@ static nge_entity_id_t put(nge_owner_t area, uint8_t x, uint8_t y, nge_block_t b
 
     nge_owner_set(id, area);
     nge_location_set(id, x, y);
-    nge_block_set(id, block, pass);
+    nge_block_add(id, block, pass);
     return id;
 }
 
@@ -137,7 +137,7 @@ int main(void)
     nge_entity_destroy(player);
     CHECK(nge_block_can_enter(AREA0, 5, 5, PASS_PLAYER, NGE_ENTITY_INVALID, NULL) == 1);
     nge_location_remove(ring);
-    nge_block_set(ring, NGE_BLOCK_OCCUPIED, 0);              /* blocks, but has no location */
+    nge_block_add(ring, NGE_BLOCK_OCCUPIED, 0);              /* blocks, but has no location */
     CHECK(nge_block_can_enter(AREA0, 6, 5, PASS_PLAYER, NGE_ENTITY_INVALID, NULL) == 1);
 
     /* Game flags work like nge's */
@@ -189,7 +189,7 @@ int main(void)
 
     /* ---- asserts ---- */
     nge_entity_init();
-    TEST_EXPECT_HALT(nge_block_set(90, 0, 0));               /* free */
+    TEST_EXPECT_HALT(nge_block_add(90, 0, 0));               /* free */
     CHECK(test_halt_count == 1);
     TEST_EXPECT_HALT(nge_block_remove(NGE_ENTITY_MAX));
     CHECK(test_halt_count == 1);

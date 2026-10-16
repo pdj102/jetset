@@ -13,6 +13,7 @@
 #include "event/nge_event.h"
 
 #include "game/actors.h"
+#include "game/components/stats.h"
 #include "game/messages.h"
 #include "game/level/level.h"
 #include "game/screen.h"
@@ -79,6 +80,8 @@ static uint8_t game_on_timer(nge_entity_id_t id, uint8_t kind, uint8_t cycles)
         return NGE_TIMER_WAIT;   /* until the player's command */
     case TIMER_GLOW:
         return actors_on_glow(id, cycles);
+    case TIMER_MONSTER:
+        return stats_speed[id];   /* no AI yet: it waits a move */
     default:
         nge_util_abort("bad timer kind");
         return NGE_TIMER_STOP;

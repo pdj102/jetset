@@ -2,7 +2,7 @@
 /*
  * Block tables in slot 0 (the ECS data page, see ecs/nge_ecs.h): read every
  * turn by movement, monster AI and targeting. Uninitialised: set by
- * nge_block_set(). See "ECS data in slot 0" in docs/memory_map.md.
+ * nge_block_add(). See "ECS data in slot 0" in docs/memory_map.md.
  */
 #include "ecs/components/nge_block.h"
 

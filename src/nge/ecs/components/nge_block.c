@@ -9,7 +9,7 @@
 #include "core/nge_util.h"
 #include "ecs/components/nge_location.h"
 
-void nge_block_set(nge_entity_id_t id, nge_block_t block, nge_block_t pass)
+void nge_block_add(nge_entity_id_t id, nge_block_t block, nge_block_t pass)
 {
     nge_util_assert(id < NGE_ENTITY_MAX);
     nge_util_assert(NGE_ENTITY_STATE(id) != NGE_ENTITY_FREE);

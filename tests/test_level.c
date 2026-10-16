@@ -9,9 +9,11 @@
 #include "ecs/nge_entity.h"
 #include "ecs/nge_owner.h"
 #include "ecs/systems/nge_render.h"
+#include "ecs/systems/nge_timer.h"
 #include "map/nge_map.h"
 
-#include "game/items.h"
+#include "game/components/kind.h"
+#include "game/gen/gen.h"
 #include "game/level/level_internal.h"
 #include "game/screen.h"
 
@@ -109,6 +111,7 @@ static int check_level(int depth)
     int rooms = 0;
     int links = 0;
     int items = 0;
+    int monsters = 0;
     int x;
     int y;
     uint8_t i;
@@ -211,25 +214,36 @@ static int check_level(int depth)
         }
     }
 
-    /* Items: 4-10, each a known kind, alone on floor in a room (so reachable) */
+    /*
+     * Items (4-10) and monsters (2-5): generated kinds, each alone on floor
+     * in a room (so reachable); monsters block, items don't
+     */
     NGE_OWNER_FOR_EACH_OWNED(i, id, LEVEL_AREA) {
         if (id == player) {
             continue;
         }
-        if (!NGE_ENTITY_HAS_COMPONENTS(id, COMPONENT_ITEM | NGE_COMPONENT_LOCATION | NGE_COMPONENT_SPRITE)) {
-            return fail(depth, "an entity in the area isn't a placed, drawn item");
+        if (!NGE_ENTITY_HAS_COMPONENTS(id, COMPONENT_KIND | NGE_COMPONENT_LOCATION | NGE_COMPONENT_SPRITE)) {
+            return fail(depth, "an entity in the area isn't a placed, drawn, generated one");
         }
-        if (item_kind[id] >= ITEM_KINDS) {
-            return fail(depth, "an unknown item kind");
+        if (kind_class[id] == CLASS_ITEM && kind_index[id] < IT_COUNT &&
+            !NGE_ENTITY_HAS_COMPONENTS(id, NGE_COMPONENT_BLOCK)) {
+            items++;
+        } else if (kind_class[id] == CLASS_CREATURE && kind_index[id] < CR_COUNT &&
+                   kind_index[id] != CR_PLAYER && NGE_ENTITY_HAS_COMPONENTS(id, NGE_COMPONENT_BLOCK)) {
+            monsters++;
+        } else {
+            return fail(depth, "an entity isn't an item or a monster");
         }
         if (!is_floor(NGE_LOCATION_X(id), NGE_LOCATION_Y(id)) ||
             entities_at(NGE_LOCATION_X(id), NGE_LOCATION_Y(id)) != 1) {
-            return fail(depth, "an item isn't alone on floor");
+            return fail(depth, "an item or monster isn't alone on floor");
         }
-        items++;
     }
     if (items < LEVEL_ITEMS_MIN || items > LEVEL_ITEMS_MAX) {
         return fail(depth, "item count");
+    }
+    if (monsters < LEVEL_MONSTERS_MIN || monsters > LEVEL_MONSTERS_MAX) {
+        return fail(depth, "monster count");
     }
     return 1;
 }
@@ -237,7 +251,7 @@ static int check_level(int depth)
 /* ---- A level's fingerprint, to compare two generations ---- */
 
 static nge_tile_t snapshot[LEVEL_HEIGHT][LEVEL_WIDTH];
-static uint8_t snapshot_items[LEVEL_HEIGHT][LEVEL_WIDTH];   /* item kind + 1, 0 for none */
+static uint8_t snapshot_items[LEVEL_HEIGHT][LEVEL_WIDTH];   /* class * 16 + kind, 0 for none */
 
 static void take(nge_tile_t tiles[LEVEL_HEIGHT][LEVEL_WIDTH], uint8_t items[LEVEL_HEIGHT][LEVEL_WIDTH])
 {
@@ -251,7 +265,7 @@ static void take(nge_tile_t tiles[LEVEL_HEIGHT][LEVEL_WIDTH], uint8_t items[LEVE
     memset(items, 0, LEVEL_HEIGHT * LEVEL_WIDTH);
     NGE_OWNER_FOR_EACH_OWNED(i, id, LEVEL_AREA) {
         if (id != player) {
-            items[NGE_LOCATION_Y(id)][NGE_LOCATION_X(id)] = (uint8_t)(item_kind[id] + 1);
+            items[NGE_LOCATION_Y(id)][NGE_LOCATION_X(id)] = (uint8_t)(kind_class[id] * 16 + kind_index[id]);
         }
     }
     items[NGE_LOCATION_Y(player)][NGE_LOCATION_X(player)] = 0xFF;
@@ -272,10 +286,10 @@ int main(void)
 
     nge_entity_init();
     nge_render_init();
+    nge_timer_init();
     level_init();
 
-    player = nge_entity_create();
-    nge_block_set(player, NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE);
+    player = gen_creature(CR_PLAYER, NGE_OWNER_WORLD);
 
     /* ---- every depth: the layout's rules, reachability, the entities ---- */
     ok = 1;
