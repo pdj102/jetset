@@ -11,10 +11,13 @@
 
 const nge_rect_t screen_map_view = { .x1 = 0, .x2 = 27, .y1 = 0, .y2 = 26 };
 static const nge_rect_t stats_area = { .x1 = 28, .x2 = 39, .y1 = 0, .y2 = 26 };
-static const nge_rect_t message_area = { .x1 = 0, .x2 = 39, .y1 = 27, .y2 = 31 };
+static const nge_rect_t message_area = { .x1 = 0, .x2 = 39, .y1 = 27, .y2 = 30 };
+static const nge_rect_t help_area = { .x1 = 0, .x2 = 39, .y1 = 31, .y2 = 31 };
 
 NGE_FILE *screen_stats = NULL;
 NGE_FILE *screen_messages = NULL;
+NGE_FILE *screen_panel = NULL;
+static NGE_FILE *help = NULL;
 char screen_name[SCREEN_NAME_MAX + 1] = "Rogue";
 
 #define STATS_ROW_TURN  8    /* stats window row of the turn count */
@@ -52,14 +55,25 @@ void screen_init(void)
     if (screen_messages != NULL) {
         nge_close(screen_messages);
     }
+    if (screen_panel != NULL) {
+        nge_close(screen_panel);
+    }
+    if (help != NULL) {
+        nge_close(help);
+    }
     message_line_used = 0;
     screen_stats = nge_open_tilemap(&stats_area, 0);
     screen_messages = nge_open_tilemap(&message_area, 0);
-    nge_util_assert(screen_stats != NULL && screen_messages != NULL);
+    screen_panel = nge_open_tilemap(&screen_map_view, 0);
+    help = nge_open_tilemap(&help_area, 0);
+    nge_util_assert(help != NULL);   /* streams are handed out in turn: if one failed, the last did */
 
     nge_tm_clip(1, screen_stats);
+    nge_tm_clip(1, screen_panel);
+    nge_tm_clip(1, help);
     nge_tm_cls(screen_stats);
     nge_tm_cls(screen_messages);
+    nge_tm_cls(help);
 }
 
 void screen_draw_stats(uint16_t turn)
@@ -97,6 +111,13 @@ void screen_message_line(void)
         nge_putc(NGE_CTRL_LF, screen_messages);   /* scrolls once at the bottom */
     }
     message_line_used = 1;
+}
+
+void screen_help(const char *text)
+{
+    nge_tm_cls(help);
+    nge_tm_ink(NGE_INK_CYAN, help);
+    nge_puts(text, help);
 }
 
 void screen_message(const char *text)

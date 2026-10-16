@@ -4,8 +4,9 @@ Game code: the basis of a classic roguelike.
 
 | File | Contents |
 |---|---|
-| `game.{h,c}` | The main loop (pre-update, the current state's update, post-update), the game states (title, new game, play, inventory, targeting, dead), time passing, and the event and timer dispatch functions, which pass each event to every system's `on_event()` and each timer to its handler |
-| `player/` | The player: what their keys do (`player_command()`: move, pick up, inventory, drop, equip, take off, fire, quit), their screens (inventory, drop, equip, take off, firing, and why a command was refused), their turn (`player_on_turn()` stops the clock) and the camera following them (`player_on_event()`). Banked: `player.c` (common: the handlers), `player_bank.c` (page 114: commands and screens) |
+| `game.{h,c}` | The main loop (pre-update, the current state's update, post-update), the game states (title, new game, play, the item screens, targeting, dead; entering play redraws the map, sprites, stats and help), time passing, and the event and timer dispatch functions, which pass each event to every system's `on_event()` and each timer to its handler |
+| `ui/` | Screens shown in the map window: the item screens (inventory, drop, equip, take off), each a row of a table of descriptions (title, help bar text, which items, what choosing one does). Banked in page 116 |
+| `player/` | The player: what their keys do (`player_command()`: move, pick up, inventory, drop, equip, take off, fire, quit), `player_act()` for actions on their behalf, the firing screen and why a command was refused, their turn (`player_on_turn()` stops the clock) and the camera following them (`player_on_event()`). Banked: `player.c` (common: the handlers), `player_bank.c` (page 114: commands and screens) |
 | `events.h` | The game's event IDs (things that have happened) |
 | `timers.h` | The game's timer kinds: whose handler runs when an entity's timer fires (an actor's every `speed` ticks) |
 | `messages.{h,c}` | The message window's reactions to events |

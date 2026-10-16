@@ -194,6 +194,15 @@ int main(void)
     nge_map_update();
     CHECK(tilemap_matches());
 
+    /* ---- invalidate: the next update redraws over whatever is in the window ---- */
+    test_tilemap[22 * NGE_TILEMAP_WIDTH + 2].tile_id = 0xEE;
+    nge_map_update();
+    CHECK(!nge_map.dirty && test_tilemap[22 * NGE_TILEMAP_WIDTH + 2].tile_id == 0xEE);   /* not dirty: left */
+    nge_map_invalidate();
+    CHECK(nge_map.dirty);
+    nge_map_update();
+    CHECK(!nge_map.dirty && tilemap_matches());
+
     /* ---- tile access ---- */
     nge_map_init(60, 40, &window);
     fill_map();

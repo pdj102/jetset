@@ -1,5 +1,5 @@
 /*
- * The player's commands and screens: banked in page 114 with their
+ * The player's commands, and the firing screen: banked in page 114 with their
  * literals (a banked game module, see "Banked game modules" in
  * docs/memory_map.md). They run when a key is pressed, not every frame,
  * and pass their literals only to common code (the screen and messages).
@@ -11,17 +11,12 @@
 
 #include "game/player/player.h"
 
-#include <string.h>
-
 #include "ecs/systems/nge_timer.h"
 
 #include "game/actions/act.h"
 #include "game/actors.h"
 #include "game/components/inventory.h"
-#include "game/components/item.h"
-#include "game/components/kind.h"
 #include "game/game.h"
-#include "game/gen/gen.h"
 #include "game/messages.h"
 #include "game/screen.h"
 
@@ -101,12 +96,7 @@ static void say_failed(const act_t *a)
     }
 }
 
-/*
- * Do an action for the player: on a refusal they are told why and keep
- * their turn; if the turn is used, the clock runs again (the next frame's
- * time passing runs the other actors' turns)
- */
-static void act(uint8_t action, act_t *a)
+void player_act(uint8_t action, act_t *a) NGE_BANKED
 {
     a->actor = actor_player;
     if (act_do(action, a, ACT_DO) == ACT_FAIL) {
@@ -123,7 +113,7 @@ static void move(int8_t dx, int8_t dy)
 
     a.dx = dx;
     a.dy = dy;
-    act(ACT_MOVE, &a);
+    player_act(ACT_MOVE, &a);
 }
 
 static void pick_up(void)
@@ -131,135 +121,7 @@ static void pick_up(void)
     act_t a = { 0 };
 
     a.target = NGE_ENTITY_INVALID;   /* the first item here */
-    act(ACT_PICKUP, &a);
-}
-
-#define LIST_LINE  41   /* a message window line, and its NUL */
-#define NAME_MAX   20   /* a kind's name, and its NUL */
-#define LIST_MAX   26   /* items in a list: one per letter */
-
-/* Which items a list shows */
-#define LIST_STOWED      0   /* in the pack, in ID order */
-#define LIST_EQUIPPABLE  1   /* in the pack, fitting a slot the player has */
-#define LIST_EQUIPPED    2   /* in use, in slot order */
-
-/* Where an equipped item is, after its name in lists */
-static const char *const slot_words[SLOT_COUNT] = {
-    [SLOT_NONE]   = "",
-    [SLOT_WEAPON] = " (in hand)",
-    [SLOT_SHIELD] = " (on arm)",
-    [SLOT_HEAD]   = " (on head)",
-    [SLOT_BODY]   = " (worn)",
-    [SLOT_HANDS]  = " (on hands)",
-    [SLOT_FEET]   = " (on feet)",
-    [SLOT_NECK]   = " (around neck)",
-    [SLOT_RING_L] = " (left hand)",
-    [SLOT_RING_R] = " (right hand)",
-    [SLOT_LIGHT]  = " (lit)",
-};
-
-/* The screen's list (for its letters): set when a screen opens */
-static uint8_t list_which;
-
-/* The items in a list, into ids (LIST_MAX at most). Returns how many */
-static uint8_t collect(uint8_t which, nge_entity_id_t *ids)
-{
-    nge_entity_id_t id = NGE_ENTITY_INVALID;
-    uint8_t n = 0;
-    uint8_t slot;
-
-    if (which == LIST_EQUIPPED) {
-        for (slot = 1; slot < SLOT_COUNT; slot++) {
-            id = inv_equipped(actor_player, slot);
-            if (id != NGE_ENTITY_INVALID) {
-                ids[n++] = id;
-            }
-        }
-        return n;
-    }
-    while (n < LIST_MAX && (id = inv_next(actor_player, id)) != NGE_ENTITY_INVALID) {
-        if (which == LIST_STOWED || (gen_item_fits(kind_index[id]) & inv_slots[actor_player]) != 0) {
-            ids[n++] = id;
-        }
-    }
-    return n;
-}
-
-/*
- * Show a list, lettered: "a) sword  b) ring (left hand)", as many to a
- * message line as fit. Returns how many items it has
- */
-static uint8_t list_items(uint8_t which)
-{
-    nge_entity_id_t ids[LIST_MAX];
-    char line[LIST_LINE];
-    char entry[LIST_LINE];
-    uint8_t n = collect(which, ids);
-    uint8_t i;
-
-    line[0] = '\0';
-    for (i = 0; i < n; i++) {
-        entry[0] = (char)('a' + i);
-        entry[1] = ')';
-        entry[2] = ' ';
-        gen_name(ids[i], entry + 3, NAME_MAX);
-        strcat(entry, slot_words[item_slot[ids[i]]]);
-        if (strlen(line) + 2 + strlen(entry) > LIST_LINE - 1) {
-            screen_message(line);
-            line[0] = '\0';
-        }
-        if (line[0] != '\0') {
-            strcat(line, "  ");
-        }
-        strcat(line, entry);
-    }
-    if (n != 0) {
-        screen_message(line);
-    }
-    return n;
-}
-
-/* The item for a letter key in the screen's list, or NGE_ENTITY_INVALID */
-static nge_entity_id_t item_for_key(nge_key_event_t ev)
-{
-    nge_entity_id_t ids[LIST_MAX];
-    char c = (char)nge_key_ascii(ev);
-    uint8_t n = collect(list_which, ids);
-
-    if (c < 'a' || c >= 'a' + n) {
-        return NGE_ENTITY_INVALID;
-    }
-    return ids[c - 'a'];
-}
-
-/* Do action on the item chosen by a letter key in the screen's list ("Never mind." for another key) */
-static void act_on_chosen(uint8_t action, nge_key_event_t ev)
-{
-    act_t a = { 0 };
-
-    a.item = item_for_key(ev);
-    if (a.item == NGE_ENTITY_INVALID) {
-        screen_message("Never mind.");
-        return;
-    }
-    a.kind = SLOT_NONE;   /* equip: the first free slot it fits */
-    act(action, &a);
-}
-
-/*
- * Open a choosing screen on a list: show it and the question, or, if it is
- * empty, say so and return to play. Returns 1 if the screen stays open
- */
-static uint8_t open_choice(uint8_t which, const char *question, const char *empty)
-{
-    list_which = which;
-    if (list_items(which) == 0) {
-        screen_message(empty);
-        game_set_state(GAME_PLAY);
-        return 0;
-    }
-    screen_message(question);
-    return 1;
+    player_act(ACT_PICKUP, &a);
 }
 
 void player_command(nge_key_event_t ev) NGE_BANKED
@@ -300,70 +162,12 @@ void player_command(nge_key_event_t ev) NGE_BANKED
     }
 }
 
-/* ---- Screens: the inventory, dropping, equipping, taking off, firing ---- */
-
-void player_inventory_enter(void) NGE_BANKED
-{
-    uint8_t n = list_items(LIST_STOWED);
-
-    n += list_items(LIST_EQUIPPED);
-    if (n == 0) {
-        screen_message("You are carrying nothing.");
-    }
-}
-
-void player_inventory_update(void) NGE_BANKED
-{
-    if (nge_key_get() != NGE_KEY_NONE) {
-        game_set_state(GAME_PLAY);
-    }
-}
-
-void player_drop_enter(void) NGE_BANKED
-{
-    open_choice(LIST_STOWED, "Drop which item?", "You have nothing to drop.");
-}
-
-void player_equip_enter(void) NGE_BANKED
-{
-    open_choice(LIST_EQUIPPABLE, "Equip which item?", "You have nothing to equip.");
-}
-
-void player_unequip_enter(void) NGE_BANKED
-{
-    open_choice(LIST_EQUIPPED, "Take off which item?", "You aren't using anything.");
-}
-
-/* The choosing screens' update: on a key, act on the item chosen and return to play */
-static void choice_update(uint8_t action)
-{
-    nge_key_event_t ev = nge_key_get();
-
-    if (ev == NGE_KEY_NONE) {
-        return;
-    }
-    act_on_chosen(action, ev);
-    game_set_state(GAME_PLAY);
-}
-
-void player_drop_update(void) NGE_BANKED
-{
-    choice_update(ACT_DROP);
-}
-
-void player_equip_update(void) NGE_BANKED
-{
-    choice_update(ACT_EQUIP);
-}
-
-void player_unequip_update(void) NGE_BANKED
-{
-    choice_update(ACT_UNEQUIP);
-}
+/* ---- The firing screen ---- */
 
 void player_target_enter(void) NGE_BANKED
 {
     screen_message("Fire in which direction?");
+    screen_help("Direction: fire   Other keys: back");
 }
 
 void player_target_update(void) NGE_BANKED

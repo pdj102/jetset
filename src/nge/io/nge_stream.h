@@ -15,9 +15,9 @@
 
 #include <stdint.h>
 
-/** Maximum number of streams open at once. */
+/** Maximum number of streams open at once (the game's screen areas, the keyboard, debug output). */
 #ifndef NGE_FILE_MAX
-#define NGE_FILE_MAX 4
+#define NGE_FILE_MAX 6
 #endif
 
 /** Value returned on error. */

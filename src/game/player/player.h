@@ -3,8 +3,8 @@
 
 /**
  * @file player.h
- * @brief The player: what their keys do, their screens (inventory,
- *        dropping, firing), their turn, and the view following them.
+ * @brief The player: what their keys do, the firing screen, their turn,
+ *        and the view following them. The item screens are in game/ui.
  *
  * The player entity is actor_player (game/actors.h). Their timer
  * (TIMER_PLAYER) fires every `speed` ticks: player_on_turn() stops the
@@ -12,8 +12,8 @@
  * command uses the turn, which starts the clock again. A command that is
  * refused (a wall in the way) tells the player why and keeps their turn.
  *
- * The screens are game states (game/game.h): their entry actions and
- * updates are here, called by game_set_state() and the frame loop.
+ * The firing screen is a game state (game/game.h): its entry action and
+ * update are here, called by game_set_state() and the frame loop.
  *
  * Banking: player_on_turn() and player_on_event() are in common memory
  * (called for every timer firing and event); the commands and screens are
@@ -26,6 +26,7 @@
 #include "core/nge_bank.h"
 #include "ecs/nge_entity.h"
 #include "event/nge_event.h"
+#include "game/actions/act.h"
 #include "input/nge_input.h"
 
 /** @brief The player's timer fired (TIMER_PLAYER): stop the clock until a command uses the turn. */
@@ -42,21 +43,13 @@ void player_on_event(const nge_event_t *e);
  */
 void player_command(nge_key_event_t ev) NGE_BANKED;
 
-/** @brief GAME_INVENTORY: list what the player carries, then what they use ("a) sword (in hand)"); any key returns to play. */
-void player_inventory_enter(void) NGE_BANKED;
-void player_inventory_update(void) NGE_BANKED;
-
-/** @brief GAME_DROP: list the items and ask which; its letter drops it, any other key returns to play. */
-void player_drop_enter(void) NGE_BANKED;
-void player_drop_update(void) NGE_BANKED;
-
-/** @brief GAME_EQUIP: list the items that fit a slot and ask which; its letter equips it. */
-void player_equip_enter(void) NGE_BANKED;
-void player_equip_update(void) NGE_BANKED;
-
-/** @brief GAME_UNEQUIP: list the equipped items and ask which; its letter takes it off. */
-void player_unequip_enter(void) NGE_BANKED;
-void player_unequip_update(void) NGE_BANKED;
+/**
+ * @brief Do an action (ACT_*, game/actions/act.h) for the player: on a
+ *        refusal they are told why and keep their turn; if the turn is
+ *        used, the clock runs again. a (on the caller's stack) holds the
+ *        inputs; the actor is set here.
+ */
+void player_act(uint8_t action, act_t *a) NGE_BANKED;
 
 /** @brief GAME_TARGET: ask for a direction to fire in (nothing to fire yet). */
 void player_target_enter(void) NGE_BANKED;

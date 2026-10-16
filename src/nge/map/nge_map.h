@@ -180,6 +180,12 @@ const nge_tile_t *nge_map_get(uint8_t x, uint8_t y);
  */
 void nge_map_set(uint8_t x, uint8_t y, const nge_tile_t *tile);
 
+/**
+ * @brief Mark the view for redrawing by the next nge_map_update(): after
+ *        something else has drawn over the map window (a screen shown in it).
+ */
+void nge_map_invalidate(void);
+
 /** @brief Redraw the view if it changed since it was last drawn. */
 void nge_map_update(void);
 

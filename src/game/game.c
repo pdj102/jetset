@@ -22,6 +22,7 @@
 #include "game/screen.h"
 #include "game/timers.h"
 #include "game/title/title.h"
+#include "game/ui/ui.h"
 
 /* Clock steps (nge_timer_advance) per frame at most, so the screen keeps animating */
 #define ADVANCES_PER_FRAME  32
@@ -114,13 +115,27 @@ static void new_game_enter(void)
     actors_create();
     level_generate(1, actor_player);   /* the first level; the camera on the player */
     shown_turn = 0;
-    screen_draw_stats(nge_timer_turns);
     game_set_state(GAME_PLAY);
+}
+
+/*
+ * Entering play, from a new game or back from a screen: everything a
+ * screen may have covered or changed is drawn again. The sprites of the
+ * level's area, the map (a screen may have drawn over its window), the
+ * stats (equipping may change them) and the play help
+ */
+static void play_enter(void)
+{
+    nge_render_set_view(LEVEL_AREA);
+    nge_map_invalidate();
+    screen_draw_stats(nge_timer_turns);
+    screen_help("g:get i:inv w:wear r:off d:drop Q:quit");
 }
 
 static void dead_enter(void)
 {
     screen_message("Game over. Press any key.");
+    screen_help("Any key: back to the title");
 }
 
 static void dead_update(void)
@@ -149,17 +164,20 @@ void game_set_state(game_state_t state)
     case GAME_NEW_GAME:
         new_game_enter();   /* ends by changing to GAME_PLAY */
         break;
+    case GAME_PLAY:
+        play_enter();
+        break;
     case GAME_INVENTORY:
-        player_inventory_enter();
+        ui_items_enter(UI_INVENTORY);
         break;
     case GAME_DROP:
-        player_drop_enter();
+        ui_items_enter(UI_DROP);
         break;
     case GAME_EQUIP:
-        player_equip_enter();
+        ui_items_enter(UI_EQUIP);
         break;
     case GAME_UNEQUIP:
-        player_unequip_enter();
+        ui_items_enter(UI_UNEQUIP);
         break;
     case GAME_TARGET:
         player_target_enter();
@@ -234,16 +252,16 @@ void game_run(void)
             play_update();
             break;
         case GAME_INVENTORY:
-            player_inventory_update();
+            ui_items_update(UI_INVENTORY);
             break;
         case GAME_DROP:
-            player_drop_update();
+            ui_items_update(UI_DROP);
             break;
         case GAME_EQUIP:
-            player_equip_update();
+            ui_items_update(UI_EQUIP);
             break;
         case GAME_UNEQUIP:
-            player_unequip_update();
+            ui_items_update(UI_UNEQUIP);
             break;
         case GAME_TARGET:
             player_target_update();

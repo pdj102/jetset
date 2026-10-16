@@ -81,6 +81,11 @@ nge_block_t nge_map_block(uint8_t x, uint8_t y)
     return NGE_MAP_BLOCK(x, y);
 }
 
+void nge_map_invalidate(void)
+{
+    nge_map.dirty = 1;
+}
+
 void nge_map_update(void)
 {
     if (nge_map.dirty) {

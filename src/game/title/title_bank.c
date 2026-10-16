@@ -35,6 +35,7 @@ static void ask_name(void)
     NGE_FILE *keyboard = nge_open_keyboard();
 
     nge_util_assert(keyboard != NULL);
+    screen_help("Type a name, then ENTER");
     screen_message_line();
     nge_tm_ink(NGE_INK_YELLOW, screen_messages);
     nge_puts("What is your name? ", screen_messages);
@@ -50,6 +51,7 @@ static void ask_name(void)
 void title_enter(void) NGE_BANKED
 {
     screen_message("NGE ROGUE. Press any key to start.");
+    screen_help("Any key: start a new game");
 }
 
 void title_update(void) NGE_BANKED

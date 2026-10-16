@@ -14,7 +14,7 @@
 #   Game code (src/game) is linked only into the tests listed with it below
 #   (GEN_GAME_SRCS for test_gen, LEVEL_GAME_SRCS and those for test_level,
 #   ACT_GAME_SRCS and the gen ones for test_act, the gen ones for
-#   test_inventory).
+#   test_inventory, UI_GAME_SRCS and the action ones for test_ui).
 #   Library files that only work on the Next (inline asm traps) are listed in
 #   LIB_EXCLUDE and replaced by fakes in support/test.c.
 
@@ -46,6 +46,8 @@ GEN_GAME_SRCS := $(addprefix $(GAMEDIR)/,gen/gen.c gen/gen_shared_bank.c \
 GEN_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(GEN_GAME_SRCS))
 ACT_GAME_SRCS := $(wildcard $(GAMEDIR)/actions/*.c)
 ACT_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(ACT_GAME_SRCS)) $(GEN_GAME_OBJS)
+UI_GAME_SRCS := $(addprefix $(GAMEDIR)/,ui/ui_bank.c player/player_bank.c screen.c messages.c)
+UI_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(UI_GAME_SRCS)) $(ACT_GAME_OBJS)
 LEVEL_GAME_SRCS := $(addprefix $(GAMEDIR)/,level/level.c level/level_bank.c level/level_gen.c \
                    level/level_pdata.c)
 LEVEL_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(LEVEL_GAME_SRCS)) $(GEN_GAME_OBJS)
@@ -87,6 +89,9 @@ $(BUILD)/test_act: $(BUILD)/test_act.o $(LIB_OBJS) $(SUPPORT_OBJS) $(ACT_GAME_OB
 	$(HOSTCC) $(CFLAGS) $^ -o $@
 
 $(BUILD)/test_inventory: $(BUILD)/test_inventory.o $(LIB_OBJS) $(SUPPORT_OBJS) $(GEN_GAME_OBJS)
+	$(HOSTCC) $(CFLAGS) $^ -o $@
+
+$(BUILD)/test_ui: $(BUILD)/test_ui.o $(LIB_OBJS) $(SUPPORT_OBJS) $(UI_GAME_OBJS)
 	$(HOSTCC) $(CFLAGS) $^ -o $@
 
 $(BUILD)/game/%.o: $(GAMEDIR)/%.c $(GEN)/zxn_names.h $(GEN)/zxn_io.h
