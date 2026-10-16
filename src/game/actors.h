@@ -27,7 +27,9 @@ void actors_load_graphics(void);
 
 /**
  * @brief Create the player (not yet placed: see level_generate()) and the
- *        demo effect, for a new game (GAME_NEW_GAME, game/game.h).
+ *        demo effect, for a new game (GAME_NEW_GAME, game/game.h). With
+ *        GAME_DEV_KIT (debug builds), the player starts with a sword and
+ *        three rings in their pack, for trying items out.
  *
  * Call after nge_entity_init(), nge_render_init() and nge_timer_init().
  */

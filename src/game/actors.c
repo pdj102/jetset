@@ -16,6 +16,24 @@
 
 /* The demo effect: every 5 turns, 4 times */
 #define GLOW_PERIOD  (5 * NGE_TIMER_TICKS_PER_TURN)
+
+#ifndef GAME_DEV_KIT
+/*
+ * Development starting kit: 1 gives the player items to try out (a sword
+ * and three rings) in their pack. On in debug builds (CSpect), off with
+ * NDEBUG (hardware); -DGAME_DEV_KIT=0 or 1 overrides it
+ */
+#ifdef NDEBUG
+#define GAME_DEV_KIT  0
+#else
+#define GAME_DEV_KIT  1
+#endif
+#endif
+
+#if GAME_DEV_KIT
+/* The development kit's items, owned by the player: in their pack */
+static const uint8_t dev_kit[] = { IT_SWORD, IT_RING, IT_RING, IT_RING };
+#endif
 #define GLOW_CYCLES  4
 
 nge_entity_id_t actor_player;
@@ -38,6 +56,16 @@ void actors_create(void)
      */
     actor_player = gen_creature(CR_PLAYER, NGE_OWNER_WORLD);
     nge_util_assert(actor_player != NGE_ENTITY_INVALID);
+
+#if GAME_DEV_KIT
+    {
+        uint8_t i;
+
+        for (i = 0; i < sizeof(dev_kit); i++) {
+            gen_item(dev_kit[i], actor_player);   /* owned, not placed: stowed */
+        }
+    }
+#endif
 
     /* A demo effect on the player: an entity with a timer, owned by the player */
     glow = nge_entity_create();
