@@ -22,6 +22,7 @@ const gen_creature_base_t gen_creatures[CR_COUNT] = {
         .render = { DEMO_SPRITE_PLAYER, 2, PLAYER_FRAME_RATE, 0, LAYER_PLAYER },
         .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
         .stats = { .hp_dice = 0, .hp_sides = 0, .hp_bonus = 12, .speed = 10 },
+        .inventory = { .capacity = 20, .slots = SLOTS_HUMANOID },
         .flags = CREATURE_PLAYER,
         .where = { .depth = 0, .rarity = 0 },          /* never at random */
     },
@@ -30,6 +31,7 @@ const gen_creature_base_t gen_creatures[CR_COUNT] = {
         .render = { DEMO_SPRITE_RAT, 1, 0, 0, LAYER_MONSTERS },
         .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
         .stats = { .hp_dice = 1, .hp_sides = 4, .hp_bonus = 0, .speed = 10 },
+        .inventory = { .capacity = 0, .slots = 0 },     /* carries nothing */
         .flags = 0,
         .where = { .depth = 1, .rarity = 10 },
     },
@@ -39,6 +41,7 @@ const gen_creature_base_t gen_creatures[CR_COUNT] = {
         .render = { DEMO_SPRITE_PLAYER, 2, PLAYER_FRAME_RATE, NGE_SPRITE_PALETTE(1), LAYER_MONSTERS },
         .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
         .stats = { .hp_dice = 2, .hp_sides = 4, .hp_bonus = 1, .speed = 10 },
+        .inventory = { .capacity = 4, .slots = SLOT_BIT(SLOT_WEAPON) },
         .flags = 0,
         .where = { .depth = 1, .rarity = 6 },
     },

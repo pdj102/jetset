@@ -23,6 +23,8 @@
 #include "game/gen/gen.h"
 
 #include "ecs/components/nge_block.h"
+#include "game/components/inventory.h"
+#include "game/components/item.h"
 #include "game/components/kind.h"
 #include "game/components/stats.h"
 
@@ -41,6 +43,12 @@ typedef struct gen_block {
     nge_block_t pass;
 } gen_block_t;
 
+/* The inventory part: inv_add() arguments; capacity 0 for none (no component) */
+typedef struct gen_inventory {
+    uint8_t  capacity;
+    uint16_t slots;   /* SLOT_BIT() mask */
+} gen_inventory_t;
+
 /* Where a kind appears: from depth, chosen at random with weight rarity (0: never) */
 typedef struct gen_where {
     uint8_t depth;
@@ -55,6 +63,7 @@ typedef struct gen_creature_base {
     gen_render_t render;
     gen_block_t  block;
     stats_base_t stats;
+    gen_inventory_t inventory;
     uint8_t      flags;   /* CREATURE_* */
     gen_where_t  where;
 } gen_creature_base_t;
@@ -63,6 +72,7 @@ typedef struct gen_item_base {
     const char  *name;    /* in the table's page */
     gen_render_t render;
     uint8_t      subclass;   /* ITEM_POTION, ITEM_WEAPON... (gen_kinds.h) */
+    uint16_t     fits;       /* the slots it can be equipped in (SLOT_BIT() mask), 0 for none */
     gen_where_t  where;
 } gen_item_base_t;
 

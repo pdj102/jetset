@@ -13,6 +13,8 @@
 #include "map/nge_map.h"
 
 #include "game/actions/act.h"
+#include "game/components/inventory.h"
+#include "game/components/item.h"
 #include "game/components/stats.h"
 #include "game/events.h"
 #include "game/gen/gen.h"
@@ -72,8 +74,27 @@ static act_t move(nge_entity_id_t actor, int8_t dx, int8_t dy)
     return a;
 }
 
+/* A context for actor with no inputs, the outputs set to junk */
+static act_t ctx(nge_entity_id_t actor)
+{
+    act_t a = move(actor, 1, 0);
+
+    a.dx = 0;
+    a.target = NGE_ENTITY_INVALID;
+    a.item = NGE_ENTITY_INVALID;
+    return a;
+}
+
+static int stowed(nge_entity_id_t id, nge_entity_id_t holder)
+{
+    return NGE_OWNER_OF(id) == holder && !NGE_ENTITY_HAS_COMPONENTS(id, NGE_COMPONENT_LOCATION);
+}
+
 int main(void)
 {
+    nge_entity_id_t sword;
+    nge_entity_id_t i1;
+    nge_entity_id_t i2;
     nge_entity_id_t player;
     nge_entity_id_t rat;
     nge_entity_id_t potion;
@@ -165,8 +186,83 @@ int main(void)
     CHECK(act_do(ACT_MOVE, &a, ACT_DO) == ACT_SUCCESS && at(player, 4, 5) && a.used == 1);
     events();
 
+    /* ---- pick up: player at (4, 5), the potion at (5, 5), the rat at (5, 6) ---- */
+    sword = gen_item(IT_SWORD, AREA);
+    nge_location_set(sword, 4, 5);
+    /* Check mode: possible, nothing changes, no random numbers */
+    srand(9);
+    r1 = rand();
+    srand(9);
+    a = ctx(player);
+    CHECK(act_pickup(&a, ACT_CHECK) == ACT_SUCCESS && a.used == 0 && a.target == sword);
+    CHECK(rand() == r1 && at(sword, 4, 5) && events() == 0);
+    /* The first item here */
+    a = ctx(player);
+    CHECK(act_pickup(&a, ACT_DO) == ACT_SUCCESS && a.reason == ACT_R_NONE && a.used == 1 && a.target == sword);
+    CHECK(stowed(sword, player) && inv_count(player) == 1);
+    CHECK(events() == 1 && is(0, sword, EV_PICKED_UP, player));
+    /* Nothing left here */
+    a = ctx(player);
+    CHECK(act_pickup(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_NOTHING_HERE && a.used == 0 && events() == 0);
+    /* No inventory: the rat */
+    a = ctx(rat);
+    CHECK(act_pickup(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_NO_INVENTORY && a.used == 0);
+    /* A target given: not on the tile; not an item */
+    a = ctx(player);
+    a.target = potion;
+    CHECK(act_pickup(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_NOTHING_HERE && at(potion, 5, 5));
+    a = ctx(player);
+    a.target = rat;
+    CHECK(act_pickup(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_NOT_ITEM);
+    /* Two items on a tile: the lowest ID first, or the one asked for */
+    i1 = gen_item(IT_POTION, AREA);
+    i2 = gen_item(IT_SWORD, AREA);
+    nge_location_set(i2, 4, 5);
+    nge_location_set(i1, 4, 5);
+    a = ctx(player);
+    a.target = i2;
+    CHECK(act_pickup(&a, ACT_DO) == ACT_SUCCESS && stowed(i2, player) && at(i1, 4, 5));
+    events();
+    /* Full: refused, nothing changes */
+    inv_capacity[player] = 2;
+    a = ctx(player);
+    CHECK(act_pickup(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_FULL && a.target == i1 && a.used == 0);
+    CHECK(at(i1, 4, 5) && events() == 0);
+    inv_capacity[player] = 20;
+    a = ctx(player);
+    CHECK(act_do(ACT_PICKUP, &a, ACT_DO) == ACT_SUCCESS && stowed(i1, player) && inv_count(player) == 3);
+    events();
+
+    /* ---- drop: on the actor's tile, in its area ---- */
+    a = ctx(player);
+    a.item = sword;
+    CHECK(act_drop(&a, ACT_CHECK) == ACT_SUCCESS && a.used == 0 && stowed(sword, player) && events() == 0);
+    CHECK(act_drop(&a, ACT_DO) == ACT_SUCCESS && a.reason == ACT_R_NONE && a.used == 1);
+    CHECK(at(sword, 4, 5) && NGE_OWNER_OF(sword) == AREA && inv_count(player) == 2);
+    CHECK(events() == 1 && is(0, sword, EV_DROPPED, player));
+    /* Not carried: on the floor; not an item; someone else's */
+    CHECK(act_drop(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_NOT_CARRIED && a.used == 0);
+    a = ctx(player);
+    a.item = rat;
+    CHECK(act_drop(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_NOT_CARRIED);
+    a = ctx(rat);
+    a.item = i1;
+    CHECK(act_drop(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_NOT_CARRIED && stowed(i1, player));
+    /* Equipped: take it off first */
+    item_slot[i1] = SLOT_WEAPON;
+    a = ctx(player);
+    a.item = i1;
+    CHECK(act_do(ACT_DROP, &a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_EQUIPPED && stowed(i1, player));
+    item_slot[i1] = SLOT_NONE;
+    CHECK(act_do(ACT_DROP, &a, ACT_DO) == ACT_SUCCESS && at(i1, 4, 5));
+    CHECK(events() == 1);
+
     /* ---- every reason so far is refused ---- */
-    CHECK(!act_attempted(ACT_R_NONE) && !act_attempted(ACT_R_BLOCKED) && !act_attempted(ACT_R_BLOCKED_CREATURE));
+    ok = 1;
+    for (r1 = 0; r1 < ACT_R_COUNT; r1++) {
+        ok = ok && !act_attempted((uint8_t)r1);
+    }
+    CHECK(ok);
 
     /* ---- asserts ---- */
     a = move(player, 2, 0);

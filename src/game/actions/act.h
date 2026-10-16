@@ -84,14 +84,22 @@ typedef struct act {
 #define ACT_CHECK  1   /**< Only check its preconditions: change nothing. */
 
 /* Actions, for act_do() */
-#define ACT_MOVE   0
-#define ACT_COUNT  1
+#define ACT_MOVE    0
+#define ACT_PICKUP  1
+#define ACT_DROP    2
+#define ACT_COUNT   3
 
 /* Reasons (refused or attempted: the table in act.c) */
 #define ACT_R_NONE              0   /**< Succeeded. */
 #define ACT_R_BLOCKED           1   /**< Refused: the map blocks the way (a wall, the edge). */
 #define ACT_R_BLOCKED_CREATURE  2   /**< Refused: an entity blocks the way; a->target is it. */
-#define ACT_R_COUNT             3
+#define ACT_R_NO_INVENTORY      3   /**< Refused: the actor can't carry things. */
+#define ACT_R_NOTHING_HERE      4   /**< Refused: no item on the actor's tile (to pick up). */
+#define ACT_R_NOT_ITEM          5   /**< Refused: the target can't be carried. */
+#define ACT_R_FULL              6   /**< Refused: the inventory is full; a->target is the item. */
+#define ACT_R_NOT_CARRIED       7   /**< Refused: the actor doesn't have the item. */
+#define ACT_R_EQUIPPED          8   /**< Refused: the item is equipped (unequip it first). */
+#define ACT_R_COUNT             9
 
 /**
  * @brief Move one tile.
@@ -103,6 +111,28 @@ typedef struct act {
  * with ACT_R_BLOCKED or ACT_R_BLOCKED_CREATURE (a->target: the blocker).
  */
 uint8_t act_move(act_t *a, uint8_t mode) NGE_BANKED;
+
+/**
+ * @brief Pick up an item from the floor of the actor's tile and stow it
+ *        (game/components/inventory.h).
+ *
+ * In: actor (alive, placed in an area), target (the item, or
+ * NGE_ENTITY_INVALID for the first item on the tile). Succeeds if the
+ * actor has an inventory with room and the item is on its tile: posts
+ * EV_PICKED_UP; a->target is the item. Refused with ACT_R_NO_INVENTORY,
+ * ACT_R_NOTHING_HERE (no item there, or target isn't on the tile),
+ * ACT_R_NOT_ITEM or ACT_R_FULL.
+ */
+uint8_t act_pickup(act_t *a, uint8_t mode) NGE_BANKED;
+
+/**
+ * @brief Drop a stowed item on the floor of the actor's tile.
+ *
+ * In: actor (alive, placed in an area), item. Succeeds if the actor has
+ * the item stowed: posts EV_DROPPED. Refused with ACT_R_NOT_CARRIED or
+ * ACT_R_EQUIPPED.
+ */
+uint8_t act_drop(act_t *a, uint8_t mode) NGE_BANKED;
 
 /** @brief Call action (ACT_MOVE...) by number: for the AI and delayed actions. */
 uint8_t act_do(uint8_t action, act_t *a, uint8_t mode);

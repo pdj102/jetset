@@ -52,6 +52,12 @@ static int creature_ok(nge_entity_id_t id, nge_owner_t owner, uint8_t kind)
         stats_speed[id] != b->stats.speed) {
         return 0;
     }
+    /* An inventory if it can carry things */
+    if (b->inventory.capacity == 0 ? INV_HAS(id)
+                                   : (!INV_HAS(id) || inv_capacity[id] != b->inventory.capacity ||
+                                      inv_slots[id] != b->inventory.slots)) {
+        return 0;
+    }
     /* Its turns: every speed ticks, with no limit */
     return nge_timer_kind[id] == ((b->flags & CREATURE_PLAYER) ? TIMER_PLAYER : TIMER_MONSTER) &&
            nge_timer_period[id] == b->stats.speed && nge_timer_count[id] == b->stats.speed &&
@@ -61,7 +67,9 @@ static int creature_ok(nge_entity_id_t id, nge_owner_t owner, uint8_t kind)
 static int item_ok(nge_entity_id_t id, nge_owner_t owner, uint8_t kind)
 {
     return made(id, owner, CLASS_ITEM, kind) && render_is(id, &gen_items[kind].render) &&
-           !NGE_ENTITY_HAS_ANY_COMPONENTS(id, NGE_COMPONENT_BLOCK | COMPONENT_STATS | NGE_COMPONENT_TIMER);
+           ITEM_IS(id) && item_slot[id] == SLOT_NONE &&
+           !NGE_ENTITY_HAS_ANY_COMPONENTS(id, NGE_COMPONENT_BLOCK | COMPONENT_STATS | NGE_COMPONENT_TIMER |
+                                              COMPONENT_INVENTORY);
 }
 
 static void reset(void)

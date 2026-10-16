@@ -14,9 +14,11 @@
 #include "event/nge_event.h"
 
 #include "game/actors.h"
+#include "game/components/inventory.h"
+#include "game/components/item.h"
 #include "game/messages.h"
 #include "game/level/level.h"
-#include "game/player.h"
+#include "game/player/player.h"
 #include "game/screen.h"
 #include "game/timers.h"
 #include "game/title/title.h"
@@ -116,40 +118,6 @@ static void new_game_enter(void)
     game_set_state(GAME_PLAY);
 }
 
-static void inventory_enter(void)
-{
-    screen_message("You are carrying nothing. (any key)");
-}
-
-static void inventory_update(void)
-{
-    if (nge_key_get() != NGE_KEY_NONE) {
-        game_set_state(GAME_PLAY);
-    }
-}
-
-static void target_enter(void)
-{
-    screen_message("Fire in which direction?");
-}
-
-static void target_update(void)
-{
-    nge_key_event_t ev = nge_key_get();
-    int8_t dx;
-    int8_t dy;
-
-    if (ev == NGE_KEY_NONE) {
-        return;
-    }
-    if (player_key_direction(ev, &dx, &dy)) {
-        screen_message("You have nothing to fire.");
-    } else {
-        screen_message("Never mind.");
-    }
-    game_set_state(GAME_PLAY);
-}
-
 static void dead_enter(void)
 {
     screen_message("Game over. Press any key.");
@@ -182,10 +150,13 @@ void game_set_state(game_state_t state)
         new_game_enter();   /* ends by changing to GAME_PLAY */
         break;
     case GAME_INVENTORY:
-        inventory_enter();
+        player_inventory_enter();
+        break;
+    case GAME_DROP:
+        player_drop_enter();
         break;
     case GAME_TARGET:
-        target_enter();
+        player_target_enter();
         break;
     case GAME_DEAD:
         dead_enter();
@@ -207,8 +178,8 @@ static void pre_update(void)
 
 /*
  * Release the entities destroyed this frame (after their events are
- * handled). What they own goes too: for now only effects, so destroy them
- * (later, carried items will be dropped instead)
+ * handled). What they own: items fall to the floor where they were (if
+ * they were on the map), effects are destroyed with them
  */
 static void release_dying(void)
 {
@@ -217,10 +188,13 @@ static void release_dying(void)
     uint8_t i;
 
     while ((id = nge_entity_next_dying()) != NGE_ENTITY_INVALID) {
+        inv_drop_all(id);
         NGE_OWNER_FOR_EACH_OWNED(i, owned, id) {
-            nge_entity_destroy(owned);
+            if (!ITEM_IS(owned)) {
+                nge_entity_destroy(owned);
+            }
         }
-        /* The dying ones it owns wait on the dying stack: pass them on until released */
+        /* The rest (items it held off the map, dying effects) pass to its owner */
         nge_owner_move_all(id, NGE_OWNER_OF(id));
         nge_entity_release(id);
     }
@@ -254,10 +228,13 @@ void game_run(void)
             play_update();
             break;
         case GAME_INVENTORY:
-            inventory_update();
+            player_inventory_update();
+            break;
+        case GAME_DROP:
+            player_drop_update();
             break;
         case GAME_TARGET:
-            target_update();
+            player_target_update();
             break;
         case GAME_DEAD:
             dead_update();

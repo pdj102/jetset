@@ -18,12 +18,14 @@ const gen_item_base_t gen_items[IT_COUNT] = {
         .name = "potion",
         .render = { DEMO_SPRITE_POTION, 1, 0, 0, LAYER_OBJECTS },
         .subclass = ITEM_POTION,
+        .fits = 0,
         .where = { .depth = 1, .rarity = 10 },
     },
     [IT_SWORD] = {
         .name = "sword",
         .render = { DEMO_SPRITE_SWORD, 1, 0, 0, LAYER_OBJECTS },
         .subclass = ITEM_WEAPON,
+        .fits = SLOT_BIT(SLOT_WEAPON),
         .where = { .depth = 1, .rarity = 5 },
     },
 };

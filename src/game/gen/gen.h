@@ -40,7 +40,8 @@
 
 /**
  * @brief Create a creature of kind (CR_*), owned by owner: sprite, block,
- *        stats and timer (the player's or a monster's turn).
+ *        stats, timer (the player's or a monster's turn) and, if it can
+ *        carry things, inventory.
  * @return The entity, or NGE_ENTITY_INVALID if no entity is free.
  */
 nge_entity_id_t gen_creature(uint8_t kind, nge_owner_t owner) NGE_BANKED;
@@ -52,7 +53,8 @@ nge_entity_id_t gen_creature(uint8_t kind, nge_owner_t owner) NGE_BANKED;
 nge_entity_id_t gen_creature_random(uint8_t depth, nge_owner_t owner) NGE_BANKED;
 
 /**
- * @brief Create an item of kind (IT_*), owned by owner: its sprite.
+ * @brief Create an item of kind (IT_*), owned by owner: its sprite and
+ *        the item component (not equipped).
  * @return The entity, or NGE_ENTITY_INVALID if no entity is free.
  */
 nge_entity_id_t gen_item(uint8_t kind, nge_owner_t owner) NGE_BANKED;

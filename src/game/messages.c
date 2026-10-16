@@ -41,6 +41,16 @@ void messages_on_event(const nge_event_t *e)
             say_named("You see a ", target, " here.");
         }
         break;
+    case EV_PICKED_UP:
+        if (source == actor_player) {
+            say_named("You pick up a ", target, ".");
+        }
+        break;
+    case EV_DROPPED:
+        if (source == actor_player) {
+            say_named("You drop a ", target, ".");
+        }
+        break;
     case EV_GLOWED:
         if (target == actor_player) {
             screen_message("A warm glow surrounds you.");
@@ -58,12 +68,25 @@ void messages_on_event(const nge_event_t *e)
 
 void messages_act_failed(const act_t *a)
 {
-    switch (a->reason) {
+    /* The fields in locals, as in messages_on_event() */
+    uint8_t reason = a->reason;
+    nge_entity_id_t target = a->target;
+
+    switch (reason) {
     case ACT_R_BLOCKED:
         screen_message("You bump into a wall.");
         break;
     case ACT_R_BLOCKED_CREATURE:
-        say_named("There is a ", a->target, " in the way.");
+        say_named("There is a ", target, " in the way.");
+        break;
+    case ACT_R_NOTHING_HERE:
+        screen_message("There is nothing here to pick up.");
+        break;
+    case ACT_R_FULL:
+        screen_message("You can't carry any more.");
+        break;
+    case ACT_R_EQUIPPED:
+        screen_message("You must take that off first.");
         break;
     default:
         break;

@@ -12,6 +12,7 @@
 #include "ecs/systems/nge_timer.h"
 #include "map/nge_map.h"
 
+#include "game/components/item.h"
 #include "game/components/kind.h"
 #include "game/gen/gen.h"
 #include "game/level/level_internal.h"
@@ -225,7 +226,7 @@ static int check_level(int depth)
         if (!NGE_ENTITY_HAS_COMPONENTS(id, COMPONENT_KIND | NGE_COMPONENT_LOCATION | NGE_COMPONENT_SPRITE)) {
             return fail(depth, "an entity in the area isn't a placed, drawn, generated one");
         }
-        if (kind_class[id] == CLASS_ITEM && kind_index[id] < IT_COUNT &&
+        if (kind_class[id] == CLASS_ITEM && kind_index[id] < IT_COUNT && ITEM_IS(id) &&
             !NGE_ENTITY_HAS_COMPONENTS(id, NGE_COMPONENT_BLOCK)) {
             items++;
         } else if (kind_class[id] == CLASS_CREATURE && kind_index[id] < CR_COUNT &&

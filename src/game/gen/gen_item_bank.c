@@ -18,6 +18,7 @@ static nge_entity_id_t create(uint8_t kind, nge_owner_t owner)
 
     if (id != NGE_ENTITY_INVALID) {
         gen_render(id, &render);   /* items block nothing: no block component */
+        item_add(id);
     }
     return id;
 }

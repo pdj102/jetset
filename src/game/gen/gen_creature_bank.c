@@ -29,6 +29,9 @@ static nge_entity_id_t create(uint8_t kind, nge_owner_t owner)
     gen_render(id, &b.render);
     nge_block_add(id, b.block.block, b.block.pass);
     stats_add(id, &b.stats);
+    if (b.inventory.capacity != 0) {
+        inv_add(id, b.inventory.capacity, b.inventory.slots);
+    }
     /* Its turns, every speed ticks: the player's stop the clock for a command */
     nge_timer_add(id, (b.flags & CREATURE_PLAYER) ? TIMER_PLAYER : TIMER_MONSTER, stats_speed[id], 0);
     return id;

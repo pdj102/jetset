@@ -44,6 +44,7 @@
 //                        110/111  gen shared: generator helpers and game components'
 //                                 add functions / (unused)
 //                        112/113  actions: the actions / (unused)
+//                        114/115  player: commands and screens / (unused)
 //             132-223  game assets (maps, graphics, level data)
 
 // nge sprite: setup functions and loaders
@@ -82,6 +83,9 @@
 
 // game actions: what entities do (game/actions)
 #pragma define CRT_ORG_PAGE_112 = 0x70C000
+
+// game player: the player's commands and screens (game/player)
+#pragma define CRT_ORG_PAGE_114 = 0x72C000
 
 // nge map: set-up functions
 #pragma define CRT_ORG_PAGE_44 = 0x2CC000
