@@ -123,14 +123,6 @@ static void pass_time(void)
     }
 }
 
-/* After a command that used the player's turn: its events, then the clock runs again */
-static void player_acted(void)
-{
-    nge_event_process(game_on_event);
-    nge_timer_start();
-    pass_time();
-}
-
 /* The player's move command: on a refusal they are told why, and keep their turn */
 static void player_move(int8_t dx, int8_t dy)
 {
@@ -143,7 +135,7 @@ static void player_move(int8_t dx, int8_t dy)
         messages_act_failed(&a);
     }
     if (a.used) {
-        player_acted();
+        nge_timer_start();   /* the next frame's pass_time() runs the other actors' turns */
     }
 }
 
