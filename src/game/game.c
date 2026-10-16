@@ -155,6 +155,12 @@ void game_set_state(game_state_t state)
     case GAME_DROP:
         player_drop_enter();
         break;
+    case GAME_EQUIP:
+        player_equip_enter();
+        break;
+    case GAME_UNEQUIP:
+        player_unequip_enter();
+        break;
     case GAME_TARGET:
         player_target_enter();
         break;
@@ -232,6 +238,12 @@ void game_run(void)
             break;
         case GAME_DROP:
             player_drop_update();
+            break;
+        case GAME_EQUIP:
+            player_equip_update();
+            break;
+        case GAME_UNEQUIP:
+            player_unequip_update();
             break;
         case GAME_TARGET:
             player_target_update();

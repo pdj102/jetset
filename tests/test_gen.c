@@ -110,9 +110,11 @@ int main(void)
     ok = 1;
     for (kind = 0; kind < IT_COUNT; kind++) {
         id = gen_item(kind, AREA);
-        ok = ok && item_ok(id, AREA, kind);
+        ok = ok && item_ok(id, AREA, kind) && gen_item_fits(kind) == gen_items[kind].fits;
     }
     CHECK(ok);
+    CHECK(gen_item_fits(IT_POTION) == 0 && gen_item_fits(IT_SWORD) == SLOT_BIT(SLOT_WEAPON) &&
+          gen_item_fits(IT_RING) == (SLOT_BIT(SLOT_RING_L) | SLOT_BIT(SLOT_RING_R)));
 
     /* Any owner: an item in a chest, a creature not yet placed */
     chest = gen_item(IT_SWORD, AREA);
@@ -177,7 +179,8 @@ int main(void)
             nge_entity_release(nge_entity_next_dying());
         }
     }
-    CHECK(seen[IT_POTION] + seen[IT_SWORD] == 300 && seen[IT_POTION] > seen[IT_SWORD] && seen[IT_SWORD] > 0);
+    CHECK(seen[IT_POTION] + seen[IT_SWORD] + seen[IT_RING] == 300);
+    CHECK(seen[IT_POTION] > seen[IT_SWORD] && seen[IT_SWORD] > seen[IT_RING] && seen[IT_RING] > 0);   /* 10, 5, 3 */
     /* Nothing appears at depth 0 */
     CHECK(gen_creature_random(0, AREA) == NGE_ENTITY_INVALID);
     CHECK(gen_item_random(0, AREA) == NGE_ENTITY_INVALID);

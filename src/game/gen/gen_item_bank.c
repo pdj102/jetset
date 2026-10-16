@@ -42,6 +42,13 @@ nge_entity_id_t gen_item_random(uint8_t depth, nge_owner_t owner) NGE_BANKED
     return (kind == 0xFF) ? NGE_ENTITY_INVALID : create(kind, owner);
 }
 
+uint16_t gen_item_fits(uint8_t kind) NGE_BANKED
+{
+    nge_util_assert(kind < IT_COUNT);
+
+    return gen_items[kind].fits;
+}
+
 void gen_item_name(uint8_t kind, char *buf, uint8_t size) NGE_BANKED
 {
     nge_util_assert(kind < IT_COUNT);

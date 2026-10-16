@@ -17,6 +17,11 @@ const uint8_t act_reason_flags[ACT_R_COUNT] = {
     [ACT_R_FULL]             = 0,
     [ACT_R_NOT_CARRIED]      = 0,
     [ACT_R_EQUIPPED]         = 0,
+    [ACT_R_ALREADY_EQUIPPED] = 0,
+    [ACT_R_CANT_EQUIP]       = 0,
+    [ACT_R_NO_SLOT]          = 0,
+    [ACT_R_SLOT_TAKEN]       = 0,
+    [ACT_R_NOT_EQUIPPED]     = 0,
 };
 
 uint8_t act_do(uint8_t action, act_t *a, uint8_t mode)
@@ -29,6 +34,10 @@ uint8_t act_do(uint8_t action, act_t *a, uint8_t mode)
         return act_pickup(a, mode);
     case ACT_DROP:
         return act_drop(a, mode);
+    case ACT_EQUIP:
+        return act_equip(a, mode);
+    case ACT_UNEQUIP:
+        return act_unequip(a, mode);
     default:
         nge_util_abort("bad action");
         return ACT_FAIL;

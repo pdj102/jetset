@@ -44,8 +44,7 @@ GEN_GAME_SRCS := $(addprefix $(GAMEDIR)/,gen/gen.c gen/gen_shared_bank.c \
                  components/item.c components/item_cdata.c components/inventory.c \
                  components/inventory_cdata.c)
 GEN_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(GEN_GAME_SRCS))
-ACT_GAME_SRCS := $(addprefix $(GAMEDIR)/,actions/act.c actions/act_shared.c actions/act_move.c \
-                 actions/act_pickup.c actions/act_drop.c)
+ACT_GAME_SRCS := $(wildcard $(GAMEDIR)/actions/*.c)
 ACT_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(ACT_GAME_SRCS)) $(GEN_GAME_OBJS)
 LEVEL_GAME_SRCS := $(addprefix $(GAMEDIR)/,level/level.c level/level_bank.c level/level_gen.c \
                    level/level_pdata.c)

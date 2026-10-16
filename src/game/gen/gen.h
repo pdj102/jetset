@@ -63,6 +63,13 @@ nge_entity_id_t gen_item(uint8_t kind, nge_owner_t owner) NGE_BANKED;
 nge_entity_id_t gen_item_random(uint8_t depth, nge_owner_t owner) NGE_BANKED;
 
 /**
+ * @brief The equipment slots an item kind (IT_*) can go in: a mask of
+ *        SLOT_BIT() (game/components/item.h), 0 if it can't be equipped.
+ *        Banked with the item table (page 108).
+ */
+uint16_t gen_item_fits(uint8_t kind) NGE_BANKED;
+
+/**
  * @brief Copy the name of an entity's kind into buf: at most size-1
  *        characters and a NUL ("something" for an entity with no kind).
  * @param size 1 or more.

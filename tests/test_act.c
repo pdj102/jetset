@@ -95,6 +95,11 @@ int main(void)
     nge_entity_id_t sword;
     nge_entity_id_t i1;
     nge_entity_id_t i2;
+    nge_entity_id_t sw2;
+    nge_entity_id_t ring1;
+    nge_entity_id_t ring2;
+    nge_entity_id_t ring3;
+    nge_entity_id_t goblin;
     nge_entity_id_t player;
     nge_entity_id_t rat;
     nge_entity_id_t potion;
@@ -256,6 +261,103 @@ int main(void)
     item_slot[i1] = SLOT_NONE;
     CHECK(act_do(ACT_DROP, &a, ACT_DO) == ACT_SUCCESS && at(i1, 4, 5));
     CHECK(events() == 1);
+
+    /* ---- equip: the player has the sword i2 stowed ---- */
+    CHECK(stowed(i2, player) && item_slot[i2] == SLOT_NONE && inv_count(player) == 1);
+    a = ctx(player);
+    a.item = i2;
+    a.kind = SLOT_NONE;
+    CHECK(act_equip(&a, ACT_CHECK) == ACT_SUCCESS && a.used == 0 && a.kind == SLOT_WEAPON);
+    CHECK(item_slot[i2] == SLOT_NONE && events() == 0);
+    a.kind = SLOT_NONE;
+    CHECK(act_equip(&a, ACT_DO) == ACT_SUCCESS && a.reason == ACT_R_NONE && a.used == 1 && a.kind == SLOT_WEAPON);
+    CHECK(item_slot[i2] == SLOT_WEAPON && inv_equipped(player, SLOT_WEAPON) == i2);
+    CHECK(inv_count(player) == 0);                            /* equipped items don't count */
+    CHECK(events() == 1 && is(0, i2, EV_EQUIPPED, player) && seen[0].p1 == SLOT_WEAPON);
+    /* Already equipped; the slot taken by another; can't be equipped; not carried */
+    a = ctx(player);
+    a.item = i2;
+    CHECK(act_equip(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_ALREADY_EQUIPPED && a.used == 0);
+    sw2 = gen_item(IT_SWORD, AREA);
+    inv_stow(sw2, player);
+    a = ctx(player);
+    a.item = sw2;
+    CHECK(act_equip(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_SLOT_TAKEN && a.target == i2 && a.used == 0);
+    CHECK(item_slot[sw2] == SLOT_NONE && events() == 0);
+    i1 = gen_item(IT_POTION, AREA);
+    inv_stow(i1, player);
+    a = ctx(player);
+    a.item = i1;
+    CHECK(act_equip(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_CANT_EQUIP);
+    a = ctx(player);
+    a.item = sword;                                           /* on the floor */
+    CHECK(act_equip(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_NOT_CARRIED);
+    /* Rings: the left hand, then the right, then both are taken */
+    ring1 = gen_item(IT_RING, AREA);
+    ring2 = gen_item(IT_RING, AREA);
+    ring3 = gen_item(IT_RING, AREA);
+    inv_stow(ring1, player);
+    inv_stow(ring2, player);
+    inv_stow(ring3, player);
+    a = ctx(player);
+    a.item = ring1;
+    CHECK(act_equip(&a, ACT_DO) == ACT_SUCCESS && a.kind == SLOT_RING_L && item_slot[ring1] == SLOT_RING_L);
+    a = ctx(player);
+    a.item = ring2;
+    CHECK(act_equip(&a, ACT_DO) == ACT_SUCCESS && a.kind == SLOT_RING_R && item_slot[ring2] == SLOT_RING_R);
+    a = ctx(player);
+    a.item = ring3;
+    CHECK(act_equip(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_SLOT_TAKEN && a.target == ring2);
+    /* A slot asked for: taken, not one it fits, or free */
+    a = ctx(player);
+    a.item = ring3;
+    a.kind = SLOT_RING_L;
+    CHECK(act_equip(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_SLOT_TAKEN && a.target == ring1);
+    a = ctx(player);
+    a.item = ring3;
+    a.kind = SLOT_HEAD;
+    CHECK(act_equip(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_NO_SLOT);
+    events();
+
+    /* ---- unequip ---- */
+    a = ctx(player);
+    a.item = ring1;
+    CHECK(act_unequip(&a, ACT_CHECK) == ACT_SUCCESS && a.used == 0 && item_slot[ring1] == SLOT_RING_L && events() == 0);
+    CHECK(act_unequip(&a, ACT_DO) == ACT_SUCCESS && a.reason == ACT_R_NONE && a.used == 1);
+    CHECK(item_slot[ring1] == SLOT_NONE && stowed(ring1, player));
+    CHECK(events() == 1 && is(0, ring1, EV_UNEQUIPPED, player));
+    CHECK(act_unequip(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_NOT_EQUIPPED && a.used == 0);
+    /* Now the left hand is free: asking for it works */
+    a = ctx(player);
+    a.item = ring3;
+    a.kind = SLOT_RING_L;
+    CHECK(act_do(ACT_EQUIP, &a, ACT_DO) == ACT_SUCCESS && item_slot[ring3] == SLOT_RING_L);
+    /* No room in the pack: refused, still equipped */
+    inv_capacity[player] = inv_count(player);
+    a = ctx(player);
+    a.item = ring3;
+    CHECK(act_do(ACT_UNEQUIP, &a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_FULL && item_slot[ring3] == SLOT_RING_L);
+    inv_capacity[player] = 20;
+    a = ctx(rat);
+    a.item = ring3;
+    CHECK(act_unequip(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_NOT_CARRIED);
+    events();
+
+    /* ---- who can equip: the rat has no inventory, the goblin no ring slots ---- */
+    a = ctx(rat);
+    a.item = ring1;
+    CHECK(act_equip(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_NO_INVENTORY);
+    goblin = gen_creature(CR_GOBLIN, AREA);
+    nge_location_set(goblin, 1, 1);
+    inv_stow(ring1, goblin);
+    a = ctx(goblin);
+    a.item = ring1;
+    CHECK(act_equip(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_NO_SLOT);
+    inv_stow(sw2, goblin);
+    a = ctx(goblin);
+    a.item = sw2;
+    CHECK(act_equip(&a, ACT_DO) == ACT_SUCCESS && a.kind == SLOT_WEAPON);
+    events();
 
     /* ---- every reason so far is refused ---- */
     ok = 1;

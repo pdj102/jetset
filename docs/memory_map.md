@@ -193,8 +193,8 @@ Banked so far:
 | 106/107 | game `gen` creatures | the creature generator (`game/gen/gen_creature_bank.c`, about 0.6K) | the base creatures: a `const` table and its names (`gen_creature_pdata.c`, with `constseg PAGE_107`) |
 | 108/109 | game `gen` items | the item generator (`gen_item_bank.c`, about 0.4K) | the base items (`gen_item_pdata.c`) |
 | 110/111 | game `gen` shared | helpers every generator calls, and the game components' functions (`gen_shared_bank.c`, `components/kind.c`, `stats.c`, `item.c`, `inventory.c`): they take copies of base data on the stack, as the class's table is mapped out while they run | none |
-| 112/113 | game `actions` | what entities do, one file per action (`game/actions/act_move.c`, `act_pickup.c`, `act_drop.c`) and their shared endings (`act_shared.c`); the dispatcher `act_do()` and the reason table are common (`act.c`) | none yet |
-| 114/115 | game `player` | the player's commands and screens: inventory, dropping, firing (`game/player/player_bank.c`); the handlers called for every event and timer firing are common (`player.c`) | none |
+| 112/113 | game `actions` | what entities do, one file per action (`game/actions/act_move.c`, `act_pickup.c`, `act_drop.c`, `act_equip.c`) and their shared endings (`act_shared.c`); the dispatcher `act_do()` and the reason table are common (`act.c`) | none yet |
+| 114/115 | game `player` | the player's commands and screens: inventory, dropping, equipping, taking off, firing, and the reasons for refused commands (`game/player/player_bank.c`); the handlers called for every event and timer firing are common (`player.c`) | none |
 | 104/105 | game `title` | the title state and the name prompt, with literals (`game/title/title_bank.c`, about 0.4K; no common part) | none |
 
 How a module is banked:

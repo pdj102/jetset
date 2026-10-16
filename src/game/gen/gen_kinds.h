@@ -20,10 +20,12 @@
 /* Items (CLASS_ITEM) */
 #define IT_POTION  0
 #define IT_SWORD   1
-#define IT_COUNT   2
+#define IT_RING    2
+#define IT_COUNT   3
 
 /* Item subclasses, in each item's base record */
 #define ITEM_POTION  0
 #define ITEM_WEAPON  1
+#define ITEM_RING    2
 
 #endif

@@ -28,4 +28,11 @@ const gen_item_base_t gen_items[IT_COUNT] = {
         .fits = SLOT_BIT(SLOT_WEAPON),
         .where = { .depth = 1, .rarity = 5 },
     },
+    [IT_RING] = {
+        .name = "ring",
+        .render = { DEMO_SPRITE_RING, 1, 0, 0, LAYER_OBJECTS },
+        .subclass = ITEM_RING,
+        .fits = SLOT_BIT(SLOT_RING_L) | SLOT_BIT(SLOT_RING_R),
+        .where = { .depth = 1, .rarity = 3 },
+    },
 };

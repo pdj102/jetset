@@ -2,7 +2,6 @@
 
 #include <string.h>
 
-#include "game/actions/act.h"
 #include "game/actors.h"
 #include "game/events.h"
 #include "game/gen/gen.h"
@@ -11,8 +10,7 @@
 #define MESSAGE_MAX  41   /* a message window line, and its NUL */
 #define NAME_MAX     20   /* a kind's name, and its NUL */
 
-/* Show before + the entity's name + after, cut to one line */
-static void say_named(const char *before, nge_entity_id_t id, const char *after)
+void messages_say_named(const char *before, nge_entity_id_t id, const char *after)
 {
     char line[MESSAGE_MAX];
     char name[NAME_MAX];
@@ -30,7 +28,7 @@ void messages_on_event(const nge_event_t *e)
     /*
      * The fields in locals: SDCC (z88dk, Oct 2026) reused HL for
      * actor_player while it still expected it to point at e, so
-     * say_named(..., e->target, ...) passed the player instead
+     * messages_say_named(..., e->target, ...) passed the player instead
      */
     nge_entity_id_t target = e->target;
     nge_entity_id_t source = e->source;
@@ -38,17 +36,27 @@ void messages_on_event(const nge_event_t *e)
     switch (e->id) {
     case EV_STOOD_ON:
         if (source == actor_player) {
-            say_named("You see a ", target, " here.");
+            messages_say_named("You see a ", target, " here.");
         }
         break;
     case EV_PICKED_UP:
         if (source == actor_player) {
-            say_named("You pick up a ", target, ".");
+            messages_say_named("You pick up a ", target, ".");
         }
         break;
     case EV_DROPPED:
         if (source == actor_player) {
-            say_named("You drop a ", target, ".");
+            messages_say_named("You drop a ", target, ".");
+        }
+        break;
+    case EV_EQUIPPED:
+        if (source == actor_player) {
+            messages_say_named("You equip a ", target, ".");
+        }
+        break;
+    case EV_UNEQUIPPED:
+        if (source == actor_player) {
+            messages_say_named("You take off a ", target, ".");
         }
         break;
     case EV_GLOWED:
@@ -60,33 +68,6 @@ void messages_on_event(const nge_event_t *e)
         if (target == actor_player) {
             screen_message("The warm glow fades.");
         }
-        break;
-    default:
-        break;
-    }
-}
-
-void messages_act_failed(const act_t *a)
-{
-    /* The fields in locals, as in messages_on_event() */
-    uint8_t reason = a->reason;
-    nge_entity_id_t target = a->target;
-
-    switch (reason) {
-    case ACT_R_BLOCKED:
-        screen_message("You bump into a wall.");
-        break;
-    case ACT_R_BLOCKED_CREATURE:
-        say_named("There is a ", target, " in the way.");
-        break;
-    case ACT_R_NOTHING_HERE:
-        screen_message("There is nothing here to pick up.");
-        break;
-    case ACT_R_FULL:
-        screen_message("You can't carry any more.");
-        break;
-    case ACT_R_EQUIPPED:
-        screen_message("You must take that off first.");
         break;
     default:
         break;

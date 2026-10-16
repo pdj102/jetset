@@ -87,7 +87,9 @@ typedef struct act {
 #define ACT_MOVE    0
 #define ACT_PICKUP  1
 #define ACT_DROP    2
-#define ACT_COUNT   3
+#define ACT_EQUIP   3
+#define ACT_UNEQUIP 4
+#define ACT_COUNT   5
 
 /* Reasons (refused or attempted: the table in act.c) */
 #define ACT_R_NONE              0   /**< Succeeded. */
@@ -99,7 +101,12 @@ typedef struct act {
 #define ACT_R_FULL              6   /**< Refused: the inventory is full; a->target is the item. */
 #define ACT_R_NOT_CARRIED       7   /**< Refused: the actor doesn't have the item. */
 #define ACT_R_EQUIPPED          8   /**< Refused: the item is equipped (unequip it first). */
-#define ACT_R_COUNT             9
+#define ACT_R_ALREADY_EQUIPPED  9   /**< Refused: the item is equipped already. */
+#define ACT_R_CANT_EQUIP        10  /**< Refused: the item fits no equipment slot (a potion). */
+#define ACT_R_NO_SLOT           11  /**< Refused: the actor has no slot the item fits (or not the one asked for). */
+#define ACT_R_SLOT_TAKEN        12  /**< Refused: every slot it fits is in use; a->target is the item there. */
+#define ACT_R_NOT_EQUIPPED      13  /**< Refused: the item isn't equipped. */
+#define ACT_R_COUNT             14
 
 /**
  * @brief Move one tile.
@@ -133,6 +140,29 @@ uint8_t act_pickup(act_t *a, uint8_t mode) NGE_BANKED;
  * ACT_R_EQUIPPED.
  */
 uint8_t act_drop(act_t *a, uint8_t mode) NGE_BANKED;
+
+/**
+ * @brief Equip a stowed item: wield a weapon, put on a ring.
+ *
+ * In: actor (alive), item, kind (the slot to use, SLOT_* in game/
+ * components/item.h; SLOT_NONE for the first free slot the item fits).
+ * Succeeds if the actor has the item stowed, it fits a slot the actor
+ * has, and that slot is free: posts EV_EQUIPPED (p1: the slot); a->kind
+ * is the slot used. Equipped items don't count towards the capacity.
+ * Refused with ACT_R_NO_INVENTORY, ACT_R_NOT_CARRIED,
+ * ACT_R_ALREADY_EQUIPPED, ACT_R_CANT_EQUIP, ACT_R_NO_SLOT or
+ * ACT_R_SLOT_TAKEN (a->target: the item in the slot).
+ */
+uint8_t act_equip(act_t *a, uint8_t mode) NGE_BANKED;
+
+/**
+ * @brief Take off an equipped item, back into the inventory.
+ *
+ * In: actor (alive), item. Succeeds if the actor has the item equipped and
+ * room to stow it: posts EV_UNEQUIPPED. Refused with ACT_R_NOT_CARRIED,
+ * ACT_R_NOT_EQUIPPED or ACT_R_FULL.
+ */
+uint8_t act_unequip(act_t *a, uint8_t mode) NGE_BANKED;
 
 /** @brief Call action (ACT_MOVE...) by number: for the AI and delayed actions. */
 uint8_t act_do(uint8_t action, act_t *a, uint8_t mode);

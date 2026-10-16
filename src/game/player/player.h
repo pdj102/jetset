@@ -37,18 +37,26 @@ void player_on_event(const nge_event_t *e);
 /**
  * @brief Carry out the command for a key event, during the player's turn:
  *        movement keys (cursor keys or h j k l) move, g (or ,) picks up the
- *        item here, i d f open the inventory, drop and firing screens, Q
- *        quits. Other keys do nothing.
+ *        item here, i d w r f open the inventory, drop, equip, take off and
+ *        firing screens, Q quits. Other keys do nothing.
  */
 void player_command(nge_key_event_t ev) NGE_BANKED;
 
-/** @brief GAME_INVENTORY: list what the player carries ("a) sword  b) potion"); any key returns to play. */
+/** @brief GAME_INVENTORY: list what the player carries, then what they use ("a) sword (in hand)"); any key returns to play. */
 void player_inventory_enter(void) NGE_BANKED;
 void player_inventory_update(void) NGE_BANKED;
 
 /** @brief GAME_DROP: list the items and ask which; its letter drops it, any other key returns to play. */
 void player_drop_enter(void) NGE_BANKED;
 void player_drop_update(void) NGE_BANKED;
+
+/** @brief GAME_EQUIP: list the items that fit a slot and ask which; its letter equips it. */
+void player_equip_enter(void) NGE_BANKED;
+void player_equip_update(void) NGE_BANKED;
+
+/** @brief GAME_UNEQUIP: list the equipped items and ask which; its letter takes it off. */
+void player_unequip_enter(void) NGE_BANKED;
+void player_unequip_update(void) NGE_BANKED;
 
 /** @brief GAME_TARGET: ask for a direction to fire in (nothing to fire yet). */
 void player_target_enter(void) NGE_BANKED;

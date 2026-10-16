@@ -15,6 +15,8 @@
  * | EV_GLOW_FADED | the effect's owner | effect  | -        |
  * | EV_PICKED_UP  | the item           | taker   | -        |
  * | EV_DROPPED    | the item           | dropper | -        |
+ * | EV_EQUIPPED   | the item           | wearer  | p1: slot |
+ * | EV_UNEQUIPPED | the item           | wearer  | -        |
  */
 
 #include "event/nge_event.h"
@@ -25,5 +27,7 @@
 #define EV_GLOW_FADED  (NGE_EVENT_USER + 3)   /**< The demo effect's last firing: it is gone. */
 #define EV_PICKED_UP   (NGE_EVENT_USER + 4)   /**< Picked up and stowed by the source (act_pickup()). */
 #define EV_DROPPED     (NGE_EVENT_USER + 5)   /**< Dropped on the floor by the source (act_drop()). */
+#define EV_EQUIPPED    (NGE_EVENT_USER + 6)   /**< Equipped by the source in slot p1 (act_equip()). */
+#define EV_UNEQUIPPED  (NGE_EVENT_USER + 7)   /**< Taken off by the source, back into its inventory (act_unequip()). */
 
 #endif

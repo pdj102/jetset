@@ -30,6 +30,8 @@ typedef enum game_state {
     GAME_PLAY,        /**< Time passes (nge_timer) until the player's turn, then one command per frame. */
     GAME_INVENTORY,   /**< The inventory is shown; any key returns to play. */
     GAME_DROP,        /**< Choosing an item to drop: its letter drops it, any other key returns to play. */
+    GAME_EQUIP,       /**< Choosing an item to equip. */
+    GAME_UNEQUIP,     /**< Choosing an item to take off. */
     GAME_TARGET,      /**< Choosing a direction to fire in. */
     GAME_DEAD,        /**< The game is over; any key returns to the title. */
     GAME_STATES       /**< Number of states. */
