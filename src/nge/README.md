@@ -68,6 +68,23 @@ core  <-  hw  <-  tilemap, sprite, devices, input, sound  <-  io  <-  map, event
 - One exception: `core/nge_util` prints asserts and debug output to a
   stream, so it includes `io/nge_printf.h` and `io/nge_stream.h`.
 
+## Module initialisation
+
+Every `<module>_init()` (nge and game alike) must:
+
+- **Reset the module completely** to a valid initial state: every variable,
+  table and piece of hardware it owns, whatever state it was left in. Don't
+  rely on the NEX file's zeros or on an earlier call (page data is
+  uninitialised, see "Page data" in docs/memory_map.md).
+- **Be safe to call more than once.** A new game calls the inits again
+  (`GAME_NEW_GAME` in src/game/game.c), so an init must not leak resources
+  (close streams it opened before) and must undo what the last use left
+  behind (`nge_render_init()` hides the sprites it drew; `nge_map_init()`
+  clears the tiles and the block table).
+
+Add a check to the module's PC test that a second init gives the same
+state as the first.
+
 ## Banked code
 
 Code that isn't needed all the time can live in a banked page (see "Banked

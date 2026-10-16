@@ -22,14 +22,16 @@
 
 extern nge_entity_id_t actor_player;
 
+/** @brief Load the sprite patterns and palette: once, after nge_sprite_init(). */
+void actors_load_graphics(void);
+
 /**
- * @brief Load the sprite graphics and create the player (not yet placed:
- *        see level_generate()) and the demo effect.
+ * @brief Create the player (not yet placed: see level_generate()) and the
+ *        demo effect, for a new game (GAME_NEW_GAME, game/game.h).
  *
- * Call after nge_sprite_init(), nge_ecs_init(), nge_render_init() and
- * nge_timer_init().
+ * Call after nge_entity_init(), nge_render_init() and nge_timer_init().
  */
-void actors_init(void);
+void actors_create(void);
 
 /**
  * @brief Move the player one tile by (dx, dy), if it can enter the tile

@@ -27,7 +27,8 @@
 
 /** Game states. */
 typedef enum game_state {
-    GAME_TITLE,       /**< Title: any key starts a game (asks the player's name). */
+    GAME_TITLE,       /**< Title: any key asks the player's name and starts a new game. */
+    GAME_NEW_GAME,    /**< Passing: its entry action resets everything for a new game, then GAME_PLAY. */
     GAME_PLAY,        /**< Time passes (nge_timer) until the player's turn, then one command per frame. */
     GAME_INVENTORY,   /**< The inventory is shown; any key returns to play. */
     GAME_TARGET,      /**< Choosing a direction to fire in. */

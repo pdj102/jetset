@@ -19,7 +19,7 @@ void title_enter(void) NGE_BANKED;
 /**
  * @brief The title state's update, once per frame: on any key, ask the
  *        player's name (blocking: the screen stands still while they type),
- *        draw the stats, show the help and go to GAME_PLAY.
+ *        show the help and go to GAME_NEW_GAME (which starts the game).
  */
 void title_update(void) NGE_BANKED;
 

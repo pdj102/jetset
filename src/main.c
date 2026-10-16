@@ -1,8 +1,8 @@
 /*
- * Entry point: the basis of a classic roguelike. Sets up the screen
- * (src/game/screen.h), the player (src/game/actors.h) and the first level,
- * generated (src/game/level/level.h), then runs the game loop
- * (src/game/game.h).
+ * Entry point: the basis of a classic roguelike. Sets up the hardware, the
+ * screen (src/game/screen.h), the map (src/game/level/level.h) and the
+ * graphics once, then runs the game loop (src/game/game.h): the title,
+ * then a new game (GAME_NEW_GAME: the player and the first level).
  */
 #include "core/nge_util.h"
 #include "ecs/nge_ecs.h"
@@ -10,7 +10,6 @@
 #include "ecs/systems/nge_timer.h"
 #include "hw/nge_hw.h"
 #include "input/nge_input.h"
-#include "map/nge_map.h"
 #include "io/nge_cspect_stream.h"
 #include "sprite/nge_sprite.h"
 
@@ -32,13 +31,11 @@ int main(void)
     nge_sprite_init();
     level_init();
 
-    /* Entities: the render system draws those in the level's area */
-    nge_ecs_init();     /* ECS data page into slot 0; makes every entity free */
+    /* Every module the frame loop uses in a valid state: GAME_NEW_GAME sets them up again for each game */
+    nge_ecs_init();     /* ECS data page into slot 0; every entity free */
     nge_render_init();
-    nge_render_set_view(LEVEL_AREA);
-    nge_timer_init();   /* the clock: turn 0 */
-    actors_init();
-    level_generate(1, actor_player);   /* the first level; the camera on the player */
+    nge_timer_init();
+    actors_load_graphics();
 
     nge_util_info("init done");
 

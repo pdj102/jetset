@@ -64,6 +64,7 @@ static void reset(void)
     nge_map_init(80, 48, &window);
     nge_map_set_camera(0, 20);                          /* view: columns 0-39, rows 20-28 */
     nge_render_set_view(AREA0);
+    nge_render_upload();                                /* init's upload: every sprite hidden */
 }
 
 int main(void)
@@ -77,10 +78,26 @@ int main(void)
 
     test_init();
 
-    /* ---- nothing to draw ---- */
+    /* ---- nothing to draw: the first upload hides all the system's sprites ---- */
     nge_entity_init();
     nge_render_init();
+    CHECK(frame() == NGE_RENDER_SPRITES);
+    ok = 1;
+    for (n = 0; n < NGE_RENDER_SPRITES; n++) {
+        ok = ok && !visible(n);
+    }
+    CHECK(ok);
     CHECK(frame() == 0 && test_port_log_count == 0);         /* no view, nothing sent */
+
+    /* ---- init again (a new game): what was drawn is hidden at the next upload ---- */
+    reset();
+    make(AREA0, 1, 21, 1, 0);
+    make(AREA0, 2, 21, 2, 0);
+    CHECK(frame() == 2 && visible(0) && visible(1));
+    nge_entity_init();
+    nge_render_init();
+    CHECK(frame() == NGE_RENDER_SPRITES && !visible(0) && !visible(1));
+    CHECK(frame() == 0);
 
     /* ---- position: map pixels through the camera into the window ---- */
     reset();

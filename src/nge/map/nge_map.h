@@ -112,12 +112,13 @@ extern nge_tile_t  nge_map_tiles[NGE_MAP_STRIDE * NGE_MAP_MAX_HEIGHT];   /**< Ro
 /* ---- Set-up: banked ---- */
 
 /**
- * @brief Map the map's page into slot 1 and set up the map with its camera
- *        at (0,0), marked for drawing. Call before any other map function.
+ * @brief Map the map's page into slot 1 and set up an empty map with its
+ *        camera at (0,0), marked for drawing. Call before any other map
+ *        function; call again to start afresh.
  *
- * The tiles and the block table are not changed: fill them in (directly,
- * with NGE_MAP_TILE(), and with nge_map_clear_blocks() and
- * nge_map_set_block()).
+ * Every tile is cleared to 0 (tile 0, attribute 0) and every tile ID in the
+ * block table to NGE_BLOCK_NONE: fill them in (directly, with
+ * NGE_MAP_TILE(), and with nge_map_clear_blocks() and nge_map_set_block()).
  *
  * @param width Map width in tiles, from the window width to NGE_MAP_STRIDE.
  * @param height Map height in tiles, from the window height to NGE_MAP_MAX_HEIGHT.

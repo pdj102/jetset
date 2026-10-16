@@ -13,11 +13,14 @@ const nge_rect_t screen_map_view = { .x1 = 0, .x2 = 27, .y1 = 0, .y2 = 26 };
 static const nge_rect_t stats_area = { .x1 = 28, .x2 = 39, .y1 = 0, .y2 = 26 };
 static const nge_rect_t message_area = { .x1 = 0, .x2 = 39, .y1 = 27, .y2 = 31 };
 
-NGE_FILE *screen_stats;
-NGE_FILE *screen_messages;
+NGE_FILE *screen_stats = NULL;
+NGE_FILE *screen_messages = NULL;
 char screen_name[SCREEN_NAME_MAX + 1] = "Rogue";
 
 #define STATS_ROW_TURN  8    /* stats window row of the turn count */
+
+/* The message window's bottom line has text: the next message goes on a new line */
+static uint8_t message_line_used;
 
 /* Game graphics palette (bank 0); text colours are banks 12-15 (nge_tm_load_ink_palette) */
 static const nge_palette_entry_9_t tile_palette[] = {
@@ -42,6 +45,14 @@ void screen_init(void)
     nge_tilemap_clear(&empty_tile);
     nge_tilemap_set_scroll(0, 0);
 
+    /* Called again, it starts afresh: close the streams it opened before */
+    if (screen_stats != NULL) {
+        nge_close(screen_stats);
+    }
+    if (screen_messages != NULL) {
+        nge_close(screen_messages);
+    }
+    message_line_used = 0;
     screen_stats = nge_open_tilemap(&stats_area, 0);
     screen_messages = nge_open_tilemap(&message_area, 0);
     nge_util_assert(screen_stats != NULL && screen_messages != NULL);
@@ -76,9 +87,21 @@ void screen_show_turn(uint16_t turn)
     nge_putu16w(turn, 6, ' ', screen_stats);
 }
 
+/*
+ * The new line comes before each message, not after it: the newest message
+ * stays on the bottom line, and all the window's lines show messages
+ */
+void screen_message_line(void)
+{
+    if (message_line_used) {
+        nge_putc(NGE_CTRL_LF, screen_messages);   /* scrolls once at the bottom */
+    }
+    message_line_used = 1;
+}
+
 void screen_message(const char *text)
 {
+    screen_message_line();
     nge_tm_ink(NGE_INK_WHITE, screen_messages);
     nge_puts(text, screen_messages);
-    nge_putc(NGE_CTRL_LF, screen_messages);
 }

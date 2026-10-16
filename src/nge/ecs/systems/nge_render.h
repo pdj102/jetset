@@ -53,7 +53,11 @@
 /** Component bit: component number 1, reserved for nge (see nge_entity.h). */
 #define NGE_COMPONENT_SPRITE  NGE_COMPONENT(1)
 
-/** @brief Set up the system: nothing drawn, no view. Call after nge_sprite_init(). */
+/**
+ * @brief Set up the system: nothing drawn, no view. Call after
+ *        nge_sprite_init(); call again to start afresh (a new game): the
+ *        next upload hides all the system's sprites.
+ */
 void nge_render_init(void) NGE_BANKED;
 
 /**

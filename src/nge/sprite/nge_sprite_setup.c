@@ -100,8 +100,10 @@ void nge_sprite_init(void) NGE_BANKED
     hide_hardware();
 
     nge_sprite_set_transparency(NGE_SPRITE_TRANSPARENT);
+    /* Visible, over the border, and not clipped (as nge_sprite_clear_clip()) */
     ZXN_WRITE_REG(REG_SPRITE_LAYER_SYSTEM,
-                  ZXN_READ_REG(REG_SPRITE_LAYER_SYSTEM) | RSLS_SPRITES_VISIBLE | RSLS_SPRITES_OVER_BORDER);
+                  (ZXN_READ_REG(REG_SPRITE_LAYER_SYSTEM) & (uint8_t)~NGE_RSLS_CLIP_OVER_BORDER) |
+                      RSLS_SPRITES_VISIBLE | RSLS_SPRITES_OVER_BORDER);
 }
 
 void nge_sprite_set_transparency(uint8_t index) NGE_BANKED

@@ -37,6 +37,10 @@ void nge_map_init(uint8_t width, uint8_t height, const nge_rect_t *window) NGE_B
     nge_map.cam_x = 0;
     nge_map.cam_y = 0;
     nge_map.dirty = 1;
+
+    /* A clean map: every tile 0, every tile ID blocking nothing (a new level starts from nothing) */
+    memset(nge_map_tiles, 0, sizeof(nge_map_tiles));
+    memset(nge_map_blocks, NGE_BLOCK_NONE, sizeof(nge_map_blocks));
 }
 
 void nge_map_clear_blocks(nge_block_t flags) NGE_BANKED

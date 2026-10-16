@@ -149,5 +149,14 @@ int main(void)
     TEST_EXPECT_HALT(nge_event_process(NULL));
     CHECK(test_halt_count == 1);
 
+    /* ---- init again: an empty queue, whatever was waiting ---- */
+    nge_event_post0(1, EV_A);
+    nge_event_post0(2, EV_B);
+    nge_event_init();
+    seen_count = 0;
+    CHECK(nge_event_count() == 0 && nge_event_process(record) == 0 && seen_count == 0);
+    nge_event_post0(3, EV_C);
+    CHECK(nge_event_process(record) == 1 && is(&seen[0], 3, EV_C, NGE_EVENT_NONE, 0, 0));
+
     return test_summary("event");
 }

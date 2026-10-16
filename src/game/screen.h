@@ -30,7 +30,7 @@ extern const nge_rect_t screen_map_view;
 /** Stats window stream: clip mode, the contents never move. */
 extern NGE_FILE *screen_stats;
 
-/** Message window stream: new lines scroll older messages up. */
+/** Message window stream: new lines scroll older messages up. Write with screen_message(), or call screen_message_line() first. */
 extern NGE_FILE *screen_messages;
 
 /** Longest player name: it follows "Name: " on one stats line. */
@@ -48,7 +48,17 @@ void screen_draw_stats(uint16_t turn);
 /** @brief Show the turn count in the stats window. */
 void screen_show_turn(uint16_t turn);
 
-/** @brief Add a line to the message window. */
+/**
+ * @brief Add a message on a new line of the message window: the newest
+ *        stays on the bottom line, older ones scroll up.
+ */
 void screen_message(const char *text);
+
+/**
+ * @brief Start a new line in the message window for writing to
+ *        screen_messages directly (the title's name prompt): the next
+ *        message then goes on the line after it.
+ */
+void screen_message_line(void);
 
 #endif

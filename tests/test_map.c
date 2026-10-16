@@ -1,6 +1,8 @@
 /* nge_map.c: camera, dirty flag, drawing, tile access and screen coordinates. */
 #include "test.h"
 
+#include <string.h>
+
 #include <arch/zxn.h>
 #include <stdlib.h>
 
@@ -87,6 +89,7 @@ static void random_camera(void)
         mh = vh + rand() % (NGE_MAP_MAX_HEIGHT - vh + 1);
 
         nge_map_init((uint8_t)mw, (uint8_t)mh, &w);
+        fill_map();
         mark_tilemap();
         nge_map_update();
         ok = ok && tilemap_matches() && !nge_map.dirty;
@@ -136,9 +139,14 @@ int main(void)
 
     test_init();
     fill_map();
+    memset(nge_map_blocks, NGE_BLOCK_SOLID, sizeof(nge_map_blocks));
 
-    /* ---- init ---- */
+    /* ---- init: an empty map, whatever was there ---- */
     nge_map_init(60, 40, &window);
+    CHECK(nge_map_tiles[0].tile_id == 0 && nge_map_tiles[0].tile_attr == 0);
+    CHECK(nge_map_tiles[NGE_MAP_STRIDE * NGE_MAP_MAX_HEIGHT - 1].tile_id == 0);
+    CHECK(nge_map_blocks[0] == NGE_BLOCK_NONE && nge_map_blocks[255] == NGE_BLOCK_NONE);
+    fill_map();
     CHECK(nge_map.view_w == 32 && nge_map.view_h == 9);
     CHECK(nge_map.cam_x == 0 && nge_map.cam_y == 0 && nge_map.dirty);
     /* Page 51 is mapped into slot 1 */
@@ -187,8 +195,8 @@ int main(void)
     CHECK(tilemap_matches());
 
     /* ---- tile access ---- */
-    fill_map();
     nge_map_init(60, 40, &window);
+    fill_map();
     nge_map_set_camera(10, 10);
     nge_map_update();
     CHECK(nge_map_get(7, 3)->tile_id == 7 && nge_map_get(7, 3)->tile_attr == 3);
@@ -239,8 +247,8 @@ int main(void)
 
     /* ---- block table: flags by tile ID ---- */
     CHECK(sizeof(nge_map_blocks) + sizeof(nge_map) + sizeof(nge_map_tiles) <= 8192);   /* one page */
-    fill_map();                                              /* tile ID = column */
     nge_map_init(60, 40, &window);
+    fill_map();                                              /* tile ID = column */
     nge_map_clear_blocks(NGE_BLOCK_SOLID);
     CHECK(nge_map_blocks[0] == NGE_BLOCK_SOLID && nge_map_blocks[255] == NGE_BLOCK_SOLID);
     CHECK(nge_map_tiles[NGE_MAP_STRIDE * NGE_MAP_MAX_HEIGHT - 1].tile_id == NGE_MAP_STRIDE - 1);   /* tiles untouched */
@@ -252,10 +260,10 @@ int main(void)
     /* Outside the map: the edge, whatever the table says */
     CHECK(nge_map_block(60, 0) == NGE_BLOCK_EDGE && nge_map_block(0, 40) == NGE_BLOCK_EDGE);
     CHECK(nge_map_block(255, 255) == NGE_BLOCK_EDGE);
-    /* The table doesn't depend on the map's size */
+    /* Init again (a new level): the table and the tiles are cleared */
     nge_map_init(NGE_MAP_STRIDE, NGE_MAP_MAX_HEIGHT, &window);
-    CHECK(nge_map_block(9, NGE_MAP_MAX_HEIGHT - 1) == (NGE_BLOCK_NO_FLOOR | NGE_BLOCK_USER));
-    CHECK(nge_map_block(NGE_MAP_STRIDE - 1, 0) == NGE_BLOCK_SOLID);
+    CHECK(nge_map_block(9, NGE_MAP_MAX_HEIGHT - 1) == NGE_BLOCK_NONE);
+    CHECK(nge_map_get(9, 5)->tile_id == 0);
     CHECK(nge_map_block(NGE_MAP_STRIDE, 0) == NGE_BLOCK_EDGE);
     nge_map_init(60, 40, &window);
 

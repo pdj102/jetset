@@ -53,8 +53,13 @@ static void still(nge_entity_id_t id, uint8_t pattern)
 
 void nge_render_init(void) NGE_BANKED
 {
+    /*
+     * Every record hidden, and counted as shown: the next upload hides all
+     * the system's sprites, including any a previous game left on screen
+     */
+    nge_sprite_clear(nge_render_attrs, NGE_RENDER_SPRITES);
     nge_render_used = 0;
-    nge_render_shown = 0;
+    nge_render_shown = NGE_RENDER_SPRITES;
     nge_render_dropped_count = 0;
     nge_render_area = NGE_RENDER_NO_VIEW;
 }

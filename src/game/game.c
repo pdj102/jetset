@@ -155,6 +155,26 @@ static void play_update(void)
     }
 }
 
+/*
+ * A new game: every module the game uses back to its initial state (each
+ * init can be called again), a new player in the first level, then play.
+ * The player's name and the message window are kept. A passing state: it
+ * never runs a frame update
+ */
+static void new_game_enter(void)
+{
+    nge_entity_init();       /* every entity free: the last game's are gone */
+    nge_render_init();       /* their sprites hidden at the next upload */
+    nge_render_set_view(LEVEL_AREA);
+    nge_timer_init();        /* turn 0, the clock running */
+    nge_event_init();
+    actors_create();
+    level_generate(1, actor_player);   /* the first level; the camera on the player */
+    shown_turn = 0;
+    screen_draw_stats(nge_timer_turns);
+    game_set_state(GAME_PLAY);
+}
+
 static void inventory_enter(void)
 {
     screen_message("You are carrying nothing. (any key)");
@@ -216,6 +236,9 @@ void game_set_state(game_state_t state)
     switch (state) {
     case GAME_TITLE:
         title_enter();
+        break;
+    case GAME_NEW_GAME:
+        new_game_enter();   /* ends by changing to GAME_PLAY */
         break;
     case GAME_INVENTORY:
         inventory_enter();
@@ -284,6 +307,8 @@ void game_run(void)
         case GAME_TITLE:
             title_update();
             break;
+        case GAME_NEW_GAME:
+            break;   /* a passing state: its entry action has already moved on */
         case GAME_PLAY:
             play_update();
             break;

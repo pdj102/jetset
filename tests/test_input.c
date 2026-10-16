@@ -267,6 +267,19 @@ int main(void)
     release_all();
     nge_input_update();
 
+    /* ---- init again: no keys held, no events waiting ---- */
+    set_key(NGE_KEY_A, 1);
+    nge_input_update();
+    nge_input_set_repeat(3, 1);
+    CHECK(nge_key_down(NGE_KEY_A) && nge_key_get() != NGE_KEY_NONE);
+    nge_input_update();
+    nge_input_init();
+    CHECK(!nge_key_down(NGE_KEY_A) && !nge_key_pressed(NGE_KEY_A) && nge_key_get() == NGE_KEY_NONE);
+    nge_input_update();                                      /* still held: a new press */
+    CHECK(nge_key_pressed(NGE_KEY_A) && nge_key_get() != NGE_KEY_NONE);
+    release_all();
+    nge_input_update();
+
     /* ---- asserts ---- */
     TEST_EXPECT_HALT(nge_key_down(NGE_KEY_COUNT));
     CHECK(test_halt_count == 1);

@@ -15,7 +15,6 @@
 #include <string.h>
 
 #include "core/nge_util.h"
-#include "ecs/systems/nge_timer.h"
 #include "input/nge_input.h"
 #include "io/nge_kbd_stream.h"
 #include "io/nge_line.h"
@@ -36,11 +35,11 @@ static void ask_name(void)
     NGE_FILE *keyboard = nge_open_keyboard();
 
     nge_util_assert(keyboard != NULL);
+    screen_message_line();
     nge_tm_ink(NGE_INK_YELLOW, screen_messages);
     nge_puts("What is your name? ", screen_messages);
     nge_tm_ink(NGE_INK_WHITE, screen_messages);
     nge_gets(name, sizeof(name), keyboard, screen_messages);
-    nge_putc(NGE_CTRL_LF, screen_messages);
     nge_close(keyboard);
 
     if (name[0] != 0) {
@@ -59,9 +58,8 @@ void title_update(void) NGE_BANKED
         return;
     }
     ask_name();
-    screen_draw_stats(nge_timer_turns);
     screen_message("Welcome to the dungeon.");
     screen_message("Move: cursor keys or h j k l.");
     screen_message("i inventory, f fire, Q quit.");
-    game_set_state(GAME_PLAY);
+    game_set_state(GAME_NEW_GAME);
 }

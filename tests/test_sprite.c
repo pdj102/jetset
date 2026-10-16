@@ -211,6 +211,14 @@ int main(void)
     CHECK(test_regs[REG_SPRITE_LAYER_SYSTEM] ==
           (RSLS_LAYER_PRIORITY_SLU | 0x40 | RSLS_SPRITES_VISIBLE | RSLS_SPRITES_OVER_BORDER));
 
+    /* ---- init again: the clip is cleared, every sprite hidden ---- */
+    nge_sprite_set_clip(&clip);
+    test_port_reset();
+    nge_sprite_init();
+    CHECK(test_regs[REG_SPRITE_LAYER_SYSTEM] ==
+          (RSLS_LAYER_PRIORITY_SLU | 0x40 | RSLS_SPRITES_VISIBLE | RSLS_SPRITES_OVER_BORDER));
+    CHECK(test_port_log_count == 1 + NGE_SPRITE_MAX * 5 && (test_port_log_val[1 + 3] & 0x80) == 0);
+
     /* ---- status ---- */
     test_port_read_hook = read_status;
     status_value = 0xFD;   /* undefined bits are masked off */

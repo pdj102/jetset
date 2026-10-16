@@ -20,13 +20,16 @@
 
 nge_entity_id_t actor_player;
 
-void actors_init(void)
+void actors_load_graphics(void)
 {
-    nge_entity_id_t glow;
-
     /* The loaders map the graphics' page into slot 7 while they copy */
     nge_sprite_load_patterns(DEMO_SPRITE_PAGE, 0, demo_sprite_patterns, DEMO_SPRITE_PATTERNS);
     nge_sprite_load_palette(DEMO_SPRITE_PAGE, 0, demo_sprite_palette, DEMO_SPRITE_COLOURS);
+}
+
+void actors_create(void)
+{
+    nge_entity_id_t glow;
 
     /* The player, from its base data (its turn first): placed by level_generate() */
     actor_player = gen_creature(CR_PLAYER, NGE_OWNER_WORLD);
