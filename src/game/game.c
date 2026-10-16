@@ -3,31 +3,23 @@
 #include <stddef.h>
 
 #include "core/nge_util.h"
-#include "ecs/components/nge_location.h"
 #include "ecs/nge_ecs.h"
 #include "ecs/nge_owner.h"
 #include "ecs/systems/nge_render.h"
 #include "ecs/systems/nge_timer.h"
 #include "hw/nge_frame.h"
+#include "input/nge_input.h"
 #include "map/nge_map.h"
 
 #include "event/nge_event.h"
 
-#include "game/actions/act.h"
 #include "game/actors.h"
-#include "game/events.h"
-#include "game/components/stats.h"
 #include "game/messages.h"
 #include "game/level/level.h"
+#include "game/player.h"
 #include "game/screen.h"
 #include "game/timers.h"
 #include "game/title/title.h"
-
-/* Characters of the movement keys (nge_key_ascii): cursor keys */
-#define CHAR_LEFT   8
-#define CHAR_RIGHT  9
-#define CHAR_DOWN   10
-#define CHAR_UP     11
 
 /* Clock steps (nge_timer_advance) per frame at most, so the screen keeps animating */
 #define ADVANCES_PER_FRAME  32
@@ -36,48 +28,12 @@ game_state_t game_state = GAME_TITLE;
 
 static uint16_t shown_turn;   /* the turn count on the screen */
 
-uint8_t game_key_direction(nge_key_event_t ev, int8_t *dx, int8_t *dy)
-{
-    *dx = 0;
-    *dy = 0;
-    switch (nge_key_ascii(ev)) {
-    case CHAR_LEFT:
-    case 'h':
-        *dx = -1;
-        return 1;
-    case CHAR_RIGHT:
-    case 'l':
-        *dx = 1;
-        return 1;
-    case CHAR_UP:
-    case 'k':
-        *dy = -1;
-        return 1;
-    case CHAR_DOWN:
-    case 'j':
-        *dy = 1;
-        return 1;
-    default:
-        return 0;
-    }
-}
-
 /* ---- Events ---- */
-
-/* The camera follows the player */
-static void camera_on_event(const nge_event_t *e)
-{
-    nge_entity_id_t target = e->target;   /* a local: see messages_on_event() */
-
-    if (e->id == EV_MOVED && target == actor_player) {
-        nge_map_centre_camera(NGE_LOCATION_X(target), NGE_LOCATION_Y(target));
-    }
-}
 
 /* The dispatch function: each system's reaction, in a fixed order. In common memory */
 static void game_on_event(const nge_event_t *e)
 {
-    camera_on_event(e);
+    player_on_event(e);
     messages_on_event(e);
 }
 
@@ -91,7 +47,7 @@ static void game_on_timer(nge_entity_id_t id, uint8_t kind, uint8_t cycles)
 {
     switch (kind) {
     case TIMER_PLAYER:
-        nge_timer_stop();   /* until the player's command uses their turn */
+        player_on_turn(id);
         break;
     case TIMER_GLOW:
         actors_on_glow(id, cycles);
@@ -123,56 +79,20 @@ static void pass_time(void)
     }
 }
 
-/* The player's move command: on a refusal they are told why, and keep their turn */
-static void player_move(int8_t dx, int8_t dy)
-{
-    act_t a = { 0 };
-
-    a.actor = actor_player;
-    a.dx = dx;
-    a.dy = dy;
-    if (act_move(&a, ACT_DO) == ACT_FAIL) {
-        messages_act_failed(&a);
-    }
-    if (a.used) {
-        nge_timer_start();   /* the next frame's pass_time() runs the other actors' turns */
-    }
-}
-
 /* ---- States: entry actions and per-frame updates ---- */
 
 /* Time passes until the player's turn, then at most one command per frame, from the key events */
 static void play_update(void)
 {
     nge_key_event_t ev;
-    int8_t dx;
-    int8_t dy;
 
     pass_time();
     if (!nge_timer_stopped()) {
         return;   /* not the player's turn yet: more time passes next frame */
     }
     ev = nge_key_get();
-    if (ev == NGE_KEY_NONE) {
-        return;
-    }
-    if (game_key_direction(ev, &dx, &dy)) {
-        player_move(dx, dy);
-        return;
-    }
-    switch (nge_key_ascii(ev)) {
-    case 'i':
-        game_set_state(GAME_INVENTORY);
-        break;
-    case 'f':
-        game_set_state(GAME_TARGET);
-        break;
-    case 'Q':
-        screen_message("You quit.");
-        game_set_state(GAME_DEAD);
-        break;
-    default:
-        break;   /* other keys: no command, no turn */
+    if (ev != NGE_KEY_NONE) {
+        player_command(ev);
     }
 }
 
@@ -222,7 +142,7 @@ static void target_update(void)
     if (ev == NGE_KEY_NONE) {
         return;
     }
-    if (game_key_direction(ev, &dx, &dy)) {
+    if (player_key_direction(ev, &dx, &dy)) {
         screen_message("You have nothing to fire.");
     } else {
         screen_message("Never mind.");

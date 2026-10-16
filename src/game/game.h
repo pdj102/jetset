@@ -23,8 +23,6 @@
 
 #include <stdint.h>
 
-#include "input/nge_input.h"
-
 /** Game states. */
 typedef enum game_state {
     GAME_TITLE,       /**< Title: any key asks the player's name and starts a new game. */
@@ -41,13 +39,6 @@ extern game_state_t game_state;
 
 /** @brief Change state: flush the key events and run the new state's entry action. */
 void game_set_state(game_state_t state);
-
-/**
- * @brief The direction of a movement key: the cursor keys (also CAPS+5-8)
- *        or h j k l.
- * @return 1 and the direction in (dx, dy), or 0 if ev is not a movement key.
- */
-uint8_t game_key_direction(nge_key_event_t ev, int8_t *dx, int8_t *dy);
 
 /** @brief Run the game, starting at the title. Never returns. */
 void game_run(void);

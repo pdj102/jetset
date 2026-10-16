@@ -12,8 +12,8 @@
  *
  * | Kind          | Entity                  | Handler                                     |
  * |---------------|-------------------------|---------------------------------------------|
- * | TIMER_PLAYER  | the player              | stops the clock until a command uses the    |
- * |               |                         | turn (nge_timer_stop(), nge_timer_start())  |
+ * | TIMER_PLAYER  | the player              | player_on_turn(): stops the clock until a   |
+ * |               |                         | command uses the turn (game/player.h)       |
  * | TIMER_GLOW    | an effect, owned by the | actors_on_glow(): a demo effect, by turns   |
  * |               | player                  | (removed when there are real effects)       |
  * | TIMER_MONSTER | a monster               | none yet (no AI): it waits                  |
