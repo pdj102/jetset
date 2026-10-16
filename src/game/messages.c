@@ -2,6 +2,7 @@
 
 #include <string.h>
 
+#include "game/actions/act.h"
 #include "game/actors.h"
 #include "game/events.h"
 #include "game/gen/gen.h"
@@ -35,16 +36,6 @@ void messages_on_event(const nge_event_t *e)
     nge_entity_id_t source = e->source;
 
     switch (e->id) {
-    case EV_BUMPED:
-        if (target == actor_player) {
-            screen_message("You bump into a wall.");
-        }
-        break;
-    case EV_BLOCKED:
-        if (source == actor_player) {
-            say_named("There is a ", target, " in the way.");
-        }
-        break;
     case EV_STOOD_ON:
         if (source == actor_player) {
             say_named("You see a ", target, " here.");
@@ -59,6 +50,20 @@ void messages_on_event(const nge_event_t *e)
         if (target == actor_player) {
             screen_message("The warm glow fades.");
         }
+        break;
+    default:
+        break;
+    }
+}
+
+void messages_act_failed(const act_t *a)
+{
+    switch (a->reason) {
+    case ACT_R_BLOCKED:
+        screen_message("You bump into a wall.");
+        break;
+    case ACT_R_BLOCKED_CREATURE:
+        say_named("There is a ", a->target, " in the way.");
         break;
     default:
         break;

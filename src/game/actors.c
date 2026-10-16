@@ -42,34 +42,6 @@ void actors_create(void)
     nge_timer_add(glow, TIMER_GLOW, GLOW_PERIOD, GLOW_PERIOD, GLOW_CYCLES);
 }
 
-uint8_t actors_move_player(int8_t dx, int8_t dy)
-{
-    uint8_t x = (uint8_t)(NGE_LOCATION_X(actor_player) + dx);
-    uint8_t y = (uint8_t)(NGE_LOCATION_Y(actor_player) + dy);
-    nge_entity_id_t id;
-    nge_entity_id_t blocker;
-
-    if (!level_can_enter(actor_player, x, y, &blocker)) {
-        if (blocker != NGE_ENTITY_INVALID) {
-            nge_event_post(blocker, EV_BLOCKED, actor_player, 0, 0);   /* later: an attack */
-        } else {
-            nge_event_post0(actor_player, EV_BUMPED);
-        }
-        return 0;
-    }
-    nge_location_set(actor_player, x, y);
-    nge_map_centre_camera(x, y);
-
-    /* Events: what happened, for the systems to react to */
-    nge_event_post0(actor_player, EV_MOVED);
-    NGE_LOCATION_FOR_EACH_AT(id, LEVEL_AREA, x, y, 0) {
-        if (id != actor_player) {
-            nge_event_post(id, EV_STOOD_ON, actor_player, 0, 0);
-        }
-    }
-    return 1;
-}
-
 uint8_t actors_on_glow(nge_entity_id_t id, uint8_t cycles)
 {
     nge_entity_id_t target = NGE_OWNER_OF(id);

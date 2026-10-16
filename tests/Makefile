@@ -12,7 +12,8 @@
 #      and folders are included too. Next register and IO port names come from z88dk's own
 #      headers.
 #   Game code (src/game) is linked only into the tests listed with it below
-#   (GEN_GAME_SRCS for test_gen, LEVEL_GAME_SRCS and those for test_level).
+#   (GEN_GAME_SRCS for test_gen, LEVEL_GAME_SRCS and those for test_level,
+#   ACT_GAME_SRCS and the gen ones for test_act).
 #   Library files that only work on the Next (inline asm traps) are listed in
 #   LIB_EXCLUDE and replaced by fakes in support/test.c.
 
@@ -40,6 +41,8 @@ GEN_GAME_SRCS := $(addprefix $(GAMEDIR)/,gen/gen.c gen/gen_shared_bank.c \
                  gen/gen_item_bank.c gen/gen_item_pdata.c components/kind.c \
                  components/kind_cdata.c components/stats.c components/stats_cdata.c)
 GEN_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(GEN_GAME_SRCS))
+ACT_GAME_SRCS := $(addprefix $(GAMEDIR)/,actions/act.c actions/act_shared.c actions/act_move.c)
+ACT_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(ACT_GAME_SRCS)) $(GEN_GAME_OBJS)
 LEVEL_GAME_SRCS := $(addprefix $(GAMEDIR)/,level/level.c level/level_bank.c level/level_gen.c \
                    level/level_pdata.c)
 LEVEL_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(LEVEL_GAME_SRCS)) $(GEN_GAME_OBJS)
@@ -75,6 +78,9 @@ $(BUILD)/test_level: $(BUILD)/test_level.o $(LIB_OBJS) $(SUPPORT_OBJS) $(LEVEL_G
 	$(HOSTCC) $(CFLAGS) $^ -o $@
 
 $(BUILD)/test_gen: $(BUILD)/test_gen.o $(LIB_OBJS) $(SUPPORT_OBJS) $(GEN_GAME_OBJS)
+	$(HOSTCC) $(CFLAGS) $^ -o $@
+
+$(BUILD)/test_act: $(BUILD)/test_act.o $(LIB_OBJS) $(SUPPORT_OBJS) $(ACT_GAME_OBJS)
 	$(HOSTCC) $(CFLAGS) $^ -o $@
 
 $(BUILD)/game/%.o: $(GAMEDIR)/%.c $(GEN)/zxn_names.h $(GEN)/zxn_io.h

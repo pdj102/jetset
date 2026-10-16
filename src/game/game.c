@@ -3,6 +3,7 @@
 #include <stddef.h>
 
 #include "core/nge_util.h"
+#include "ecs/components/nge_location.h"
 #include "ecs/nge_ecs.h"
 #include "ecs/nge_owner.h"
 #include "ecs/systems/nge_render.h"
@@ -12,7 +13,9 @@
 
 #include "event/nge_event.h"
 
+#include "game/actions/act.h"
 #include "game/actors.h"
+#include "game/events.h"
 #include "game/components/stats.h"
 #include "game/messages.h"
 #include "game/level/level.h"
@@ -61,9 +64,20 @@ uint8_t game_key_direction(nge_key_event_t ev, int8_t *dx, int8_t *dy)
 
 /* ---- Events ---- */
 
+/* The camera follows the player */
+static void camera_on_event(const nge_event_t *e)
+{
+    nge_entity_id_t target = e->target;   /* a local: see messages_on_event() */
+
+    if (e->id == EV_MOVED && target == actor_player) {
+        nge_map_centre_camera(NGE_LOCATION_X(target), NGE_LOCATION_Y(target));
+    }
+}
+
 /* The dispatch function: each system's reaction, in a fixed order. In common memory */
 static void game_on_event(const nge_event_t *e)
 {
+    camera_on_event(e);
     messages_on_event(e);
 }
 
@@ -116,6 +130,22 @@ static void player_acted(uint8_t cost)
     pass_time();
 }
 
+/* The player's move command: on a refusal they are told why, and keep their turn */
+static void player_move(int8_t dx, int8_t dy)
+{
+    act_t a = { 0 };
+
+    a.actor = actor_player;
+    a.dx = dx;
+    a.dy = dy;
+    if (act_move(&a, ACT_DO) == ACT_FAIL) {
+        messages_act_failed(&a);
+    }
+    if (a.cost != 0) {
+        player_acted(a.cost);
+    }
+}
+
 /* ---- States: entry actions and per-frame updates ---- */
 
 /* Time passes until the player's turn, then at most one command per frame, from the key events */
@@ -134,9 +164,7 @@ static void play_update(void)
         return;
     }
     if (game_key_direction(ev, &dx, &dy)) {
-        if (actors_move_player(dx, dy)) {
-            player_acted(COST_MOVE);
-        }
+        player_move(dx, dy);
         return;
     }
     switch (nge_key_ascii(ev)) {
