@@ -15,8 +15,8 @@
  *     if (act_move(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_BLOCKED_CREATURE) {
  *         ...a.target is in the way: attack it?
  *     }
- *     if (a.cost != 0) {
- *         ...the turn is used: a.cost ticks
+ *     if (a.used) {
+ *         ...the turn is used
  *     }
  *
  * Inside, an action always takes four steps:
@@ -25,24 +25,25 @@
  *    here: success if the action could be done, or the reason it can't;
  * 3. resolve: roll any dice and decide the outcome, changing nothing yet;
  * 4. apply: change the game state (this can't fail), post events about
- *    what happened, set the cost.
+ *    what happened.
  * Check mode changes nothing, posts nothing and draws no random numbers, so
  * the AI can weigh up its options with it.
  *
  * Failure: a->reason says why. Each reason is one of two kinds, defined
  * once (act.c):
- * - refused: a precondition failed and nothing changed: no cost, no
- *   events (blocked by a wall, not consumable);
+ * - refused: a precondition failed and nothing changed: the turn isn't
+ *   used, no events (blocked by a wall, not consumable);
  * - attempted: the action was tried and didn't succeed: the turn is used
  *   and events say so (an attack that missed).
- * The action sets a->cost from that (0 when refused), so callers decide
- * whether the entity used its turn from cost alone; act_attempted() tells
- * the two kinds apart for callers that care.
+ * The action sets a->used from that (1 on success), so callers decide
+ * whether the entity used its turn from used alone; act_attempted() tells
+ * the two kinds apart for callers that care. Every action takes the same
+ * time, one turn of the actor (its speed: game/components/stats.h).
  *
  * Actions don't call each other for choices: the caller combines them
  * (bump to attack: a move refused with ACT_R_BLOCKED_CREATURE, then a melee
  * on a.target). Consequences (damage, later) are effects with the same
- * pattern and no cost, which an action's apply step may call.
+ * pattern that use no turn, which an action's apply step may call.
  *
  * Callers: player commands, monster AI, and timer and event handlers (a
  * delayed action is a timer whose handler fills a context and calls
@@ -71,7 +72,7 @@ typedef struct act {
     uint8_t amount;           /**< ...and amount. */
     /* Out */
     uint8_t reason;           /**< ACT_R_*: why it failed; ACT_R_NONE on success. */
-    uint8_t cost;             /**< Ticks the action used: 0 if refused, or in check mode. */
+    uint8_t used;             /**< 1 if the actor used its turn; 0 if refused, or in check mode. */
 } act_t;
 
 /* Results */
@@ -95,11 +96,10 @@ typedef struct act {
 /**
  * @brief Move one tile.
  *
- * In: actor (alive, placed in an area, with stats), dx, dy (each -1, 0 or
- * 1, not both 0). Succeeds if the actor can enter the tile
- * (nge_block_can_enter(), with its pass flags): it moves there, costing its
- * speed (game/components/stats.h),
- * and posts EV_MOVED and EV_STOOD_ON for each entity on the tile. Refused
+ * In: actor (alive, placed in an area), dx, dy (each -1, 0 or 1, not both
+ * 0). Succeeds if the actor can enter the tile (nge_block_can_enter(),
+ * with its pass flags): it moves there and posts EV_MOVED, and EV_STOOD_ON
+ * for each entity on the tile. Refused
  * with ACT_R_BLOCKED or ACT_R_BLOCKED_CREATURE (a->target: the blocker).
  */
 uint8_t act_move(act_t *a, uint8_t mode) NGE_BANKED;

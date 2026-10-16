@@ -87,33 +87,34 @@ static void game_on_event(const nge_event_t *e)
  * The dispatch function: the handler for each timer kind (game/timers.h).
  * In common memory
  */
-static uint8_t game_on_timer(nge_entity_id_t id, uint8_t kind, uint8_t cycles)
+static void game_on_timer(nge_entity_id_t id, uint8_t kind, uint8_t cycles)
 {
     switch (kind) {
     case TIMER_PLAYER:
-        return NGE_TIMER_WAIT;   /* until the player's command */
+        nge_timer_stop();   /* until the player's command uses their turn */
+        break;
     case TIMER_GLOW:
-        return actors_on_glow(id, cycles);
+        actors_on_glow(id, cycles);
+        break;
     case TIMER_MONSTER:
-        return stats_speed[id];   /* no AI yet: it waits a move */
+        break;              /* no AI yet: it waits */
     default:
         nge_util_abort("bad timer kind");
-        return NGE_TIMER_STOP;
+        break;
     }
 }
 
 /* ---- Turns ---- */
 
 /*
- * Time passes until the clock waits for the player, each step's events
- * handled before the next, up to ADVANCES_PER_FRAME steps a frame
+ * Time passes until the clock stops for the player's turn, each step's
+ * events handled before the next, up to ADVANCES_PER_FRAME steps a frame
  */
 static void pass_time(void)
 {
     uint8_t steps = ADVANCES_PER_FRAME;
 
-    while (steps-- > 0 && nge_timer_waiting() == NGE_ENTITY_INVALID &&
-           nge_timer_advance(game_on_timer)) {
+    while (steps-- > 0 && nge_timer_advance(game_on_timer)) {
         nge_event_process(game_on_event);
     }
     if (nge_timer_turns != shown_turn) {
@@ -122,11 +123,11 @@ static void pass_time(void)
     }
 }
 
-/* After a command that takes time: its events, then time passes for its cost */
-static void player_acted(uint8_t cost)
+/* After a command that used the player's turn: its events, then the clock runs again */
+static void player_acted(void)
 {
     nge_event_process(game_on_event);
-    nge_timer_set_delay(actor_player, cost);
+    nge_timer_start();
     pass_time();
 }
 
@@ -141,8 +142,8 @@ static void player_move(int8_t dx, int8_t dy)
     if (act_move(&a, ACT_DO) == ACT_FAIL) {
         messages_act_failed(&a);
     }
-    if (a.cost != 0) {
-        player_acted(a.cost);
+    if (a.used) {
+        player_acted();
     }
 }
 
@@ -156,8 +157,8 @@ static void play_update(void)
     int8_t dy;
 
     pass_time();
-    if (nge_timer_waiting() != actor_player) {
-        return;
+    if (!nge_timer_stopped()) {
+        return;   /* not the player's turn yet: more time passes next frame */
     }
     ev = nge_key_get();
     if (ev == NGE_KEY_NONE) {

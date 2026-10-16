@@ -68,7 +68,7 @@ static act_t move(nge_entity_id_t actor, int8_t dx, int8_t dy)
     a.dy = dy;
     a.target = 0x77;
     a.reason = 0x77;
-    a.cost = 0x77;
+    a.used = 0x77;
     return a;
 }
 
@@ -106,11 +106,10 @@ int main(void)
     potion = gen_item(IT_POTION, AREA);
     nge_location_set(potion, 5, 5);
 
-    /* ---- a move: the location, the result, the cost, the events ---- */
+    /* ---- a move: the location, the result, the turn used, the events ---- */
     a = move(player, 1, 0);
     CHECK(act_move(&a, ACT_DO) == ACT_SUCCESS);
-    CHECK(a.reason == ACT_R_NONE && a.cost == stats_speed[player] && a.cost == 10 &&
-          a.target == NGE_ENTITY_INVALID);
+    CHECK(a.reason == ACT_R_NONE && a.used == 1 && a.target == NGE_ENTITY_INVALID);
     CHECK(at(player, 5, 5));
     CHECK(events() == 2 && is(0, player, EV_MOVED, NGE_EVENT_NONE) && is(1, potion, EV_STOOD_ON, player));
     /* Diagonally, onto empty floor: EV_MOVED only */
@@ -120,20 +119,12 @@ int main(void)
     a = move(player, 1, -1);
     act_move(&a, ACT_DO);
     events();
-    /* The cost is the actor's speed */
-    stats_speed[player] = 5;
-    a = move(player, 0, 1);
-    CHECK(act_move(&a, ACT_DO) == ACT_SUCCESS && a.cost == 5);
-    stats_speed[player] = 10;
-    a = move(player, 0, -1);
-    act_move(&a, ACT_DO);
-    events();
     CHECK(at(player, 5, 5));
 
     /* ---- refused: a wall, the map's edge, a creature: nothing changes ---- */
     a = move(player, 0, -1);                                  /* the wall at (5, 4) */
     CHECK(act_move(&a, ACT_DO) == ACT_FAIL);
-    CHECK(a.reason == ACT_R_BLOCKED && a.cost == 0 && a.target == NGE_ENTITY_INVALID);
+    CHECK(a.reason == ACT_R_BLOCKED && a.used == 0 && a.target == NGE_ENTITY_INVALID);
     CHECK(at(player, 5, 5) && events() == 0);
     a = move(rat, 1, 0);
     nge_location_set(rat, 9, 5);
@@ -141,7 +132,7 @@ int main(void)
     nge_location_set(rat, 6, 5);
     a = move(player, 1, 0);                                   /* the rat at (6, 5) */
     CHECK(act_move(&a, ACT_DO) == ACT_FAIL);
-    CHECK(a.reason == ACT_R_BLOCKED_CREATURE && a.target == rat && a.cost == 0);
+    CHECK(a.reason == ACT_R_BLOCKED_CREATURE && a.target == rat && a.used == 0);
     CHECK(at(player, 5, 5) && events() == 0);
     /* A creature doesn't block itself: the rat moves away from the potion's tile... */
     a = move(rat, 0, 1);
@@ -158,9 +149,9 @@ int main(void)
     r1 = rand();
     srand(9);
     a = move(player, 1, 0);                                   /* free */
-    ok = ok && act_move(&a, ACT_CHECK) == ACT_SUCCESS && a.reason == ACT_R_NONE && a.cost == 0;
+    ok = ok && act_move(&a, ACT_CHECK) == ACT_SUCCESS && a.reason == ACT_R_NONE && a.used == 0;
     a = move(player, 0, -1);                                  /* the wall */
-    ok = ok && act_move(&a, ACT_CHECK) == ACT_FAIL && a.reason == ACT_R_BLOCKED && a.cost == 0;
+    ok = ok && act_move(&a, ACT_CHECK) == ACT_FAIL && a.reason == ACT_R_BLOCKED && a.used == 0;
     a = move(player, 0, 1);                                   /* the rat, now at (5, 6) */
     ok = ok && act_move(&a, ACT_CHECK) == ACT_FAIL && a.reason == ACT_R_BLOCKED_CREATURE && a.target == rat;
     r2 = rand();
@@ -171,7 +162,7 @@ int main(void)
     a = move(player, 0, 1);
     CHECK(act_do(ACT_MOVE, &a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_BLOCKED_CREATURE && a.target == rat);
     a = move(player, -1, 0);
-    CHECK(act_do(ACT_MOVE, &a, ACT_DO) == ACT_SUCCESS && at(player, 4, 5) && a.cost == 10);
+    CHECK(act_do(ACT_MOVE, &a, ACT_DO) == ACT_SUCCESS && at(player, 4, 5) && a.used == 1);
     events();
 
     /* ---- every reason so far is refused ---- */
@@ -183,9 +174,6 @@ int main(void)
     CHECK(test_halt_count == 1);
     a = move(player, 0, 0);
     TEST_EXPECT_HALT(act_move(&a, ACT_DO));
-    CHECK(test_halt_count == 1);
-    a = move(potion, 1, 0);
-    TEST_EXPECT_HALT(act_move(&a, ACT_DO));                   /* no stats */
     CHECK(test_halt_count == 1);
     nge_location_remove(rat);
     a = move(rat, 1, 0);

@@ -187,7 +187,7 @@ Banked so far:
 | 44/45 | `map` | set-up: `nge_map_init()` (maps page 51 into slot 1), the block table functions, the sprite clip (`nge_map_setup.c`, about 0.7K) | none |
 | 48/49 | `ecs` entity, owner | lifecycle functions (`nge_entity_life.c`) and the ownership functions that change or search the owner table (`nge_owner_set.c`), with literals, about 0.6K | lifecycle bookkeeping: free and dying stacks, alive positions (`nge_entity_pdata.c`, 302 bytes) |
 | 52/53 | `ecs` render system | the system (`ecs/systems/nge_render.c`), with literals, about 2.4K | the sprite component (10 bytes per entity), the sprite records for hardware sprites 0 to `NGE_RENDER_SPRITES`-1, and its working data (`nge_render_pdata.c`, about 1.8K) |
-| 54/55 | `ecs` timer system | the clock and firing timers (`ecs/systems/nge_timer.c`, about 0.7K, 1.6K with asserts) | none: its tables and the clock are in slot 0 |
+| 54/55 | `ecs` timer system | the clock and firing timers (`ecs/systems/nge_timer.c`, about 1.2K with asserts) | none: its tables and the clock are in slot 0 |
 | 88/89 | `input` | setup, the key-to-ASCII tables and waiting (`input/nge_input_setup.c`, about 0.5K) | none |
 | 102/103 | game `level` | setting up the map and the level generator, with literals (`game/level/level_bank.c`, `level_gen.c`, about 2.9K, 3.1K with asserts) | the room list and corridor links (`level_pdata.c`, 83 bytes) |
 | 106/107 | game `gen` creatures | the creature generator (`game/gen/gen_creature_bank.c`, about 0.6K) | the base creatures: a `const` table and its names (`gen_creature_pdata.c`, with `constseg PAGE_107`) |

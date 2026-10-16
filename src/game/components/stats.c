@@ -12,7 +12,6 @@
 #include <stdlib.h>
 
 #include "core/nge_util.h"
-#include "ecs/systems/nge_timer.h"
 
 static void check_entity(nge_entity_id_t id)
 {
@@ -28,7 +27,7 @@ void stats_add(nge_entity_id_t id, const stats_base_t *b) NGE_BANKED
 
     check_entity(id);
     nge_util_assert(b->hp_dice == 0 || b->hp_sides != 0);
-    nge_util_assert(b->speed >= 1 && b->speed <= NGE_TIMER_DELAY_MAX);
+    nge_util_assert(b->speed != 0);
 
     for (i = 0; i < b->hp_dice; i++) {
         hp += 1 + (unsigned int)rand() % b->hp_sides;

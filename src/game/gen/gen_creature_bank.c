@@ -29,12 +29,8 @@ static nge_entity_id_t create(uint8_t kind, nge_owner_t owner)
     gen_render(id, &b.render);
     nge_block_add(id, b.block.block, b.block.pass);
     stats_add(id, &b.stats);
-    /* Its turns: the player's wait for a command, a monster's come every move */
-    if (b.flags & CREATURE_PLAYER) {
-        nge_timer_add(id, TIMER_PLAYER, 1, 0, 0);
-    } else {
-        nge_timer_add(id, TIMER_MONSTER, stats_speed[id], 0, 0);
-    }
+    /* Its turns, every speed ticks: the player's stop the clock for a command */
+    nge_timer_add(id, (b.flags & CREATURE_PLAYER) ? TIMER_PLAYER : TIMER_MONSTER, stats_speed[id], 0);
     return id;
 }
 

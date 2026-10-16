@@ -12,6 +12,6 @@ uint8_t nge_timer_period[NGE_ENTITY_MAX];
 uint8_t nge_timer_cycles[NGE_ENTITY_MAX];
 uint8_t nge_timer_kind[NGE_ENTITY_MAX];
 
-uint16_t        nge_timer_turns;
-uint8_t         nge_timer_tick;
-nge_entity_id_t nge_timer_wait;
+uint16_t nge_timer_turns;
+uint8_t  nge_timer_tick;
+uint8_t  nge_timer_halted;

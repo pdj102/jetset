@@ -1,4 +1,4 @@
-/* nge_timer.c: the timer system, the clock and firing order. */
+/* nge_timer.c: the timer system, the clock, firing order, stopping and starting. */
 #include "test.h"
 
 #include <stdlib.h>
@@ -7,13 +7,16 @@
 #include "ecs/systems/nge_timer.h"
 
 /* Handler kinds */
-#define K_RETURN   1   /* returns ret[id] */
-#define K_WAIT     2   /* returns NGE_TIMER_WAIT */
-#define K_KILL     3   /* destroys victim, returns 5 */
-#define K_UNTIME   4   /* removes victim's timer, returns 5 */
-#define K_SUICIDE  5   /* destroys itself, returns 1 (ignored) */
-#define K_SPAWN    6   /* gives victim a 1-tick timer, returns NGE_TIMER_STOP */
-#define K_RANDOM   7   /* returns a value from its state (randomised test) */
+#define K_PLAIN    1   /* does nothing */
+#define K_STOP     2   /* stops the clock (the player) */
+#define K_KILL     3   /* destroys victim */
+#define K_UNTIME   4   /* removes victim's timer */
+#define K_SUICIDE  5   /* destroys itself */
+#define K_SPAWN    6   /* gives victim a timer of period 1 */
+#define K_UNSELF   7   /* removes its own timer */
+#define K_SPEED    8   /* sets its own period to new_period */
+#define K_READD    9   /* adds itself a new timer: period 7, 2 cycles */
+#define K_RANDOM  10   /* changes its period or removes its timer, from its state (randomised test) */
 
 /* What dispatch saw */
 typedef struct fired {
@@ -25,31 +28,32 @@ typedef struct fired {
 
 static fired_t seen[4000];
 static int seen_count;
-static uint8_t ret[NGE_ENTITY_MAX];
 static nge_entity_id_t victim;
+static uint8_t new_period;
 
 static uint32_t now(void)
 {
     return (uint32_t)nge_timer_turns * NGE_TIMER_TICKS_PER_TURN + nge_timer_tick;
 }
 
-/* The randomised handlers' result: depends only on what both models agree on */
-static uint8_t random_result(nge_entity_id_t id, uint8_t cycles, uint32_t time)
+/* The randomised handler's choice: 0 keep, 1-30 a new period, 0xFF remove */
+static uint8_t random_choice(nge_entity_id_t id, uint8_t cycles, uint32_t time)
 {
-    uint32_t h = (id * 37u + time * 11u + cycles * 5u) % 23u;
+    uint32_t h = (id * 37u + time * 11u + cycles * 5u) % 29u;
 
     if (h == 0) {
-        return NGE_TIMER_STOP;
+        return 0xFF;
     }
-    if (h < 6) {
-        return NGE_TIMER_REPEAT;
+    if (h < 20) {
+        return 0;
     }
-    return (uint8_t)(h - 5);   /* 1 to 17 */
+    return (uint8_t)(h - 15);   /* 5 to 13 */
 }
 
-static uint8_t dispatch(nge_entity_id_t id, uint8_t kind, uint8_t cycles)
+static void dispatch(nge_entity_id_t id, uint8_t kind, uint8_t cycles)
 {
     fired_t *f = &seen[seen_count++];
+    uint8_t c;
 
     f->id = id;
     f->kind = kind;
@@ -57,26 +61,40 @@ static uint8_t dispatch(nge_entity_id_t id, uint8_t kind, uint8_t cycles)
     f->time = now();
 
     switch (kind) {
-    case K_RETURN:
-        return ret[id];
-    case K_WAIT:
-        return NGE_TIMER_WAIT;
+    case K_STOP:
+        nge_timer_stop();
+        break;
     case K_KILL:
         nge_entity_destroy(victim);
-        return 5;
+        break;
     case K_UNTIME:
         nge_timer_remove(victim);
-        return 5;
+        break;
     case K_SUICIDE:
         nge_entity_destroy(id);
-        return 1;
+        break;
     case K_SPAWN:
-        nge_timer_add(victim, K_RETURN, 1, 0, 0);
-        return NGE_TIMER_STOP;
+        nge_timer_add(victim, K_PLAIN, 1, 0);
+        break;
+    case K_UNSELF:
+        nge_timer_remove(id);
+        break;
+    case K_SPEED:
+        nge_timer_set_period(id, new_period);
+        break;
+    case K_READD:
+        nge_timer_add(id, K_PLAIN, 7, 2);
+        break;
     case K_RANDOM:
-        return random_result(id, cycles, f->time);
+        c = random_choice(id, cycles, f->time);
+        if (c == 0xFF) {
+            nge_timer_remove(id);
+        } else if (c != 0) {
+            nge_timer_set_period(id, c);
+        }
+        break;
     default:
-        return NGE_TIMER_STOP;
+        break;
     }
 }
 
@@ -120,7 +138,7 @@ static void ref_tick(void)
         }
     }
     for (id = 0; id < NGE_ENTITY_MAX; id++) {
-        uint8_t next;
+        uint8_t c;
 
         if (!ref_on[id] || ref_count[id] != 0) {
             continue;
@@ -129,12 +147,15 @@ static void ref_tick(void)
         ref_seen[ref_seen_count].cycles = ref_cycles[id];
         ref_seen[ref_seen_count].time = ref_time;
         ref_seen_count++;
-        next = random_result((nge_entity_id_t)id, ref_cycles[id], ref_time);
-        if (next == NGE_TIMER_STOP) {
+        c = random_choice((nge_entity_id_t)id, ref_cycles[id], ref_time);
+        if (c == 0xFF) {
             ref_on[id] = 0;
             continue;
         }
-        ref_count[id] = (next == NGE_TIMER_REPEAT) ? ref_period[id] : next;
+        if (c != 0) {
+            ref_period[id] = c;
+        }
+        ref_count[id] = ref_period[id];
         if (ref_cycles[id] != 0 && --ref_cycles[id] == 0) {
             ref_on[id] = 0;
         }
@@ -157,145 +178,141 @@ int main(void)
 
     /* ---- the clock at the start; nothing to do ---- */
     reset();
-    CHECK(nge_timer_turns == 0 && nge_timer_tick == 0);
-    CHECK(nge_timer_waiting() == NGE_ENTITY_INVALID);
+    CHECK(nge_timer_turns == 0 && nge_timer_tick == 0 && !nge_timer_stopped());
     CHECK(nge_timer_advance(dispatch) == 0 && seen_count == 0);
 
-    /* ---- jumps to the next timer due; the others move on by the same ---- */
+    /* ---- every period, the first one period after adding; jumps to the next due ---- */
     reset();
     a = nge_entity_create();
     b = nge_entity_create();
-    ret[a] = 7;
-    ret[b] = 4;
-    nge_timer_add(a, K_RETURN, 5, 0, 0);
-    nge_timer_add(b, K_RETURN, 3, 0, 0);
-    CHECK(has_timer(a) && has_timer(b));
-    CHECK(nge_timer_advance(dispatch) == 3 && seen_count == 1 && fired(0, b, 0, 3) && seen[0].kind == K_RETURN);
-    CHECK(nge_timer_count[a] == 2 && nge_timer_count[b] == 4);
-    CHECK(nge_timer_advance(dispatch) == 2 && seen_count == 2 && fired(1, a, 0, 5));
-    CHECK(nge_timer_advance(dispatch) == 2 && fired(2, b, 0, 7));   /* b: 3 + 4 */
-    CHECK(nge_timer_advance(dispatch) == 4 && fired(3, b, 0, 11));  /* b again before a (12) */
-    CHECK(nge_timer_turns == 1 && nge_timer_tick == 1);
-    CHECK(nge_timer_advance(dispatch) == 1 && fired(4, a, 0, 12));
+    nge_timer_add(a, K_PLAIN, 5, 0);
+    nge_timer_add(b, K_PLAIN, 3, 0);
+    CHECK(has_timer(a) && has_timer(b) && nge_timer_count[a] == 5 && nge_timer_period[a] == 5);
+    CHECK(nge_timer_advance(dispatch) == 3 && seen_count == 1 && fired(0, b, 0, 3) && seen[0].kind == K_PLAIN);
+    CHECK(nge_timer_count[a] == 2 && nge_timer_count[b] == 3);   /* b starts its next period */
+    CHECK(nge_timer_advance(dispatch) == 2 && fired(1, a, 0, 5));
+    CHECK(nge_timer_advance(dispatch) == 1 && fired(2, b, 0, 6));
+    CHECK(nge_timer_advance(dispatch) == 3 && fired(3, b, 0, 9));
+    CHECK(nge_timer_advance(dispatch) == 1 && fired(4, a, 0, 10));
+    CHECK(nge_timer_turns == 1 && nge_timer_tick == 0);
 
     /* ---- the same tick: ID order, whatever order they were added in ---- */
     reset();
     a = nge_entity_create();
     b = nge_entity_create();
     c = nge_entity_create();
-    ret[a] = ret[b] = ret[c] = NGE_TIMER_STOP;
-    nge_timer_add(c, K_RETURN, 4, 0, 0);
-    nge_timer_add(a, K_RETURN, 4, 0, 0);
-    nge_timer_add(b, K_RETURN, 6, 0, 0);
+    nge_timer_add(c, K_UNSELF, 4, 0);
+    nge_timer_add(a, K_UNSELF, 4, 0);
+    nge_timer_add(b, K_UNSELF, 6, 0);
     CHECK(nge_timer_advance(dispatch) == 4 && seen_count == 2 && fired(0, a, 0, 4) && fired(1, c, 0, 4));
-    /* STOP removed them */
-    CHECK(!has_timer(a) && !has_timer(c) && has_timer(b));
+    CHECK(!has_timer(a) && !has_timer(c) && has_timer(b));   /* removed themselves */
     CHECK(nge_timer_advance(dispatch) == 2 && fired(2, b, 0, 6));
     CHECK(nge_timer_advance(dispatch) == 0 && seen_count == 3);
 
-    /* ---- REPEAT uses the period; cycles count down to removal ---- */
+    /* ---- cycles count down to removal; 0 is no limit ---- */
     reset();
     a = nge_entity_create();
-    ret[a] = NGE_TIMER_REPEAT;
-    nge_timer_add(a, K_RETURN, 2, 3, 3);
+    nge_timer_add(a, K_PLAIN, 2, 3);
     CHECK(nge_timer_advance(dispatch) == 2 && fired(0, a, 3, 2) && nge_timer_cycles[a] == 2);
-    CHECK(nge_timer_advance(dispatch) == 3 && fired(1, a, 2, 5));
-    CHECK(nge_timer_advance(dispatch) == 3 && fired(2, a, 1, 8));   /* the last */
+    CHECK(nge_timer_advance(dispatch) == 2 && fired(1, a, 2, 4));
+    CHECK(nge_timer_advance(dispatch) == 2 && fired(2, a, 1, 6));   /* the last */
     CHECK(!has_timer(a));
     CHECK(nge_timer_advance(dispatch) == 0 && seen_count == 3);
-    /* A delay instead of REPEAT also counts a cycle */
-    ret[a] = 9;
-    nge_timer_add(a, K_RETURN, 1, 0, 2);
-    CHECK(nge_timer_advance(dispatch) == 1 && fired(3, a, 2, 9));
-    CHECK(nge_timer_advance(dispatch) == 9 && fired(4, a, 1, 18) && !has_timer(a));
-    /* No limit: cycles stay 0 */
-    ret[a] = NGE_TIMER_REPEAT;
-    nge_timer_add(a, K_RETURN, 1, 1, 0);
+    nge_timer_add(a, K_PLAIN, 1, 0);
     for (i = 0; i < 300; i++) {
         nge_timer_advance(dispatch);
     }
-    CHECK(has_timer(a) && nge_timer_cycles[a] == 0 && seen_count == 5 + 300);
+    CHECK(has_timer(a) && nge_timer_cycles[a] == 0 && seen_count == 3 + 300);
+
+    /* ---- the period: changed by the handler, it starts the next one ---- */
+    reset();
+    a = nge_entity_create();
+    new_period = 2;
+    nge_timer_add(a, K_SPEED, 4, 0);
+    CHECK(nge_timer_advance(dispatch) == 4 && fired(0, a, 0, 4) && nge_timer_count[a] == 2);
+    CHECK(nge_timer_advance(dispatch) == 2 && fired(1, a, 0, 6));
+    /* Changed from outside, it applies from the next firing on */
+    reset();
+    a = nge_entity_create();
+    nge_timer_add(a, K_PLAIN, 5, 0);
+    CHECK(nge_timer_advance(dispatch) == 5);
+    nge_timer_set_period(a, 2);
+    CHECK(nge_timer_advance(dispatch) == 5 && fired(1, a, 0, 10));   /* the period under way */
+    CHECK(nge_timer_advance(dispatch) == 2 && fired(2, a, 0, 12));
+    /* A handler that adds itself a new timer keeps it as added: no cycle counted */
+    reset();
+    a = nge_entity_create();
+    nge_timer_add(a, K_READD, 3, 1);
+    CHECK(nge_timer_advance(dispatch) == 3 && fired(0, a, 1, 3));
+    CHECK(has_timer(a) && nge_timer_count[a] == 7 && nge_timer_cycles[a] == 2 && nge_timer_kind[a] == K_PLAIN);
 
     /* ---- turns: every NGE_TIMER_TICKS_PER_TURN ticks, even in long steps ---- */
     reset();
     a = nge_entity_create();
-    ret[a] = NGE_TIMER_DELAY_MAX;
-    nge_timer_add(a, K_RETURN, NGE_TIMER_DELAY_MAX, 0, 0);
-    CHECK(nge_timer_advance(dispatch) == NGE_TIMER_DELAY_MAX);
-    CHECK(nge_timer_turns == 25 && nge_timer_tick == 2);
-    CHECK(nge_timer_advance(dispatch) == NGE_TIMER_DELAY_MAX);
-    CHECK(nge_timer_turns == 50 && nge_timer_tick == 4);
-    nge_timer_set_delay(a, 6);
-    CHECK(nge_timer_advance(dispatch) == 6 && nge_timer_turns == 51 && nge_timer_tick == 0);
+    nge_timer_add(a, K_PLAIN, 255, 0);
+    CHECK(nge_timer_advance(dispatch) == 255 && nge_timer_turns == 25 && nge_timer_tick == 5);
+    CHECK(nge_timer_advance(dispatch) == 255 && nge_timer_turns == 51 && nge_timer_tick == 0);
 
-    /* ---- WAIT: the clock stops until set_delay; the tick finishes first ---- */
+    /* ---- stop and start: the tick finishes first ---- */
     reset();
     a = nge_entity_create();   /* the player */
     b = nge_entity_create();
-    ret[b] = 10;
-    nge_timer_add(a, K_WAIT, 10, 0, 0);
-    nge_timer_add(b, K_RETURN, 10, 0, 0);
+    nge_timer_add(a, K_STOP, 10, 0);
+    nge_timer_add(b, K_PLAIN, 10, 0);
     CHECK(nge_timer_advance(dispatch) == 10 && seen_count == 2 && fired(0, a, 0, 10) && fired(1, b, 0, 10));
-    CHECK(nge_timer_waiting() == a && nge_timer_count[a] == 0);
+    CHECK(nge_timer_stopped() && nge_timer_count[a] == 10 && nge_timer_count[b] == 10);
     CHECK(nge_timer_advance(dispatch) == 0 && nge_timer_advance(dispatch) == 0 && seen_count == 2);
-    nge_timer_set_delay(a, 15);   /* the player's command */
-    CHECK(nge_timer_waiting() == NGE_ENTITY_INVALID);
-    CHECK(nge_timer_advance(dispatch) == 10 && fired(2, b, 0, 20));
-    CHECK(nge_timer_advance(dispatch) == 5 && fired(3, a, 0, 25) && nge_timer_waiting() == a);
-    /* Removing the waiting entity's timer, or replacing it, starts the clock */
-    nge_timer_remove(a);
-    CHECK(nge_timer_waiting() == NGE_ENTITY_INVALID);
-    nge_timer_add(a, K_WAIT, 1, 0, 0);
-    CHECK(nge_timer_advance(dispatch) == 1 && nge_timer_waiting() == a);
-    nge_timer_add(a, K_WAIT, 2, 0, 0);
-    CHECK(nge_timer_waiting() == NGE_ENTITY_INVALID);
-    CHECK(nge_timer_advance(dispatch) == 2 && nge_timer_waiting() == a);
-    /* The waiting entity dies: the clock runs on without it */
-    nge_entity_destroy(a);
-    CHECK(nge_timer_advance(dispatch) == 2 && seen[seen_count - 1].id == b && seen[seen_count - 1].time == 30);
-    CHECK(nge_timer_waiting() == NGE_ENTITY_INVALID);
+    CHECK(nge_timer_turns == 1 && nge_timer_tick == 0);   /* no time passed while stopped */
+    nge_timer_start();                                    /* the player's command */
+    CHECK(!nge_timer_stopped());
+    CHECK(nge_timer_advance(dispatch) == 10 && seen_count == 4 && fired(2, a, 0, 20) && fired(3, b, 0, 20));
+    CHECK(nge_timer_stopped());
+    /* Stopped from outside: nothing moves */
+    nge_timer_start();
+    nge_timer_stop();
+    CHECK(nge_timer_advance(dispatch) == 0 && seen_count == 4);
+    nge_timer_start();
+    /* init: running again */
+    nge_timer_stop();
+    nge_timer_init();
+    CHECK(!nge_timer_stopped() && nge_timer_turns == 0);
 
     /* ---- handlers changing other timers in the same tick ---- */
     reset();
     a = nge_entity_create();
     b = nge_entity_create();
     c = nge_entity_create();
-    ret[b] = 5;
-    ret[c] = 5;
     victim = b;
-    nge_timer_add(a, K_KILL, 3, 0, 0);   /* kills b, due the same tick */
-    nge_timer_add(b, K_RETURN, 3, 0, 0);
-    nge_timer_add(c, K_RETURN, 3, 0, 0);
+    nge_timer_add(a, K_KILL, 3, 0);   /* kills b, due the same tick */
+    nge_timer_add(b, K_PLAIN, 3, 0);
+    nge_timer_add(c, K_PLAIN, 3, 0);
     CHECK(nge_timer_advance(dispatch) == 3 && seen_count == 2 && fired(0, a, 0, 3) && fired(1, c, 0, 3));
     /* b, dying, is left out of the next step too */
-    CHECK(nge_timer_advance(dispatch) == 5 && seen_count == 4 && fired(2, a, 0, 8) && fired(3, c, 0, 8));
+    CHECK(nge_timer_advance(dispatch) == 3 && seen_count == 4 && fired(2, a, 0, 6) && fired(3, c, 0, 6));
 
     reset();
     a = nge_entity_create();
     b = nge_entity_create();
-    ret[b] = 5;
     victim = b;
-    nge_timer_add(a, K_UNTIME, 3, 0, 0);   /* removes b's timer, due the same tick */
-    nge_timer_add(b, K_RETURN, 3, 0, 0);
+    nge_timer_add(a, K_UNTIME, 3, 0);   /* removes b's timer, due the same tick */
+    nge_timer_add(b, K_PLAIN, 3, 0);
     CHECK(nge_timer_advance(dispatch) == 3 && seen_count == 1 && fired(0, a, 0, 3) && !has_timer(b));
 
-    /* A timer given to a later entity during the tick waits for its own tick */
+    /* A timer given to a later entity during the tick waits a whole period */
     reset();
     a = nge_entity_create();
     b = nge_entity_create();
-    ret[b] = NGE_TIMER_STOP;
     victim = b;
-    nge_timer_add(a, K_SPAWN, 2, 0, 0);
+    nge_timer_add(a, K_SPAWN, 2, 1);
     CHECK(nge_timer_advance(dispatch) == 2 && seen_count == 1 && has_timer(b) && !has_timer(a));
     CHECK(nge_timer_advance(dispatch) == 1 && fired(1, b, 0, 3));
 
-    /* A handler destroying its own entity: the return value is ignored */
+    /* A handler destroying its own entity: its timer is left as it was */
     reset();
     a = nge_entity_create();
     b = nge_entity_create();
-    ret[b] = 4;
-    nge_timer_add(a, K_SUICIDE, 2, 0, 3);
-    nge_timer_add(b, K_RETURN, 4, 0, 0);
+    nge_timer_add(a, K_SUICIDE, 2, 3);
+    nge_timer_add(b, K_PLAIN, 4, 0);
     CHECK(nge_timer_advance(dispatch) == 2 && fired(0, a, 3, 2));
     CHECK(nge_timer_cycles[a] == 3 && nge_timer_count[a] == 0);   /* untouched */
     CHECK(nge_timer_advance(dispatch) == 2 && fired(1, b, 0, 4));
@@ -304,9 +321,8 @@ int main(void)
     reset();
     a = nge_entity_create();
     b = nge_entity_create();
-    ret[b] = 4;
-    nge_timer_add(a, K_RETURN, 1, 0, 0);
-    nge_timer_add(b, K_RETURN, 4, 0, 0);
+    nge_timer_add(a, K_PLAIN, 1, 0);
+    nge_timer_add(b, K_PLAIN, 4, 0);
     nge_entity_destroy(a);
     CHECK(nge_timer_advance(dispatch) == 4 && seen_count == 1 && fired(0, b, 0, 4));
     CHECK(nge_timer_count[a] == 1);   /* not moved on */
@@ -329,13 +345,12 @@ int main(void)
                 }
             }
             if (!has_timer(id)) {
-                uint8_t delay = (uint8_t)(1 + rand() % 30);
                 uint8_t period = (uint8_t)(1 + rand() % 30);
                 uint8_t cycles = (uint8_t)(rand() % 4);
 
-                nge_timer_add(id, K_RANDOM, delay, period, cycles);
+                nge_timer_add(id, K_RANDOM, period, cycles);
                 ref_on[id] = 1;
-                ref_count[id] = delay;
+                ref_count[id] = period;
                 ref_period[id] = period;
                 ref_cycles[id] = cycles;
             }
@@ -347,7 +362,8 @@ int main(void)
         }
         ok = seen_count == ref_seen_count;
         for (id = 0; id < NGE_ENTITY_MAX && ok; id++) {
-            ok = (has_timer(id) != 0) == ref_on[id] && (!ref_on[id] || nge_timer_count[id] == ref_count[id]);
+            ok = (has_timer(id) != 0) == ref_on[id] &&
+                 (!ref_on[id] || (nge_timer_count[id] == ref_count[id] && nge_timer_period[id] == ref_period[id]));
         }
     }
     for (i = 0; i < seen_count && ok; i++) {
@@ -359,35 +375,18 @@ int main(void)
     /* ---- asserts ---- */
     reset();
     a = nge_entity_create();
-    TEST_EXPECT_HALT(nge_timer_add(a, K_RETURN, 0, 0, 0));                        /* delay 0 */
+    TEST_EXPECT_HALT(nge_timer_add(a, K_PLAIN, 0, 0));          /* period 0 */
     CHECK(test_halt_count == 1);
-    TEST_EXPECT_HALT(nge_timer_add(a, K_RETURN, NGE_TIMER_DELAY_MAX + 1, 0, 0));
+    TEST_EXPECT_HALT(nge_timer_add(50, K_PLAIN, 1, 0));         /* free */
     CHECK(test_halt_count == 1);
-    TEST_EXPECT_HALT(nge_timer_add(a, K_RETURN, 1, NGE_TIMER_DELAY_MAX + 1, 0));  /* period */
+    TEST_EXPECT_HALT(nge_timer_set_period(a, 1));               /* no timer */
     CHECK(test_halt_count == 1);
-    TEST_EXPECT_HALT(nge_timer_add(50, K_RETURN, 1, 0, 0));                       /* free */
-    CHECK(test_halt_count == 1);
-    TEST_EXPECT_HALT(nge_timer_set_delay(a, 1));                                  /* no timer */
+    nge_timer_add(a, K_PLAIN, 1, 0);
+    TEST_EXPECT_HALT(nge_timer_set_period(a, 0));
     CHECK(test_halt_count == 1);
     TEST_EXPECT_HALT(nge_timer_remove(NGE_ENTITY_MAX));
     CHECK(test_halt_count == 1);
-    /* WAIT with a cycle limit; REPEAT with no period */
-    nge_timer_add(a, K_WAIT, 1, 0, 2);
-    TEST_EXPECT_HALT(nge_timer_advance(dispatch));
-    CHECK(test_halt_count == 1);
-    reset();
-    a = nge_entity_create();
-    ret[a] = NGE_TIMER_REPEAT;
-    nge_timer_add(a, K_RETURN, 1, 0, 0);
-    TEST_EXPECT_HALT(nge_timer_advance(dispatch));
-    CHECK(test_halt_count == 1);
-    /* Two entities waiting at once */
-    reset();
-    a = nge_entity_create();
-    b = nge_entity_create();
-    nge_timer_add(a, K_WAIT, 1, 0, 0);
-    nge_timer_add(b, K_WAIT, 1, 0, 0);
-    TEST_EXPECT_HALT(nge_timer_advance(dispatch));
+    TEST_EXPECT_HALT(nge_timer_advance(NULL));
     CHECK(test_halt_count == 1);
 
     return test_summary("timer");

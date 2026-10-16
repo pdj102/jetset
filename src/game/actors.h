@@ -37,8 +37,7 @@ void actors_create(void);
  * @brief The demo effect's timer handler (TIMER_GLOW, game/timers.h): posts
  *        EV_GLOWED for its owner, or on its last cycle EV_GLOW_FADED and
  *        destroys the effect.
- * @return NGE_TIMER_REPEAT, or NGE_TIMER_STOP on the last cycle.
  */
-uint8_t actors_on_glow(nge_entity_id_t id, uint8_t cycles);
+void actors_on_glow(nge_entity_id_t id, uint8_t cycles);
 
 #endif

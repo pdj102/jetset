@@ -31,13 +31,13 @@ typedef struct stats_base {
     uint8_t hp_dice;    /**< Number of dice, 0 for none. */
     uint8_t hp_sides;   /**< Sides on each die, 1 or more if hp_dice isn't 0. */
     uint8_t hp_bonus;   /**< Added to the roll. */
-    uint8_t speed;      /**< Ticks a move takes: 10 normal, 5 fast, 20 slow (1 to NGE_TIMER_DELAY_MAX). */
+    uint8_t speed;      /**< Ticks between turns, whatever the action: 10 normal, 5 fast, 20 slow (1-255). */
 } stats_base_t;
 
 /* Tables in slot 0 (stats_cdata.c): meaningful only with COMPONENT_STATS */
 extern uint8_t stats_hp[NGE_ENTITY_MAX];       /**< Hit points now. */
 extern uint8_t stats_hp_max[NGE_ENTITY_MAX];   /**< Hit points when unhurt. */
-extern uint8_t stats_speed[NGE_ENTITY_MAX];    /**< Ticks a move takes. */
+extern uint8_t stats_speed[NGE_ENTITY_MAX];    /**< Ticks between turns: its timer's period. */
 
 /**
  * @brief Give an entity in use the stats component from base stats: hit

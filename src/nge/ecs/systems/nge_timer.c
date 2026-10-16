@@ -28,49 +28,36 @@ static void check_entity(nge_entity_id_t id, uint8_t with_timer)
     nge_util_assert(!with_timer || (nge_entity_components[id] & NGE_COMPONENT_TIMER));
 }
 
-/* The entity no longer holds the clock up */
-static void stop_waiting_for(nge_entity_id_t id)
-{
-    if (nge_timer_wait == id) {
-        nge_timer_wait = NGE_ENTITY_INVALID;
-    }
-}
-
 static void remove_timer(nge_entity_id_t id)
 {
     nge_entity_components[id] &= (nge_component_mask_t)~NGE_COMPONENT_TIMER;
-    stop_waiting_for(id);
 }
 
 void nge_timer_init(void) NGE_BANKED
 {
     nge_timer_turns = 0;
     nge_timer_tick = 0;
-    nge_timer_wait = NGE_ENTITY_INVALID;
+    nge_timer_halted = 0;
 }
 
-void nge_timer_add(nge_entity_id_t id, uint8_t kind, uint8_t delay, uint8_t period,
-                   uint8_t cycles) NGE_BANKED
+void nge_timer_add(nge_entity_id_t id, uint8_t kind, uint8_t period, uint8_t cycles) NGE_BANKED
 {
     check_entity(id, 0);
-    nge_util_assert(delay >= 1 && delay <= NGE_TIMER_DELAY_MAX);
-    nge_util_assert(period <= NGE_TIMER_DELAY_MAX);
+    nge_util_assert(period != 0);
 
-    nge_timer_count[id] = delay;
+    nge_timer_count[id] = period;
     nge_timer_period[id] = period;
     nge_timer_cycles[id] = cycles;
     nge_timer_kind[id] = kind;
     nge_entity_components[id] |= NGE_COMPONENT_TIMER;
-    stop_waiting_for(id);
 }
 
-void nge_timer_set_delay(nge_entity_id_t id, uint8_t delay) NGE_BANKED
+void nge_timer_set_period(nge_entity_id_t id, uint8_t period) NGE_BANKED
 {
     check_entity(id, 1);
-    nge_util_assert(delay >= 1 && delay <= NGE_TIMER_DELAY_MAX);
+    nge_util_assert(period != 0);
 
-    nge_timer_count[id] = delay;
-    stop_waiting_for(id);
+    nge_timer_period[id] = period;
 }
 
 void nge_timer_remove(nge_entity_id_t id) NGE_BANKED
@@ -80,29 +67,22 @@ void nge_timer_remove(nge_entity_id_t id) NGE_BANKED
     remove_timer(id);
 }
 
-/* Act on a fired timer's handler result */
-static void after_firing(nge_entity_id_t id, uint8_t next)
+void nge_timer_stop(void) NGE_BANKED
+{
+    nge_timer_halted = 1;
+}
+
+void nge_timer_start(void) NGE_BANKED
+{
+    nge_timer_halted = 0;
+}
+
+/* A timer has fired and its handler kept it: start its next period, count the cycle */
+static void next_period(nge_entity_id_t id)
 {
     uint8_t cycles = nge_timer_cycles[id];
 
-    if (next == NGE_TIMER_STOP) {
-        remove_timer(id);
-        return;
-    }
-    if (next == NGE_TIMER_WAIT) {
-        /* The count stays 0 until nge_timer_set_delay() */
-        nge_util_assert(cycles == 0);
-        nge_util_assert(nge_timer_wait == NGE_ENTITY_INVALID);
-        nge_timer_wait = id;
-        return;
-    }
-    if (next == NGE_TIMER_REPEAT) {
-        next = nge_timer_period[id];
-        nge_util_assert(next != 0);
-    }
-    nge_util_assert(next <= NGE_TIMER_DELAY_MAX);
-    nge_timer_count[id] = next;
-
+    nge_timer_count[id] = nge_timer_period[id];
     if (cycles != 0) {
         if (--cycles == 0) {
             remove_timer(id);
@@ -121,12 +101,8 @@ uint8_t nge_timer_advance(nge_timer_dispatch_fn dispatch) NGE_BANKED
 
     nge_util_assert(dispatch != 0);
 
-    /* Waiting, unless the entity waited for has gone (died, or lost its timer) */
-    if (nge_timer_wait != NGE_ENTITY_INVALID) {
-        if (HAS_TIMER(nge_timer_wait)) {
-            return 0;
-        }
-        nge_timer_wait = NGE_ENTITY_INVALID;
+    if (nge_timer_halted) {
+        return 0;
     }
 
     /*
@@ -158,7 +134,7 @@ uint8_t nge_timer_advance(nge_timer_dispatch_fn dispatch) NGE_BANKED
      * Advance it by step ticks, as turns and ticks: add step to the ticks,
      * then take each whole turn out of them and add it to the turns,
      * leaving the ticks below NGE_TIMER_TICKS_PER_TURN. The sum is 16 bits,
-     * as it can pass 255 (up to 254 + 252); the loop runs at most 25 times
+     * as it can pass 255 (up to 254 + 255); the loop runs at most 25 times
      * at 10 ticks a turn, usually once or not at all: cheaper on the Z80
      * than a division.
      */
@@ -171,25 +147,26 @@ uint8_t nge_timer_advance(nge_timer_dispatch_fn dispatch) NGE_BANKED
 
     /*
      * Fire the timers due now, those whose count has reached 0, in entity
-     * ID order: call the game's handler for each through dispatch, then act
-     * on its result (after_firing(): set the next delay, count a cycle,
-     * remove the timer, or stop the clock to wait). A handler may change
-     * other timers, so each timer is checked just before it fires, not
-     * from a list made beforehand: one removed, delayed or whose entity was
-     * destroyed by an earlier handler in this tick doesn't fire, and one
-     * added in this tick has a delay of at least 1 so waits for a later tick.
+     * ID order: call the game's handler for each through dispatch, then
+     * start its next period (next_period(): with the period as the handler
+     * left it, counting a cycle). A handler may change other timers, so
+     * each timer is checked just before it fires, not from a list made
+     * beforehand: one removed, or whose entity was destroyed, by an earlier
+     * handler in this tick doesn't fire, and one added in this tick waits a
+     * whole period. nge_timer_stop() in a handler takes effect after the
+     * tick: the rest of its timers still fire.
      */
     for (id = 0; id < NGE_ENTITY_MAX; id++) {
-        uint8_t next;
-
-        /* Skips timers removed, delayed or destroyed by earlier handlers */
         if (!HAS_TIMER(id) || nge_timer_count[id] != 0) {
             continue;
         }
-        next = dispatch(id, nge_timer_kind[id], nge_timer_cycles[id]);
-        /* Unless the handler destroyed its entity or removed its timer: then the result is ignored */
-        if (HAS_TIMER(id)) {
-            after_firing(id, next);
+        dispatch(id, nge_timer_kind[id], nge_timer_cycles[id]);
+        /*
+         * Unless the handler destroyed its entity or removed its timer, or
+         * added a new one (its count is a whole period already)
+         */
+        if (HAS_TIMER(id) && nge_timer_count[id] == 0) {
+            next_period(id);
         }
     }
     return step;

@@ -52,10 +52,9 @@ static int creature_ok(nge_entity_id_t id, nge_owner_t owner, uint8_t kind)
         stats_speed[id] != b->stats.speed) {
         return 0;
     }
-    if (b->flags & CREATURE_PLAYER) {
-        return nge_timer_kind[id] == TIMER_PLAYER && nge_timer_count[id] == 1;
-    }
-    return nge_timer_kind[id] == TIMER_MONSTER && nge_timer_count[id] == b->stats.speed &&
+    /* Its turns: every speed ticks, with no limit */
+    return nge_timer_kind[id] == ((b->flags & CREATURE_PLAYER) ? TIMER_PLAYER : TIMER_MONSTER) &&
+           nge_timer_period[id] == b->stats.speed && nge_timer_count[id] == b->stats.speed &&
            nge_timer_cycles[id] == 0;
 }
 

@@ -31,7 +31,11 @@ void actors_create(void)
 {
     nge_entity_id_t glow;
 
-    /* The player, from its base data (its turn first): placed by level_generate() */
+    /*
+     * The player, from its base data: placed by level_generate(). Created
+     * first, so entity 0: on a tick where others are due too, its turn
+     * comes first (timers fire in ID order)
+     */
     actor_player = gen_creature(CR_PLAYER, NGE_OWNER_WORLD);
     nge_util_assert(actor_player != NGE_ENTITY_INVALID);
 
@@ -39,18 +43,17 @@ void actors_create(void)
     glow = nge_entity_create();
     nge_util_assert(glow != NGE_ENTITY_INVALID);
     nge_owner_set(glow, actor_player);
-    nge_timer_add(glow, TIMER_GLOW, GLOW_PERIOD, GLOW_PERIOD, GLOW_CYCLES);
+    nge_timer_add(glow, TIMER_GLOW, GLOW_PERIOD, GLOW_CYCLES);
 }
 
-uint8_t actors_on_glow(nge_entity_id_t id, uint8_t cycles)
+void actors_on_glow(nge_entity_id_t id, uint8_t cycles)
 {
     nge_entity_id_t target = NGE_OWNER_OF(id);
 
     if (cycles == 1) {
         nge_event_post(target, EV_GLOW_FADED, id, 0, 0);
-        nge_entity_destroy(id);   /* the timer goes with it */
-        return NGE_TIMER_STOP;
+        nge_entity_destroy(id);   /* its last firing: the effect goes */
+        return;
     }
     nge_event_post(target, EV_GLOWED, id, 0, 0);
-    return NGE_TIMER_REPEAT;
 }

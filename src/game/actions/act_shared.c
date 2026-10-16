@@ -11,18 +11,25 @@
 
 #include "core/nge_util.h"
 
-uint8_t act_fail(act_t *a, uint8_t reason, uint8_t full_cost)
+uint8_t act_fail(act_t *a, uint8_t reason)
 {
     nge_util_assert(reason != ACT_R_NONE && reason < ACT_R_COUNT);
 
     a->reason = reason;
-    a->cost = (act_reason_flags[reason] & ACT_RF_ATTEMPTED) ? full_cost : 0;
+    a->used = (act_reason_flags[reason] & ACT_RF_ATTEMPTED) != 0;
     return ACT_FAIL;
 }
 
-uint8_t act_succeed(act_t *a, uint8_t cost)
+uint8_t act_succeed(act_t *a)
 {
     a->reason = ACT_R_NONE;
-    a->cost = cost;
+    a->used = 1;
+    return ACT_SUCCESS;
+}
+
+uint8_t act_checked(act_t *a)
+{
+    a->reason = ACT_R_NONE;
+    a->used = 0;
     return ACT_SUCCESS;
 }

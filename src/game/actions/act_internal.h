@@ -22,10 +22,17 @@ extern const uint8_t act_reason_flags[ACT_R_COUNT];
  * `return (a->reason = r, a->cost = c, ACT_FAIL);`
  */
 
-/* End an action that failed for reason: cost full_cost if attempted, 0 if refused. Returns ACT_FAIL */
-uint8_t act_fail(act_t *a, uint8_t reason, uint8_t full_cost);
+/*
+ * End an action that failed for reason: used if the reason is attempted,
+ * not if refused. Validation (which check mode runs) fails only with
+ * refused reasons. Returns ACT_FAIL
+ */
+uint8_t act_fail(act_t *a, uint8_t reason);
 
-/* End an action that succeeded, costing cost ticks. Returns ACT_SUCCESS */
-uint8_t act_succeed(act_t *a, uint8_t cost);
+/* End an action that succeeded: the turn is used. Returns ACT_SUCCESS */
+uint8_t act_succeed(act_t *a);
+
+/* End a check (ACT_CHECK) that found the action possible: nothing used. Returns ACT_SUCCESS */
+uint8_t act_checked(act_t *a);
 
 #endif
