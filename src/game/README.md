@@ -29,6 +29,6 @@ A module with code that runs rarely is banked: it moves into its own folder,
 and data), `<module>_bank.c` (its even page: rarely run code with its
 literals) and, if needed, `<module>_pdata.c` (its odd page: large private
 data). Its page pair comes from the game code range in
-`src/nge/banks.inc` (102-131). See "Banked game modules" in
+`src/banks.inc` (102-131). See "Banked game modules" in
 `docs/memory_map.md` for the rules. Modules not yet banked stay single files
 here.

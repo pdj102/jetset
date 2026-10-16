@@ -132,7 +132,7 @@ The target is a 2MB Next: pages 0-223. Every module that has banked code,
 nge's or the game's, gets a pair of pages: the even page for its code, string literals and
 constants (8K: `codeseg` and `constseg PAGE_n`), the odd page for large data
 sets private to it. The allocation is kept in
-[src/nge/banks.inc](../src/nge/banks.inc), which also sets the origins of the
+[src/banks.inc](../src/banks.inc), which also sets the origins of the
 code pages.
 
 | Pages | Owner |
@@ -214,7 +214,7 @@ How a module is banked:
    #endif
    ```
 
-3. The page is listed in [src/nge/banks.inc](../src/nge/banks.inc) with its
+3. The page is listed in [src/banks.inc](../src/banks.inc) with its
    origin: `#pragma define CRT_ORG_PAGE_42 = 0x2AC000`.
 
 nge uses 8K `PAGE_n` sections rather than 16K `BANK_n` sections, so the odd
@@ -291,7 +291,7 @@ or if a `#pragma codeseg` names an odd page.
 
 Game code is banked the same way as nge's, with a module's pair from the
 game code range (102-131) and its origin in
-[banks.inc](../src/nge/banks.inc). `level` is the first. A banked game
+[banks.inc](../src/banks.inc). `level` is the first. A banked game
 module lives in its own folder, `src/game/<module>/`, split by where each
 part runs:
 
@@ -448,7 +448,7 @@ mapped once at start-up and left in its slot:
   `nge_<module>_cdata.c`, with the marker `/* nge-dataseg: PAGE_50 */` or
   `PAGE_51`: uninitialised variables only, set up by the module's init.
 - **Origins without a page** (`CRT_ORG_PAGE_50 = 0x0100`,
-  `CRT_ORG_PAGE_51 = 0x2000` in [banks.inc](../src/nge/banks.inc)): the
+  `CRT_ORG_PAGE_51 = 0x2000` in [banks.inc](../src/banks.inc)): the
   data is addressed in its slot, never through `banked_call`.
 - [scripts/check-banks.sh](../scripts/check-banks.sh) checks that every
   symbol of a `*_cdata.c` file is inside one of these pages and its range,
@@ -471,7 +471,7 @@ data.
 | Address | Contents |
 |---|---|
 | `$0000`-`$00FF` | Guard area against null pointers |
-| `$0100`-`$1FFF` | ECS tables (`SECTION PAGE_50`, `CRT_ORG_PAGE_50 = 0x0100` in [banks.inc](../src/nge/banks.inc)): entity flags, components and alive list, owners, locations, block flags, timers and the clock, and the game's components (`src/game/components/*_cdata.c`: kind, stats, item, inventory) (about 2.4K at `NGE_ENTITY_MAX` 100) |
+| `$0100`-`$1FFF` | ECS tables (`SECTION PAGE_50`, `CRT_ORG_PAGE_50 = 0x0100` in [banks.inc](../src/banks.inc)): entity flags, components and alive list, owners, locations, block flags, timers and the clock, and the game's components (`src/game/components/*_cdata.c`: kind, stats, item, inventory) (about 2.4K at `NGE_ENTITY_MAX` 100) |
 
 ### Where component data goes
 

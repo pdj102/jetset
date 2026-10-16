@@ -1,4 +1,4 @@
-; Demo sprite graphics, in page 101 (game assets range, see src/nge/banks.inc),
+; Demo sprite graphics, in page 101 (game assets range, see src/banks.inc),
 ; assembled for slot 7 ($E000). Load them with the nge sprite loaders, passing
 ; DEMO_SPRITE_PAGE (see sprite_data.h).
 ;

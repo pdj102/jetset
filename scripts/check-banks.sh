@@ -8,7 +8,7 @@
 # address into slot 6 (and the next page into slot 7). z88dk's default
 # section origins for the Next ($C000/$E000) have no page in them, so every
 # banked call would map page 0 and jump into the wrong code. Each bank that
-# holds code needs its origin set in src/nge/banks.inc, e.g.
+# holds code needs its origin set in src/banks.inc, e.g.
 #   #pragma define CRT_ORG_PAGE_42 = 0x2AC000     (page 42 = 0x2A)
 #
 # It also checks that banked_call is nge's own, not z88dk's.
@@ -147,7 +147,7 @@ $2 == "=" && $3 ~ /^\$/ && $5 == "addr," {
     if (page != want) {
         printf "error: %s (%s in %s) is at $%s, so banked calls would map page %d, not %d.\n", \
                $1, module, section, hex, page, want
-        printf "       Set its origin in src/nge/banks.inc: #pragma define CRT_ORG_%s = 0x%02X%04X\n", \
+        printf "       Set its origin in src/banks.inc: #pragma define CRT_ORG_%s = 0x%02X%04X\n", \
                section, want, value % 65536
         bad = 1
     }
@@ -163,7 +163,7 @@ END {
     for (p in lo) {
         if ((p, "tail") in bound && bound[p, "tail"] > bound[p, "head"] &&
             (bound[p, "head"] < lo[p] || bound[p, "tail"] > hi[p])) {
-            printf "error: %s is at $%04X-$%04X, outside %s: check CRT_ORG_%s in src/nge/banks.inc and its size\n", \
+            printf "error: %s is at $%04X-$%04X, outside %s: check CRT_ORG_%s in src/banks.inc and its size\n", \
                    p, bound[p, "head"], bound[p, "tail"] - 1, where[p], p
             bad = 1
         }

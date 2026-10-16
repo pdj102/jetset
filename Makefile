@@ -62,11 +62,11 @@ $(OBJDIR)/%.o: src/%.asm
 #   startup 31: no stdin/stdout. The default startup links z88dk's console
 #          drivers (about 3.3K), which nothing uses and which would print to
 #          the ULA screen memory under the tilemap
-#   banks: origins of banks holding banked code are in src/nge/banks.inc;
+#   banks: origins of banks holding banked code are in src/banks.inc;
 #          scripts/check-banks.sh fails the link if one is missing
 CODE_ORG := 0x6A00
 STACK_BOTTOM := 0xBE00
-BANKS_INC := src/nge/banks.inc
+BANKS_INC := src/banks.inc
 
 LDFLAGS := \
 	-startup=31 \

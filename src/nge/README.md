@@ -94,12 +94,12 @@ code" in [docs/memory_map.md](../../docs/memory_map.md)):
   and the definitions, and start the `.c` file with guarded
   `#pragma codeseg PAGE_n` and `#pragma constseg PAGE_n` (n even), so its
   string literals and constants are in its page too.
-- List the section in [banks.inc](banks.inc). The build fails if it is
+- List the section in [src/banks.inc](../banks.inc). The build fails if it is
   missing (`scripts/check-banks.sh`).
 - Bank whole modules whose functions are called occasionally, such as
   the sprite setup functions (`sprite/nge_sprite_setup.c`, page 42). Each
   module has its own pair of pages from the allocation in
-  [banks.inc](banks.inc): the even page for code, literals and constants,
+  [src/banks.inc](../banks.inc): the even page for code, literals and constants,
   the odd page for large private data sets.
 - Large private variables and tables go in the module's odd page, in its
   page data file `nge_<module>_pdata.c`, which starts with the marker

@@ -23,7 +23,7 @@
 
 #include <stdint.h>
 
-#define NGE_ECS_PAGE        50      /**< Page holding the ECS data (banks.inc). */
+#define NGE_ECS_PAGE        50      /**< Page holding the ECS data (src/banks.inc). */
 #define NGE_ECS_SLOT        0       /**< Slot it is mapped into: $0000-$1FFF. */
 #define NGE_ECS_GUARD_SIZE  0x100   /**< Guard area at the bottom of the slot. */
 

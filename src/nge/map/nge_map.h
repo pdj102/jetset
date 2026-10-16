@@ -51,7 +51,7 @@
 #define NGE_MAP_MAX_HEIGHT  48
 #endif
 
-/** Page holding the map's data (src/nge/banks.inc), and the slot it is mapped into. */
+/** Page holding the map's data (src/banks.inc), and the slot it is mapped into. */
 #define NGE_MAP_PAGE  51
 #define NGE_MAP_SLOT  1
 
