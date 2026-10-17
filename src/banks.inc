@@ -46,6 +46,7 @@
 //                        112/113  actions: the actions / (unused)
 //                        114/115  player: commands and the firing screen / (unused)
 //                        116/117  ui: the item screens / (unused)
+//                        118/119  messages: what the player is told / (unused)
 //             132-223  game assets (maps, graphics, level data)
 
 // nge sprite: setup functions and loaders
@@ -90,6 +91,9 @@
 
 // game ui: the item screens (game/ui)
 #pragma define CRT_ORG_PAGE_116 = 0x74C000
+
+// game messages: what the player is told (game/messages)
+#pragma define CRT_ORG_PAGE_118 = 0x76C000
 
 // nge map: set-up functions
 #pragma define CRT_ORG_PAGE_44 = 0x2CC000

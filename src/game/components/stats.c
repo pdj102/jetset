@@ -9,8 +9,6 @@
 
 #include "game/components/stats.h"
 
-#include <stdlib.h>
-
 #include "core/nge_util.h"
 
 static void check_entity(nge_entity_id_t id)
@@ -22,21 +20,9 @@ static void check_entity(nge_entity_id_t id)
 
 void stats_add(nge_entity_id_t id, const stats_base_t *b) NGE_BANKED
 {
-    uint16_t hp = b->hp_bonus;
-    uint8_t i;
-
     check_entity(id);
-    nge_util_assert(b->hp_dice == 0 || b->hp_sides != 0);
     nge_util_assert(b->speed != 0);
 
-    for (i = 0; i < b->hp_dice; i++) {
-        hp += 1 + (unsigned int)rand() % b->hp_sides;
-    }
-    if (hp > 255) {
-        hp = 255;
-    }
-    stats_hp[id] = (uint8_t)hp;
-    stats_hp_max[id] = (uint8_t)hp;
     stats_speed[id] = b->speed;
     nge_entity_components[id] |= COMPONENT_STATS;
 }

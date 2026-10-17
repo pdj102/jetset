@@ -6,6 +6,4 @@
  */
 #include "game/components/stats.h"
 
-uint8_t stats_hp[NGE_ENTITY_MAX];
-uint8_t stats_hp_max[NGE_ENTITY_MAX];
 uint8_t stats_speed[NGE_ENTITY_MAX];

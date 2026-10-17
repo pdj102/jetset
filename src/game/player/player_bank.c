@@ -15,9 +15,11 @@
 
 #include "game/actions/act.h"
 #include "game/actors.h"
+#include "game/components/health.h"
+#include "game/dev.h"
 #include "game/components/inventory.h"
 #include "game/game.h"
-#include "game/messages.h"
+#include "game/messages/messages.h"
 #include "game/screen.h"
 
 /* Characters of the movement keys (nge_key_ascii): cursor keys */
@@ -53,54 +55,12 @@ static uint8_t key_direction(nge_key_event_t ev, int8_t *dx, int8_t *dy)
     }
 }
 
-/* Tell the player why their action failed (a->reason), if they need telling */
-static void say_failed(const act_t *a)
-{
-    /* The fields in locals: see messages_on_event() */
-    uint8_t reason = a->reason;
-    nge_entity_id_t target = a->target;
-
-    switch (reason) {
-    case ACT_R_BLOCKED:
-        screen_message("You bump into a wall.");
-        break;
-    case ACT_R_BLOCKED_CREATURE:
-        messages_say_named("There is a ", target, " in the way.");
-        break;
-    case ACT_R_NOTHING_HERE:
-        screen_message("There is nothing here to pick up.");
-        break;
-    case ACT_R_FULL:
-        screen_message("You can't carry any more.");
-        break;
-    case ACT_R_EQUIPPED:
-        screen_message("You must take that off first.");
-        break;
-    case ACT_R_ALREADY_EQUIPPED:
-        screen_message("You are already using that.");
-        break;
-    case ACT_R_CANT_EQUIP:
-        screen_message("You can't equip that.");
-        break;
-    case ACT_R_NO_SLOT:
-        screen_message("You have nowhere to put that.");
-        break;
-    case ACT_R_SLOT_TAKEN:
-        messages_say_named("You are already using a ", target, ".");
-        break;
-    case ACT_R_NOT_EQUIPPED:
-        screen_message("You aren't using that.");
-        break;
-    default:
-        break;
-    }
-}
 
 void player_act(uint8_t action, act_t *a) NGE_BANKED
 {
     a->actor = actor_player;
     if (act_do(action, a, ACT_DO) == ACT_FAIL) {
-        say_failed(a);
+        messages_act_failed(a);
     }
     if (a->used) {
         nge_timer_start();
@@ -157,6 +117,16 @@ void player_command(nge_key_event_t ev) NGE_BANKED
         screen_message("You quit.");
         game_set_state(GAME_DEAD);
         break;
+#if GAME_DEV_KIT
+    case 'X': {
+        /* Development: hurt the player, 3 damage, a different type each time (no turn used) */
+        static uint8_t type;
+
+        health_damage(actor_player, NGE_ENTITY_INVALID, 3, type);
+        type = (uint8_t)((type + 1) % DMG_COUNT);
+        break;
+    }
+#endif
     default:
         break;   /* other keys: no command, no turn */
     }

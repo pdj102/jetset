@@ -14,9 +14,11 @@
 #include "event/nge_event.h"
 
 #include "game/actors.h"
+#include "game/components/health.h"
 #include "game/components/inventory.h"
 #include "game/components/item.h"
-#include "game/messages.h"
+#include "game/events.h"
+#include "game/messages/messages.h"
 #include "game/level/level.h"
 #include "game/player/player.h"
 #include "game/screen.h"
@@ -33,11 +35,23 @@ static uint16_t shown_turn;   /* the turn count on the screen */
 
 /* ---- Events ---- */
 
+/* The game's own reaction: the player dying ends the game */
+static void death_on_event(const nge_event_t *e)
+{
+    nge_entity_id_t target = e->target;   /* a local: see messages_on_event() */
+
+    if (e->id == EV_DIED && target == actor_player) {
+        nge_timer_stop();   /* no more turns */
+        game_set_state(GAME_DEAD);
+    }
+}
+
 /* The dispatch function: each system's reaction, in a fixed order. In common memory */
 static void game_on_event(const nge_event_t *e)
 {
     player_on_event(e);
     messages_on_event(e);
+    death_on_event(e);   /* last: the death message comes before "Game over" */
 }
 
 /* ---- Timers ---- */
@@ -128,7 +142,7 @@ static void play_enter(void)
 {
     nge_render_set_view(LEVEL_AREA);
     nge_map_invalidate();
-    screen_draw_stats(nge_timer_turns);
+    screen_draw_stats(nge_timer_turns, health_hp[actor_player], health_hp_max[actor_player]);
     screen_help("g:get i:inv w:wear r:off d:drop Q:quit");
 }
 

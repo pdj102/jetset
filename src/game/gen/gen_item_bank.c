@@ -13,12 +13,17 @@
 
 static nge_entity_id_t create(uint8_t kind, nge_owner_t owner)
 {
-    gen_render_t render = gen_items[kind].render;   /* a copy on the stack: the calls below map other pages */
+    /* Copies on the stack: the calls below map other pages */
+    gen_render_t render = gen_items[kind].render;
+    health_base_t health = gen_items[kind].health;
     nge_entity_id_t id = gen_begin(CLASS_ITEM, kind, owner);
 
     if (id != NGE_ENTITY_INVALID) {
         gen_render(id, &render);   /* items block nothing: no block component */
         item_add(id);
+        if (HEALTH_BASE_HAS(&health)) {
+            health_add(id, &health);
+        }
     }
     return id;
 }

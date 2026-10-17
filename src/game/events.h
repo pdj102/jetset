@@ -17,6 +17,9 @@
  * | EV_DROPPED    | the item           | dropper | -        |
  * | EV_EQUIPPED   | the item           | wearer  | p1: slot |
  * | EV_UNEQUIPPED | the item           | wearer  | -        |
+ * | EV_DAMAGED    | the entity hurt    | causer  | p1: taken, p2: EV_DMG_PACK(outcome, type) |
+ * | EV_HEALED     | the entity healed  | -       | p1: restored |
+ * | EV_DIED       | the entity killed  | killer  | -        |
  */
 
 #include "event/nge_event.h"
@@ -29,5 +32,8 @@
 #define EV_DROPPED     (NGE_EVENT_USER + 5)   /**< Dropped on the floor by the source (act_drop()). */
 #define EV_EQUIPPED    (NGE_EVENT_USER + 6)   /**< Equipped by the source in slot p1 (act_equip()). */
 #define EV_UNEQUIPPED  (NGE_EVENT_USER + 7)   /**< Taken off by the source, back into its inventory (act_unequip()). */
+#define EV_DAMAGED     (NGE_EVENT_USER + 8)   /**< Took p1 damage, maybe 0 (game/components/health.h). */
+#define EV_HEALED      (NGE_EVENT_USER + 9)   /**< Got p1 hit points back. */
+#define EV_DIED        (NGE_EVENT_USER + 10)  /**< Hit points reached 0: destroyed unless persistent. */
 
 #endif

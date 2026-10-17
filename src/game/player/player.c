@@ -10,7 +10,9 @@
 #include "map/nge_map.h"
 
 #include "game/actors.h"
+#include "game/components/health.h"
 #include "game/events.h"
+#include "game/screen.h"
 
 void player_on_turn(nge_entity_id_t id)
 {
@@ -22,7 +24,18 @@ void player_on_event(const nge_event_t *e)
 {
     nge_entity_id_t target = e->target;   /* a local: see messages_on_event() */
 
-    if (e->id == EV_MOVED && target == actor_player) {
+    if (target != actor_player) {
+        return;
+    }
+    switch (e->id) {
+    case EV_MOVED:
         nge_map_centre_camera(NGE_LOCATION_X(target), NGE_LOCATION_Y(target));
+        break;
+    case EV_DAMAGED:
+    case EV_HEALED:
+        screen_show_hp(health_hp[target], health_hp_max[target]);
+        break;
+    default:
+        break;
     }
 }

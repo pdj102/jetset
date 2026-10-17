@@ -8,7 +8,9 @@
 #include "ecs/components/nge_location.h"
 #include "ecs/nge_owner.h"
 #include "event/nge_event.h"
+#include "game/dev.h"
 #include "game/events.h"
+#include "game/components/health.h"
 #include "game/gen/gen.h"
 #include "game/timers.h"
 #include "game/level/level.h"
@@ -16,19 +18,7 @@
 
 /* The demo effect: every 5 turns, 4 times */
 #define GLOW_PERIOD  (5 * NGE_TIMER_TICKS_PER_TURN)
-
-#ifndef GAME_DEV_KIT
-/*
- * Development starting kit: 1 gives the player items to try out (a sword
- * and three rings) in their pack. On in debug builds (CSpect), off with
- * NDEBUG (hardware); -DGAME_DEV_KIT=0 or 1 overrides it
- */
-#ifdef NDEBUG
-#define GAME_DEV_KIT  0
-#else
-#define GAME_DEV_KIT  1
-#endif
-#endif
+#define GLOW_HEAL    2   /* hit points restored each time */
 
 #if GAME_DEV_KIT
 /* The development kit's items, owned by the player: in their pack */
@@ -64,6 +54,8 @@ void actors_create(void)
         for (i = 0; i < sizeof(dev_kit); i++) {
             gen_item(dev_kit[i], actor_player);   /* owned, not placed: stowed */
         }
+        /* Every damage outcome can be seen with the X key */
+        health_set_flags(actor_player, DMG_BIT(DMG_POISON), DMG_BIT(DMG_FIRE), DMG_BIT(DMG_COLD));
     }
 #endif
 
@@ -84,4 +76,5 @@ void actors_on_glow(nge_entity_id_t id, uint8_t cycles)
         return;
     }
     nge_event_post(target, EV_GLOWED, id, 0, 0);
+    health_heal(target, GLOW_HEAL);
 }

@@ -32,7 +32,7 @@
 /** @brief The player's timer fired (TIMER_PLAYER): stop the clock until a command uses the turn. */
 void player_on_turn(nge_entity_id_t id);
 
-/** @brief React to events about the player: the camera follows them (EV_MOVED). */
+/** @brief React to events about the player: the camera follows them (EV_MOVED), the stats show their hit points (EV_DAMAGED, EV_HEALED). */
 void player_on_event(const nge_event_t *e);
 
 /**

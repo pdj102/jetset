@@ -42,11 +42,11 @@ GEN_GAME_SRCS := $(addprefix $(GAMEDIR)/,gen/gen.c gen/gen_shared_bank.c \
                  gen/gen_item_bank.c gen/gen_item_pdata.c components/kind.c \
                  components/kind_cdata.c components/stats.c components/stats_cdata.c \
                  components/item.c components/item_cdata.c components/inventory.c \
-                 components/inventory_cdata.c)
+                 components/inventory_cdata.c components/health.c components/health_cdata.c)
 GEN_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(GEN_GAME_SRCS))
 ACT_GAME_SRCS := $(wildcard $(GAMEDIR)/actions/*.c)
 ACT_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(ACT_GAME_SRCS)) $(GEN_GAME_OBJS)
-UI_GAME_SRCS := $(addprefix $(GAMEDIR)/,ui/ui_bank.c player/player_bank.c screen.c messages.c)
+UI_GAME_SRCS := $(addprefix $(GAMEDIR)/,ui/ui_bank.c player/player_bank.c screen.c messages/messages_bank.c)
 UI_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(UI_GAME_SRCS)) $(ACT_GAME_OBJS)
 LEVEL_GAME_SRCS := $(addprefix $(GAMEDIR)/,level/level.c level/level_bank.c level/level_gen.c \
                    level/level_pdata.c)
@@ -92,6 +92,9 @@ $(BUILD)/test_inventory: $(BUILD)/test_inventory.o $(LIB_OBJS) $(SUPPORT_OBJS) $
 	$(HOSTCC) $(CFLAGS) $^ -o $@
 
 $(BUILD)/test_ui: $(BUILD)/test_ui.o $(LIB_OBJS) $(SUPPORT_OBJS) $(UI_GAME_OBJS)
+	$(HOSTCC) $(CFLAGS) $^ -o $@
+
+$(BUILD)/test_health: $(BUILD)/test_health.o $(LIB_OBJS) $(SUPPORT_OBJS) $(GEN_GAME_OBJS)
 	$(HOSTCC) $(CFLAGS) $^ -o $@
 
 $(BUILD)/game/%.o: $(GAMEDIR)/%.c $(GEN)/zxn_names.h $(GEN)/zxn_io.h

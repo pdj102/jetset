@@ -55,8 +55,11 @@ extern char screen_name[SCREEN_NAME_MAX + 1];
  */
 void screen_init(void);
 
-/** @brief Draw the stats window (placeholder values for now, and the turn). */
-void screen_draw_stats(uint16_t turn);
+/** @brief Draw the stats window: the hit points, the turn, and placeholders for the rest. */
+void screen_draw_stats(uint16_t turn, uint8_t hp, uint8_t hp_max);
+
+/** @brief Show the hit points in the stats window: "HP   12/ 12". */
+void screen_show_hp(uint8_t hp, uint8_t hp_max);
 
 /** @brief Show the turn count in the stats window. */
 void screen_show_turn(uint16_t turn);
