@@ -50,8 +50,6 @@ static int melee_is(nge_entity_id_t id, const attack_base_t *m)
 static int creature_ok(nge_entity_id_t id, nge_owner_t owner, uint8_t kind)
 {
     const gen_creature_base_t *b = &gen_creatures[kind];
-    unsigned int lo = b->health.hp_bonus + b->health.hp_dice;
-    unsigned int hi = b->health.hp_bonus + b->health.hp_dice * b->health.hp_sides;
 
     if (!made(id, owner, CLASS_CREATURE, kind) || !render_is(id, &b->render)) {
         return 0;
@@ -61,7 +59,7 @@ static int creature_ok(nge_entity_id_t id, nge_owner_t owner, uint8_t kind)
         return 0;
     }
     if (!NGE_ENTITY_HAS_COMPONENTS(id, COMPONENT_HEALTH) ||
-        health_hp[id] < lo || health_hp[id] > hi || health_hp_max[id] != health_hp[id] ||
+        health_hp[id] != b->health.hp || health_hp_max[id] != b->health.hp ||
         health_immune[id] != b->health.immune || health_resist[id] != b->health.resist ||
         health_vuln[id] != b->health.vuln || health_ac[id] != b->health.ac ||
         stats_speed[id] != b->stats.speed || !melee_is(id, &b->melee)) {
@@ -109,7 +107,6 @@ int main(void)
     int i;
     int ok;
     int lo;
-    int hi;
     uint8_t kind;
 
     test_init();
@@ -142,18 +139,16 @@ int main(void)
     id = gen_creature(CR_PLAYER, NGE_OWNER_WORLD);
     CHECK(creature_ok(id, NGE_OWNER_WORLD, CR_PLAYER));
 
-    /* Hit points are rolled across the whole range: a rat has 1d4 */
+    /* Hit points are fixed by kind: every rat the same */
     reset();
-    lo = 255;
-    hi = 0;
-    for (i = 0; i < 200; i++) {
+    ok = 1;
+    for (i = 0; i < 20 && ok; i++) {
         id = gen_creature(CR_RAT, AREA);
-        lo = health_hp[id] < lo ? health_hp[id] : lo;
-        hi = health_hp[id] > hi ? health_hp[id] : hi;
+        ok = health_hp[id] == gen_creatures[CR_RAT].health.hp && health_hp[id] == 3;
         nge_entity_destroy(id);
         nge_entity_release(nge_entity_next_dying());
     }
-    CHECK(lo == 1 && hi == 4);
+    CHECK(ok);
 
     /* ---- names: copied into the caller's buffer, cut to fit ---- */
     reset();

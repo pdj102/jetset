@@ -25,7 +25,7 @@ static nge_entity_id_t with_attack(int8_t to_hit, uint8_t dice, uint8_t sides, i
 
 int main(void)
 {
-    health_base_t h = { 0, 0, 5, 0, 0, 0, 0 };
+    health_base_t h = { 5, 0, 0, 0, 0 };   /* 5 hp; the AC is set below */
     attack_base_t b;
     nge_entity_id_t id;
     nge_entity_id_t target;

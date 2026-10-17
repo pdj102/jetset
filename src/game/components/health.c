@@ -10,7 +10,6 @@
 #include "game/components/health.h"
 
 #include <stddef.h>
-#include <stdlib.h>
 
 #include "core/nge_util.h"
 #include "event/nge_event.h"
@@ -29,24 +28,12 @@ static void check_health(nge_entity_id_t id)
 
 void health_add(nge_entity_id_t id, const health_base_t *b) NGE_BANKED
 {
-    uint16_t hp = b->hp_bonus;
-    uint8_t i;
-
     nge_util_assert(id < NGE_ENTITY_MAX);
     nge_util_assert(NGE_ENTITY_STATE(id) != NGE_ENTITY_FREE);
-    nge_util_assert(b->hp_dice == 0 || b->hp_sides != 0);
+    nge_util_assert(b->hp != 0);
 
-    for (i = 0; i < b->hp_dice; i++) {
-        hp += 1 + (unsigned int)rand() % b->hp_sides;
-    }
-    if (hp > 255) {
-        hp = 255;
-    }
-    if (hp == 0) {
-        hp = 1;
-    }
-    health_hp[id] = (uint8_t)hp;
-    health_hp_max[id] = (uint8_t)hp;
+    health_hp[id] = b->hp;
+    health_hp_max[id] = b->hp;
     health_immune[id] = b->immune;
     health_resist[id] = b->resist;
     health_vuln[id] = b->vuln;

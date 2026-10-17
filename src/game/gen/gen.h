@@ -10,8 +10,8 @@
  * base entities: constant records, one per kind (gen_kinds.h), defined as
  * data in the class's page data file (gen_<class>_pdata.c). A generator
  * creates an entity, gives it its owner and its kind (game/components/
- * kind.h), adds every component the kind needs from the record, rolling
- * any ranges (hit points), and returns it:
+ * kind.h), adds every component the kind needs from the record (its
+ * values the same for every entity of the kind), and returns it:
  *
  *     id = gen_creature(CR_RAT, LEVEL_AREA);
  *     if (id != NGE_ENTITY_INVALID) {

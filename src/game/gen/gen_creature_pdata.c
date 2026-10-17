@@ -22,7 +22,7 @@ const gen_creature_base_t gen_creatures[CR_COUNT] = {
         .render = { DEMO_SPRITE_PLAYER, 2, PLAYER_FRAME_RATE, 0, LAYER_PLAYER },
         .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
         .stats = { .speed = 10 },
-        .health = { .hp_dice = 0, .hp_sides = 0, .hp_bonus = 12, .ac = 10 },
+        .health = { .hp = 12, .ac = 10 },
         .melee = { .to_hit = 0, .dice = 1, .sides = 2, .bonus = 0, .type = DMG_BLUNT, .range = 1 },   /* fists */
         .inventory = { .capacity = 20, .slots = SLOTS_HUMANOID },
         .flags = CREATURE_PLAYER,
@@ -33,7 +33,7 @@ const gen_creature_base_t gen_creatures[CR_COUNT] = {
         .render = { DEMO_SPRITE_RAT, 1, 0, 0, LAYER_MONSTERS },
         .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
         .stats = { .speed = 10 },
-        .health = { .hp_dice = 1, .hp_sides = 4, .hp_bonus = 0, .immune = DMG_BIT(DMG_POISON), .ac = 12 },
+        .health = { .hp = 3, .immune = DMG_BIT(DMG_POISON), .ac = 12 },
         .melee = { .to_hit = 0, .dice = 1, .sides = 3, .bonus = 0, .type = DMG_PIERCE, .range = 1 },  /* bite */
         .inventory = { .capacity = 0, .slots = 0 },     /* carries nothing */
         .flags = 0,
@@ -45,8 +45,7 @@ const gen_creature_base_t gen_creatures[CR_COUNT] = {
         .render = { DEMO_SPRITE_PLAYER, 2, PLAYER_FRAME_RATE, NGE_SPRITE_PALETTE(1), LAYER_MONSTERS },
         .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
         .stats = { .speed = 10 },
-        .health = { .hp_dice = 2, .hp_sides = 4, .hp_bonus = 1,
-                    .resist = DMG_BIT(DMG_BLUNT), .vuln = DMG_BIT(DMG_FIRE), .ac = 13 },
+        .health = { .hp = 6, .resist = DMG_BIT(DMG_BLUNT), .vuln = DMG_BIT(DMG_FIRE), .ac = 13 },
         .melee = { .to_hit = 0, .dice = 1, .sides = 4, .bonus = 0, .type = DMG_SLASH, .range = 1 },   /* claws */
         .inventory = { .capacity = 4, .slots = SLOT_BIT(SLOT_WEAPON) },
         .flags = 0,

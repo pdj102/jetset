@@ -34,10 +34,10 @@ static int is(int i, uint8_t target, uint8_t id, uint8_t source, uint8_t p1, uin
 /* An entity with health: hp hit points, these masks */
 static nge_entity_id_t make(uint8_t hp, uint8_t immune, uint8_t resist, uint8_t vuln)
 {
-    health_base_t b = { 0, 0, 0, 0, 0, 0 };
+    health_base_t b = { 0, 0, 0, 0, 0 };
     nge_entity_id_t id = nge_entity_create();
 
-    b.hp_bonus = hp;
+    b.hp = hp;
     b.immune = immune;
     b.resist = resist;
     b.vuln = vuln;
@@ -75,8 +75,6 @@ int main(void)
     uint8_t want_outcome;
     unsigned int m;
     unsigned int i;
-    int lo;
-    int hi;
     int ok;
 
     test_init();
@@ -89,47 +87,23 @@ int main(void)
     nge_entity_init();
     nge_event_init();
 
-    /* ---- add: rolled from the base, unhurt, the masks ---- */
-    b.hp_dice = 2;
-    b.hp_sides = 6;
-    b.hp_bonus = 3;
+    /* ---- add: the base's hit points, unhurt, the masks and AC ---- */
+    b.hp = 17;
     b.immune = 0x01;
     b.resist = 0x02;
     b.vuln = 0x04;
-    srand(5);
-    lo = 255;
-    hi = 0;
-    for (i = 0; i < 300; i++) {
-        a = nge_entity_create();
-        health_add(a, &b);
-        lo = health_hp[a] < lo ? health_hp[a] : lo;
-        hi = health_hp[a] > hi ? health_hp[a] : hi;
-        ok = health_hp_max[a] == health_hp[a] && health_immune[a] == 0x01 && health_resist[a] == 0x02 &&
-             health_vuln[a] == 0x04 && NGE_ENTITY_HAS_COMPONENTS(a, COMPONENT_HEALTH);
-        nge_entity_destroy(a);
-        nge_entity_release(nge_entity_next_dying());
-        if (!ok) {
-            break;
-        }
-    }
-    CHECK(ok && lo == 5 && hi == 15);                         /* 2d6 + 3 */
-    b.hp_dice = 1;                                            /* 1d10 + 250: past 255, capped */
-    b.hp_sides = 10;
-    b.hp_bonus = 250;
+    b.ac = 11;
     a = nge_entity_create();
-    ok = 1;
-    for (i = 0; i < 50 && ok; i++) {
-        health_add(a, &b);
-        ok = health_hp[a] >= 251;                             /* never wrapped round */
-    }
-    CHECK(ok);
-    b.hp_dice = 0;
-    b.hp_bonus = 0;                                           /* nothing: at least 1 */
     health_add(a, &b);
-    CHECK(health_hp[a] == 1 && health_hp_max[a] == 1);
-    CHECK(HEALTH_BASE_HAS(&b) == 0);
-    b.hp_bonus = 1;
+    CHECK(health_hp[a] == 17 && health_hp_max[a] == 17 && health_immune[a] == 0x01 &&
+          health_resist[a] == 0x02 && health_vuln[a] == 0x04 && health_ac[a] == 11 &&
+          NGE_ENTITY_HAS_COMPONENTS(a, COMPONENT_HEALTH));
+    b.hp = 255;
+    health_add(a, &b);                                        /* again: replaced */
+    CHECK(health_hp[a] == 255 && health_hp_max[a] == 255);
     CHECK(HEALTH_BASE_HAS(&b) == 1);
+    b.hp = 0;
+    CHECK(HEALTH_BASE_HAS(&b) == 0);
     nge_entity_init();
 
     /* ---- dealt: every amount against every combination of masks ---- */
@@ -216,8 +190,7 @@ int main(void)
     CHECK(test_halt_count == 1);
     TEST_EXPECT_HALT(health_set_max(a, 0));
     CHECK(test_halt_count == 1);
-    b.hp_dice = 1;
-    b.hp_sides = 0;
+    b.hp = 0;                                                 /* no hit points */
     TEST_EXPECT_HALT(health_add(a, &b));
     CHECK(test_halt_count == 1);
 

@@ -66,11 +66,9 @@
 #define EV_DMG_OUTCOME(p2)          ((uint8_t)((p2) >> 4))
 #define EV_DMG_TYPE(p2)             ((uint8_t)((p2) & 0x0F))
 
-/** Base health: the health part of a kind's base record. hp_max is rolled as hp_dice d hp_sides + hp_bonus. */
+/** Base health: the health part of a kind's base record. */
 typedef struct health_base {
-    uint8_t hp_dice;    /**< Number of dice, 0 for none. */
-    uint8_t hp_sides;   /**< Sides on each die, 1 or more if hp_dice isn't 0. */
-    uint8_t hp_bonus;   /**< Added to the roll. */
+    uint8_t hp;         /**< Hit points when unhurt (hp_max), the same for every entity of the kind; 0 for none. */
     uint8_t immune;     /**< DMG_BIT() mask. */
     uint8_t resist;
     uint8_t vuln;
@@ -78,7 +76,7 @@ typedef struct health_base {
 } health_base_t;
 
 /** A base record's health part gives the component: it has some hit points. */
-#define HEALTH_BASE_HAS(b)  ((b)->hp_dice != 0 || (b)->hp_bonus != 0)
+#define HEALTH_BASE_HAS(b)  ((b)->hp != 0)
 
 /* Tables in slot 0 (health_cdata.c): read-only for game code; meaningful only with COMPONENT_HEALTH */
 extern uint8_t health_hp[NGE_ENTITY_MAX];       /**< Hit points now: 0 is dead. */
@@ -89,8 +87,8 @@ extern uint8_t health_vuln[NGE_ENTITY_MAX];     /**< ...takes double from. */
 extern uint8_t health_ac[NGE_ENTITY_MAX];       /**< Armour class. */
 
 /**
- * @brief Give an entity in use the health component from base health: hit
- *        points rolled (1 to 255), unhurt, the base masks and AC.
+ * @brief Give an entity in use the health component from base health:
+ *        unhurt with the base's hit points (1 or more), its masks and AC.
  * @param b In common memory (a copy on the stack): the call maps page 110.
  */
 void health_add(nge_entity_id_t id, const health_base_t *b) NGE_BANKED;
