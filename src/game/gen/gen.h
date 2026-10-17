@@ -41,8 +41,9 @@
 /**
  * @brief Create a creature of kind (CR_*), owned by owner: sprite, block,
  *        stats, health, timer (the player's or a monster's turn) and, if it
- *        can carry things, inventory. The player is persistent: at 0 hp
- *        it isn't destroyed (game over instead).
+ *        can carry things, inventory; then its innate effect, if any
+ *        (GEN_HOOK_INNATE). The player is persistent: at 0 hp it isn't
+ *        destroyed (game over instead).
  * @return The entity, or NGE_ENTITY_INVALID if no entity is free.
  */
 nge_entity_id_t gen_creature(uint8_t kind, nge_owner_t owner) NGE_BANKED;
@@ -70,6 +71,23 @@ nge_entity_id_t gen_item_random(uint8_t depth, nge_owner_t owner) NGE_BANKED;
  *        Banked with the item table (page 108).
  */
 uint16_t gen_item_fits(uint8_t kind) NGE_BANKED;
+
+/* Hooks: the effect (EF_*, game/effects/effects.h) a kind's base record names for each */
+#define GEN_HOOK_USE     0   /**< Items: applied to the user when used up (drunk, eaten: act_use()). */
+#define GEN_HOOK_HIT     1   /**< Weapons and creatures: applied to what a hit leaves alive (act_melee()). */
+#define GEN_HOOK_WORN    2   /**< Items: its modifiers and statuses count while equipped. */
+#define GEN_HOOK_INNATE  3   /**< Creatures: applied when generated. */
+#define GEN_HOOKS        4
+
+/**
+ * @brief The effect an entity's kind names for hook (GEN_HOOK_*): EF_NONE
+ *        (0) if none, or if the entity has no kind. In common memory: it
+ *        calls its class's banked copy (pages 106, 108).
+ */
+uint8_t gen_hook(nge_entity_id_t id, uint8_t hook);
+
+/** @brief An item kind's (IT_*) subclass (ITEM_POTION...). Banked with the item table (page 108). */
+uint8_t gen_item_subclass(uint8_t kind) NGE_BANKED;
 
 /**
  * @brief Copy the name of an entity's kind into buf: at most size-1

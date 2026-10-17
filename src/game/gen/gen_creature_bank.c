@@ -41,6 +41,9 @@ static nge_entity_id_t create(uint8_t kind, nge_owner_t owner)
     }
     /* Its turns, every speed ticks: the player's stop the clock for a command */
     nge_timer_add(id, (b.flags & CREATURE_PLAYER) ? TIMER_PLAYER : TIMER_MONSTER, stats_speed[id], 0);
+    if (b.hooks[GEN_HOOK_INNATE] != EF_NONE) {
+        effect_apply(b.hooks[GEN_HOOK_INNATE], id, NGE_ENTITY_INVALID);   /* an entity of its own, owned by it */
+    }
     return id;
 }
 
@@ -61,6 +64,14 @@ nge_entity_id_t gen_creature_random(uint8_t depth, nge_owner_t owner) NGE_BANKED
     }
     kind = gen_pick(where, CR_COUNT, depth);
     return (kind == 0xFF) ? NGE_ENTITY_INVALID : create(kind, owner);
+}
+
+uint8_t gen_creature_hook(uint8_t kind, uint8_t hook) NGE_BANKED
+{
+    nge_util_assert(kind < CR_COUNT);
+    nge_util_assert(hook < GEN_HOOKS);
+
+    return gen_creatures[kind].hooks[hook];
 }
 
 void gen_creature_name(uint8_t kind, char *buf, uint8_t size) NGE_BANKED

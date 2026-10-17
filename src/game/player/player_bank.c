@@ -123,6 +123,9 @@ void player_command(nge_key_event_t ev) NGE_BANKED
     case 'r':
         game_set_state(GAME_UNEQUIP);
         break;
+    case 'u':
+        game_set_state(GAME_USE);
+        break;
     case 'f':
         game_set_state(GAME_TARGET);
         break;

@@ -14,6 +14,7 @@
 #include "game/components/inventory.h"
 #include "game/components/item.h"
 #include "game/components/kind.h"
+#include "game/effects/effects.h"
 #include "game/events.h"
 #include "game/gen/gen.h"
 
@@ -79,8 +80,9 @@ uint8_t act_equip(act_t *a, uint8_t mode) NGE_BANKED
 
     /* 3. Resolve: nothing to roll */
 
-    /* 4. Apply, then the event */
+    /* 4. Apply, then the event: its worn effect now counts */
     item_slot[item] = slot;
+    effects_recompute(actor);
     nge_event_post(item, EV_EQUIPPED, actor, slot, 0);
     return act_succeed(a);
 }
@@ -110,8 +112,9 @@ uint8_t act_unequip(act_t *a, uint8_t mode) NGE_BANKED
 
     /* 3. Resolve: nothing to roll */
 
-    /* 4. Apply, then the event */
+    /* 4. Apply, then the event: its worn effect no longer counts */
     item_slot[item] = SLOT_NONE;
+    effects_recompute(actor);
     nge_event_post(item, EV_UNEQUIPPED, actor, 0, 0);
     return act_succeed(a);
 }

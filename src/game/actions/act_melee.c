@@ -18,6 +18,8 @@
 #include "game/components/health.h"
 #include "game/components/inventory.h"
 #include "game/components/item.h"
+#include "game/effects/effects.h"
+#include "game/gen/gen.h"
 #include "game/events.h"
 
 /* The distance between two tiles, in moves: the larger of the x and y distances */
@@ -40,6 +42,7 @@ uint8_t act_melee(act_t *a, uint8_t mode) NGE_BANKED
     uint8_t y;
     uint8_t roll;
     uint8_t damage;
+    uint8_t ef;
 
     /* 1. Context: the attack used, and the target */
     nge_util_assert(actor < NGE_ENTITY_MAX && NGE_ENTITY_IS_ALIVE(actor));
@@ -94,9 +97,13 @@ uint8_t act_melee(act_t *a, uint8_t mode) NGE_BANKED
     }
     damage = attack_damage(attacker, ATTACK_MELEE);
 
-    /* 4. Apply: the hit, then the damage (its events follow) */
+    /* 4. Apply: the hit, then the damage (its events follow), then the hit's effect */
     nge_event_post(target, EV_HIT, actor, roll, weapon);
     a->kind = attack_type[ATTACK_MELEE][attacker];
     a->amount = health_damage(target, actor, damage, a->kind);
+    ef = gen_hook(attacker, GEN_HOOK_HIT);
+    if (ef != EF_NONE) {
+        effect_apply(ef, target, actor);   /* refused if the hit killed it */
+    }
     return act_succeed(a);
 }

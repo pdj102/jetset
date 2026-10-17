@@ -12,13 +12,15 @@
 
 #include "data/sprite_data.h"
 #include "game/actors.h"
+#include "sprite/nge_sprite.h"
 
 const gen_item_base_t gen_items[IT_COUNT] = {
     [IT_POTION] = {
-        .name = "potion",
+        .name = "healing potion",
         .render = { DEMO_SPRITE_POTION, 1, 0, 0, LAYER_OBJECTS },
         .subclass = ITEM_POTION,
         .fits = 0,
+        .hooks = { [GEN_HOOK_USE] = EF_HEALING },
         .where = { .depth = 1, .rarity = 10 },
     },
     [IT_SWORD] = {
@@ -30,10 +32,36 @@ const gen_item_base_t gen_items[IT_COUNT] = {
         .where = { .depth = 1, .rarity = 5 },
     },
     [IT_RING] = {
-        .name = "ring",
+        .name = "ring of health",
         .render = { DEMO_SPRITE_RING, 1, 0, 0, LAYER_OBJECTS },
         .subclass = ITEM_RING,
         .fits = SLOT_BIT(SLOT_RING_L) | SLOT_BIT(SLOT_RING_R),
+        .hooks = { [GEN_HOOK_WORN] = EF_RING_HEALTH },
         .where = { .depth = 1, .rarity = 3 },
+    },
+    /* Until they have sprites of their own: the potion recoloured, the rat upside down, the potion on its side */
+    [IT_ANTIDOTE] = {
+        .name = "antidote",
+        .render = { DEMO_SPRITE_POTION, 1, 0, NGE_SPRITE_PALETTE(1), LAYER_OBJECTS },
+        .subclass = ITEM_POTION,
+        .fits = 0,
+        .hooks = { [GEN_HOOK_USE] = EF_CURE },
+        .where = { .depth = 1, .rarity = 4 },
+    },
+    [IT_FOOD] = {
+        .name = "dead rat",
+        .render = { DEMO_SPRITE_RAT, 1, 0, NGE_SPRITE_MIRROR_Y, LAYER_OBJECTS },
+        .subclass = ITEM_FOOD,
+        .fits = 0,
+        .hooks = { [GEN_HOOK_USE] = EF_POISON },
+        .where = { .depth = 1, .rarity = 4 },
+    },
+    [IT_ELIXIR] = {
+        .name = "elixir",
+        .render = { DEMO_SPRITE_POTION, 1, 0, NGE_SPRITE_ROTATE | NGE_SPRITE_PALETTE(1), LAYER_OBJECTS },
+        .subclass = ITEM_POTION,
+        .fits = 0,
+        .hooks = { [GEN_HOOK_USE] = EF_VITALITY },
+        .where = { .depth = 1, .rarity = 1 },
     },
 };

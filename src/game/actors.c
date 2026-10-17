@@ -4,27 +4,19 @@
 
 #include "core/nge_util.h"
 #include "data/sprite_data.h"
-#include "ecs/components/nge_block.h"
-#include "ecs/components/nge_location.h"
 #include "ecs/nge_owner.h"
-#include "event/nge_event.h"
 #include "game/dev.h"
-#include "game/events.h"
+#include "game/components/attrs.h"
 #include "game/components/health.h"
+#include "game/effects/effects.h"
 #include "game/gen/gen.h"
-#include "game/timers.h"
 #include "game/level/level.h"
 #include "sprite/nge_sprite.h"
 
-/* The demo effect: every 5 turns, 4 times */
-#define GLOW_PERIOD  (5 * NGE_TIMER_TICKS_PER_TURN)
-#define GLOW_HEAL    2   /* hit points restored each time */
-
 #if GAME_DEV_KIT
 /* The development kit's items, owned by the player: in their pack */
-static const uint8_t dev_kit[] = { IT_SWORD, IT_RING, IT_RING, IT_RING };
+static const uint8_t dev_kit[] = { IT_SWORD, IT_RING, IT_RING, IT_RING, IT_POTION, IT_ANTIDOTE, IT_FOOD, IT_ELIXIR };
 #endif
-#define GLOW_CYCLES  4
 
 nge_entity_id_t actor_player;
 
@@ -37,8 +29,6 @@ void actors_load_graphics(void)
 
 void actors_create(void)
 {
-    nge_entity_id_t glow;
-
     /*
      * The player, from its base data: placed by level_generate(). Created
      * first, so entity 0: on a tick where others are due too, its turn
@@ -54,27 +44,10 @@ void actors_create(void)
         for (i = 0; i < sizeof(dev_kit); i++) {
             gen_item(dev_kit[i], actor_player);   /* owned, not placed: stowed */
         }
-        /* Every damage outcome can be seen with the X key */
-        health_set_flags(actor_player, DMG_BIT(DMG_POISON), DMG_BIT(DMG_FIRE), DMG_BIT(DMG_COLD));
+        /* Every damage outcome can be seen with the X key (immune to acid: poison still hurts) */
+        effects_set_base(actor_player, ATTR_IMMUNE, DMG_BIT(DMG_ACID));
+        effects_set_base(actor_player, ATTR_RESIST, DMG_BIT(DMG_FIRE));
+        effects_set_base(actor_player, ATTR_VULN, DMG_BIT(DMG_COLD));
     }
 #endif
-
-    /* A demo effect on the player: an entity with a timer, owned by the player */
-    glow = nge_entity_create();
-    nge_util_assert(glow != NGE_ENTITY_INVALID);
-    nge_owner_set(glow, actor_player);
-    nge_timer_add(glow, TIMER_GLOW, GLOW_PERIOD, GLOW_CYCLES);
-}
-
-void actors_on_glow(nge_entity_id_t id, uint8_t cycles)
-{
-    nge_entity_id_t target = NGE_OWNER_OF(id);
-
-    if (cycles == 1) {
-        nge_event_post(target, EV_GLOW_FADED, id, 0, 0);
-        nge_entity_destroy(id);   /* its last firing: the effect goes */
-        return;
-    }
-    nge_event_post(target, EV_GLOWED, id, 0, 0);
-    health_heal(target, GLOW_HEAL);
 }

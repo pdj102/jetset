@@ -14,9 +14,11 @@
 #include "event/nge_event.h"
 
 #include "game/actors.h"
+#include "game/components/attrs.h"
 #include "game/components/health.h"
 #include "game/components/inventory.h"
 #include "game/components/item.h"
+#include "game/effects/effects.h"
 #include "game/events.h"
 #include "game/messages/messages.h"
 #include "game/level/level.h"
@@ -66,8 +68,8 @@ static void game_on_timer(nge_entity_id_t id, uint8_t kind, uint8_t cycles)
     case TIMER_PLAYER:
         player_on_turn(id);
         break;
-    case TIMER_GLOW:
-        actors_on_glow(id, cycles);
+    case TIMER_EFFECT:
+        effects_on_timer(id, cycles);
         break;
     case TIMER_MONSTER:
         break;              /* no AI yet: it waits */
@@ -142,8 +144,9 @@ static void play_enter(void)
 {
     nge_render_set_view(LEVEL_AREA);
     nge_map_invalidate();
-    screen_draw_stats(nge_timer_turns, health_hp[actor_player], health_hp_max[actor_player]);
-    screen_help("g:get i:inv w:wear r:off d:drop Q:quit");
+    screen_draw_stats(nge_timer_turns, health_hp[actor_player], health_hp_max[actor_player],
+                      health_ac[actor_player], status_mask[actor_player]);
+    screen_help("g:get i:inv u:use w:wear r:off d:drop");
 }
 
 static void dead_enter(void)
@@ -192,6 +195,9 @@ void game_set_state(game_state_t state)
         break;
     case GAME_UNEQUIP:
         ui_items_enter(UI_UNEQUIP);
+        break;
+    case GAME_USE:
+        ui_items_enter(UI_USE);
         break;
     case GAME_TARGET:
         player_target_enter();
@@ -276,6 +282,9 @@ void game_run(void)
             break;
         case GAME_UNEQUIP:
             ui_items_update(UI_UNEQUIP);
+            break;
+        case GAME_USE:
+            ui_items_update(UI_USE);
             break;
         case GAME_TARGET:
             player_target_update();

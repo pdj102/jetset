@@ -26,6 +26,7 @@ const gen_creature_base_t gen_creatures[CR_COUNT] = {
         .melee = { .to_hit = 0, .dice = 1, .sides = 2, .bonus = 0, .type = DMG_BLUNT, .range = 1 },   /* fists */
         .inventory = { .capacity = 20, .slots = SLOTS_HUMANOID },
         .flags = CREATURE_PLAYER,
+        .hooks = { [GEN_HOOK_INNATE] = EF_REGEN },
         .where = { .depth = 0, .rarity = 0 },          /* never at random */
     },
     [CR_RAT] = {
@@ -37,6 +38,7 @@ const gen_creature_base_t gen_creatures[CR_COUNT] = {
         .melee = { .to_hit = 0, .dice = 1, .sides = 3, .bonus = 0, .type = DMG_PIERCE, .range = 1 },  /* bite */
         .inventory = { .capacity = 0, .slots = 0 },     /* carries nothing */
         .flags = 0,
+        .hooks = { [GEN_HOOK_HIT] = EF_POISON },        /* a poisonous bite */
         .where = { .depth = 1, .rarity = 10 },
     },
     [CR_GOBLIN] = {

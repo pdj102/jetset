@@ -23,6 +23,7 @@
 #include "game/components/inventory.h"
 #include "game/components/item.h"
 #include "game/components/kind.h"
+#include "game/effects/effects.h"
 #include "game/game.h"
 #include "game/gen/gen.h"
 #include "game/player/player.h"
@@ -39,6 +40,7 @@
 #define LIST_EQUIPPABLE  1   /* in the pack, fitting a slot the player has */
 #define LIST_EQUIPPED    2   /* in use, in slot order */
 #define LIST_ALL         3   /* the pack, then what is in use */
+#define LIST_USABLE      4   /* in the pack, doing something when used */
 
 /* An item screen */
 typedef struct ui_item_screen {
@@ -58,6 +60,8 @@ static const ui_item_screen_t screens[UI_SCREENS] = {
                        LIST_EQUIPPABLE, ACT_EQUIP },
     [UI_UNEQUIP]   = { "Divest", "Letter: take it off   Other keys: back", "You aren't using anything.",
                        LIST_EQUIPPED, ACT_UNEQUIP },
+    [UI_USE]       = { "Partake", "Letter: use it   Other keys: back", "You have nothing to use.",
+                       LIST_USABLE, ACT_USE },
 };
 
 /* Where an equipped item is, after its name */
@@ -69,19 +73,32 @@ static const char *const slot_words[SLOT_COUNT] = {
     [SLOT_BODY]   = " (worn)",
     [SLOT_HANDS]  = " (on hands)",
     [SLOT_FEET]   = " (on feet)",
-    [SLOT_NECK]   = " (around neck)",
-    [SLOT_RING_L] = " (left hand)",
-    [SLOT_RING_R] = " (right hand)",
+    [SLOT_NECK]   = " (neck)",
+    [SLOT_RING_L] = " (left)",    /* short: "ring of health (right)" fits the window */
+    [SLOT_RING_R] = " (right)",
     [SLOT_LIGHT]  = " (lit)",
 };
 
-/* The pack's items, all or only those fitting a slot the player has, appended to ids */
-static uint8_t collect_stowed(uint8_t equippable, nge_entity_id_t *ids, uint8_t n)
+/* An item in the pack belongs in list (LIST_STOWED, LIST_EQUIPPABLE or LIST_USABLE) */
+static uint8_t listed(uint8_t list, nge_entity_id_t id)
+{
+    switch (list) {
+    case LIST_EQUIPPABLE:
+        return (gen_item_fits(kind_index[id]) & inv_slots[actor_player]) != 0;
+    case LIST_USABLE:
+        return gen_hook(id, GEN_HOOK_USE) != EF_NONE;
+    default:
+        return 1;
+    }
+}
+
+/* The pack's items in list (LIST_STOWED, LIST_EQUIPPABLE or LIST_USABLE), appended to ids */
+static uint8_t collect_stowed(uint8_t list, nge_entity_id_t *ids, uint8_t n)
 {
     nge_entity_id_t id = NGE_ENTITY_INVALID;
 
     while (n < LIST_MAX && (id = inv_next(actor_player, id)) != NGE_ENTITY_INVALID) {
-        if (!equippable || (gen_item_fits(kind_index[id]) & inv_slots[actor_player]) != 0) {
+        if (listed(list, id)) {
             ids[n++] = id;
         }
     }
@@ -107,14 +124,12 @@ static uint8_t collect_equipped(nge_entity_id_t *ids, uint8_t n)
 static uint8_t collect(uint8_t list, nge_entity_id_t *ids)
 {
     switch (list) {
-    case LIST_STOWED:
-        return collect_stowed(0, ids, 0);
-    case LIST_EQUIPPABLE:
-        return collect_stowed(1, ids, 0);
     case LIST_EQUIPPED:
         return collect_equipped(ids, 0);
+    case LIST_ALL:
+        return collect_equipped(ids, collect_stowed(LIST_STOWED, ids, 0));
     default:
-        return collect_equipped(ids, collect_stowed(0, ids, 0));
+        return collect_stowed(list, ids, 0);
     }
 }
 

@@ -32,6 +32,7 @@ typedef enum game_state {
     GAME_DROP,        /**< Choosing an item to drop: its letter drops it, any other key returns to play. */
     GAME_EQUIP,       /**< Choosing an item to equip. */
     GAME_UNEQUIP,     /**< Choosing an item to take off. */
+    GAME_USE,         /**< Choosing an item to use up. */
     GAME_TARGET,      /**< Choosing a direction to fire in. */
     GAME_DEAD,        /**< The game is over; any key returns to the title. */
     GAME_STATES       /**< Number of states. */

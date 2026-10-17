@@ -3,8 +3,8 @@
 
 /**
  * @file act.h
- * @brief Actions: what an entity does (move; later attack, pick up, open,
- *        consume...), the same for the player and for monsters.
+ * @brief Actions: what an entity does (move, attack, pick up, use; later
+ *        open...), the same for the player and for monsters.
  *
  * Every action has the same API: it takes a context (act_t, on the
  * caller's stack) and a mode, and returns ACT_SUCCESS or ACT_FAIL:
@@ -42,8 +42,8 @@
  *
  * Actions don't call each other for choices: the caller combines them
  * (bump to attack: a move refused with ACT_R_BLOCKED_CREATURE, then a melee
- * on a.target). Consequences (damage, later) are effects with the same
- * pattern that use no turn, which an action's apply step may call.
+ * on a.target). Consequences (damage, effects: game/effects/effects.h) use
+ * no turn: an action's apply step calls them.
  *
  * Callers: player commands, monster AI, and timer and event handlers (a
  * delayed action is a timer whose handler fills a context and calls
@@ -90,7 +90,8 @@ typedef struct act {
 #define ACT_EQUIP   3
 #define ACT_UNEQUIP 4
 #define ACT_MELEE   5
-#define ACT_COUNT   6
+#define ACT_USE     6
+#define ACT_COUNT   7
 
 /* Reasons (refused or attempted: the table in act.c) */
 #define ACT_R_NONE              0   /**< Succeeded. */
@@ -112,7 +113,8 @@ typedef struct act {
 #define ACT_R_CANT_DAMAGE       16  /**< Refused: the target can't be damaged (no health, or dead). */
 #define ACT_R_OUT_OF_RANGE      17  /**< Refused: the target is out of the attack's reach. */
 #define ACT_R_MISSED            18  /**< Attempted: the attack missed (the turn is used). */
-#define ACT_R_COUNT             19
+#define ACT_R_CANT_USE          19  /**< Refused: using the item does nothing (a sword). */
+#define ACT_R_COUNT             20
 
 /**
  * @brief Move one tile.
@@ -182,11 +184,25 @@ uint8_t act_unequip(act_t *a, uint8_t mode) NGE_BANKED;
  *
  * A hit (1d20 + to hit >= the target's AC; 20 always hits, 1 always
  * misses) posts EV_HIT (p1: the roll, p2: the weapon) and damages the
- * target (health_damage(): EV_DAMAGED, maybe EV_DIED): success. A miss
+ * target (health_damage(): EV_DAMAGED, maybe EV_DIED), then applies the
+ * weapon's (or the actor's) hit effect to a target left alive
+ * (GEN_HOOK_HIT, game/gen/gen.h: a poisonous bite): success. A miss
  * posts EV_MISSED and fails with ACT_R_MISSED, using the turn. Refused with
  * ACT_R_NO_ATTACK, ACT_R_NO_TARGET, ACT_R_CANT_DAMAGE or ACT_R_OUT_OF_RANGE.
  */
 uint8_t act_melee(act_t *a, uint8_t mode) NGE_BANKED;
+
+/**
+ * @brief Use up an item from the inventory: drink a potion, eat food.
+ *
+ * In: actor (alive), item. Succeeds if the actor has the item stowed and
+ * it has a use effect (GEN_HOOK_USE, game/gen/gen.h): posts EV_USED,
+ * destroys the item and applies the effect to the actor
+ * (effect_apply(), game/effects/effects.h: its events follow); a->kind
+ * is the effect (EF_*). Refused with ACT_R_NOT_CARRIED, ACT_R_EQUIPPED or
+ * ACT_R_CANT_USE.
+ */
+uint8_t act_use(act_t *a, uint8_t mode) NGE_BANKED;
 
 /** @brief Call action (ACT_MOVE...) by number: for the AI and delayed actions. */
 uint8_t act_do(uint8_t action, act_t *a, uint8_t mode);

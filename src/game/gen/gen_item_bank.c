@@ -58,6 +58,21 @@ uint16_t gen_item_fits(uint8_t kind) NGE_BANKED
     return gen_items[kind].fits;
 }
 
+uint8_t gen_item_subclass(uint8_t kind) NGE_BANKED
+{
+    nge_util_assert(kind < IT_COUNT);
+
+    return gen_items[kind].subclass;
+}
+
+uint8_t gen_item_hook(uint8_t kind, uint8_t hook) NGE_BANKED
+{
+    nge_util_assert(kind < IT_COUNT);
+    nge_util_assert(hook < GEN_HOOKS);
+
+    return gen_items[kind].hooks[hook];
+}
+
 void gen_item_name(uint8_t kind, char *buf, uint8_t size) NGE_BANKED
 {
     nge_util_assert(kind < IT_COUNT);

@@ -132,6 +132,42 @@ int main(void)
     CHECK(gen_item_fits(IT_POTION) == 0 && gen_item_fits(IT_SWORD) == SLOT_BIT(SLOT_WEAPON) &&
           gen_item_fits(IT_RING) == (SLOT_BIT(SLOT_RING_L) | SLOT_BIT(SLOT_RING_R)));
 
+    /* ---- hooks and subclasses: what the records say, by kind and by entity ---- */
+    reset();
+    ok = 1;
+    for (kind = 0; kind < IT_COUNT; kind++) {
+        id = gen_item(kind, AREA);
+        ok = ok && gen_item_subclass(kind) == gen_items[kind].subclass;
+        for (i = 0; i < GEN_HOOKS; i++) {
+            ok = ok && gen_item_hook(kind, (uint8_t)i) == gen_items[kind].hooks[i] &&
+                 gen_hook(id, (uint8_t)i) == gen_items[kind].hooks[i] && gen_items[kind].hooks[i] < EF_COUNT;
+        }
+    }
+    for (kind = 0; kind < CR_COUNT; kind++) {
+        for (i = 0; i < GEN_HOOKS; i++) {
+            ok = ok && gen_creature_hook(kind, (uint8_t)i) == gen_creatures[kind].hooks[i] &&
+                 gen_creatures[kind].hooks[i] < EF_COUNT;
+        }
+    }
+    CHECK(ok);
+    CHECK(gen_item_hook(IT_POTION, GEN_HOOK_USE) == EF_HEALING && gen_item_hook(IT_RING, GEN_HOOK_WORN) == EF_RING_HEALTH &&
+          gen_item_hook(IT_ANTIDOTE, GEN_HOOK_USE) == EF_CURE && gen_item_hook(IT_FOOD, GEN_HOOK_USE) == EF_POISON &&
+          gen_item_hook(IT_ELIXIR, GEN_HOOK_USE) == EF_VITALITY && gen_item_hook(IT_SWORD, GEN_HOOK_HIT) == EF_NONE);
+    CHECK(gen_item_subclass(IT_FOOD) == ITEM_FOOD && gen_item_subclass(IT_ELIXIR) == ITEM_POTION);
+    id = gen_creature(CR_RAT, AREA);
+    CHECK(gen_hook(id, GEN_HOOK_HIT) == EF_POISON && gen_hook(id, GEN_HOOK_INNATE) == EF_NONE);
+    CHECK(nge_owner_count(id) == 0);                           /* no innate effect */
+    id = gen_creature(CR_PLAYER, AREA);
+    CHECK(gen_hook(id, GEN_HOOK_INNATE) == EF_REGEN && nge_owner_count(id) == 1);   /* its innate effect */
+    chest = nge_entity_create();                               /* no kind: no hooks */
+    CHECK(gen_hook(chest, GEN_HOOK_USE) == EF_NONE);
+    TEST_EXPECT_HALT(gen_hook(id, GEN_HOOKS));
+    CHECK(test_halt_count == 1);
+    TEST_EXPECT_HALT(gen_item_hook(IT_COUNT, GEN_HOOK_USE));
+    CHECK(test_halt_count == 1);
+    TEST_EXPECT_HALT(gen_creature_hook(CR_COUNT, GEN_HOOK_HIT));
+    CHECK(test_halt_count == 1);
+
     /* Any owner: an item in a chest, a creature not yet placed */
     chest = gen_item(IT_SWORD, AREA);
     id = gen_item(IT_POTION, chest);
@@ -193,8 +229,12 @@ int main(void)
             nge_entity_release(nge_entity_next_dying());
         }
     }
-    CHECK(seen[IT_POTION] + seen[IT_SWORD] + seen[IT_RING] == 300);
-    CHECK(seen[IT_POTION] > seen[IT_SWORD] && seen[IT_SWORD] > seen[IT_RING] && seen[IT_RING] > 0);   /* 10, 5, 3 */
+    CHECK(seen[IT_POTION] + seen[IT_SWORD] + seen[IT_RING] + seen[IT_ANTIDOTE] + seen[IT_FOOD] +
+          seen[IT_ELIXIR] == 300);
+    /* Rarities 10, 5, 4 and 4, 3, 1 */
+    CHECK(seen[IT_POTION] > seen[IT_SWORD] && seen[IT_SWORD] > seen[IT_RING] && seen[IT_RING] > seen[IT_ELIXIR] &&
+          seen[IT_ELIXIR] > 0);
+    CHECK(seen[IT_ANTIDOTE] > seen[IT_ELIXIR] && seen[IT_FOOD] > seen[IT_ELIXIR]);
     /* Nothing appears at depth 0 */
     CHECK(gen_creature_random(0, AREA) == NGE_ENTITY_INVALID);
     CHECK(gen_item_random(0, AREA) == NGE_ENTITY_INVALID);

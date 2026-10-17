@@ -30,7 +30,7 @@ typedef struct stats_base {
 } stats_base_t;
 
 /* Tables in slot 0 (stats_cdata.c): meaningful only with COMPONENT_STATS */
-extern uint8_t stats_speed[NGE_ENTITY_MAX];    /**< Ticks between turns: its timer's period. */
+extern uint8_t stats_speed[NGE_ENTITY_MAX];    /**< Ticks between turns: its timer's period (derived: ATTR_SPEED, game/components/attrs.h). */
 
 /**
  * @brief Give an entity in use the stats component from base stats.

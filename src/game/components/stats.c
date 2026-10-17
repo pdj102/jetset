@@ -10,6 +10,7 @@
 #include "game/components/stats.h"
 
 #include "core/nge_util.h"
+#include "game/components/attrs.h"
 
 static void check_entity(nge_entity_id_t id)
 {
@@ -24,6 +25,7 @@ void stats_add(nge_entity_id_t id, const stats_base_t *b) NGE_BANKED
     nge_util_assert(b->speed != 0);
 
     stats_speed[id] = b->speed;
+    attr_base[ATTR_SPEED][id] = b->speed;
     nge_entity_components[id] |= COMPONENT_STATS;
 }
 

@@ -12,7 +12,7 @@
 #      and folders are included too. Next register and IO port names come from z88dk's own
 #      headers.
 #   Game code (src/game) is linked only into the tests listed with it below
-#   (GEN_GAME_SRCS for test_gen, LEVEL_GAME_SRCS and those for test_level,
+#   (GEN_GAME_SRCS, with the components and effects, for test_gen, LEVEL_GAME_SRCS and those for test_level,
 #   ACT_GAME_SRCS and the gen ones for test_act, the gen ones for
 #   test_inventory, UI_GAME_SRCS and the action ones for test_ui).
 #   Library files that only work on the Next (inline asm traps) are listed in
@@ -43,7 +43,8 @@ GEN_GAME_SRCS := $(addprefix $(GAMEDIR)/,gen/gen.c gen/gen_shared_bank.c \
                  components/kind_cdata.c components/stats.c components/stats_cdata.c \
                  components/item.c components/item_cdata.c components/inventory.c \
                  components/inventory_cdata.c components/health.c components/health_cdata.c \
-                 components/attack.c components/attack_cdata.c)
+                 components/attack.c components/attack_cdata.c components/attrs_cdata.c \
+                 effects/effects_bank.c effects/effects_pdata.c)
 GEN_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(GEN_GAME_SRCS))
 ACT_GAME_SRCS := $(wildcard $(GAMEDIR)/actions/*.c)
 ACT_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(ACT_GAME_SRCS)) $(GEN_GAME_OBJS)
@@ -99,6 +100,9 @@ $(BUILD)/test_health: $(BUILD)/test_health.o $(LIB_OBJS) $(SUPPORT_OBJS) $(GEN_G
 	$(HOSTCC) $(CFLAGS) $^ -o $@
 
 $(BUILD)/test_attack: $(BUILD)/test_attack.o $(LIB_OBJS) $(SUPPORT_OBJS) $(GEN_GAME_OBJS)
+	$(HOSTCC) $(CFLAGS) $^ -o $@
+
+$(BUILD)/test_effects: $(BUILD)/test_effects.o $(LIB_OBJS) $(SUPPORT_OBJS) $(GEN_GAME_OBJS)
 	$(HOSTCC) $(CFLAGS) $^ -o $@
 
 $(BUILD)/game/%.o: $(GAMEDIR)/%.c $(GEN)/zxn_names.h $(GEN)/zxn_io.h

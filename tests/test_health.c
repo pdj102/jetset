@@ -6,6 +6,7 @@
 #include "ecs/nge_entity.h"
 #include "event/nge_event.h"
 
+#include "game/components/attrs.h"
 #include "game/components/health.h"
 #include "game/events.h"
 
@@ -101,6 +102,9 @@ int main(void)
     b.hp = 255;
     health_add(a, &b);                                        /* again: replaced */
     CHECK(health_hp[a] == 255 && health_hp_max[a] == 255);
+    /* The attributes' bases: the base's values; no statuses */
+    CHECK(attr_base[ATTR_HP_MAX][a] == 255 && attr_base[ATTR_AC][a] == 11 && attr_base[ATTR_IMMUNE][a] == 0x01 &&
+          attr_base[ATTR_RESIST][a] == 0x02 && attr_base[ATTR_VULN][a] == 0x04 && status_mask[a] == 0);
     CHECK(HEALTH_BASE_HAS(&b) == 1);
     b.hp = 0;
     CHECK(HEALTH_BASE_HAS(&b) == 0);
@@ -173,22 +177,12 @@ int main(void)
     CHECK(events() == 1 && seen[0].p1 == 4);
     CHECK(health_heal(a, 3) == 0 && events() == 0);           /* unhurt: nothing, no event */
 
-    /* ---- set max and flags ---- */
-    health_set_max(a, 4);
-    CHECK(health_hp_max[a] == 4 && health_hp[a] == 4);        /* hp kept within it */
-    health_set_max(a, 20);
-    CHECK(health_hp_max[a] == 20 && health_hp[a] == 4);       /* raising it doesn't heal */
-    health_set_flags(a, DMG_BIT(DMG_MAGIC), 0, 0);
-    CHECK(health_dealt(a, 7, DMG_MAGIC, &outcome) == 0 && outcome == DMG_IMMUNE);
-
     /* ---- asserts ---- */
     a = nge_entity_create();                                  /* no health */
     TEST_EXPECT_HALT(health_damage(a, NGE_ENTITY_INVALID, 1, DMG_FIRE));
     CHECK(test_halt_count == 1);
     a = make(5, 0, 0, 0);
     TEST_EXPECT_HALT(health_damage(a, NGE_ENTITY_INVALID, 1, DMG_COUNT));
-    CHECK(test_halt_count == 1);
-    TEST_EXPECT_HALT(health_set_max(a, 0));
     CHECK(test_halt_count == 1);
     b.hp = 0;                                                 /* no hit points */
     TEST_EXPECT_HALT(health_add(a, &b));

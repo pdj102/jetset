@@ -9,6 +9,8 @@
 #include "io/nge_tm_stream.h"
 #include "tilemap/nge_tilemap.h"
 
+#include "game/components/attrs.h"
+
 const nge_rect_t screen_map_view = { .x1 = 0, .x2 = 27, .y1 = 0, .y2 = 26 };
 static const nge_rect_t stats_area = { .x1 = 28, .x2 = 39, .y1 = 0, .y2 = 26 };
 static const nge_rect_t message_area = { .x1 = 0, .x2 = 39, .y1 = 27, .y2 = 30 };
@@ -20,8 +22,10 @@ NGE_FILE *screen_panel = NULL;
 static NGE_FILE *help = NULL;
 char screen_name[SCREEN_NAME_MAX + 1] = "Rogue";
 
-#define STATS_ROW_HP    2    /* stats window row of the hit points */
-#define STATS_ROW_TURN  8    /* stats window row of the turn count */
+#define STATS_ROW_HP      2    /* stats window row of the hit points */
+#define STATS_ROW_AC      4    /* ...of the armour class */
+#define STATS_ROW_TURN    8    /* ...of the turn count */
+#define STATS_ROW_STATUS  10   /* ...of the statuses */
 
 /* The message window's bottom line has text: the next message goes on a new line */
 static uint8_t message_line_used;
@@ -77,7 +81,7 @@ void screen_init(void)
     nge_tm_cls(help);
 }
 
-void screen_draw_stats(uint16_t turn, uint8_t hp, uint8_t hp_max)
+void screen_draw_stats(uint16_t turn, uint8_t hp, uint8_t hp_max, uint8_t ac, uint8_t status)
 {
     nge_tm_cls(screen_stats);
     nge_tm_ink(NGE_INK_YELLOW, screen_stats);
@@ -86,12 +90,14 @@ void screen_draw_stats(uint16_t turn, uint8_t hp, uint8_t hp_max)
     nge_puts("\n\n\n", screen_stats);       /* the hit points' row: screen_show_hp() */
     nge_tm_ink(NGE_INK_WHITE, screen_stats);
     nge_puts("Str      16\n", screen_stats);
-    nge_puts("AC        7\n", screen_stats);
+    nge_puts("\n", screen_stats);          /* the armour class's row: screen_show_ac() */
     nge_puts("Gold      0\n\n", screen_stats);
     nge_tm_ink(NGE_INK_CYAN, screen_stats);
     nge_puts("Depth     1\n", screen_stats);
     screen_show_hp(hp, hp_max);
+    screen_show_ac(ac);
     screen_show_turn(turn);
+    screen_show_status(status);
 }
 
 void screen_show_hp(uint8_t hp, uint8_t hp_max)
@@ -102,6 +108,24 @@ void screen_show_hp(uint8_t hp, uint8_t hp_max)
     nge_putu16w(hp, 4, ' ', screen_stats);
     nge_putc('/', screen_stats);
     nge_putu16w(hp_max, 3, ' ', screen_stats);
+}
+
+void screen_show_ac(uint8_t ac)
+{
+    nge_tm_at(STATS_ROW_AC, 0, screen_stats);
+    nge_tm_ink(NGE_INK_WHITE, screen_stats);
+    nge_puts("AC ", screen_stats);
+    nge_putu16w(ac, 8, ' ', screen_stats);
+}
+
+void screen_show_status(uint8_t status)
+{
+    nge_tm_at(STATS_ROW_STATUS, 0, screen_stats);
+    nge_tm_clreol(screen_stats);
+    if (status & STATUS_POISONED) {
+        nge_tm_ink(NGE_INK_RED, screen_stats);
+        nge_puts("Poisoned", screen_stats);
+    }
 }
 
 void screen_show_turn(uint16_t turn)

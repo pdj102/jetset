@@ -14,15 +14,15 @@
  * |---------------|-------------------------|---------------------------------------------|
  * | TIMER_PLAYER  | the player              | player_on_turn(): stops the clock until a   |
  * |               |                         | command uses the turn (game/player.h)       |
- * | TIMER_GLOW    | an effect, owned by the | actors_on_glow(): a demo effect, by turns   |
- * |               | player                  | (removed when there are real effects)       |
+ * | TIMER_EFFECT  | an active effect, owned | effects_on_timer(): its op each period, and |
+ * |               | by what it affects      | its end after its cycles (game/effects)     |
  * | TIMER_MONSTER | a monster               | none yet (no AI): it waits                  |
  */
 
 #include "ecs/systems/nge_timer.h"
 
 #define TIMER_PLAYER   0   /**< The player's turn: wait for a command. */
-#define TIMER_GLOW     1   /**< Demo effect: a message every few turns, then it fades. */
+#define TIMER_EFFECT   1   /**< An active effect: its period's op; it ends on its last cycle. */
 #define TIMER_MONSTER  2   /**< A monster's turn (no AI yet: it waits a move). */
 
 #endif

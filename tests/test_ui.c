@@ -10,10 +10,14 @@
 #include "ecs/systems/nge_timer.h"
 #include "event/nge_event.h"
 
+#include "game/components/attrs.h"
+#include "game/components/health.h"
 #include "game/components/inventory.h"
 #include "game/components/item.h"
 #include "game/game.h"
+#include "game/effects/effects.h"
 #include "game/gen/gen.h"
+#include "game/messages/messages.h"
 #include "game/screen.h"
 #include "game/ui/ui.h"
 
@@ -87,6 +91,7 @@ int main(void)
     actor_player = gen_creature(CR_PLAYER, AREA);
     nge_location_set(actor_player, 5, 5);
     nge_render_set_view(AREA);
+    nge_event_flush();   /* the player's innate effect started */
 
     /* ---- the inventory, empty: titled, says so, any key goes back ---- */
     last_state = NO_STATE;
@@ -107,8 +112,8 @@ int main(void)
     item_slot[ring1] = SLOT_RING_L;
     ui_items_enter(UI_INVENTORY);
     CHECK(starts(panel(2), " a) sword "));
-    CHECK(starts(panel(3), " b) ring "));
-    CHECK(starts(panel(4), " c) ring (left hand)"));
+    CHECK(starts(panel(3), " b) ring of health "));
+    CHECK(starts(panel(4), " c) ring of health (left)"));
     CHECK(strcmp(panel(5), "                            ") == 0);   /* the rest cleared */
     /* A key only leaves: nothing is done to the item its letter shows */
     last_state = NO_STATE;
@@ -119,7 +124,7 @@ int main(void)
     last_state = NO_STATE;
     ui_items_enter(UI_DROP);
     CHECK(last_state == NO_STATE && starts(panel(0), "       Shed a Burden "));   /* (28 - 13) / 2 */
-    CHECK(starts(panel(2), " a) sword") && starts(panel(3), " b) ring ") && starts(panel(4), "         "));
+    CHECK(starts(panel(2), " a) sword") && starts(panel(3), " b) ring of health ") && starts(panel(4), "         "));
     CHECK(starts(row(31), "Letter: drop it   Other keys: back"));
     nge_timer_stop();
     ui_items_key(UI_DROP, NGE_KEY_B);
@@ -152,7 +157,7 @@ int main(void)
     nge_timer_stop();
     ui_items_enter(UI_UNEQUIP);
     CHECK(starts(panel(0), "           Divest"));
-    CHECK(starts(panel(2), " a) sword (in hand)") && starts(panel(3), " b) ring (left hand)"));
+    CHECK(starts(panel(2), " a) sword (in hand)") && starts(panel(3), " b) ring of health (left)"));
     ui_items_key(UI_UNEQUIP, NGE_KEY_B);
     CHECK(item_slot[ring1] == SLOT_NONE && item_slot[sword] == SLOT_WEAPON);
     /* A refusal: told why, the turn kept */
@@ -164,6 +169,35 @@ int main(void)
     CHECK(said("You can't carry any more."));
     inv_capacity[actor_player] = 20;
     nge_event_flush();
+
+    /* ---- use: only what does something when used; a letter uses it up ---- */
+    nge_timer_stop();
+    last_state = NO_STATE;
+    ui_items_enter(UI_USE);
+    CHECK(last_state == NO_STATE && starts(panel(0), "          Partake "));   /* (28 - 7) / 2 */
+    CHECK(starts(panel(2), " a) healing potion") && starts(panel(3), "     "));   /* not the ring */
+    CHECK(starts(row(31), "Letter: use it   Other keys: back"));
+    ui_items_key(UI_USE, NGE_KEY_A);
+    CHECK(last_state == GAME_PLAY && NGE_ENTITY_STATE(ring2) == NGE_ENTITY_DYING && !nge_timer_stopped());
+    nge_event_process(messages_on_event);
+    CHECK(starts(row(29), "You drink the healing potion.") && said("You feel much better."));
+    last_state = NO_STATE;
+    ui_items_enter(UI_USE);
+    CHECK(last_state == GAME_PLAY && said("You have nothing to use."));
+    /* Food: eaten; the poison's start text */
+    ring2 = gen_item(IT_FOOD, actor_player);
+    ui_items_enter(UI_USE);
+    ui_items_key(UI_USE, NGE_KEY_A);
+    nge_event_process(messages_on_event);
+    CHECK(starts(row(29), "You eat the dead rat.") && said("You feel sick."));
+    effect_cure(actor_player, STATUS_POISONED);
+    nge_event_process(messages_on_event);
+    CHECK(said("The poison wears off."));
+    /* Healing says nothing itself: regeneration is silent (the effect's text speaks for a potion) */
+    health_damage(actor_player, NGE_ENTITY_INVALID, 2, DMG_SLASH);
+    health_heal(actor_player, 1);
+    nge_event_process(messages_on_event);
+    CHECK(said("You take 2 slashing damage."));
 
     /* ---- a choosing screen with nothing to choose: says so, back to play at once ---- */
     nge_entity_destroy(ring1);

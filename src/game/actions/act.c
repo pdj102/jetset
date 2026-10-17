@@ -27,6 +27,7 @@ const uint8_t act_reason_flags[ACT_R_COUNT] = {
     [ACT_R_CANT_DAMAGE]      = 0,
     [ACT_R_OUT_OF_RANGE]     = 0,
     [ACT_R_MISSED]           = ACT_RF_ATTEMPTED,   /* the attack was made: the turn is used */
+    [ACT_R_CANT_USE]         = 0,
 };
 
 uint8_t act_do(uint8_t action, act_t *a, uint8_t mode)
@@ -45,6 +46,8 @@ uint8_t act_do(uint8_t action, act_t *a, uint8_t mode)
         return act_unequip(a, mode);
     case ACT_MELEE:
         return act_melee(a, mode);
+    case ACT_USE:
+        return act_use(a, mode);
     default:
         nge_util_abort("bad action");
         return ACT_FAIL;

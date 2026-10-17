@@ -4,13 +4,13 @@
 /**
  * @file ui.h
  * @brief Screens shown in the map window: the player's item screens
- *        (inventory, drop, equip, take off).
+ *        (inventory, drop, equip, take off, use).
  *
  * A screen hides the sprites, draws a title and a lettered list of items
  * over the map window (screen_panel, game/screen.h), and sets the help
  * bar. Each item screen is a row of a table of descriptions (ui_bank.c):
  * its title, its help, which items it lists and what choosing one does,
- * so a new one (wield, quaff) is a new row and a new game state.
+ * so a new one (read, zap) is a new row and a new game state.
  *
  * Leaving a screen returns to GAME_PLAY, whose entry action redraws the map
  * and the stats and shows the sprites again (game.c).
@@ -30,7 +30,8 @@
 #define UI_DROP       1   /**< Choose an item to drop. */
 #define UI_EQUIP      2   /**< Choose an item to equip. */
 #define UI_UNEQUIP    3   /**< Choose an item to take off. */
-#define UI_SCREENS    4
+#define UI_USE        4   /**< Choose an item to use up: drink, eat. */
+#define UI_SCREENS    5
 
 /**
  * @brief Entry action of an item screen's state: show the screen. A screen

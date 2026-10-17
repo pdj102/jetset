@@ -16,6 +16,7 @@
 #include "game/actors.h"
 #include "game/components/health.h"
 #include "game/components/kind.h"
+#include "game/effects/effects.h"
 #include "game/events.h"
 #include "game/gen/gen.h"
 #include "game/screen.h"
@@ -35,6 +36,17 @@ static void say_named(const char *before, nge_entity_id_t id, const char *after)
     strncat(line, name, sizeof(line) - 1 - strlen(line));
     strncat(line, after, sizeof(line) - 1 - strlen(line));
     screen_message(line);
+}
+
+/* Effect ef's start or end text (EFFECT_TEXT_*), if it has one */
+static void say_effect(uint8_t ef, uint8_t which)
+{
+    char line[MESSAGE_MAX];
+
+    effect_text(ef, which, line, sizeof(line));
+    if (line[0] != '\0') {
+        screen_message(line);
+    }
 }
 
 /* Each damage type's name, in messages */
@@ -127,11 +139,6 @@ void messages_on_event(const nge_event_t *e) NGE_BANKED
             say_named("The ", source, " misses you.");
         }
         break;
-    case EV_HEALED:
-        if (target == actor_player) {
-            screen_message("You feel better.");
-        }
-        break;
     case EV_DIED:
         if (target == actor_player) {
             screen_message("You die...");
@@ -166,14 +173,21 @@ void messages_on_event(const nge_event_t *e) NGE_BANKED
             say_named("You take off a ", target, ".");
         }
         break;
-    case EV_GLOWED:
-        if (target == actor_player) {
-            screen_message("A warm glow surrounds you.");
+    case EV_USED:
+        if (source == actor_player) {
+            say_named(KIND_IS(target, CLASS_ITEM) && gen_item_subclass(kind_index[target]) == ITEM_FOOD
+                          ? "You eat the " : "You drink the ",
+                      target, ".");
         }
         break;
-    case EV_GLOW_FADED:
+    case EV_EFFECT_STARTED:
         if (target == actor_player) {
-            screen_message("The warm glow fades.");
+            say_effect(p1, EFFECT_TEXT_START);
+        }
+        break;
+    case EV_EFFECT_ENDED:
+        if (target == actor_player) {
+            say_effect(p1, EFFECT_TEXT_END);
         }
         break;
     default:
@@ -230,6 +244,9 @@ void messages_act_failed(const act_t *a) NGE_BANKED
         break;
     case ACT_R_OUT_OF_RANGE:
         screen_message("That is out of reach.");
+        break;
+    case ACT_R_CANT_USE:
+        screen_message("You can't use that.");
         break;
     default:
         break;

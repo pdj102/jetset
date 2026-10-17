@@ -18,14 +18,18 @@
 #define CR_COUNT   3
 
 /* Items (CLASS_ITEM) */
-#define IT_POTION  0
-#define IT_SWORD   1
-#define IT_RING    2
-#define IT_COUNT   3
+#define IT_POTION    0   /* healing */
+#define IT_SWORD     1
+#define IT_RING      2   /* of health */
+#define IT_ANTIDOTE  3
+#define IT_FOOD      4   /* a dead rat: poisoned */
+#define IT_ELIXIR    5   /* of vitality */
+#define IT_COUNT     6
 
 /* Item subclasses, in each item's base record */
 #define ITEM_POTION  0
 #define ITEM_WEAPON  1
 #define ITEM_RING    2
+#define ITEM_FOOD    3
 
 #endif

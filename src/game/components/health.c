@@ -9,6 +9,8 @@
 
 #include "game/components/health.h"
 
+#include "game/components/attrs.h"
+
 #include <stddef.h>
 
 #include "core/nge_util.h"
@@ -38,6 +40,12 @@ void health_add(nge_entity_id_t id, const health_base_t *b) NGE_BANKED
     health_resist[id] = b->resist;
     health_vuln[id] = b->vuln;
     health_ac[id] = b->ac;
+    attr_base[ATTR_HP_MAX][id] = b->hp;
+    attr_base[ATTR_AC][id] = b->ac;
+    attr_base[ATTR_IMMUNE][id] = b->immune;
+    attr_base[ATTR_RESIST][id] = b->resist;
+    attr_base[ATTR_VULN][id] = b->vuln;
+    status_mask[id] = 0;
     nge_entity_components[id] |= COMPONENT_HEALTH;
 }
 
@@ -113,31 +121,4 @@ uint8_t health_heal(nge_entity_id_t target, uint8_t amount) NGE_BANKED
         nge_event_post(target, EV_HEALED, NGE_EVENT_NONE, amount, 0);
     }
     return amount;
-}
-
-void health_set_max(nge_entity_id_t id, uint8_t max) NGE_BANKED
-{
-    check_health(id);
-    nge_util_assert(max != 0);
-
-    health_hp_max[id] = max;
-    if (health_hp[id] > max) {
-        health_hp[id] = max;
-    }
-}
-
-void health_set_ac(nge_entity_id_t id, uint8_t ac) NGE_BANKED
-{
-    check_health(id);
-
-    health_ac[id] = ac;
-}
-
-void health_set_flags(nge_entity_id_t id, uint8_t immune, uint8_t resist, uint8_t vuln) NGE_BANKED
-{
-    check_health(id);
-
-    health_immune[id] = immune;
-    health_resist[id] = resist;
-    health_vuln[id] = vuln;
 }

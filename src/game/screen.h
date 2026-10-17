@@ -55,11 +55,17 @@ extern char screen_name[SCREEN_NAME_MAX + 1];
  */
 void screen_init(void);
 
-/** @brief Draw the stats window: the hit points, the turn, and placeholders for the rest. */
-void screen_draw_stats(uint16_t turn, uint8_t hp, uint8_t hp_max);
+/** @brief Draw the stats window: the hit points, the armour class, the turn, the statuses, and placeholders for the rest. */
+void screen_draw_stats(uint16_t turn, uint8_t hp, uint8_t hp_max, uint8_t ac, uint8_t status);
 
 /** @brief Show the hit points in the stats window: "HP   12/ 12". */
 void screen_show_hp(uint8_t hp, uint8_t hp_max);
+
+/** @brief Show the armour class in the stats window: "AC        10". */
+void screen_show_ac(uint8_t ac);
+
+/** @brief Show the statuses (STATUS_*, game/components/attrs.h) in the stats window: "Poisoned", or nothing. */
+void screen_show_status(uint8_t status);
 
 /** @brief Show the turn count in the stats window. */
 void screen_show_turn(uint16_t turn);

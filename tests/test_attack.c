@@ -65,7 +65,7 @@ int main(void)
     for (to_hit = -5; to_hit <= 5 && ok; to_hit++) {
         id = with_attack((int8_t)to_hit, 1, 4, 0);
         for (ac = 0; ac <= 30 && ok; ac++) {
-            health_set_ac(target, (uint8_t)ac);
+            health_ac[target] = (uint8_t)ac;   /* as effects_recompute() would set it */
             for (roll = 1; roll <= 20 && ok; roll++) {
                 int want = roll == 20 || (roll != 1 && roll + to_hit >= ac);
 

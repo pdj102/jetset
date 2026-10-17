@@ -14,10 +14,12 @@
 
 #include "game/actions/act.h"
 #include "game/components/attack.h"
+#include "game/components/attrs.h"
 #include "game/components/health.h"
 #include "game/components/inventory.h"
 #include "game/components/item.h"
 #include "game/components/stats.h"
+#include "game/effects/effects.h"
 #include "game/events.h"
 #include "game/gen/gen.h"
 
@@ -119,6 +121,8 @@ int main(void)
     nge_entity_id_t gob;
     nge_entity_id_t far;
     nge_entity_id_t blob;
+    nge_entity_id_t biter;
+    nge_entity_id_t thing;
     unsigned int s;
     int roll;
     int hp;
@@ -153,6 +157,7 @@ int main(void)
     rat = creature(CR_RAT, 6, 5);
     potion = gen_item(IT_POTION, AREA);
     nge_location_set(potion, 5, 5);
+    events();   /* the player's innate effect started */
 
     /* ---- a move: the location, the result, the turn used, the events ---- */
     a = move(player, 1, 0);
@@ -327,6 +332,8 @@ int main(void)
     a = ctx(player);
     a.item = ring2;
     CHECK(act_equip(&a, ACT_DO) == ACT_SUCCESS && a.kind == SLOT_RING_R && item_slot[ring2] == SLOT_RING_R);
+    /* Rings of health: each one worn counts, recomputed by the action; hit points not raised */
+    CHECK(health_hp_max[player] == 12 + 4 && health_hp[player] == 12 && effects_check(player));
     a = ctx(player);
     a.item = ring3;
     CHECK(act_equip(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_SLOT_TAKEN && a.target == ring2);
@@ -347,7 +354,8 @@ int main(void)
     CHECK(act_unequip(&a, ACT_CHECK) == ACT_SUCCESS && a.used == 0 && item_slot[ring1] == SLOT_RING_L && events() == 0);
     CHECK(act_unequip(&a, ACT_DO) == ACT_SUCCESS && a.reason == ACT_R_NONE && a.used == 1);
     CHECK(item_slot[ring1] == SLOT_NONE && stowed(ring1, player));
-    CHECK(events() == 1 && is(0, ring1, EV_UNEQUIPPED, player));
+    CHECK(events() == 2 && is(0, player, EV_ATTRS_CHANGED, NGE_EVENT_NONE) && is(1, ring1, EV_UNEQUIPPED, player));
+    CHECK(health_hp_max[player] == 12 + 2);                  /* ring2's worn effect only */
     CHECK(act_unequip(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_NOT_EQUIPPED && a.used == 0);
     /* Now the left hand is free: asking for it works */
     a = ctx(player);
@@ -384,7 +392,7 @@ int main(void)
     /* ---- melee: the player (sword i2 wielded) at (4, 5), a goblin west of it ---- */
     CHECK(at(player, 4, 5) && item_slot[i2] == SLOT_WEAPON);
     gob = creature(CR_GOBLIN, 3, 5);
-    health_set_max(gob, 200);
+    effects_set_base(gob, ATTR_HP_MAX, 200);
     health_hp[gob] = 200;
     events();
     /* Check mode: possible, the weapon and target found, nothing changes, no random numbers */
@@ -494,10 +502,87 @@ int main(void)
     CHECK(act_melee(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_NO_ATTACK);
     CHECK(events() == 0);
 
+    /* ---- a hit's effect: the rat's bite poisons what it leaves alive ---- */
+    biter = creature(CR_RAT, 5, 6);
+    events();
+    srand(seed_for_roll(20));
+    a = ctx(biter);
+    a.target = player;
+    CHECK(act_melee(&a, ACT_DO) == ACT_SUCCESS && a.item == NGE_ENTITY_INVALID);
+    CHECK(STATUS_HAS(player, STATUS_POISONED) && effects_check(player));
+    CHECK(events() == 4 && is(0, player, EV_HIT, biter) && is(1, player, EV_DAMAGED, biter) &&
+          seen[2].id == EV_ATTRS_CHANGED && seen[3].id == EV_EFFECT_STARTED && seen[3].p1 == EF_POISON);
+    thing = creature(CR_GOBLIN, 6, 6);                         /* killed by the bite: not poisoned */
+    health_hp[thing] = 1;
+    events();
+    srand(seed_for_roll(20));
+    a = ctx(biter);
+    a.target = thing;
+    CHECK(act_melee(&a, ACT_DO) == ACT_SUCCESS && health_hp[thing] == 0);
+    CHECK(events() == 3 && seen[2].id == EV_DIED && !STATUS_HAS(thing, STATUS_POISONED));
+    /* A weapon with no hit effect (the sword): just the damage */
+    item_slot[i2] = SLOT_WEAPON;
+    thing = creature(CR_GOBLIN, 5, 4);
+    events();
+    srand(seed_for_roll(20));
+    a = ctx(player);
+    a.target = thing;
+    CHECK(act_melee(&a, ACT_DO) == ACT_SUCCESS && a.item == i2 && events() == 2);
+
+    /* ---- use: a stowed item with a use effect, used up ---- */
+    effect_cure(player, STATUS_POISONED);
+    health_hp[player] = 3;
+    thing = gen_item(IT_POTION, AREA);
+    inv_stow(thing, player);
+    events();
+    a = ctx(player);
+    a.item = thing;
+    CHECK(act_use(&a, ACT_CHECK) == ACT_SUCCESS && a.used == 0 && a.kind == EF_HEALING);
+    CHECK(NGE_ENTITY_IS_ALIVE(thing) && health_hp[player] == 3 && events() == 0);
+    CHECK(act_use(&a, ACT_DO) == ACT_SUCCESS && a.reason == ACT_R_NONE && a.used == 1);
+    CHECK(NGE_ENTITY_STATE(thing) == NGE_ENTITY_DYING && health_hp[player] == 3 + 6);
+    CHECK(events() == 3 && is(0, thing, EV_USED, player) && is(1, player, EV_HEALED, NGE_EVENT_NONE) &&
+          seen[1].p1 == 6 && is(2, player, EV_EFFECT_STARTED, NGE_EVENT_NONE) && seen[2].p1 == EF_HEALING);
+    /* Used up already: not carried */
+    a = ctx(player);
+    a.item = thing;
+    CHECK(act_use(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_NOT_CARRIED && a.used == 0);
+    /* Food, by number: poisoned */
+    thing = gen_item(IT_FOOD, AREA);
+    inv_stow(thing, player);
+    a = ctx(player);
+    a.item = thing;
+    CHECK(act_do(ACT_USE, &a, ACT_DO) == ACT_SUCCESS && a.kind == EF_POISON && STATUS_HAS(player, STATUS_POISONED));
+    events();
+    /* Refused: on the floor, not doing anything when used, equipped */
+    thing = gen_item(IT_ANTIDOTE, AREA);
+    nge_location_set(thing, 4, 5);
+    a = ctx(player);
+    a.item = thing;
+    CHECK(act_use(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_NOT_CARRIED && NGE_ENTITY_IS_ALIVE(thing));
+    thing = gen_item(IT_SWORD, AREA);
+    inv_stow(thing, player);
+    a = ctx(player);
+    a.item = thing;
+    CHECK(act_use(&a, ACT_CHECK) == ACT_FAIL && a.reason == ACT_R_CANT_USE);
+    CHECK(act_use(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_CANT_USE && a.used == 0);
+    thing = gen_item(IT_ANTIDOTE, AREA);
+    inv_stow(thing, player);
+    item_slot[thing] = SLOT_NECK;                             /* as if it could be worn */
+    a = ctx(player);
+    a.item = thing;
+    CHECK(act_use(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_EQUIPPED);
+    item_slot[thing] = SLOT_NONE;
+    a = ctx(player);
+    a.item = thing;
+    CHECK(act_use(&a, ACT_DO) == ACT_SUCCESS && !STATUS_HAS(player, STATUS_POISONED));   /* cured */
+    CHECK(events() == 4 && seen[0].id == EV_USED && seen[1].id == EV_ATTRS_CHANGED &&
+          seen[2].id == EV_EFFECT_ENDED && seen[3].id == EV_EFFECT_STARTED && seen[3].p1 == EF_CURE);
+
     /* ---- every reason is refused, but a miss ---- */
     ok = 1;
     for (r1 = 0; r1 < ACT_R_COUNT; r1++) {
-        ok = ok && act_attempted((uint8_t)r1) == (r1 == ACT_R_MISSED);
+        ok = ok && act_attempted((uint8_t)r1) == (r1 == ACT_R_MISSED);   /* includes ACT_R_CANT_USE */
     }
     CHECK(ok);
 

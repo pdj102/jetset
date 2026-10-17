@@ -29,6 +29,7 @@
 #include "game/components/item.h"
 #include "game/components/kind.h"
 #include "game/components/stats.h"
+#include "game/effects/effects.h"
 
 /* The sprite part: nge_render_add() and nge_render_set_anim() arguments */
 typedef struct gen_render {
@@ -69,6 +70,7 @@ typedef struct gen_creature_base {
     attack_base_t melee;      /* its natural melee attack (fists, a bite); dice 0 for none */
     gen_inventory_t inventory;
     uint8_t      flags;   /* CREATURE_* */
+    uint8_t      hooks[GEN_HOOKS];   /* EF_* by GEN_HOOK_*: hit, innate */
     gen_where_t  where;
 } gen_creature_base_t;
 
@@ -79,6 +81,7 @@ typedef struct gen_item_base {
     uint16_t     fits;       /* the slots it can be equipped in (SLOT_BIT() mask), 0 for none */
     health_base_t health;    /* no hit points: it can't be damaged (no component) */
     attack_base_t melee;     /* as a melee weapon; dice 0 for none */
+    uint8_t      hooks[GEN_HOOKS];   /* EF_* by GEN_HOOK_*: use, hit, worn */
     gen_where_t  where;
 } gen_item_base_t;
 
@@ -105,6 +108,11 @@ uint8_t gen_pick(const gen_where_t *where, uint8_t count, uint8_t depth) NGE_BAN
 
 void gen_creature_name(uint8_t kind, char *buf, uint8_t size) NGE_BANKED;
 void gen_item_name(uint8_t kind, char *buf, uint8_t size) NGE_BANKED;
+
+/* ---- Each class's hooks, banked with its table (called by gen_hook()) ---- */
+
+uint8_t gen_creature_hook(uint8_t kind, uint8_t hook) NGE_BANKED;
+uint8_t gen_item_hook(uint8_t kind, uint8_t hook) NGE_BANKED;
 
 /*
  * Copy a name into buf: at most size-1 characters and a NUL. A macro, so
