@@ -13,7 +13,7 @@
 #include "game/components/inventory.h"
 #include "game/components/item.h"
 #include "game/components/stats.h"
-#include "game/effects/effects_internal.h"
+#include "game/effects/effects_game.h"
 #include "game/events.h"
 #include "game/gen/gen.h"
 #include "game/timers.h"
@@ -314,6 +314,10 @@ int main(void)
     item_slot[e] = SLOT_RING_L;
     effects_recompute(g);
     CHECK(health_hp_max[g] == 10);                                 /* two rings: both count */
+    effects_set_base(g, ATTR_HP_MAX, 254);
+    CHECK(health_hp_max[g] == 255);                                /* 254 + 4: at most 255 */
+    effects_set_base(g, ATTR_HP_MAX, 6);
+    CHECK(health_hp_max[g] == 10);
     nge_entity_destroy(e);
     effects_recompute(g);
     CHECK(health_hp_max[g] == 8);                                  /* a dying item doesn't */
@@ -356,6 +360,16 @@ int main(void)
     k = k || effects_check(g);
     health_hp_max[g]++;
     CHECK(k == 0 && effects_check(g));
+    /* Checking changes nothing, even hit points above the maximum */
+    health_hp[g] = (uint8_t)(health_hp_max[g] + 1);
+    CHECK(!effects_check(g) && health_hp[g] == health_hp_max[g] + 1);
+    effects_recompute(g);
+    CHECK(health_hp[g] == health_hp_max[g] && effects_check(g));
+    /* The game's attribute kinds: the damage masks are ORed, the rest added */
+    CHECK(!effects_game_attr_is_mask[ATTR_HP_MAX] && !effects_game_attr_is_mask[ATTR_AC] &&
+          !effects_game_attr_is_mask[ATTR_SPEED] && effects_game_attr_is_mask[ATTR_IMMUNE] &&
+          effects_game_attr_is_mask[ATTR_RESIST] && effects_game_attr_is_mask[ATTR_VULN]);
+    CHECK(effects_game_timer_kind == TIMER_EFFECT);
 
     /* ---- a target that dies: its effects stop acting, and no end event ---- */
     reset();
@@ -411,8 +425,9 @@ int main(void)
     CHECK(test_halt_count == 1);
     TEST_EXPECT_HALT(effect_apply(EF_COUNT, g, NGE_ENTITY_INVALID));
     CHECK(test_halt_count == 1);
+    free_before = nge_entity_free_count();
     TEST_EXPECT_HALT(effect_apply(EF_RING_HEALTH, g, NGE_ENTITY_INVALID));   /* worn: never applied */
-    CHECK(test_halt_count == 1 && health_hp_max[g] == 6);
+    CHECK(test_halt_count == 1 && health_hp_max[g] == 6 && nge_entity_free_count() == free_before);
     TEST_EXPECT_HALT(effect_end(e));                               /* not an effect */
     CHECK(test_halt_count == 1);
     TEST_EXPECT_HALT(effects_set_base(g, ATTR_COUNT, 1));

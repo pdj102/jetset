@@ -44,7 +44,7 @@ GEN_GAME_SRCS := $(addprefix $(GAMEDIR)/,gen/gen.c gen/gen_shared_bank.c \
                  components/item.c components/item_cdata.c components/inventory.c \
                  components/inventory_cdata.c components/health.c components/health_cdata.c \
                  components/attack.c components/attack_cdata.c components/attrs_cdata.c \
-                 effects/effects_bank.c effects/effects_pdata.c)
+                 effects/effects_core.c effects/effects_game.c effects/effects_pdata.c)
 GEN_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(GEN_GAME_SRCS))
 ACT_GAME_SRCS := $(wildcard $(GAMEDIR)/actions/*.c)
 ACT_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(ACT_GAME_SRCS)) $(GEN_GAME_OBJS)
@@ -71,8 +71,18 @@ CFLAGS := -std=gnu11 -O1 -g -Wall -MMD -MP
 
 all: run
 
+# The effects core knows nothing of the game's components: it reaches them
+# through its seam (src/game/effects/effects_core.h)
+EFFECTS_CORE := $(GAMEDIR)/effects/effects_core.c $(GAMEDIR)/effects/effects_core.h
+EFFECTS_CORE_BANNED := ^\#include "game/(components/(health|item|stats|inventory|attack|kind)|gen/|timers|actions/|actors|player/)
+
+.PHONY: check-effects-core
+check-effects-core:
+	@if grep -nE '$(EFFECTS_CORE_BANNED)' $(EFFECTS_CORE); then \
+	  echo "effects core includes game content: use the seam (effects_core.h)"; exit 1; fi
+
 # Build everything, run every test, and fail if any test fails
-run: $(TESTS)
+run: check-effects-core $(TESTS)
 	@failed=0; \
 	for t in $(TESTS); do ./$$t || failed=1; done; \
 	if [ $$failed -ne 0 ]; then echo "TESTS FAILED"; exit 1; fi; \

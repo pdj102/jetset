@@ -11,7 +11,7 @@
 #include "ecs/systems/nge_render_internal.h"
 #include "ecs/systems/nge_timer.h"
 
-#include "game/effects/effects_internal.h"
+#include "game/effects/effects_game.h"
 #include "game/gen/gen_internal.h"
 #include "game/timers.h"
 

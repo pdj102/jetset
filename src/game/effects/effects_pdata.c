@@ -1,19 +1,22 @@
 /* nge-dataseg: PAGE_121 */
 /*
  * The effects' page data, in page 121 (slot 7 while the effects' code in
- * page 120 runs): the definitions, constant data with their texts, and the
- * kind of each active effect (uninitialised: set when one starts). See
- * effects_internal.h for the record and "Page data" in docs/memory_map.md.
+ * page 120 runs): the definitions, constant data with their texts, the
+ * game's side's data for the core (effects_core.h: the attributes' kinds,
+ * the timer kind), and the kind of each active effect (uninitialised: set
+ * when one starts). Tables are here, not in page 120, whose addresses carry
+ * the page in their high bits. See "Page data" in docs/memory_map.md.
  */
 #ifdef __SDCC
 #pragma constseg PAGE_121
 #endif
 
-#include "game/effects/effects_internal.h"
+#include "game/effects/effects_game.h"
 
 #include "ecs/systems/nge_timer.h"
 #include "game/components/attrs.h"
 #include "game/components/health.h"
+#include "game/timers.h"
 
 #define TURNS(n)  ((n) * NGE_TIMER_TICKS_PER_TURN)
 
@@ -54,5 +57,18 @@ const effect_def_t effect_defs[EF_COUNT] = {
         .on_tick = { OP_HEAL, 0, 1 },
     },
 };
+
+/* ---- The game's side, read by the core ---- */
+
+const uint8_t effects_game_attr_is_mask[ATTR_COUNT] = {
+    [ATTR_HP_MAX] = 0,
+    [ATTR_AC]     = 0,
+    [ATTR_SPEED]  = 0,
+    [ATTR_IMMUNE] = 1,
+    [ATTR_RESIST] = 1,
+    [ATTR_VULN]   = 1,
+};
+
+const uint8_t effects_game_timer_kind = TIMER_EFFECT;
 
 uint8_t effect_kind[NGE_ENTITY_MAX];

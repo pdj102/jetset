@@ -31,7 +31,7 @@
 
 #include "ecs/nge_entity.h"
 
-/* Attributes: numbers add up; masks (ATTR_IS_MASK()) are ORed */
+/* Attributes: numbers add up; masks (ATTR_IMMUNE and on) are ORed (game/effects/effects_game.c) */
 #define ATTR_HP_MAX  0   /**< health_hp_max: 1-255. */
 #define ATTR_AC      1   /**< health_ac: 0-255. */
 #define ATTR_SPEED   2   /**< stats_speed, and the timer's period: 1-255. */
@@ -39,9 +39,6 @@
 #define ATTR_RESIST  4   /**< health_resist. */
 #define ATTR_VULN    5   /**< health_vuln. */
 #define ATTR_COUNT   6
-
-/** Attribute a is a mask of bits, not a number. */
-#define ATTR_IS_MASK(a)  ((a) >= ATTR_IMMUNE)
 
 /* Statuses: bits of status_mask */
 #define STATUS_POISONED  0x01
