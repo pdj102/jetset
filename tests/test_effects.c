@@ -144,22 +144,40 @@ int main(void)
 
     CHECK(COMPONENT_EFFECT == NGE_COMPONENT(NGE_COMPONENT_USER + 7));
 
-    /* ---- the definitions: well formed ---- */
+    /* ---- the definitions: well formed, each duration with only what it uses ---- */
     ok = 1;
-    for (i = 0; i < EF_COUNT; i++) {
+    for (i = 1; i < EF_COUNT; i++) {
         const effect_def_t *d = &effect_defs[i];
+        int has_mods = 0;
         uint8_t m;
 
-        ok = ok && d->start.op < OP_COUNT && d->tick.op < OP_COUNT && d->end.op < OP_COUNT;
-        ok = ok && (!(d->flags & EFFECT_TIMED) || d->period != 0);
-        ok = ok && (d->flags & EFFECT_TIMED || d->tick.op == OP_NONE);   /* only timed effects tick */
+        ok = ok && d->duration < EFFECT_DURATIONS && (d->flags & ~EFFECT_STACK) == 0;
+        ok = ok && d->on_start.op < OP_COUNT && d->on_tick.op < OP_COUNT && d->on_end.op < OP_COUNT;
         for (m = 0; m < EFFECT_MODS; m++) {
             ok = ok && d->mod[m].attr < ATTR_COUNT;
+            has_mods = has_mods || d->mod[m].amount != 0;
+        }
+        switch (d->duration) {
+        case EFFECT_INSTANT:   /* its on_start op only: nothing lasts */
+            ok = ok && d->on_start.op != OP_NONE && d->on_tick.op == OP_NONE && d->on_end.op == OP_NONE &&
+                 !has_mods && d->status == 0 && d->flags == 0 && d->period == 0 && d->cycles == 0 &&
+                 d->end_text == NULL;
+            break;
+        case EFFECT_TIMED:
+            ok = ok && d->period != 0;
+            break;
+        default:               /* worn: modifiers and statuses only */
+            ok = ok && d->on_start.op == OP_NONE && d->on_tick.op == OP_NONE && d->on_end.op == OP_NONE &&
+                 (has_mods || d->status != 0) && d->flags == 0 && d->period == 0 && d->cycles == 0 &&
+                 d->start_text == NULL && d->end_text == NULL;
+            break;
         }
     }
     CHECK(ok);
-    CHECK(effect_defs[EF_NONE].flags == 0 && effect_defs[EF_NONE].status == 0 &&
-          effect_defs[EF_NONE].start.op == OP_NONE && effect_defs[EF_NONE].mod[0].amount == 0);
+    CHECK(effect_defs[EF_NONE].duration == EFFECT_INSTANT && effect_defs[EF_NONE].flags == 0 &&
+          effect_defs[EF_NONE].status == 0 && effect_defs[EF_NONE].on_start.op == OP_NONE &&
+          effect_defs[EF_NONE].mod[0].amount == 0);
+    CHECK(effect_defs[EF_RING_HEALTH].duration == EFFECT_WORN && effect_defs[EF_POISON].duration == EFFECT_TIMED);
 
     /* ---- instant: healing, no entity left behind ---- */
     reset();
@@ -393,6 +411,8 @@ int main(void)
     CHECK(test_halt_count == 1);
     TEST_EXPECT_HALT(effect_apply(EF_COUNT, g, NGE_ENTITY_INVALID));
     CHECK(test_halt_count == 1);
+    TEST_EXPECT_HALT(effect_apply(EF_RING_HEALTH, g, NGE_ENTITY_INVALID));   /* worn: never applied */
+    CHECK(test_halt_count == 1 && health_hp_max[g] == 6);
     TEST_EXPECT_HALT(effect_end(e));                               /* not an effect */
     CHECK(test_halt_count == 1);
     TEST_EXPECT_HALT(effects_set_base(g, ATTR_COUNT, 1));

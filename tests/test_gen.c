@@ -11,6 +11,7 @@
 #include "ecs/systems/nge_render_internal.h"
 #include "ecs/systems/nge_timer.h"
 
+#include "game/effects/effects_internal.h"
 #include "game/gen/gen_internal.h"
 #include "game/timers.h"
 
@@ -147,6 +148,24 @@ int main(void)
         for (i = 0; i < GEN_HOOKS; i++) {
             ok = ok && gen_creature_hook(kind, (uint8_t)i) == gen_creatures[kind].hooks[i] &&
                  gen_creatures[kind].hooks[i] < EF_COUNT;
+        }
+    }
+    CHECK(ok);
+    /* A worn hook names a worn effect; the other hooks name effects that can be applied */
+    ok = 1;
+    for (kind = 0; kind < IT_COUNT; kind++) {
+        for (i = 0; i < GEN_HOOKS; i++) {
+            uint8_t ef = gen_items[kind].hooks[i];
+
+            ok = ok && (ef == EF_NONE || (effect_defs[ef].duration == EFFECT_WORN) == (i == GEN_HOOK_WORN));
+        }
+    }
+    for (kind = 0; kind < CR_COUNT; kind++) {
+        for (i = 0; i < GEN_HOOKS; i++) {
+            uint8_t ef = gen_creatures[kind].hooks[i];
+
+            ok = ok && (ef == EF_NONE || (i != GEN_HOOK_WORN && i != GEN_HOOK_USE &&
+                                          effect_defs[ef].duration != EFFECT_WORN));
         }
     }
     CHECK(ok);

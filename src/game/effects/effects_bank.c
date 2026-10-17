@@ -236,17 +236,19 @@ uint8_t effect_apply(uint8_t ef, nge_entity_id_t target, nge_entity_id_t source)
     nge_util_assert(ef != EF_NONE && ef < EF_COUNT);
     nge_util_assert(target < NGE_ENTITY_MAX);
 
+    memcpy(&def, &effect_defs[ef], sizeof(def));
+    nge_util_assert(def.duration != EFFECT_WORN);   /* worn effects count through equipment */
     if (!affectable(target)) {
         return 0;
     }
-    memcpy(&def, &effect_defs[ef], sizeof(def));
 
-    if (!(def.flags & EFFECT_TIMED)) {
-        run_op(&def.start, target, source);
+    if (def.duration == EFFECT_INSTANT) {
+        run_op(&def.on_start, target, source);
         nge_event_post(target, EV_EFFECT_STARTED, NGE_EVENT_NONE, ef, 0);
         return 1;
     }
 
+    /* Timed: refreshed, or a new instance */
     if (!(def.flags & EFFECT_STACK)) {
         e = find(target, ef);
         if (e != NGE_ENTITY_INVALID) {
@@ -263,7 +265,11 @@ uint8_t effect_apply(uint8_t ef, nge_entity_id_t target, nge_entity_id_t source)
     effect_kind[e] = ef;
     nge_entity_components[e] |= COMPONENT_EFFECT;
     nge_timer_add(e, TIMER_EFFECT, def.period, def.cycles);
-    run_op(&def.start, target, e);
+    /*
+     * Its on_start op now (a burst); its on_tick op comes from the timer, a
+     * period from now. Its modifiers and statuses count from now on
+     */
+    run_op(&def.on_start, target, e);
     effects_recompute(target);
     nge_event_post(target, EV_EFFECT_STARTED, e, ef, 0);
     return 1;
@@ -271,19 +277,19 @@ uint8_t effect_apply(uint8_t ef, nge_entity_id_t target, nge_entity_id_t source)
 
 void effect_end(nge_entity_id_t effect) NGE_BANKED
 {
-    effect_op_t end;
+    effect_op_t on_end;
     nge_entity_id_t target;
     uint8_t ef;
 
     check_effect(effect);
     target = (nge_entity_id_t)NGE_OWNER_OF(effect);
     ef = effect_kind[effect];
-    end = effect_defs[ef].end;
+    on_end = effect_defs[ef].on_end;
 
     nge_timer_remove(effect);
     nge_entity_destroy(effect);   /* dying: no longer counted by effects_recompute() */
     if (affectable(target)) {
-        run_op(&end, target, effect);
+        run_op(&on_end, target, effect);
         effects_recompute(target);
         nge_event_post(target, EV_EFFECT_ENDED, effect, ef, 0);
     }
@@ -309,15 +315,15 @@ uint8_t effect_cure(nge_entity_id_t target, uint8_t statuses) NGE_BANKED
 
 void effects_on_timer(nge_entity_id_t effect, uint8_t cycles) NGE_BANKED
 {
-    effect_op_t tick;
+    effect_op_t on_tick;
     nge_entity_id_t target;
 
     check_effect(effect);
     target = (nge_entity_id_t)NGE_OWNER_OF(effect);
-    tick = effect_defs[effect_kind[effect]].tick;
+    on_tick = effect_defs[effect_kind[effect]].on_tick;
 
     if (affectable(target)) {
-        run_op(&tick, target, effect);
+        run_op(&on_tick, target, effect);
     }
     if (cycles == 1 && NGE_ENTITY_IS_ALIVE(effect)) {
         effect_end(effect);   /* its last firing (unless its op ended it) */

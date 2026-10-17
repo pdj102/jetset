@@ -20,33 +20,38 @@
 const effect_def_t effect_defs[EF_COUNT] = {
     [EF_NONE] = { 0 },
     [EF_HEALING] = {
+        .duration = EFFECT_INSTANT,
         .start_text = "You feel much better.",
-        .start = { OP_HEAL, 0, 6 },
+        .on_start = { OP_HEAL, 0, 6 },
     },
     [EF_POISON] = {
         .start_text = "You feel sick.",
         .end_text = "The poison wears off.",
-        .flags = EFFECT_TIMED,   /* refreshed, not doubled */
+        .duration = EFFECT_TIMED,   /* refreshed, not doubled */
         .period = TURNS(3),
         .cycles = 4,
         .status = STATUS_POISONED,
-        .tick = { OP_DAMAGE, DMG_POISON, 1 },
+        .on_tick = { OP_DAMAGE, DMG_POISON, 1 },
     },
     [EF_CURE] = {
-        .start = { OP_CURE, STATUS_POISONED, 0 },
+        .duration = EFFECT_INSTANT,
+        .on_start = { OP_CURE, STATUS_POISONED, 0 },
     },
     [EF_VITALITY] = {
+        .duration = EFFECT_INSTANT,
         .start_text = "You feel more vital.",
-        .start = { OP_RAISE_BASE, ATTR_HP_MAX, 1 },
+        .on_start = { OP_RAISE_BASE, ATTR_HP_MAX, 1 },
     },
     [EF_RING_HEALTH] = {
+        .duration = EFFECT_WORN,
         .mod = { { ATTR_HP_MAX, 2 } },
     },
     [EF_REGEN] = {
-        .flags = EFFECT_TIMED | EFFECT_STACK,   /* each source of regeneration counts */
+        .duration = EFFECT_TIMED,
+        .flags = EFFECT_STACK,   /* each source of regeneration counts */
         .period = TURNS(10),
         .cycles = 0,             /* for ever */
-        .tick = { OP_HEAL, 0, 1 },
+        .on_tick = { OP_HEAL, 0, 1 },
     },
 };
 

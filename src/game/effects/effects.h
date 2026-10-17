@@ -11,14 +11,15 @@
  * - modifiers: amounts added to attributes (game/components/attrs.h), or
  *   bits ORed into mask attributes, while the effect lasts;
  * - statuses granted while it lasts (STATUS_POISONED);
- * - ops: what it does at its start, each period and at its end (damage,
- *   heal, cure, raise a base for good), through the components' rules;
+ * - ops: what it does on_start (when applied), on_tick (each period) and
+ *   on_end (when it ends): damage, heal, cure, raise a base for good,
+ *   through the components' rules;
  * - a duration:
- *   instant  the start op runs once; nothing is left behind (a healing
+ *   instant  its on_start op runs once; nothing is left behind (a healing
  *            potion; raising a base is how an effect is permanent);
  *   timed    an active effect: an entity owned by the target, with
  *            COMPONENT_EFFECT and a timer (TIMER_EFFECT, game/timers.h)
- *            that runs the tick op every period for its cycles (0: for
+ *            that runs its on_tick op every period for its cycles (0: for
  *            ever), then ends it. It goes when its target goes. Applied
  *            again, it is refreshed (its timer restarted) unless its
  *            definition stacks (another instance);
@@ -69,11 +70,11 @@
 
 /**
  * @brief Apply effect ef (not EF_NONE) to target: an instant effect runs
- *        its start op; a timed one starts an active effect (its start op,
+ *        its on_start op; a timed one starts an active effect (its on_start op,
  *        recomputing the target) or refreshes the one there. Posts
- *        EV_EFFECT_STARTED. A worn effect only does that (its modifiers
- *        count through equipment).
- * @param source What caused it, for its start op's events (damage), or
+ *        EV_EFFECT_STARTED. A worn effect can't be applied: its
+ *        modifiers count through equipment (asserts).
+ * @param source What caused it, for its on_start op's events (damage), or
  *               NGE_ENTITY_INVALID.
  * @return 1, or 0 if refused: the target isn't alive, has no health or is
  *         at 0 hp, or no entity is free for an active effect.
@@ -81,7 +82,7 @@
 uint8_t effect_apply(uint8_t ef, nge_entity_id_t target, nge_entity_id_t source) NGE_BANKED;
 
 /**
- * @brief End an active effect: destroy it, run its end op, recompute its
+ * @brief End an active effect: destroy it, run its on_end op, recompute its
  *        target and post EV_EFFECT_ENDED (unless the target is dead).
  */
 void effect_end(nge_entity_id_t effect) NGE_BANKED;
@@ -93,7 +94,7 @@ void effect_end(nge_entity_id_t effect) NGE_BANKED;
 uint8_t effect_cure(nge_entity_id_t target, uint8_t statuses) NGE_BANKED;
 
 /**
- * @brief An active effect's timer handler (TIMER_EFFECT): its tick op on
+ * @brief An active effect's timer handler (TIMER_EFFECT): its on_tick op on
  *        its target; on its last cycle (cycles 1) it ends.
  */
 void effects_on_timer(nge_entity_id_t effect, uint8_t cycles) NGE_BANKED;
