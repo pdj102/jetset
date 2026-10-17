@@ -7,9 +7,12 @@
  *        destroyed when its hit points reach 0 (the player, monsters,
  *        later chests and doors).
  *
- * Each has hit points (hp, at most hp_max) and three masks of damage types
- * (DMG_BIT()): those it is immune to, resists and is vulnerable to. Its
- * base values come from its kind's base record (health_base_t, game/gen).
+ * Each has hit points (hp, at most hp_max), an armour class (ac: what an
+ * attack roll must reach to hit it, game/components/attack.h) and three
+ * masks of damage types (DMG_BIT()): those it is immune to, resists and is
+ * vulnerable to. Anything that can be damaged can be attacked, so AC is
+ * here. Its base values come from its kind's base record (health_base_t,
+ * game/gen).
  *
  * Damage is an amount and a type (DMG_*), decided by the caller: an attack,
  * a trap, poison. What the entity takes:
@@ -71,6 +74,7 @@ typedef struct health_base {
     uint8_t immune;     /**< DMG_BIT() mask. */
     uint8_t resist;
     uint8_t vuln;
+    uint8_t ac;         /**< Armour class: 10 unarmoured, 1 a door (hard to miss). */
 } health_base_t;
 
 /** A base record's health part gives the component: it has some hit points. */
@@ -82,10 +86,11 @@ extern uint8_t health_hp_max[NGE_ENTITY_MAX];   /**< Hit points when unhurt, 1 o
 extern uint8_t health_immune[NGE_ENTITY_MAX];   /**< Damage types it takes nothing from. */
 extern uint8_t health_resist[NGE_ENTITY_MAX];   /**< ...takes half from. */
 extern uint8_t health_vuln[NGE_ENTITY_MAX];     /**< ...takes double from. */
+extern uint8_t health_ac[NGE_ENTITY_MAX];       /**< Armour class. */
 
 /**
  * @brief Give an entity in use the health component from base health: hit
- *        points rolled (1 to 255), unhurt, and the base masks.
+ *        points rolled (1 to 255), unhurt, the base masks and AC.
  * @param b In common memory (a copy on the stack): the call maps page 110.
  */
 void health_add(nge_entity_id_t id, const health_base_t *b) NGE_BANKED;
@@ -116,6 +121,9 @@ uint8_t health_heal(nge_entity_id_t target, uint8_t amount) NGE_BANKED;
 
 /** @brief Set hp_max (1 or more), keeping hp at most that. */
 void health_set_max(nge_entity_id_t id, uint8_t max) NGE_BANKED;
+
+/** @brief Set the armour class: for armour and effects. */
+void health_set_ac(nge_entity_id_t id, uint8_t ac) NGE_BANKED;
 
 /** @brief Replace the masks (DMG_BIT()): for effects such as a potion of fire resistance. */
 void health_set_flags(nge_entity_id_t id, uint8_t immune, uint8_t resist, uint8_t vuln) NGE_BANKED;

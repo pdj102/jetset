@@ -192,8 +192,8 @@ Banked so far:
 | 102/103 | game `level` | setting up the map and the level generator, with literals (`game/level/level_bank.c`, `level_gen.c`, about 2.9K, 3.1K with asserts) | the room list and corridor links (`level_pdata.c`, 83 bytes) |
 | 106/107 | game `gen` creatures | the creature generator (`game/gen/gen_creature_bank.c`, about 0.6K) | the base creatures: a `const` table and its names (`gen_creature_pdata.c`, with `constseg PAGE_107`) |
 | 108/109 | game `gen` items | the item generator (`gen_item_bank.c`, about 0.4K) | the base items (`gen_item_pdata.c`) |
-| 110/111 | game `gen` shared | helpers every generator calls, and the game components' functions (`gen_shared_bank.c`, `components/kind.c`, `stats.c`, `item.c`, `inventory.c`, `health.c`): they take copies of base data on the stack, as the class's table is mapped out while they run | none |
-| 112/113 | game `actions` | what entities do, one file per action (`game/actions/act_move.c`, `act_pickup.c`, `act_drop.c`, `act_equip.c`) and their shared endings (`act_shared.c`); the dispatcher `act_do()` and the reason table are common (`act.c`) | none yet |
+| 110/111 | game `gen` shared | helpers every generator calls, and the game components' functions (`gen_shared_bank.c`, `components/kind.c`, `stats.c`, `item.c`, `inventory.c`, `health.c`, `attack.c`): they take copies of base data on the stack, as the class's table is mapped out while they run | none |
+| 112/113 | game `actions` | what entities do, one file per action (`game/actions/act_move.c`, `act_pickup.c`, `act_drop.c`, `act_equip.c`, `act_melee.c`) and their shared endings (`act_shared.c`); the dispatcher `act_do()` and the reason table are common (`act.c`) | none yet |
 | 114/115 | game `player` | the player's commands, the firing screen and the reasons for refused commands (`game/player/player_bank.c`); the handlers called for every event and timer firing are common (`player.c`) | none |
 | 118/119 | game `messages` | the message window's reactions to events and to refused commands, with their texts (`game/messages/messages_bank.c`) | none |
 | 116/117 | game `ui` | the item screens shown in the map window (inventory, drop, equip, take off) and their table of descriptions (`game/ui/ui_bank.c`) | none |
@@ -472,7 +472,7 @@ data.
 | Address | Contents |
 |---|---|
 | `$0000`-`$00FF` | Guard area against null pointers |
-| `$0100`-`$1FFF` | ECS tables (`SECTION PAGE_50`, `CRT_ORG_PAGE_50 = 0x0100` in [banks.inc](../src/banks.inc)): entity flags, components and alive list, owners, locations, block flags, timers and the clock, and the game's components (`src/game/components/*_cdata.c`: kind, stats, item, inventory, health) (about 2.7K at `NGE_ENTITY_MAX` 100) |
+| `$0100`-`$1FFF` | ECS tables (`SECTION PAGE_50`, `CRT_ORG_PAGE_50 = 0x0100` in [banks.inc](../src/banks.inc)): entity flags, components and alive list, owners, locations, block flags, timers and the clock, and the game's components (`src/game/components/*_cdata.c`: kind, stats, item, inventory, health, attack) (about 3.4K at `NGE_ENTITY_MAX` 100) |
 
 ### Where component data goes
 

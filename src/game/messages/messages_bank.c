@@ -113,6 +113,20 @@ void messages_on_event(const nge_event_t *e) NGE_BANKED
     case EV_DAMAGED:
         say_damage(target, p1, p2);
         break;
+    case EV_HIT:
+        if (source == actor_player) {
+            say_named("You hit the ", target, ".");
+        } else if (target == actor_player) {
+            say_named("The ", source, " hits you.");
+        }
+        break;
+    case EV_MISSED:
+        if (source == actor_player) {
+            say_named("You miss the ", target, ".");
+        } else if (target == actor_player) {
+            say_named("The ", source, " misses you.");
+        }
+        break;
     case EV_HEALED:
         if (target == actor_player) {
             screen_message("You feel better.");
@@ -204,6 +218,18 @@ void messages_act_failed(const act_t *a) NGE_BANKED
         break;
     case ACT_R_NOT_EQUIPPED:
         screen_message("You aren't using that.");
+        break;
+    case ACT_R_NO_ATTACK:
+        screen_message("You have no way to attack.");
+        break;
+    case ACT_R_NO_TARGET:
+        screen_message("There is nothing there to attack.");
+        break;
+    case ACT_R_CANT_DAMAGE:
+        screen_message("You can't attack that.");
+        break;
+    case ACT_R_OUT_OF_RANGE:
+        screen_message("That is out of reach.");
         break;
     default:
         break;

@@ -20,6 +20,8 @@
  * | EV_DAMAGED    | the entity hurt    | causer  | p1: taken, p2: EV_DMG_PACK(outcome, type) |
  * | EV_HEALED     | the entity healed  | -       | p1: restored |
  * | EV_DIED       | the entity killed  | killer  | -        |
+ * | EV_HIT        | the entity hit     | attacker| p1: d20 roll, p2: weapon or NGE_EVENT_NONE |
+ * | EV_MISSED     | the entity missed  | attacker| p1: d20 roll, p2: weapon or NGE_EVENT_NONE |
  */
 
 #include "event/nge_event.h"
@@ -35,5 +37,7 @@
 #define EV_DAMAGED     (NGE_EVENT_USER + 8)   /**< Took p1 damage, maybe 0 (game/components/health.h). */
 #define EV_HEALED      (NGE_EVENT_USER + 9)   /**< Got p1 hit points back. */
 #define EV_DIED        (NGE_EVENT_USER + 10)  /**< Hit points reached 0: destroyed unless persistent. */
+#define EV_HIT         (NGE_EVENT_USER + 11)  /**< Hit by the source's attack (act_melee()); EV_DAMAGED follows. */
+#define EV_MISSED      (NGE_EVENT_USER + 12)  /**< Missed by the source's attack. */
 
 #endif

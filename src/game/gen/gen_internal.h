@@ -23,6 +23,7 @@
 #include "game/gen/gen.h"
 
 #include "ecs/components/nge_block.h"
+#include "game/components/attack.h"
 #include "game/components/health.h"
 #include "game/components/inventory.h"
 #include "game/components/item.h"
@@ -65,6 +66,7 @@ typedef struct gen_creature_base {
     gen_block_t  block;
     stats_base_t stats;
     health_base_t health;
+    attack_base_t melee;      /* its natural melee attack (fists, a bite); dice 0 for none */
     gen_inventory_t inventory;
     uint8_t      flags;   /* CREATURE_* */
     gen_where_t  where;
@@ -76,6 +78,7 @@ typedef struct gen_item_base {
     uint8_t      subclass;   /* ITEM_POTION, ITEM_WEAPON... (gen_kinds.h) */
     uint16_t     fits;       /* the slots it can be equipped in (SLOT_BIT() mask), 0 for none */
     health_base_t health;    /* no hit points: it can't be damaged (no component) */
+    attack_base_t melee;     /* as a melee weapon; dice 0 for none */
     gen_where_t  where;
 } gen_item_base_t;
 

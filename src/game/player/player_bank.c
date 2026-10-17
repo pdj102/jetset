@@ -67,12 +67,25 @@ void player_act(uint8_t action, act_t *a) NGE_BANKED
     }
 }
 
+/*
+ * The move command, and bump to attack: a move blocked by something that
+ * can be damaged attacks it instead (act_move()'s check mode finds it)
+ */
 static void move(int8_t dx, int8_t dy)
 {
     act_t a = { 0 };
+    nge_entity_id_t blocker;
 
+    a.actor = actor_player;
     a.dx = dx;
     a.dy = dy;
+    if (act_move(&a, ACT_CHECK) == ACT_FAIL && a.reason == ACT_R_BLOCKED_CREATURE) {
+        blocker = a.target;
+        if (NGE_ENTITY_HAS_ANY_COMPONENTS(blocker, COMPONENT_HEALTH)) {
+            player_act(ACT_MELEE, &a);   /* a.target: the blocker */
+            return;
+        }
+    }
     player_act(ACT_MOVE, &a);
 }
 

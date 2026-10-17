@@ -16,6 +16,7 @@ static nge_entity_id_t create(uint8_t kind, nge_owner_t owner)
     /* Copies on the stack: the calls below map other pages */
     gen_render_t render = gen_items[kind].render;
     health_base_t health = gen_items[kind].health;
+    attack_base_t melee = gen_items[kind].melee;
     nge_entity_id_t id = gen_begin(CLASS_ITEM, kind, owner);
 
     if (id != NGE_ENTITY_INVALID) {
@@ -23,6 +24,9 @@ static nge_entity_id_t create(uint8_t kind, nge_owner_t owner)
         item_add(id);
         if (HEALTH_BASE_HAS(&health)) {
             health_add(id, &health);
+        }
+        if (ATTACK_BASE_HAS(&melee)) {
+            attack_add(id, ATTACK_MELEE, &melee);
         }
     }
     return id;

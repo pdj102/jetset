@@ -50,6 +50,7 @@ void health_add(nge_entity_id_t id, const health_base_t *b) NGE_BANKED
     health_immune[id] = b->immune;
     health_resist[id] = b->resist;
     health_vuln[id] = b->vuln;
+    health_ac[id] = b->ac;
     nge_entity_components[id] |= COMPONENT_HEALTH;
 }
 
@@ -136,6 +137,13 @@ void health_set_max(nge_entity_id_t id, uint8_t max) NGE_BANKED
     if (health_hp[id] > max) {
         health_hp[id] = max;
     }
+}
+
+void health_set_ac(nge_entity_id_t id, uint8_t ac) NGE_BANKED
+{
+    check_health(id);
+
+    health_ac[id] = ac;
 }
 
 void health_set_flags(nge_entity_id_t id, uint8_t immune, uint8_t resist, uint8_t vuln) NGE_BANKED

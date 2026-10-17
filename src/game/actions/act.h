@@ -89,7 +89,8 @@ typedef struct act {
 #define ACT_DROP    2
 #define ACT_EQUIP   3
 #define ACT_UNEQUIP 4
-#define ACT_COUNT   5
+#define ACT_MELEE   5
+#define ACT_COUNT   6
 
 /* Reasons (refused or attempted: the table in act.c) */
 #define ACT_R_NONE              0   /**< Succeeded. */
@@ -106,7 +107,12 @@ typedef struct act {
 #define ACT_R_NO_SLOT           11  /**< Refused: the actor has no slot the item fits (or not the one asked for). */
 #define ACT_R_SLOT_TAKEN        12  /**< Refused: every slot it fits is in use; a->target is the item there. */
 #define ACT_R_NOT_EQUIPPED      13  /**< Refused: the item isn't equipped. */
-#define ACT_R_COUNT             14
+#define ACT_R_NO_ATTACK         14  /**< Refused: no weapon with a melee attack, and none of its own. */
+#define ACT_R_NO_TARGET         15  /**< Refused: nothing there to attack. */
+#define ACT_R_CANT_DAMAGE       16  /**< Refused: the target can't be damaged (no health, or dead). */
+#define ACT_R_OUT_OF_RANGE      17  /**< Refused: the target is out of the attack's reach. */
+#define ACT_R_MISSED            18  /**< Attempted: the attack missed (the turn is used). */
+#define ACT_R_COUNT             19
 
 /**
  * @brief Move one tile.
@@ -163,6 +169,24 @@ uint8_t act_equip(act_t *a, uint8_t mode) NGE_BANKED;
  * ACT_R_NOT_EQUIPPED or ACT_R_FULL.
  */
 uint8_t act_unequip(act_t *a, uint8_t mode) NGE_BANKED;
+
+/**
+ * @brief Attack an entity next to the actor (game/components/attack.h).
+ *
+ * In: actor (alive, placed in an area), and target, or (with target
+ * NGE_ENTITY_INVALID) a direction dx, dy: the first entity with health on
+ * that tile. Uses the melee attack of the weapon in the actor's
+ * SLOT_WEAPON, or else its own. Out: target; item, the weapon
+ * (NGE_ENTITY_INVALID for its own attack); on a hit amount, the damage
+ * taken, and kind, its type.
+ *
+ * A hit (1d20 + to hit >= the target's AC; 20 always hits, 1 always
+ * misses) posts EV_HIT (p1: the roll, p2: the weapon) and damages the
+ * target (health_damage(): EV_DAMAGED, maybe EV_DIED): success. A miss
+ * posts EV_MISSED and fails with ACT_R_MISSED, using the turn. Refused with
+ * ACT_R_NO_ATTACK, ACT_R_NO_TARGET, ACT_R_CANT_DAMAGE or ACT_R_OUT_OF_RANGE.
+ */
+uint8_t act_melee(act_t *a, uint8_t mode) NGE_BANKED;
 
 /** @brief Call action (ACT_MOVE...) by number: for the AI and delayed actions. */
 uint8_t act_do(uint8_t action, act_t *a, uint8_t mode);

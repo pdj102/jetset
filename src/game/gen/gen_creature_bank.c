@@ -30,6 +30,9 @@ static nge_entity_id_t create(uint8_t kind, nge_owner_t owner)
     nge_block_add(id, b.block.block, b.block.pass);
     stats_add(id, &b.stats);
     health_add(id, &b.health);
+    if (ATTACK_BASE_HAS(&b.melee)) {
+        attack_add(id, ATTACK_MELEE, &b.melee);
+    }
     if (b.flags & CREATURE_PLAYER) {
         nge_entity_set_flags(id, NGE_ENTITY_PERSISTENT);   /* at 0 hp the game ends instead (EV_DIED) */
     }

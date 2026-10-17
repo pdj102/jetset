@@ -13,6 +13,8 @@
 #include "map/nge_map.h"
 
 #include "game/actions/act.h"
+#include "game/components/attack.h"
+#include "game/components/health.h"
 #include "game/components/inventory.h"
 #include "game/components/item.h"
 #include "game/components/stats.h"
@@ -85,6 +87,20 @@ static act_t ctx(nge_entity_id_t actor)
     return a;
 }
 
+/* A seed whose first rand() gives the d20 roll r: act_melee()'s first draw is its roll */
+static unsigned int seed_for_roll(int r)
+{
+    unsigned int s;
+
+    for (s = 1; s < 100000; s++) {
+        srand(s);
+        if (1 + rand() % 20 == r) {
+            return s;
+        }
+    }
+    return 0;
+}
+
 static int stowed(nge_entity_id_t id, nge_entity_id_t holder)
 {
     return NGE_OWNER_OF(id) == holder && !NGE_ENTITY_HAS_COMPONENTS(id, NGE_COMPONENT_LOCATION);
@@ -100,6 +116,12 @@ int main(void)
     nge_entity_id_t ring2;
     nge_entity_id_t ring3;
     nge_entity_id_t goblin;
+    nge_entity_id_t gob;
+    nge_entity_id_t far;
+    nge_entity_id_t blob;
+    unsigned int s;
+    int roll;
+    int hp;
     nge_entity_id_t player;
     nge_entity_id_t rat;
     nge_entity_id_t potion;
@@ -359,10 +381,123 @@ int main(void)
     CHECK(act_equip(&a, ACT_DO) == ACT_SUCCESS && a.kind == SLOT_WEAPON);
     events();
 
-    /* ---- every reason so far is refused ---- */
+    /* ---- melee: the player (sword i2 wielded) at (4, 5), a goblin west of it ---- */
+    CHECK(at(player, 4, 5) && item_slot[i2] == SLOT_WEAPON);
+    gob = creature(CR_GOBLIN, 3, 5);
+    health_set_max(gob, 200);
+    health_hp[gob] = 200;
+    events();
+    /* Check mode: possible, the weapon and target found, nothing changes, no random numbers */
+    srand(9);
+    r1 = rand();
+    srand(9);
+    a = ctx(player);
+    a.dx = -1;
+    CHECK(act_melee(&a, ACT_CHECK) == ACT_SUCCESS && a.used == 0 && a.target == gob && a.item == i2);
+    CHECK(rand() == r1 && health_hp[gob] == 200 && events() == 0);
+    /* A 20 always hits: EV_HIT, then the damage (the sword: slashing), the turn used */
+    srand(seed_for_roll(20));
+    a = ctx(player);
+    a.dx = -1;
+    CHECK(act_melee(&a, ACT_DO) == ACT_SUCCESS && a.reason == ACT_R_NONE && a.used == 1);
+    CHECK(a.target == gob && a.item == i2 && a.kind == DMG_SLASH && a.amount >= 1 && a.amount <= 8);
+    CHECK(health_hp[gob] == 200 - a.amount);
+    CHECK(events() == 2 && is(0, gob, EV_HIT, player) && seen[0].p1 == 20 && seen[0].p2 == i2 &&
+          is(1, gob, EV_DAMAGED, player) && seen[1].p1 == a.amount &&
+          seen[1].p2 == EV_DMG_PACK(DMG_NORMAL, DMG_SLASH));
+    /* A 1 always misses: EV_MISSED, the turn still used, no damage */
+    hp = health_hp[gob];
+    srand(seed_for_roll(1));
+    a = ctx(player);
+    a.target = gob;
+    CHECK(act_melee(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_MISSED && a.used == 1);
+    CHECK(health_hp[gob] == hp && events() == 1 && is(0, gob, EV_MISSED, player) && seen[0].p1 == 1);
+    CHECK(act_attempted(ACT_R_MISSED));
+    /* Every other roll: hits if roll + 1 (the sword) >= 13 (the goblin's AC) */
+    ok = 1;
+    for (roll = 2; roll <= 19 && ok; roll++) {
+        s = seed_for_roll(roll);
+        srand(s);
+        a = ctx(player);
+        a.target = gob;
+        r1 = act_melee(&a, ACT_DO);
+        ok = (r1 == ACT_SUCCESS) == (roll + 1 >= 13) && a.used == 1;
+        events();
+        health_hp[gob] = 200;
+    }
+    CHECK(ok);
+    /* Its own attack without a weapon: fists, blunt, which the goblin resists */
+    item_slot[i2] = SLOT_NONE;
+    srand(seed_for_roll(20));
+    a = ctx(player);
+    a.target = gob;
+    CHECK(act_melee(&a, ACT_DO) == ACT_SUCCESS && a.item == NGE_ENTITY_INVALID && a.kind == DMG_BLUNT);
+    CHECK(a.amount == 1 && health_hp[gob] == 199);            /* 1d2 resisted: rounded up to 1 */
+    CHECK(events() == 2 && seen[0].p2 == NGE_EVENT_NONE && EV_DMG_OUTCOME(seen[1].p2) == DMG_RESISTED);
+    /* A kill: EV_DIED, the goblin destroyed */
+    health_hp[gob] = 1;
+    srand(seed_for_roll(20));
+    a = ctx(player);
+    a.target = gob;
+    CHECK(act_do(ACT_MELEE, &a, ACT_DO) == ACT_SUCCESS && health_hp[gob] == 0);
+    CHECK(events() == 3 && seen[2].id == EV_DIED && NGE_ENTITY_STATE(gob) == NGE_ENTITY_DYING);
+    /* Refused: nothing changes, no turn */
+    a = ctx(player);
+    a.target = gob;                                           /* dying */
+    CHECK(act_melee(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_CANT_DAMAGE && a.used == 0);
+    a = ctx(player);
+    a.dx = -1;                                                /* nothing with health there now */
+    CHECK(act_melee(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_NO_TARGET);
+    a = ctx(player);
+    a.dx = 0;
+    a.dy = -1;                                                /* (4, 4): empty */
+    CHECK(act_melee(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_NO_TARGET);
+    a = ctx(player);
+    a.target = player;
+    CHECK(act_melee(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_NO_TARGET);
+    a = ctx(player);
+    a.target = sword;                                         /* an item: no health */
+    CHECK(act_melee(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_CANT_DAMAGE);
+    far = creature(CR_RAT, 8, 8);
+    a = ctx(player);
+    a.target = far;
+    CHECK(act_melee(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_OUT_OF_RANGE);
+    nge_owner_set(far, NGE_OWNER_AREA(1));
+    nge_location_set(far, 4, 4);                              /* next to it, but in another area */
+    a = ctx(player);
+    a.target = far;
+    CHECK(act_melee(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_OUT_OF_RANGE);
+    far = gen_item(IT_POTION, AREA);
+    nge_location_set(far, 4, 4);                              /* only an item there: no target */
+    a = ctx(player);
+    a.dx = 0;
+    a.dy = -1;
+    CHECK(act_melee(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_NO_TARGET);
+    far = creature(CR_RAT, 3, 4);                             /* at 0 hp but not destroyed (persistent) */
+    nge_entity_set_flags(far, NGE_ENTITY_PERSISTENT);
+    health_hp[far] = 0;
+    a = ctx(player);
+    a.target = far;
+    CHECK(act_melee(&a, ACT_CHECK) == ACT_FAIL && a.reason == ACT_R_CANT_DAMAGE);
+    /* Something in the weapon slot with no melee attack (a ring): its own attack is used */
+    item_slot[ring3] = SLOT_WEAPON;
+    health_hp[far] = 3;
+    a = ctx(player);
+    a.target = far;
+    CHECK(act_melee(&a, ACT_CHECK) == ACT_SUCCESS && a.item == NGE_ENTITY_INVALID);
+    item_slot[ring3] = SLOT_NONE;
+    blob = nge_entity_create();                               /* no attack of its own */
+    nge_owner_set(blob, AREA);
+    nge_location_set(blob, 2, 2);
+    a = ctx(blob);
+    a.dx = 1;
+    CHECK(act_melee(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_NO_ATTACK);
+    CHECK(events() == 0);
+
+    /* ---- every reason is refused, but a miss ---- */
     ok = 1;
     for (r1 = 0; r1 < ACT_R_COUNT; r1++) {
-        ok = ok && !act_attempted((uint8_t)r1);
+        ok = ok && act_attempted((uint8_t)r1) == (r1 == ACT_R_MISSED);
     }
     CHECK(ok);
 

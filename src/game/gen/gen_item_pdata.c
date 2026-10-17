@@ -26,6 +26,7 @@ const gen_item_base_t gen_items[IT_COUNT] = {
         .render = { DEMO_SPRITE_SWORD, 1, 0, 0, LAYER_OBJECTS },
         .subclass = ITEM_WEAPON,
         .fits = SLOT_BIT(SLOT_WEAPON),
+        .melee = { .to_hit = 1, .dice = 1, .sides = 8, .bonus = 0, .type = DMG_SLASH, .range = 1 },
         .where = { .depth = 1, .rarity = 5 },
     },
     [IT_RING] = {

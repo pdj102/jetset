@@ -35,6 +35,18 @@ static int made(nge_entity_id_t id, nge_owner_t owner, uint8_t c, uint8_t kind)
            !NGE_ENTITY_HAS_COMPONENTS(id, NGE_COMPONENT_LOCATION);
 }
 
+/* The melee attack component matches a record's melee part (or there is none) */
+static int melee_is(nge_entity_id_t id, const attack_base_t *m)
+{
+    if (!ATTACK_BASE_HAS(m)) {
+        return !ATTACK_HAS(id, ATTACK_MELEE);
+    }
+    return ATTACK_HAS(id, ATTACK_MELEE) && attack_to_hit[ATTACK_MELEE][id] == m->to_hit &&
+           attack_dice[ATTACK_MELEE][id] == m->dice && attack_sides[ATTACK_MELEE][id] == m->sides &&
+           attack_bonus[ATTACK_MELEE][id] == m->bonus && attack_type[ATTACK_MELEE][id] == m->type &&
+           attack_range[ATTACK_MELEE][id] == 1;
+}
+
 static int creature_ok(nge_entity_id_t id, nge_owner_t owner, uint8_t kind)
 {
     const gen_creature_base_t *b = &gen_creatures[kind];
@@ -51,7 +63,8 @@ static int creature_ok(nge_entity_id_t id, nge_owner_t owner, uint8_t kind)
     if (!NGE_ENTITY_HAS_COMPONENTS(id, COMPONENT_HEALTH) ||
         health_hp[id] < lo || health_hp[id] > hi || health_hp_max[id] != health_hp[id] ||
         health_immune[id] != b->health.immune || health_resist[id] != b->health.resist ||
-        health_vuln[id] != b->health.vuln || stats_speed[id] != b->stats.speed) {
+        health_vuln[id] != b->health.vuln || health_ac[id] != b->health.ac ||
+        stats_speed[id] != b->stats.speed || !melee_is(id, &b->melee)) {
         return 0;
     }
     /* Only the player is persistent: at 0 hp the game ends instead */
@@ -73,7 +86,7 @@ static int creature_ok(nge_entity_id_t id, nge_owner_t owner, uint8_t kind)
 static int item_ok(nge_entity_id_t id, nge_owner_t owner, uint8_t kind)
 {
     return made(id, owner, CLASS_ITEM, kind) && render_is(id, &gen_items[kind].render) &&
-           ITEM_IS(id) && item_slot[id] == SLOT_NONE &&
+           ITEM_IS(id) && item_slot[id] == SLOT_NONE && melee_is(id, &gen_items[kind].melee) &&
            !NGE_ENTITY_HAS_ANY_COMPONENTS(id, NGE_COMPONENT_BLOCK | COMPONENT_STATS | NGE_COMPONENT_TIMER |
                                               COMPONENT_INVENTORY | COMPONENT_HEALTH);
 }
