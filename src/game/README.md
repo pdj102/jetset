@@ -19,6 +19,44 @@ Game code: the basis of a classic roguelike.
 | `gen/` | Entity generators: `gen_creature()`, `gen_item()` and their `_random()` versions create an entity with all its components from its base record, a `const` table in each class's odd page (`gen_<class>_pdata.c`, kinds in `gen_kinds.h`); `gen_name()` copies a kind's name. Pages 106/107 (creatures), 108/109 (items), 110 (shared helpers) |
 | `actors.{h,c}` | The player (generated, placed by the level generator) and a demo effect on the player |
 
+## Architecture
+
+The game is built on nge's ECS (entities, components, systems), with two
+additions that suit a turn-based game: **actions** for what an actor does, and
+**events** for what follows from it. Each kind of logic has one home:
+
+| Layer | What it is | Where | Examples |
+|---|---|---|---|
+| Entities | IDs, nothing else | nge (`ecs/nge_entity.h`) | the player, a rat, a sword, an effect |
+| Components | Data, in tables by entity ID in slot 0, and small functions that keep it valid and hold the rules about it | `components/`, nge `ecs/components/` | `health_damage()`, `attack_hits()`, `inv_stow()` |
+| Actions | One actor's intent, at one moment: context, validate, resolve, apply (`actions/act.h`). They choose and check, then call the components' rules | `actions/` | `act_move()`, `act_melee()`, `act_pickup()` |
+| Events | Facts about what happened, posted after the change; handlers react to them in a fixed order (`game_on_event()` in `game.c`) | `events.h`, each module's `on_event()` | `EV_DAMAGED` → a message; `EV_DIED` on the player → game over |
+| Systems | Batch work: every entity with some components, every frame or as time passes | nge `ecs/systems/`, `game.c` | `nge_render` (sprites), `nge_timer` (turns, effects), `release_dying()` (clean-up) |
+| Generators | Entities made from data: base records by kind | `gen/` | `gen_creature()`, `gen_item()` |
+
+Rules for new features:
+
+1. **A rule lives in one place.** Put a game rule (how damage is taken, whether
+   an attack hits) in its component's functions, and call it from every action
+   and effect that needs it: a sword, a trap and a spell all damage through
+   `health_damage()`.
+2. **Actions orchestrate; they don't own rules.** An action finds and checks
+   its target, then calls the components. Anything an actor chooses to do,
+   the player or a monster, is an action, and costs a turn when it is done.
+3. **Reactions go in event handlers, not in actions.** An action says what
+   happened (`EV_DIED`); the game, the messages and the screen each decide what
+   that means to them. A new consequence is a new handler, not a change to the
+   action.
+4. **Systems only for batch work.** Use a system when the question is "for every
+   entity with these components, every frame or tick": drawing, timers,
+   clean-up, and later field of view. Don't scan every entity to find the one
+   that wants to act: that is an action, started by its timer or by a key.
+5. **Effects over time are entities with timers** (poison, regeneration,
+   sleep): the timer system drives them, owned by what they affect, so they
+   go when it does.
+6. **Behaviour is chosen by number, never by function pointer** (timer kinds,
+   action IDs, event IDs): data stays editable and banked code stays callable.
+
 Code here uses the nge library (`src/nge`); nge never includes anything from
 here. New `.c` files are built automatically (see the Makefile). Includes are
 written from `src`: `#include "game/level/level.h"`.
