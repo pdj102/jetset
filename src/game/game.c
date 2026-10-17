@@ -14,7 +14,6 @@
 #include "event/nge_event.h"
 
 #include "game/actors.h"
-#include "game/components/attrs.h"
 #include "game/components/health.h"
 #include "game/components/inventory.h"
 #include "game/components/item.h"
@@ -144,8 +143,9 @@ static void play_enter(void)
 {
     nge_render_set_view(LEVEL_AREA);
     nge_map_invalidate();
-    screen_draw_stats(nge_timer_turns, health_hp[actor_player], health_hp_max[actor_player],
-                      health_ac[actor_player], status_mask[actor_player]);
+    screen_draw_stats();
+    player_show_stats();
+    screen_show_turn(nge_timer_turns);
     screen_help("g:get i:inv u:use w:wear r:off d:drop");
 }
 

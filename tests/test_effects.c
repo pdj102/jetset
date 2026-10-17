@@ -343,6 +343,25 @@ int main(void)
     CHECK(health_immune[g] == DMG_BIT(DMG_ACID) && health_resist[g] == DMG_BIT(DMG_FIRE) &&
           health_vuln[g] == (DMG_BIT(DMG_COLD) | DMG_BIT(DMG_MAGIC)) && effects_check(g));
     CHECK(events() == 9);                                          /* one EV_ATTRS_CHANGED each */
+    /* Abilities: clamped to 1-30 */
+    CHECK(stats_ability[ABIL_STR][g] == 8 && attr_base[ATTR_STR][g] == 8);   /* a goblin's */
+    effects_set_base(g, ATTR_CHA, 200);
+    CHECK(stats_ability[ABIL_CHA][g] == 30 && attr_base[ATTR_CHA][g] == 200);
+    effects_set_base(g, ATTR_CHA, 0);
+    CHECK(stats_ability[ABIL_CHA][g] == 1 && effects_check(g));
+    effects_set_base(g, ATTR_CHA, 8);
+    /* A potion of strength: +1 base strength, for good */
+    events();
+    CHECK(effect_apply(EF_STRENGTH, g, NGE_ENTITY_INVALID) == 1);
+    CHECK(attr_base[ATTR_STR][g] == 9 && stats_ability[ABIL_STR][g] == 9 && stats_ability[ABIL_DEX][g] == 14);
+    CHECK(events() == 2 && is(0, g, EV_ATTRS_CHANGED, NGE_EVENT_NONE, 0) &&
+          is(1, g, EV_EFFECT_STARTED, NGE_EVENT_NONE, EF_STRENGTH));
+    effect_text(EF_STRENGTH, EFFECT_TEXT_START, text, sizeof(text));
+    CHECK_STR(text, "You feel strong!");
+    attr_base[ATTR_STR][g] = 30;
+    effect_apply(EF_STRENGTH, g, NGE_ENTITY_INVALID);
+    CHECK(attr_base[ATTR_STR][g] == 31 && stats_ability[ABIL_STR][g] == 30);   /* the base may pass 30, the score can't */
+    effects_set_base(g, ATTR_STR, 9);
     /* effects_check() notices every derived value out of step */
     health_ac[g]++;
     k = effects_check(g);
@@ -356,6 +375,11 @@ int main(void)
     status_mask[g] ^= STATUS_POISONED;
     k = k || effects_check(g);
     status_mask[g] ^= STATUS_POISONED;
+    for (i = 0; i < ABIL_COUNT; i++) {
+        stats_ability[i][g]++;
+        k = k || effects_check(g);
+        stats_ability[i][g]--;
+    }
     health_hp_max[g]--;
     k = k || effects_check(g);
     health_hp_max[g]++;
@@ -369,6 +393,11 @@ int main(void)
     CHECK(!effects_game_attr_is_mask[ATTR_HP_MAX] && !effects_game_attr_is_mask[ATTR_AC] &&
           !effects_game_attr_is_mask[ATTR_SPEED] && effects_game_attr_is_mask[ATTR_IMMUNE] &&
           effects_game_attr_is_mask[ATTR_RESIST] && effects_game_attr_is_mask[ATTR_VULN]);
+    ok = 1;
+    for (i = 0; i < ABIL_COUNT; i++) {
+        ok = ok && !effects_game_attr_is_mask[ATTR_ABILITY(i)];   /* scores are numbers */
+    }
+    CHECK(ok);
     CHECK(effects_game_timer_kind == TIMER_EFFECT);
 
     /* ---- a target that dies: its effects stop acting, and no end event ---- */

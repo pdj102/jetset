@@ -62,7 +62,8 @@
 #define EF_VITALITY     4   /**< Instant: +1 base maximum hit points, for good. */
 #define EF_RING_HEALTH  5   /**< Worn: +2 maximum hit points. */
 #define EF_REGEN        6   /**< Timed, for ever, stacking: heal 1 every 10 turns (the player's innate effect). */
-#define EF_COUNT        7
+#define EF_STRENGTH     7   /**< Instant: +1 base strength, for good. */
+#define EF_COUNT        8
 
 /* effect_text(): which text */
 #define EFFECT_TEXT_START  0   /**< When it starts: "You feel sick." */

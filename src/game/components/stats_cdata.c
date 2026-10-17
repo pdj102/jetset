@@ -7,3 +7,4 @@
 #include "game/components/stats.h"
 
 uint8_t stats_speed[NGE_ENTITY_MAX];
+uint8_t stats_ability[ABIL_COUNT][NGE_ENTITY_MAX];

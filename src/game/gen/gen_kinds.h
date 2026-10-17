@@ -24,7 +24,8 @@
 #define IT_ANTIDOTE  3
 #define IT_FOOD      4   /* a dead rat: poisoned */
 #define IT_ELIXIR    5   /* of vitality */
-#define IT_COUNT     6
+#define IT_STRENGTH  6   /* potion of strength */
+#define IT_COUNT     7
 
 /* Item subclasses, in each item's base record */
 #define ITEM_POTION  0

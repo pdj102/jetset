@@ -78,6 +78,15 @@ static uint8_t clamp(int16_t v, uint8_t lo)
     return (v > 255) ? 255 : (uint8_t)v;
 }
 
+/* An ability score within its range */
+static uint8_t clamp_ability(int16_t v)
+{
+    if (v < STATS_ABILITY_MIN) {
+        return STATS_ABILITY_MIN;
+    }
+    return (v > STATS_ABILITY_MAX) ? STATS_ABILITY_MAX : (uint8_t)v;
+}
+
 /* Set *p to v if write: 1 if it differs */
 static uint8_t set(uint8_t *p, uint8_t v, uint8_t write)
 {
@@ -94,6 +103,7 @@ uint8_t effects_game_store(nge_entity_id_t id, const effects_derived_t *d, uint8
 {
     uint8_t changed = 0;
     uint8_t max = clamp(d->value[ATTR_HP_MAX], 1);
+    uint8_t a;
 
     changed |= set(&health_hp_max[id], max, write);
     if (health_hp[id] > max) {
@@ -114,5 +124,10 @@ uint8_t effects_game_store(nge_entity_id_t id, const effects_derived_t *d, uint8
         }
     }
     changed |= set(&status_mask[id], d->status, write);
+    if (NGE_ENTITY_HAS_ANY_COMPONENTS(id, COMPONENT_STATS)) {
+        for (a = 0; a < ABIL_COUNT; a++) {
+            changed |= set(&stats_ability[a][id], clamp_ability(d->value[ATTR_ABILITY(a)]), write);
+        }
+    }
     return changed;
 }

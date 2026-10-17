@@ -49,6 +49,11 @@ const effect_def_t effect_defs[EF_COUNT] = {
         .duration = EFFECT_WORN,
         .mod = { { ATTR_HP_MAX, 2 } },
     },
+    [EF_STRENGTH] = {
+        .duration = EFFECT_INSTANT,
+        .start_text = "You feel strong!",
+        .on_start = { OP_RAISE_BASE, ATTR_STR, 1 },
+    },
     [EF_REGEN] = {
         .duration = EFFECT_TIMED,
         .flags = EFFECT_STACK,   /* each source of regeneration counts */
@@ -67,6 +72,12 @@ const uint8_t effects_game_attr_is_mask[ATTR_COUNT] = {
     [ATTR_IMMUNE] = 1,
     [ATTR_RESIST] = 1,
     [ATTR_VULN]   = 1,
+    [ATTR_STR]    = 0,
+    [ATTR_DEX]    = 0,
+    [ATTR_CON]    = 0,
+    [ATTR_INT]    = 0,
+    [ATTR_WIS]    = 0,
+    [ATTR_CHA]    = 0,
 };
 
 const uint8_t effects_game_timer_kind = TIMER_EFFECT;

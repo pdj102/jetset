@@ -11,7 +11,6 @@
 #include "map/nge_map.h"
 
 #include "game/actors.h"
-#include "game/components/attrs.h"
 #include "game/components/health.h"
 #include "game/effects/effects.h"
 #include "game/events.h"
@@ -40,9 +39,7 @@ void player_on_event(const nge_event_t *e)
         screen_show_hp(health_hp[target], health_hp_max[target]);
         break;
     case EV_ATTRS_CHANGED:
-        screen_show_hp(health_hp[target], health_hp_max[target]);
-        screen_show_ac(health_ac[target]);
-        screen_show_status(status_mask[target]);
+        player_show_stats();
         break;
     default:
         break;

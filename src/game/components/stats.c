@@ -21,11 +21,20 @@ static void check_entity(nge_entity_id_t id)
 
 void stats_add(nge_entity_id_t id, const stats_base_t *b) NGE_BANKED
 {
+    uint8_t a;
+    uint8_t score;
+
     check_entity(id);
     nge_util_assert(b->speed != 0);
 
     stats_speed[id] = b->speed;
     attr_base[ATTR_SPEED][id] = b->speed;
+    for (a = 0; a < ABIL_COUNT; a++) {
+        score = b->ability[a];
+        nge_util_assert(score >= STATS_ABILITY_MIN && score <= STATS_ABILITY_MAX);
+        stats_ability[a][id] = score;
+        attr_base[ATTR_ABILITY(a)][id] = score;
+    }
     nge_entity_components[id] |= COMPONENT_STATS;
 }
 

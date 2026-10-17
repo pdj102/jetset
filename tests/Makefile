@@ -112,6 +112,9 @@ $(BUILD)/test_health: $(BUILD)/test_health.o $(LIB_OBJS) $(SUPPORT_OBJS) $(GEN_G
 $(BUILD)/test_attack: $(BUILD)/test_attack.o $(LIB_OBJS) $(SUPPORT_OBJS) $(GEN_GAME_OBJS)
 	$(HOSTCC) $(CFLAGS) $^ -o $@
 
+$(BUILD)/test_stats: $(BUILD)/test_stats.o $(LIB_OBJS) $(SUPPORT_OBJS) $(GEN_GAME_OBJS)
+	$(HOSTCC) $(CFLAGS) $^ -o $@
+
 $(BUILD)/test_effects: $(BUILD)/test_effects.o $(LIB_OBJS) $(SUPPORT_OBJS) $(GEN_GAME_OBJS)
 	$(HOSTCC) $(CFLAGS) $^ -o $@
 

@@ -32,8 +32,15 @@
 /** @brief The player's timer fired (TIMER_PLAYER): stop the clock until a command uses the turn. */
 void player_on_turn(nge_entity_id_t id);
 
-/** @brief React to events about the player: the camera follows them (EV_MOVED), the stats show their hit points (EV_DAMAGED, EV_HEALED). */
+/**
+ * @brief React to events about the player: the camera follows them
+ *        (EV_MOVED), the stats window shows their hit points (EV_DAMAGED,
+ *        EV_HEALED) and all their stats (EV_ATTRS_CHANGED).
+ */
 void player_on_event(const nge_event_t *e);
+
+/** @brief Show the player's hit points, AC, abilities and statuses in the stats window (banked, page 114). */
+void player_show_stats(void) NGE_BANKED;
 
 /**
  * @brief Carry out the command for a key event, during the player's turn:

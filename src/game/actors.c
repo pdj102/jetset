@@ -15,7 +15,9 @@
 
 #if GAME_DEV_KIT
 /* The development kit's items, owned by the player: in their pack */
-static const uint8_t dev_kit[] = { IT_SWORD, IT_RING, IT_RING, IT_RING, IT_POTION, IT_ANTIDOTE, IT_FOOD, IT_ELIXIR };
+static const uint8_t dev_kit[] = {
+    IT_SWORD, IT_RING, IT_RING, IT_RING, IT_POTION, IT_ANTIDOTE, IT_FOOD, IT_ELIXIR, IT_STRENGTH,
+};
 #endif
 
 nge_entity_id_t actor_player;

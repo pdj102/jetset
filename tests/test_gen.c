@@ -51,6 +51,7 @@ static int melee_is(nge_entity_id_t id, const attack_base_t *m)
 static int creature_ok(nge_entity_id_t id, nge_owner_t owner, uint8_t kind)
 {
     const gen_creature_base_t *b = &gen_creatures[kind];
+    uint8_t a;
 
     if (!made(id, owner, CLASS_CREATURE, kind) || !render_is(id, &b->render)) {
         return 0;
@@ -65,6 +66,13 @@ static int creature_ok(nge_entity_id_t id, nge_owner_t owner, uint8_t kind)
         health_vuln[id] != b->health.vuln || health_ac[id] != b->health.ac ||
         stats_speed[id] != b->stats.speed || !melee_is(id, &b->melee)) {
         return 0;
+    }
+    /* Its abilities: the record's scores, as values and bases */
+    for (a = 0; a < ABIL_COUNT; a++) {
+        if (stats_ability[a][id] != b->stats.ability[a] || attr_base[ATTR_ABILITY(a)][id] != b->stats.ability[a] ||
+            b->stats.ability[a] < STATS_ABILITY_MIN || b->stats.ability[a] > STATS_ABILITY_MAX) {
+            return 0;
+        }
     }
     /* Only the player is persistent: at 0 hp the game ends instead */
     if (NGE_ENTITY_HAS_FLAGS(id, NGE_ENTITY_PERSISTENT) != ((b->flags & CREATURE_PLAYER) != 0)) {
@@ -171,7 +179,7 @@ int main(void)
     CHECK(ok);
     CHECK(gen_item_hook(IT_POTION, GEN_HOOK_USE) == EF_HEALING && gen_item_hook(IT_RING, GEN_HOOK_WORN) == EF_RING_HEALTH &&
           gen_item_hook(IT_ANTIDOTE, GEN_HOOK_USE) == EF_CURE && gen_item_hook(IT_FOOD, GEN_HOOK_USE) == EF_POISON &&
-          gen_item_hook(IT_ELIXIR, GEN_HOOK_USE) == EF_VITALITY && gen_item_hook(IT_SWORD, GEN_HOOK_HIT) == EF_NONE);
+          gen_item_hook(IT_ELIXIR, GEN_HOOK_USE) == EF_VITALITY && gen_item_hook(IT_STRENGTH, GEN_HOOK_USE) == EF_STRENGTH && gen_item_hook(IT_SWORD, GEN_HOOK_HIT) == EF_NONE);
     CHECK(gen_item_subclass(IT_FOOD) == ITEM_FOOD && gen_item_subclass(IT_ELIXIR) == ITEM_POTION);
     id = gen_creature(CR_RAT, AREA);
     CHECK(gen_hook(id, GEN_HOOK_HIT) == EF_POISON && gen_hook(id, GEN_HOOK_INNATE) == EF_NONE);
@@ -249,11 +257,11 @@ int main(void)
         }
     }
     CHECK(seen[IT_POTION] + seen[IT_SWORD] + seen[IT_RING] + seen[IT_ANTIDOTE] + seen[IT_FOOD] +
-          seen[IT_ELIXIR] == 300);
-    /* Rarities 10, 5, 4 and 4, 3, 1 */
+          seen[IT_ELIXIR] + seen[IT_STRENGTH] == 300);
+    /* Rarities 10, 5, 4 and 4, 3, 1 and 1 */
     CHECK(seen[IT_POTION] > seen[IT_SWORD] && seen[IT_SWORD] > seen[IT_RING] && seen[IT_RING] > seen[IT_ELIXIR] &&
           seen[IT_ELIXIR] > 0);
-    CHECK(seen[IT_ANTIDOTE] > seen[IT_ELIXIR] && seen[IT_FOOD] > seen[IT_ELIXIR]);
+    CHECK(seen[IT_ANTIDOTE] > seen[IT_ELIXIR] && seen[IT_FOOD] > seen[IT_ELIXIR] && seen[IT_STRENGTH] > 0);
     /* Nothing appears at depth 0 */
     CHECK(gen_creature_random(0, AREA) == NGE_ENTITY_INVALID);
     CHECK(gen_item_random(0, AREA) == NGE_ENTITY_INVALID);

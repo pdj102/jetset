@@ -39,7 +39,7 @@ const gen_item_base_t gen_items[IT_COUNT] = {
         .hooks = { [GEN_HOOK_WORN] = EF_RING_HEALTH },
         .where = { .depth = 1, .rarity = 3 },
     },
-    /* Until they have sprites of their own: the potion recoloured, the rat upside down, the potion on its side */
+    /* Until they have sprites of their own: the potion recoloured, the rat upside down, the potion on its side or mirrored */
     [IT_ANTIDOTE] = {
         .name = "antidote",
         .render = { DEMO_SPRITE_POTION, 1, 0, NGE_SPRITE_PALETTE(1), LAYER_OBJECTS },
@@ -62,6 +62,14 @@ const gen_item_base_t gen_items[IT_COUNT] = {
         .subclass = ITEM_POTION,
         .fits = 0,
         .hooks = { [GEN_HOOK_USE] = EF_VITALITY },
+        .where = { .depth = 1, .rarity = 1 },
+    },
+    [IT_STRENGTH] = {
+        .name = "potion of strength",
+        .render = { DEMO_SPRITE_POTION, 1, 0, NGE_SPRITE_MIRROR_X | NGE_SPRITE_PALETTE(1), LAYER_OBJECTS },
+        .subclass = ITEM_POTION,
+        .fits = 0,
+        .hooks = { [GEN_HOOK_USE] = EF_STRENGTH },
         .where = { .depth = 1, .rarity = 1 },
     },
 };

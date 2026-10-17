@@ -18,6 +18,7 @@
 #include "game/effects/effects.h"
 #include "game/gen/gen.h"
 #include "game/messages/messages.h"
+#include "game/player/player.h"
 #include "game/screen.h"
 #include "game/ui/ui.h"
 
@@ -92,6 +93,25 @@ int main(void)
     nge_location_set(actor_player, 5, 5);
     nge_render_set_view(AREA);
     nge_event_flush();   /* the player's innate effect started */
+
+    /* ---- the stats window: the player's stats, from the base record ---- */
+    screen_draw_stats();
+    player_show_stats();
+    test_tilemap_row(2, 28, 39, text);
+    CHECK(strcmp(text, "HP   12/ 12 ") == 0);
+    test_tilemap_row(3, 28, 39, text);
+    CHECK(strcmp(text, "AC       10 ") == 0);
+    test_tilemap_row(5, 28, 39, text);
+    CHECK(strcmp(text, "Str      16 ") == 0);
+    test_tilemap_row(10, 28, 39, text);
+    CHECK(strcmp(text, "Cha      10 ") == 0);
+    test_tilemap_row(12, 28, 39, text);
+    CHECK(strncmp(text, "Gold", 4) == 0);
+    effect_apply(EF_STRENGTH, actor_player, NGE_ENTITY_INVALID);
+    player_show_stats();
+    test_tilemap_row(5, 28, 39, text);
+    CHECK(strcmp(text, "Str      17 ") == 0);
+    nge_event_flush();
 
     /* ---- the inventory, empty: titled, says so, any key goes back ---- */
     last_state = NO_STATE;

@@ -15,7 +15,9 @@
 
 #include "game/actions/act.h"
 #include "game/actors.h"
+#include "game/components/attrs.h"
 #include "game/components/health.h"
+#include "game/components/stats.h"
 #include "game/dev.h"
 #include "game/components/inventory.h"
 #include "game/game.h"
@@ -146,6 +148,20 @@ void player_command(nge_key_event_t ev) NGE_BANKED
     default:
         break;   /* other keys: no command, no turn */
     }
+}
+
+void player_show_stats(void) NGE_BANKED
+{
+    uint8_t scores[ABIL_COUNT];   /* a copy: the table is by ability, then entity */
+    uint8_t a;
+
+    for (a = 0; a < ABIL_COUNT; a++) {
+        scores[a] = stats_ability[a][actor_player];
+    }
+    screen_show_hp(health_hp[actor_player], health_hp_max[actor_player]);
+    screen_show_ac(health_ac[actor_player]);
+    screen_show_abilities(scores);
+    screen_show_status(status_mask[actor_player]);
 }
 
 /* ---- The firing screen ---- */

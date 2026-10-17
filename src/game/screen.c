@@ -10,6 +10,7 @@
 #include "tilemap/nge_tilemap.h"
 
 #include "game/components/attrs.h"
+#include "game/components/stats.h"
 
 const nge_rect_t screen_map_view = { .x1 = 0, .x2 = 27, .y1 = 0, .y2 = 26 };
 static const nge_rect_t stats_area = { .x1 = 28, .x2 = 39, .y1 = 0, .y2 = 26 };
@@ -22,10 +23,15 @@ NGE_FILE *screen_panel = NULL;
 static NGE_FILE *help = NULL;
 char screen_name[SCREEN_NAME_MAX + 1] = "Rogue";
 
-#define STATS_ROW_HP      2    /* stats window row of the hit points */
-#define STATS_ROW_AC      4    /* ...of the armour class */
-#define STATS_ROW_TURN    8    /* ...of the turn count */
-#define STATS_ROW_STATUS  10   /* ...of the statuses */
+#define STATS_ROW_HP         2    /* stats window row of the hit points */
+#define STATS_ROW_AC         3    /* ...of the armour class */
+#define STATS_ROW_ABILITIES  5    /* ...of the first ability: one row each */
+#define STATS_ROW_GOLD       12   /* ...of the gold and, under it, the depth */
+#define STATS_ROW_TURN       14   /* ...of the turn count */
+#define STATS_ROW_STATUS     16   /* ...of the statuses */
+
+/* The abilities' names, by ABIL_* */
+static const char ability_names[ABIL_COUNT][4] = { "Str", "Dex", "Con", "Int", "Wis", "Cha" };
 
 /* The message window's bottom line has text: the next message goes on a new line */
 static uint8_t message_line_used;
@@ -81,23 +87,17 @@ void screen_init(void)
     nge_tm_cls(help);
 }
 
-void screen_draw_stats(uint16_t turn, uint8_t hp, uint8_t hp_max, uint8_t ac, uint8_t status)
+void screen_draw_stats(void)
 {
     nge_tm_cls(screen_stats);
     nge_tm_ink(NGE_INK_YELLOW, screen_stats);
     nge_puts("Name: ", screen_stats);
     nge_puts(screen_name, screen_stats);
-    nge_puts("\n\n\n", screen_stats);       /* the hit points' row: screen_show_hp() */
+    nge_tm_at(STATS_ROW_GOLD, 0, screen_stats);
     nge_tm_ink(NGE_INK_WHITE, screen_stats);
-    nge_puts("Str      16\n", screen_stats);
-    nge_puts("\n", screen_stats);          /* the armour class's row: screen_show_ac() */
-    nge_puts("Gold      0\n\n", screen_stats);
+    nge_puts("Gold      0\n", screen_stats);
     nge_tm_ink(NGE_INK_CYAN, screen_stats);
-    nge_puts("Depth     1\n", screen_stats);
-    screen_show_hp(hp, hp_max);
-    screen_show_ac(ac);
-    screen_show_turn(turn);
-    screen_show_status(status);
+    nge_puts("Depth     1", screen_stats);
 }
 
 void screen_show_hp(uint8_t hp, uint8_t hp_max)
@@ -116,6 +116,18 @@ void screen_show_ac(uint8_t ac)
     nge_tm_ink(NGE_INK_WHITE, screen_stats);
     nge_puts("AC ", screen_stats);
     nge_putu16w(ac, 8, ' ', screen_stats);
+}
+
+void screen_show_abilities(const uint8_t *scores)
+{
+    uint8_t a;
+
+    nge_tm_ink(NGE_INK_WHITE, screen_stats);
+    for (a = 0; a < ABIL_COUNT; a++) {
+        nge_tm_at((uint8_t)(STATS_ROW_ABILITIES + a), 0, screen_stats);
+        nge_puts(ability_names[a], screen_stats);
+        nge_putu16w(scores[a], 8, ' ', screen_stats);
+    }
 }
 
 void screen_show_status(uint8_t status)
