@@ -79,12 +79,10 @@ void nge_hw_disable_contention(void)
 }
 
 /* Set the CPU speed, ignoring values outside the supported range. */
-void nge_hw_set_cpu_speed(enum nge_hw_cpu_speed speed)
+void nge_hw_set_cpu_speed(uint8_t speed)
 {
-    if (speed > NGE_HW_CPU_28MHZ)
+    if (speed < NGE_HW_CPU_COUNT)
     {
-        return;
+        ZXN_WRITE_REG(REG_TURBO_MODE, speed);
     }
-
-    ZXN_WRITE_REG(REG_TURBO_MODE, (uint8_t)speed);
 }

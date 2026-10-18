@@ -11,13 +11,11 @@
 /**
  * @brief CPU speed settings, matching the values of the turbo mode register.
  */
-enum nge_hw_cpu_speed
-{
-    NGE_HW_CPU_3MHZ = 0,  /**< 3.5 MHz (standard Spectrum speed). */
-    NGE_HW_CPU_7MHZ = 1,  /**< 7 MHz. */
-    NGE_HW_CPU_14MHZ = 2, /**< 14 MHz. */
-    NGE_HW_CPU_28MHZ = 3  /**< 28 MHz. */
-};
+    #define NGE_HW_CPU_3MHZ  0  /**< 3.5 MHz (standard Spectrum speed). */
+    #define NGE_HW_CPU_7MHZ  1  /**< 7 MHz. */
+    #define NGE_HW_CPU_14MHZ 2  /**< 14 MHz. */
+    #define NGE_HW_CPU_28MHZ 3  /**< 28 MHz. */
+    #define NGE_HW_CPU_COUNT 4   /**< Number of CPU speed settings. */
 
 /**
  * @brief Initialize the hardware defaults required by the game.
@@ -58,6 +56,6 @@ void nge_hw_disable_contention(void);
  * @brief Set the CPU speed.
  * @param speed Requested speed; values above ::NGE_HW_CPU_28MHZ are ignored.
  */
-void nge_hw_set_cpu_speed(enum nge_hw_cpu_speed speed);
+void nge_hw_set_cpu_speed(uint8_t speed);
 
 #endif

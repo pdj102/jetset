@@ -17,7 +17,7 @@ int main(void)
     /* CPU speed, ignoring values out of range */
     nge_hw_set_cpu_speed(NGE_HW_CPU_14MHZ);
     CHECK(test_regs[0x07] == 2);
-    nge_hw_set_cpu_speed((enum nge_hw_cpu_speed)7);
+    nge_hw_set_cpu_speed(7);
     CHECK(test_regs[0x07] == 2);
 
     /* Contention off, other Peripheral 3 bits kept */
