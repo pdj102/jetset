@@ -1,20 +1,26 @@
-# z88dk and Spectrum Next build products
-*.bin
-*.def
-*.ihx
-*.map
-*.nex
-*.o
-*.opt
-*.sym
-*.tap
-*.tmp
-zcc_opt.def
-main
+# Build output: make writes only here (make clean removes it)
+/bin/
+/obj/
+/tests/build/
 
-# Editor and local environment files
+# Stray z88dk output from running zcc by hand in the project root
+/*.bin
+/*.def
+/*.ihx
+/*.map
+/*.nex
+/*.o
+/*.opt
+/*.sym
+/*.tap
+/*.tmp
+
+# Local settings, not shared
 .claude/settings.local.json
 .vscode/*.log
 
-# PC test build output
-tests/build/
+# Editor and OS clutter
+*~
+*.swp
+Thumbs.db
+desktop.ini
