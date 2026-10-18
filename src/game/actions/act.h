@@ -93,7 +93,9 @@ typedef struct act {
 #define ACT_USE     6
 #define ACT_OPEN    7
 #define ACT_CLOSE   8
-#define ACT_COUNT   9
+#define ACT_ASCEND  9
+#define ACT_DESCEND 10
+#define ACT_COUNT   11
 
 /* Reasons (refused or attempted: the table in act.c) */
 #define ACT_R_NONE              0   /**< Succeeded. */
@@ -121,7 +123,8 @@ typedef struct act {
 #define ACT_R_ALREADY_OPEN      22  /**< Refused: it is open already. */
 #define ACT_R_ALREADY_CLOSED    23  /**< Refused: it is closed already. */
 #define ACT_R_OBSTRUCTED        24  /**< Refused: something (an item, a creature) is in the doorway. */
-#define ACT_R_COUNT             25
+#define ACT_R_NO_STAIRS         25  /**< Refused: no stairs the right way on the actor's tile. */
+#define ACT_R_COUNT             26
 
 /**
  * @brief Move one tile.
@@ -230,6 +233,21 @@ uint8_t act_open(act_t *a, uint8_t mode) NGE_BANKED;
  *        ACT_R_ALREADY_CLOSED or ACT_R_OBSTRUCTED.
  */
 uint8_t act_close(act_t *a, uint8_t mode) NGE_BANKED;
+
+/**
+ * @brief Go up the stairs the actor stands on (game/level/level.h).
+ *
+ * In: actor (alive, placed on the current level). Succeeds if a feature
+ * that leads up (FCAN_ASCEND) is on the actor's tile; a->target is it.
+ * The player asks for the level above (level_request(): the game takes
+ * them there at the end of the frame, or out of the dungeon from depth
+ * 1); anyone else leaves the level for it (level_send(): EV_LEFT_LEVEL).
+ * Refused with ACT_R_NO_STAIRS.
+ */
+uint8_t act_ascend(act_t *a, uint8_t mode) NGE_BANKED;
+
+/** @brief Go down the stairs the actor stands on: as act_ascend(), for a feature that leads down (FCAN_DESCEND). */
+uint8_t act_descend(act_t *a, uint8_t mode) NGE_BANKED;
 
 /** @brief Call action (ACT_MOVE...) by number: for the AI and delayed actions. */
 uint8_t act_do(uint8_t action, act_t *a, uint8_t mode);

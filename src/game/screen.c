@@ -95,9 +95,15 @@ void screen_draw_stats(void)
     nge_puts(screen_name, screen_stats);
     nge_tm_at(STATS_ROW_GOLD, 0, screen_stats);
     nge_tm_ink(NGE_INK_WHITE, screen_stats);
-    nge_puts("Gold      0\n", screen_stats);
+    nge_puts("Gold      0", screen_stats);
+}
+
+void screen_show_depth(uint8_t depth)
+{
+    nge_tm_at(STATS_ROW_GOLD + 1, 0, screen_stats);
     nge_tm_ink(NGE_INK_CYAN, screen_stats);
-    nge_puts("Depth     1", screen_stats);
+    nge_puts("Depth ", screen_stats);
+    nge_putu16w(depth, 5, ' ', screen_stats);
 }
 
 void screen_show_hp(uint8_t hp, uint8_t hp_max)

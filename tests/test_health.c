@@ -4,10 +4,12 @@
 #include <stdlib.h>
 
 #include "ecs/nge_entity.h"
+#include "ecs/nge_owner.h"
 #include "event/nge_event.h"
 
 #include "game/components/attrs.h"
 #include "game/components/health.h"
+#include "game/components/kind.h"
 #include "game/events.h"
 
 /* The events posted since the last call */
@@ -70,6 +72,7 @@ int main(void)
     static const uint8_t amounts[] = { 0, 1, 2, 3, 127, 128, 200, 255 };
     health_base_t b;
     nge_entity_id_t a;
+    nge_entity_id_t owned;
     nge_entity_id_t player;
     nge_entity_id_t attacker;
     uint8_t outcome;
@@ -159,13 +162,25 @@ int main(void)
     CHECK(health_damage(a, attacker, 4, DMG_BLUNT) == 4 && health_hp[a] == 0);
     CHECK(events() == 2 && seen[1].id == EV_DIED);
 
-    /* ---- a persistent entity (the player) isn't destroyed at 0 ---- */
+    /* ---- the player (persistent) isn't destroyed at 0 ---- */
     player = make(5, 0, 0, 0);
+    kind_add(player, CLASS_CREATURE, CR_PLAYER);
     nge_entity_set_flags(player, NGE_ENTITY_PERSISTENT);
     CHECK(health_damage(player, NGE_ENTITY_INVALID, 9, DMG_ACID) == 9 && health_hp[player] == 0);
     CHECK(events() == 2 && is(1, player, EV_DIED, NGE_EVENT_NONE, 0, 0));
-    CHECK(NGE_ENTITY_IS_ALIVE(player));
+    CHECK(NGE_ENTITY_IS_ALIVE(player) && NGE_ENTITY_HAS_FLAGS(player, NGE_ENTITY_PERSISTENT));
     CHECK(health_damage(player, NGE_ENTITY_INVALID, 9, DMG_ACID) == 0 && events() == 0);   /* died once */
+
+    /* ---- any other persistent entity (a boss) dies: its flag is cleared, not what it owns ---- */
+    a = make(5, 0, 0, 0);
+    kind_add(a, CLASS_CREATURE, CR_GOBLIN);
+    nge_entity_set_flags(a, NGE_ENTITY_PERSISTENT);
+    owned = nge_entity_create();
+    nge_owner_set(owned, a);
+    nge_entity_set_flags(owned, NGE_ENTITY_PERSISTENT);
+    CHECK(health_damage(a, NGE_ENTITY_INVALID, 9, DMG_ACID) == 9 && events() == 2 && seen[1].id == EV_DIED);
+    CHECK(NGE_ENTITY_STATE(a) == NGE_ENTITY_DYING && !NGE_ENTITY_HAS_FLAGS(a, NGE_ENTITY_PERSISTENT));
+    CHECK(NGE_ENTITY_IS_ALIVE(owned) && NGE_ENTITY_HAS_FLAGS(owned, NGE_ENTITY_PERSISTENT));
 
     /* ---- heal: up to the maximum, the hp restored in the event ---- */
     a = make(10, 0, 0, 0);

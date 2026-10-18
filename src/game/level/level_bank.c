@@ -27,6 +27,8 @@ static void set_up_blocks(void)
     /* Features' tiles: the feature blocks (a closed door), not its tile */
     nge_map_set_block(LEVEL_TILE_DOOR_SHUT, NGE_BLOCK_NONE);
     nge_map_set_block(LEVEL_TILE_DOOR_OPEN, NGE_BLOCK_NONE);
+    nge_map_set_block(LEVEL_TILE_STAIRS_UP, NGE_BLOCK_NONE);
+    nge_map_set_block(LEVEL_TILE_STAIRS_DOWN, NGE_BLOCK_NONE);
 }
 
 void level_put_floor(uint8_t x, uint8_t y) NGE_BANKED

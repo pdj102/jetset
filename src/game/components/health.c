@@ -15,6 +15,7 @@
 
 #include "core/nge_util.h"
 #include "event/nge_event.h"
+#include "game/components/kind.h"
 #include "game/events.h"
 
 typedef char health_types_check[(DMG_COUNT <= 8) ? 1 : -1];   /* the masks are one byte */
@@ -97,7 +98,11 @@ uint8_t health_damage(nge_entity_id_t target, nge_entity_id_t source, uint8_t am
     nge_event_post(target, EV_DAMAGED, source, taken, EV_DMG_PACK(outcome, type));
     if (hp == 0) {
         nge_event_post(target, EV_DIED, source, 0, 0);
-        nge_entity_destroy(target);   /* does nothing to a persistent entity (the player) */
+        if (!KIND_IS_PLAYER(target)) {
+            /* A persistent creature (a boss) dies too; what it owns keeps its own flag */
+            nge_entity_clear_flags(target, NGE_ENTITY_PERSISTENT);
+        }
+        nge_entity_destroy(target);   /* does nothing to the player: the game ends instead */
     }
     return taken;
 }

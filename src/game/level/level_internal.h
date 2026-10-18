@@ -6,6 +6,7 @@
  * - level.c (common memory): the checks used every turn;
  * - level_bank.c (page 102): setting up the map;
  * - level_gen.c (page 102): generating a level;
+ * - level_travel.c (page 102): leaving a level, parking and sending entities;
  * - level_pdata.c (page 103): the room list and the generator's work data,
  *   mapped into slot 7 while the page 102 code runs.
  */
@@ -47,6 +48,9 @@
 #define LEVEL_MONSTERS_MIN  2  /* monsters per level */
 #define LEVEL_MONSTERS_MAX  5
 
+/* Each depth has an area of its own */
+typedef char level_depth_check[(LEVEL_DEPTH_BOTTOM < NGE_OWNER_AREA_MAX) ? 1 : -1];
+
 typedef char level_grid_check[(LEVEL_GRID_W * LEVEL_CELL_W <= LEVEL_WIDTH &&
                                LEVEL_GRID_H * LEVEL_CELL_H <= LEVEL_HEIGHT &&
                                LEVEL_ROOMS_MAX <= LEVEL_CELLS) ? 1 : -1];
@@ -74,6 +78,12 @@ extern uint8_t      level_links[LEVEL_CELLS];       /* LEVEL_LINK_* to the cell'
 extern uint8_t level_doorway_x[LEVEL_DOORWAYS_MAX];
 extern uint8_t level_doorway_y[LEVEL_DOORWAYS_MAX];
 extern uint8_t level_doorway_count;
+
+/* The stairs, by LEVEL_ARRIVE_UP_STAIRS / _DOWN_STAIRS - 1: NGE_ENTITY_INVALID if none (page 103) */
+extern nge_entity_id_t level_stairs[2];
+
+/* Leave the current level: the player taken out of its area, its unkept entities released, the rest parked */
+void level_leave(nge_entity_id_t player) NGE_BANKED;
 
 #define LEVEL_LINK_RIGHT  0x01
 #define LEVEL_LINK_DOWN   0x02

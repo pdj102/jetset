@@ -22,6 +22,7 @@
 #include "core/nge_util.h"
 #include "ecs/components/nge_location.h"
 #include "game/components/feature.h"
+#include "game/dev.h"
 #include "game/gen/gen.h"
 #include "io/nge_tm_stream.h"
 
@@ -61,25 +62,15 @@ static void put_corridor(uint8_t x, uint8_t y)
 
 /* ---- Clearing ---- */
 
-/* Rock everywhere, and none of the last level's entities but the player */
-static void clear(nge_entity_id_t player)
+/* Rock everywhere: the last level's entities are gone already (level_leave()) */
+static void clear(void)
 {
-    nge_entity_id_t id;
-    uint8_t i;
     uint8_t x;
     uint8_t y;
 
     for (y = 0; y < LEVEL_HEIGHT; y++) {
         for (x = 0; x < LEVEL_WIDTH; x++) {
             put(x, y, LEVEL_ROCK, 0);
-        }
-    }
-    NGE_OWNER_FOR_EACH_OWNED(i, id, LEVEL_AREA) {
-        if (id != player) {
-            if (FEATURE_IS(id)) {
-                nge_location_remove(id);   /* the map is new: no floor to put back where it was */
-            }
-            nge_entity_destroy(id);
         }
     }
     level_doorway_count = 0;
@@ -393,24 +384,86 @@ static void place_doors(void)
     }
 }
 
+/* One try at a free floor tile in room r: a random one, 1 if no entity is on it */
+static uint8_t try_floor(const level_room_t *r, uint8_t *x, uint8_t *y)
+{
+    *x = roll_between((uint8_t)(r->x1 + 1), (uint8_t)(r->x2 - 1));
+    *y = roll_between((uint8_t)(r->y1 + 1), (uint8_t)(r->y2 - 1));
+    return nge_location_find(LEVEL_AREA, *x, *y, 0, 0) == NGE_ENTITY_INVALID;
+}
+
 /*
- * A random floor tile, in a random room, with no entity on it
+ * A random floor tile in room r with no entity on it
  * @return 1 and the tile in (x, y), or 0 if none was found in PLACE_ATTEMPTS tries
  */
+static uint8_t free_floor_in(const level_room_t *r, uint8_t *x, uint8_t *y)
+{
+    uint8_t tries;
+
+    for (tries = 0; tries < PLACE_ATTEMPTS; tries++) {
+        if (try_floor(r, x, y)) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/* The same in a random room, a new one each try */
 static uint8_t free_floor(uint8_t *x, uint8_t *y)
 {
     uint8_t tries;
 
     for (tries = 0; tries < PLACE_ATTEMPTS; tries++) {
-        const level_room_t *r = &level_rooms[level_room_cells[roll(level_room_count)]];
-
-        *x = roll_between((uint8_t)(r->x1 + 1), (uint8_t)(r->x2 - 1));
-        *y = roll_between((uint8_t)(r->y1 + 1), (uint8_t)(r->y2 - 1));
-        if (nge_location_find(LEVEL_AREA, *x, *y, 0, 0) == NGE_ENTITY_INVALID) {
+        if (try_floor(&level_rooms[level_room_cells[roll(level_room_count)]], x, y)) {
             return 1;
         }
     }
     return 0;
+}
+
+/* Free floor somewhere: rooms have at least 6 floor tiles, and a level has few entities on floor: keep looking */
+static void any_free_floor(uint8_t *x, uint8_t *y)
+{
+    while (!free_floor(x, y)) {
+    }
+}
+
+/* Stairs of kind (FT_STAIRS_*) on free floor in room r: its entity, or NGE_ENTITY_INVALID if none is free */
+static nge_entity_id_t place_stairs_in(uint8_t kind, const level_room_t *r)
+{
+    nge_entity_id_t id;
+    uint8_t x;
+    uint8_t y;
+
+    if (!free_floor_in(r, &x, &y)) {
+        return NGE_ENTITY_INVALID;
+    }
+    id = gen_feature(kind, LEVEL_AREA);
+    if (id != NGE_ENTITY_INVALID) {
+        feature_place(id, x, y);
+    }
+    return id;
+}
+
+/*
+ * Up stairs in a random room and, above the bottom, down stairs in another
+ * (there are at least LEVEL_ROOMS_MIN rooms). Before anything else is on
+ * the floor, so each finds a tile
+ */
+static void place_stairs(uint8_t depth)
+{
+    uint8_t up = roll(level_room_count);
+    uint8_t down;
+
+    level_stairs[0] = place_stairs_in(FT_STAIRS_UP, &level_rooms[level_room_cells[up]]);
+    level_stairs[1] = NGE_ENTITY_INVALID;
+    if (depth < LEVEL_DEPTH_BOTTOM) {
+        down = roll((uint8_t)(level_room_count - 1));
+        if (down >= up) {
+            down++;   /* any room but the up stairs' */
+        }
+        level_stairs[1] = place_stairs_in(FT_STAIRS_DOWN, &level_rooms[level_room_cells[down]]);
+    }
 }
 
 /*
@@ -435,32 +488,66 @@ static void place_random(uint8_t n, uint8_t depth, uint8_t creatures)
     }
 }
 
-static void place_player(nge_entity_id_t player)
+/* The kept entities parked in the depth's area, on free floor */
+static void place_parked(nge_entity_id_t player)
 {
+    nge_entity_id_t id;
+    uint8_t i;
     uint8_t x;
     uint8_t y;
 
-    /* Rooms have at least 6 floor tiles, and there are 15 entities at most: keep looking */
-    while (!free_floor(&x, &y)) {
+    NGE_OWNER_FOR_EACH_OWNED(i, id, LEVEL_AREA) {
+        if (id != player && !NGE_ENTITY_HAS_COMPONENTS(id, NGE_COMPONENT_LOCATION)) {
+            any_free_floor(&x, &y);
+            nge_location_set(id, x, y);
+        }
+    }
+}
+
+/* The player on the stairs they arrive by, or (arriving anywhere, or with no such stairs) on free floor */
+static void place_player(nge_entity_id_t player, uint8_t arrival)
+{
+    nge_entity_id_t stairs = NGE_ENTITY_INVALID;
+    uint8_t x;
+    uint8_t y;
+
+    if (arrival != LEVEL_ARRIVE_ANY) {
+        stairs = level_stairs[arrival - 1];
+    }
+    if (stairs != NGE_ENTITY_INVALID) {
+        x = NGE_LOCATION_X(stairs);
+        y = NGE_LOCATION_Y(stairs);
+    } else {
+        any_free_floor(&x, &y);
     }
     nge_owner_set(player, LEVEL_AREA);
     nge_location_set(player, x, y);
     nge_map_centre_camera(x, y);
 }
 
-void level_generate(uint8_t depth, nge_entity_id_t player) NGE_BANKED
+void level_generate(uint8_t depth, nge_entity_id_t player, uint8_t arrival) NGE_BANKED
 {
     nge_util_assert(player < NGE_ENTITY_MAX);
+    nge_util_assert(depth >= 1 && depth <= LEVEL_DEPTH_BOTTOM);
+    nge_util_assert(arrival <= LEVEL_ARRIVE_DOWN_STAIRS);
 
-    srand(depth);   /* for development: each depth's level is always the same */
+    level_leave(player);
+    level_depth = depth;
+#if GAME_DEV_KIT
+    srand(level_dev_seed + depth);   /* for development: each depth's level is always the same */
+#endif
 
-    clear(player);
+    /* What depends only on the depth first... */
+    clear();
     make_cells();
     make_tree();
     make_loops();
     make_corridors();
+    place_stairs(depth);
     place_doors();
     place_random(roll_between(LEVEL_ITEMS_MIN, LEVEL_ITEMS_MAX), depth, 0);
     place_random(roll_between(LEVEL_MONSTERS_MIN, LEVEL_MONSTERS_MAX), depth, 1);
-    place_player(player);
+    /* ...then what depends on play, so it can't change the rest */
+    place_parked(player);
+    place_player(player, arrival);
 }

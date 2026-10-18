@@ -23,6 +23,7 @@
 #include "game/dev.h"
 #include "game/components/inventory.h"
 #include "game/game.h"
+#include "game/level/level.h"
 #include "game/messages/messages.h"
 #include "game/screen.h"
 
@@ -106,6 +107,13 @@ static void pick_up(void)
     player_act(ACT_PICKUP, &a);
 }
 
+static void stairs(uint8_t action)
+{
+    act_t a = { 0 };
+
+    player_act(action, &a);
+}
+
 void player_command(nge_key_event_t ev) NGE_BANKED
 {
     int8_t dx;
@@ -141,9 +149,15 @@ void player_command(nge_key_event_t ev) NGE_BANKED
     case 'c':
         game_set_state(GAME_CLOSE);
         break;
+    case '<':
+        stairs(ACT_ASCEND);
+        break;
+    case '>':
+        stairs(ACT_DESCEND);
+        break;
     case 'Q':
         screen_message("You quit.");
-        game_set_state(GAME_DEAD);
+        game_over(GAME_OVER_QUIT);
         break;
 #if GAME_DEV_KIT
     case 'X': {
@@ -154,6 +168,10 @@ void player_command(nge_key_event_t ev) NGE_BANKED
         type = (uint8_t)((type + 1) % DMG_COUNT);
         break;
     }
+    case 'F':
+        /* Development: fall to the next level, anywhere on it (no turn used): falls before there are holes */
+        level_request((uint8_t)(level_depth + 1), LEVEL_ARRIVE_ANY);
+        break;
 #endif
     default:
         break;   /* other keys: no command, no turn */

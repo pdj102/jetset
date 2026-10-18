@@ -31,6 +31,9 @@
 
 static const nge_rect_t window = { .x1 = 0, .x2 = 9, .y1 = 0, .y2 = 9 };
 
+/* The screen's map view, for the level module (screen.c isn't linked) */
+const nge_rect_t screen_map_view = { .x1 = 0, .x2 = 27, .y1 = 0, .y2 = 26 };
+
 /* The events posted since the last call */
 static nge_event_t seen[16];
 static int seen_count;
@@ -127,6 +130,10 @@ int main(void)
     nge_entity_id_t thing;
     nge_entity_id_t door;
     nge_entity_id_t opener;
+    nge_entity_id_t stairs;
+    nge_entity_id_t climber;
+    uint8_t depth;
+    uint8_t arrival;
     unsigned int s;
     int roll;
     int hp;
@@ -148,6 +155,8 @@ int main(void)
     nge_map_set_block(FLOOR, NGE_BLOCK_NONE);
     nge_map_set_block(LEVEL_TILE_DOOR_SHUT, NGE_BLOCK_NONE);   /* as the level sets them: the door blocks */
     nge_map_set_block(LEVEL_TILE_DOOR_OPEN, NGE_BLOCK_NONE);
+    nge_map_set_block(LEVEL_TILE_STAIRS_UP, NGE_BLOCK_NONE);
+    nge_map_set_block(LEVEL_TILE_STAIRS_DOWN, NGE_BLOCK_NONE);
     for (y = 0; y < 10; y++) {
         for (x = 0; x < 10; x++) {
             NGE_MAP_TILE(x, y).tile_id = FLOOR;
@@ -664,6 +673,50 @@ int main(void)
     a.target = door;                                          /* dying */
     CHECK(act_close(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_CANT_OPEN);
     CHECK(events() == 0);
+
+    /* ---- ascend and descend: stairs on the actor's tile (level_depth 0 here: the area is AREA) ---- */
+    level_clear_request();
+    events();
+    CHECK(nge_location_find(AREA, 2, 8, 0, 0) == NGE_ENTITY_INVALID);
+    nge_location_set(player, 2, 8);
+    a = ctx(player);
+    CHECK(act_descend(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_NO_STAIRS && a.used == 0);
+    CHECK(!level_pending() && events() == 0);
+    stairs = gen_feature(FT_STAIRS_DOWN, AREA);
+    feature_place(stairs, 2, 8);
+    CHECK(NGE_MAP_TILE(2, 8).tile_id == LEVEL_TILE_STAIRS_DOWN && NGE_BLOCK_OF(stairs) == NGE_BLOCK_NONE);
+    a = ctx(player);
+    CHECK(act_ascend(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_NO_STAIRS);   /* the wrong way */
+    a = ctx(player);
+    a.target = stairs;
+    CHECK(act_open(&a, ACT_CHECK) == ACT_FAIL && a.reason == ACT_R_CANT_OPEN);   /* stairs don't open */
+    a = ctx(player);
+    CHECK(act_descend(&a, ACT_CHECK) == ACT_SUCCESS && a.used == 0 && a.target == stairs);
+    CHECK(!level_pending() && events() == 0);                              /* check mode: nothing */
+    a = ctx(player);
+    CHECK(act_do(ACT_DESCEND, &a, ACT_DO) == ACT_SUCCESS && a.used == 1 && a.target == stairs);
+    CHECK(level_pending() && at(player, 2, 8) && NGE_OWNER_OF(player) == AREA);   /* the game moves them */
+    level_take_request(&depth, &arrival);
+    CHECK(depth == 1 && arrival == LEVEL_ARRIVE_UP_STAIRS && events() == 0);
+    /* A monster on the stairs leaves the level: destroyed, not persistent */
+    nge_location_set(player, 3, 8);
+    climber = creature(CR_GOBLIN, 2, 8);
+    a = ctx(climber);
+    CHECK(act_descend(&a, ACT_DO) == ACT_SUCCESS && a.used == 1 && !level_pending());
+    CHECK(NGE_ENTITY_STATE(climber) == NGE_ENTITY_DYING);
+    CHECK(events() == 1 && is(0, climber, EV_LEFT_LEVEL, NGE_EVENT_NONE) && seen[0].p1 == 1);
+    /* Up the stairs from depth 1: out of the dungeon (depth 0) */
+    level_depth = 1;
+    climber = gen_creature(CR_PLAYER, LEVEL_AREA);
+    nge_location_set(climber, 1, 8);
+    stairs = gen_feature(FT_STAIRS_UP, LEVEL_AREA);
+    feature_place(stairs, 1, 8);
+    events();
+    a = ctx(climber);
+    CHECK(act_ascend(&a, ACT_DO) == ACT_SUCCESS && level_pending());
+    level_take_request(&depth, &arrival);
+    CHECK(depth == 0 && arrival == LEVEL_ARRIVE_DOWN_STAIRS);
+    level_depth = 0;
 
     /* ---- every reason is refused, but a miss ---- */
     ok = 1;

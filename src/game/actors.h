@@ -3,7 +3,7 @@
 
 /**
  * @file actors.h
- * @brief The player.
+ * @brief The player, and the game's other persistent entities.
  *
  * The player is an ECS entity with a sprite drawn by the render system,
  * placed in each level by level_generate() (owned by the level's area, with
@@ -26,8 +26,11 @@ extern nge_entity_id_t actor_player;
 void actors_load_graphics(void);
 
 /**
- * @brief Create the player (not yet placed: see level_generate()), for a
- *        new game (GAME_NEW_GAME, game/game.h). With GAME_DEV_KIT
+ * @brief Create the player (not yet placed: see level_generate()) and the
+ *        other persistent entities (a table in actors.c: each in its
+ *        depth's area, not placed, NGE_ENTITY_PERSISTENT), for a new game
+ *        (GAME_NEW_GAME, game/game.h). The player is entity 0. With
+ *        GAME_DEV_KIT, a persistent goblin waits on depth 2. With GAME_DEV_KIT
  *        (game/dev.h, debug builds), the player starts with a sword, three
  *        rings and one of each potion and food in their pack and some
  *        resistances, for trying things out.

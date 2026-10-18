@@ -1,7 +1,8 @@
 /* nge-dataseg: PAGE_103 */
 /*
  * Level page data, in page 103 (slot 7 while the level's code in page 102
- * runs): the room list and the corridor links, set by level_generate().
+ * runs): the room list, the corridor links and the stairs, set by
+ * level_generate().
  * Uninitialised. See "Page data" in docs/memory_map.md.
  */
 #include "game/level/level_internal.h"
@@ -13,3 +14,4 @@ uint8_t      level_links[LEVEL_CELLS];
 uint8_t      level_doorway_x[LEVEL_DOORWAYS_MAX];
 uint8_t      level_doorway_y[LEVEL_DOORWAYS_MAX];
 uint8_t      level_doorway_count;
+nge_entity_id_t level_stairs[2];

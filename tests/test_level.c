@@ -1,7 +1,12 @@
-/* game/level: the level generator (level_gen.c), for many depths. */
+/*
+ * game/level: the level generator (level_gen.c), for many depths and
+ * seeds, and going from level to level (level_travel.c): what is kept,
+ * parked and released, arrivals, requests, entities sent away.
+ */
 #include "test.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "ecs/components/nge_block.h"
@@ -12,14 +17,21 @@
 #include "ecs/systems/nge_timer.h"
 #include "map/nge_map.h"
 
+#include "event/nge_event.h"
+
+#include "game/components/attrs.h"
 #include "game/components/feature.h"
+#include "game/components/health.h"
+#include "game/components/inventory.h"
 #include "game/components/item.h"
 #include "game/components/kind.h"
+#include "game/effects/effects.h"
+#include "game/events.h"
 #include "game/gen/gen.h"
 #include "game/level/level_internal.h"
 #include "game/screen.h"
 
-#define DEPTHS  200
+#define SEEDS  20   /* level_dev_seed values: SEEDS * LEVEL_DEPTH_BOTTOM levels checked */
 
 /* The screen's map view (screen.c isn't linked) */
 const nge_rect_t screen_map_view = { .x1 = 0, .x2 = 27, .y1 = 0, .y2 = 26 };
@@ -47,14 +59,84 @@ static int doors_open;
 static int doors_shut;
 static int doorways_seen;
 
-/* Release the entities destroyed by the last level_generate(), as the game does each frame */
-static void release_dying(void)
-{
-    nge_entity_id_t id;
+/* The events posted: kept to look at, then thrown away */
+static nge_event_t seen[32];
+static int seen_count;
 
-    while ((id = nge_entity_next_dying()) != NGE_ENTITY_INVALID) {
-        nge_entity_release(id);
+static void record(const nge_event_t *e)
+{
+    if (seen_count < (int)(sizeof(seen) / sizeof(seen[0]))) {
+        seen[seen_count] = *e;
     }
+    seen_count++;
+}
+
+/* Go to depth as the game does: the level, its events, then the frame's clean-up */
+static void go(uint8_t depth, uint8_t arrival)
+{
+    seen_count = 0;
+    level_generate(depth, player, arrival);
+    nge_event_process(record);
+    level_release_dying();
+}
+
+/* The top owner of an entity in use: an area or the world */
+static nge_owner_t top_owner(nge_entity_id_t id)
+{
+    nge_owner_t o = NGE_OWNER_OF(id);
+
+    while (NGE_OWNER_IS_ENTITY(o)) {
+        o = NGE_OWNER_OF(o);
+    }
+    return o;
+}
+
+/* An entity or one of its owners is persistent */
+static int kept(nge_entity_id_t id)
+{
+    nge_owner_t o = id;
+
+    while (NGE_OWNER_IS_ENTITY(o)) {
+        if (NGE_ENTITY_HAS_FLAGS(o, NGE_ENTITY_PERSISTENT)) {
+            return 1;
+        }
+        o = NGE_OWNER_OF(o);
+    }
+    return 0;
+}
+
+/* The room (index into level_rooms) whose floor holds (x, y), or -1 */
+static int room_of(uint8_t x, uint8_t y)
+{
+    int cell;
+
+    for (cell = 0; cell < LEVEL_CELLS; cell++) {
+        const level_room_t *r = &level_rooms[cell];
+
+        if (!r->junction && x > r->x1 && x < r->x2 && y > r->y1 && y < r->y2) {
+            return cell;
+        }
+    }
+    return -1;
+}
+
+/* A located creature of kind in the current area, on free floor */
+static nge_entity_id_t placed_creature(uint8_t kind)
+{
+    nge_entity_id_t id = gen_creature(kind, LEVEL_AREA);
+    uint8_t x;
+    uint8_t y;
+
+    for (y = 1; y < LEVEL_HEIGHT; y++) {
+        for (x = 1; x < LEVEL_WIDTH; x++) {
+            if ((NGE_MAP_TILE(x, y).tile_id == LEVEL_FLOOR || NGE_MAP_TILE(x, y).tile_id == LEVEL_FLOOR2) &&
+                nge_location_find(LEVEL_AREA, x, y, 0, 0) == NGE_ENTITY_INVALID) {
+                nge_location_set(id, x, y);
+                return id;
+            }
+        }
+    }
+    return NGE_ENTITY_INVALID;
 }
 
 /* Located alive entities in the level's area on (x, y) */
@@ -126,6 +208,10 @@ static int check_level(int depth)
     int items = 0;
     int monsters = 0;
     int doors = 0;
+    int ups = 0;
+    int downs = 0;
+    int up_room = -1;
+    int down_room = -1;
     int x;
     int y;
     uint8_t i;
@@ -177,7 +263,8 @@ static int check_level(int depth)
                     if (t != LEVEL_WALL_V && !is_doorway((uint8_t)x, (uint8_t)y)) {
                         return fail(depth, "a side wall broken");
                     }
-                } else if (!is_floor((uint8_t)x, (uint8_t)y)) {
+                } else if (!is_floor((uint8_t)x, (uint8_t)y) && tile((uint8_t)x, (uint8_t)y) != LEVEL_TILE_STAIRS_UP &&
+                           tile((uint8_t)x, (uint8_t)y) != LEVEL_TILE_STAIRS_DOWN) {
                     return fail(depth, "a room's floor overwritten");
                 }
             }
@@ -208,14 +295,20 @@ static int check_level(int depth)
         }
     }
 
-    /* The player: alive, in the area, alone on floor */
+    /* The player: alive, in the area, alone on floor or on stairs */
+    if (level_depth != depth) {
+        return fail(depth, "level_depth isn't the depth");
+    }
     if (!NGE_ENTITY_IS_ALIVE(player) || NGE_OWNER_OF(player) != LEVEL_AREA ||
         !NGE_ENTITY_HAS_COMPONENTS(player, NGE_COMPONENT_LOCATION)) {
         return fail(depth, "the player isn't placed in the area");
     }
-    if (!is_floor(NGE_LOCATION_X(player), NGE_LOCATION_Y(player)) ||
-        entities_at(NGE_LOCATION_X(player), NGE_LOCATION_Y(player)) != 1) {
-        return fail(depth, "the player isn't alone on floor");
+    x = NGE_LOCATION_X(player);
+    y = NGE_LOCATION_Y(player);
+    if (!(is_floor((uint8_t)x, (uint8_t)y) && entities_at((uint8_t)x, (uint8_t)y) == 1) &&
+        !((tile((uint8_t)x, (uint8_t)y) == LEVEL_TILE_STAIRS_UP || tile((uint8_t)x, (uint8_t)y) == LEVEL_TILE_STAIRS_DOWN) &&
+          entities_at((uint8_t)x, (uint8_t)y) == 2)) {
+        return fail(depth, "the player isn't alone on floor or on stairs");
     }
 
     /* Every open tile can be reached from the player: rooms, doors, corridors, junctions */
@@ -234,6 +327,33 @@ static int check_level(int depth)
      */
     NGE_OWNER_FOR_EACH_OWNED(i, id, LEVEL_AREA) {
         if (id == player) {
+            continue;
+        }
+        if (KIND_IS(id, CLASS_FEATURE) && (kind_index[id] == FT_STAIRS_UP || kind_index[id] == FT_STAIRS_DOWN)) {
+            /* Stairs: on floor in a room, drawn as their tile, blocking nothing, alone (but for the player) */
+            uint8_t sx = NGE_LOCATION_X(id);
+            uint8_t sy = NGE_LOCATION_Y(id);
+            int up = kind_index[id] == FT_STAIRS_UP;
+
+            if (!NGE_ENTITY_HAS_COMPONENTS(id, NGE_COMPONENT_LOCATION) ||
+                tile(sx, sy) != (up ? LEVEL_TILE_STAIRS_UP : LEVEL_TILE_STAIRS_DOWN) ||
+                NGE_BLOCK_OF(id) != NGE_BLOCK_NONE || nge_map_block(sx, sy) != NGE_BLOCK_NONE ||
+                room_of(sx, sy) < 0) {
+                return fail(depth, "stairs aren't drawn on a room's floor, open");
+            }
+            if (entities_at(sx, sy) != ((NGE_LOCATION_X(player) == sx && NGE_LOCATION_Y(player) == sy) ? 2 : 1)) {
+                return fail(depth, "something else is on the stairs");
+            }
+            if (level_stairs[up ? 0 : 1] != id) {
+                return fail(depth, "the stairs aren't the ones remembered");
+            }
+            if (up) {
+                ups++;
+                up_room = room_of(sx, sy);
+            } else {
+                downs++;
+                down_room = room_of(sx, sy);
+            }
             continue;
         }
         if (KIND_IS(id, CLASS_FEATURE)) {
@@ -292,6 +412,16 @@ static int check_level(int depth)
             return fail(depth, "an item or monster isn't alone on floor");
         }
     }
+    /* One up stairs; one down stairs, in another room, except at the bottom */
+    if (ups != 1 || downs != (depth < LEVEL_DEPTH_BOTTOM ? 1 : 0)) {
+        return fail(depth, "stairs count");
+    }
+    if (downs == 1 && up_room == down_room) {
+        return fail(depth, "both stairs in one room");
+    }
+    if (downs == 0 && level_stairs[1] != NGE_ENTITY_INVALID) {
+        return fail(depth, "down stairs remembered at the bottom");
+    }
     if (items < LEVEL_ITEMS_MIN || items > LEVEL_ITEMS_MAX) {
         return fail(depth, "item count");
     }
@@ -323,7 +453,9 @@ static int check_level(int depth)
 static nge_tile_t snapshot[LEVEL_HEIGHT][LEVEL_WIDTH];
 static uint8_t snapshot_items[LEVEL_HEIGHT][LEVEL_WIDTH];   /* class * 16 + kind, 0 for none */
 
-static void take(nge_tile_t tiles[LEVEL_HEIGHT][LEVEL_WIDTH], uint8_t items[LEVEL_HEIGHT][LEVEL_WIDTH])
+/* The map and the generated entities: not the player, nor the entity `skip` (one parked there) */
+static void take(nge_tile_t tiles[LEVEL_HEIGHT][LEVEL_WIDTH], uint8_t items[LEVEL_HEIGHT][LEVEL_WIDTH],
+                 nge_entity_id_t skip)
 {
     nge_entity_id_t id;
     uint8_t i;
@@ -334,96 +466,271 @@ static void take(nge_tile_t tiles[LEVEL_HEIGHT][LEVEL_WIDTH], uint8_t items[LEVE
     }
     memset(items, 0, LEVEL_HEIGHT * LEVEL_WIDTH);
     NGE_OWNER_FOR_EACH_OWNED(i, id, LEVEL_AREA) {
-        if (id != player) {
+        if (id != player && id != skip) {
             items[NGE_LOCATION_Y(id)][NGE_LOCATION_X(id)] = (uint8_t)(kind_class[id] * 16 + kind_index[id]);
         }
     }
-    items[NGE_LOCATION_Y(player)][NGE_LOCATION_X(player)] = 0xFF;
+}
+
+/* At the same tile */
+static int same_tile(nge_entity_id_t a, nge_entity_id_t b)
+{
+    return NGE_LOCATION_X(a) == NGE_LOCATION_X(b) && NGE_LOCATION_Y(a) == NGE_LOCATION_Y(b);
+}
+
+/* The first entity of class c in the current area that isn't the player, or NGE_ENTITY_INVALID */
+static nge_entity_id_t first_of(uint8_t c)
+{
+    nge_entity_id_t id;
+    uint8_t i;
+
+    NGE_OWNER_FOR_EACH_OWNED(i, id, LEVEL_AREA) {
+        if (id != player && KIND_IS(id, c)) {
+            return id;
+        }
+    }
+    return NGE_ENTITY_INVALID;
 }
 
 int main(void)
 {
     static nge_tile_t again[LEVEL_HEIGHT][LEVEL_WIDTH];
     static uint8_t again_items[LEVEL_HEIGHT][LEVEL_WIDTH];
+    int seed;
     int depth;
     int ok;
-    int alive;
-    int differ;
+    int n;
+    uint8_t free_before;
+    uint8_t d;
+    uint8_t arrival;
     uint8_t i;
     nge_entity_id_t id;
+    nge_entity_id_t monster;
+    nge_entity_id_t potion;
+    nge_entity_id_t ring;
+    nge_entity_id_t sword;
+    nge_entity_id_t boss;
+    nge_entity_id_t poison;
+    nge_entity_id_t regen;
 
     test_init();
 
     nge_entity_init();
     nge_render_init();
     nge_timer_init();
+    nge_event_init();
     level_init();
 
     player = gen_creature(CR_PLAYER, NGE_OWNER_WORLD);
+    CHECK(NGE_ENTITY_HAS_FLAGS(player, NGE_ENTITY_PERSISTENT) && KIND_IS_PLAYER(player));
 
-    /* ---- every depth: the layout's rules, reachability, the entities ---- */
+    /* ---- every depth, many seeds: the layout's rules, reachability, the entities, the stairs ---- */
     ok = 1;
-    for (depth = 1; depth <= DEPTHS && ok; depth++) {
-        level_generate((uint8_t)depth, player);
-        release_dying();
-        ok = check_level(depth);
+    for (seed = 0; seed < SEEDS && ok; seed++) {
+        level_dev_seed = (uint16_t)(seed * 100);
+        for (depth = 1; depth <= LEVEL_DEPTH_BOTTOM && ok; depth++) {
+            go((uint8_t)depth, (uint8_t)((seed + depth) % 3));
+            ok = check_level(depth);
+        }
     }
     CHECK(ok);
+    level_dev_seed = 0;
     /* About a third of doorways get doors, about half of them open */
     CHECK(doors_open + doors_shut > doorways_seen / 5 && doors_open + doors_shut < doorways_seen / 2);
     CHECK(doors_open > (doors_open + doors_shut) / 3 && doors_shut > (doors_open + doors_shut) / 3);
 
-    /* ---- the same depth gives the same level; another depth doesn't ---- */
-    level_generate(7, player);
-    take(snapshot, snapshot_items);
-    level_generate(8, player);
-    release_dying();
-    take(again, again_items);
-    differ = memcmp(snapshot, again, sizeof(again)) != 0;
-    CHECK(differ);
-    level_generate(7, player);
-    take(again, again_items);
+    /* ---- arrivals: on the stairs taken, or anywhere (R16) ---- */
+    go(4, LEVEL_ARRIVE_UP_STAIRS);
+    CHECK(level_stairs[0] != NGE_ENTITY_INVALID && same_tile(player, level_stairs[0]));
+    go(4, LEVEL_ARRIVE_DOWN_STAIRS);
+    CHECK(level_stairs[1] != NGE_ENTITY_INVALID && same_tile(player, level_stairs[1]));
+    go(4, LEVEL_ARRIVE_ANY);
+    CHECK(check_level(4) && is_floor(NGE_LOCATION_X(player), NGE_LOCATION_Y(player)));
+    go(LEVEL_DEPTH_BOTTOM, LEVEL_ARRIVE_DOWN_STAIRS);   /* no down stairs: free floor instead */
+    CHECK(check_level(LEVEL_DEPTH_BOTTOM) && is_floor(NGE_LOCATION_X(player), NGE_LOCATION_Y(player)));
+    CHECK(seen_count == 0);   /* level_generate() posts nothing: EV_ARRIVED is the game's */
+
+    /* ---- debug seeding: a depth is the same whatever happened before, parked entities aside (R7, R7a) ---- */
+    go(7, LEVEL_ARRIVE_ANY);
+    take(snapshot, snapshot_items, NGE_ENTITY_INVALID);
+    go(8, LEVEL_ARRIVE_UP_STAIRS);
+    take(again, again_items, NGE_ENTITY_INVALID);
+    CHECK(memcmp(snapshot, again, sizeof(again)) != 0);
+    for (n = 0; n < 37; n++) {
+        rand();   /* play: combat rolls */
+    }
+    sword = gen_item(IT_SWORD, NGE_OWNER_AREA(7));   /* parked on depth 7 */
+    nge_entity_set_flags(sword, NGE_ENTITY_PERSISTENT);
+    go(7, LEVEL_ARRIVE_DOWN_STAIRS);
+    take(again, again_items, sword);
     CHECK(memcmp(snapshot, again, sizeof(again)) == 0);
     CHECK(memcmp(snapshot_items, again_items, sizeof(again_items)) == 0);
+    CHECK(NGE_OWNER_OF(sword) == LEVEL_AREA && NGE_ENTITY_HAS_COMPONENTS(sword, NGE_COMPONENT_LOCATION) &&
+          is_floor(NGE_LOCATION_X(sword), NGE_LOCATION_Y(sword)));   /* placed again (R8) */
 
-    /* ---- regenerating: the last level's doors are destroyed with no location (no floor to put back) ---- */
-    level_generate(11, player);
-    release_dying();
-    id = NGE_ENTITY_INVALID;
-    NGE_OWNER_FOR_EACH_OWNED(i, id, LEVEL_AREA) {
-        if (FEATURE_IS(id)) {
-            break;
-        }
-    }
-    CHECK(id != NGE_ENTITY_INVALID && FEATURE_IS(id));
-    level_generate(12, player);
-    CHECK(NGE_ENTITY_STATE(id) == NGE_ENTITY_DYING && !NGE_ENTITY_HAS_COMPONENTS(id, NGE_COMPONENT_LOCATION));
-    release_dying();
-
-    /* ---- regenerating: the last level's items are destroyed, the player kept ---- */
-    id = NGE_ENTITY_INVALID;
-    NGE_OWNER_FOR_EACH_OWNED(i, id, LEVEL_AREA) {
-        if (id != player) {
-            break;
-        }
-    }
-    level_generate(9, player);
-    CHECK(NGE_ENTITY_STATE(id) == NGE_ENTITY_DYING);   /* an old item, before the game releases it */
-    CHECK(NGE_ENTITY_IS_ALIVE(player));
-    alive = 0;
-    NGE_OWNER_FOR_EACH_OWNED(i, id, LEVEL_AREA) {
-        alive++;
-    }
-    release_dying();
-    CHECK(check_level(9));
-    CHECK(alive == nge_owner_count(LEVEL_AREA));   /* no dying ones left in the area */
-
-    /* The player's other entities (effects) are kept */
-    id = nge_entity_create();
-    nge_owner_set(id, player);
-    level_generate(10, player);
-    release_dying();
+    /* ---- leaving a level: only kept entities stay, parked, unlocated (R12, R13) ---- */
+    go(5, LEVEL_ARRIVE_ANY);
+    monster = first_of(CLASS_CREATURE);
+    CHECK(monster != NGE_ENTITY_INVALID);
+    potion = gen_item(IT_POTION, NGE_OWNER_WORLD);
+    inv_stow(potion, monster);                        /* a monster's possession: goes with it */
+    ring = gen_item(IT_RING, NGE_OWNER_WORLD);
+    inv_stow(ring, monster);
+    nge_entity_set_flags(ring, NGE_ENTITY_PERSISTENT);   /* a kept one held by an unkept one */
+    id = gen_item(IT_FOOD, NGE_OWNER_WORLD);
+    inv_stow(id, player);                             /* the player's pack goes with them */
+    sword = gen_item(IT_SWORD, NGE_OWNER_WORLD);
+    inv_stow(sword, player);
+    level_leave(player);   /* the first half of a change of level */
+    CHECK(NGE_ENTITY_STATE(monster) == NGE_ENTITY_FREE && NGE_ENTITY_STATE(potion) == NGE_ENTITY_FREE);
+    CHECK(NGE_OWNER_OF(player) == NGE_OWNER_WORLD);
+    go(6, LEVEL_ARRIVE_UP_STAIRS);
+    CHECK(NGE_ENTITY_IS_ALIVE(ring) && NGE_OWNER_OF(ring) == NGE_OWNER_AREA(5) &&
+          !NGE_ENTITY_HAS_COMPONENTS(ring, NGE_COMPONENT_LOCATION));   /* parked on depth 5 */
     CHECK(NGE_ENTITY_IS_ALIVE(id) && NGE_OWNER_OF(id) == player);
+    CHECK(NGE_ENTITY_IS_ALIVE(sword) && NGE_OWNER_OF(sword) == player);
+    ok = 1;
+    NGE_ENTITY_FOR_EACH_ALIVE(i, id) {
+        if (top_owner(id) == NGE_OWNER_AREA(5) &&
+            (!kept(id) || NGE_ENTITY_HAS_COMPONENTS(id, NGE_COMPONENT_LOCATION))) {
+            ok = 0;
+        }
+    }
+    CHECK(ok);
+    CHECK(nge_entity_dying_count() == 0);
+    CHECK(check_level(6));
+
+    /* ---- many transitions: no entity is lost (D5) ---- */
+    go(3, LEVEL_ARRIVE_ANY);
+    free_before = nge_entity_free_count();
+    for (n = 0; n < 60; n++) {
+        go((uint8_t)(1 + n % LEVEL_DEPTH_BOTTOM), (uint8_t)(n % 3));
+    }
+    go(3, LEVEL_ARRIVE_ANY);
+    CHECK(nge_entity_free_count() == free_before);
+
+    /* ---- parked entities are frozen: limited effects end, lasting ones stay (R11) ---- */
+    go(2, LEVEL_ARRIVE_ANY);
+    boss = placed_creature(CR_GOBLIN);
+    CHECK(boss != NGE_ENTITY_INVALID);
+    nge_entity_set_flags(boss, NGE_ENTITY_PERSISTENT);
+    CHECK(effect_apply(EF_POISON, boss, NGE_ENTITY_INVALID));
+    CHECK(effect_apply(EF_REGEN, boss, NGE_ENTITY_INVALID));
+    poison = NGE_ENTITY_INVALID;
+    regen = NGE_ENTITY_INVALID;
+    NGE_OWNER_FOR_EACH_OWNED(i, id, boss) {
+        if (NGE_ENTITY_HAS_ANY_COMPONENTS(id, COMPONENT_EFFECT)) {
+            if (nge_timer_cycles[id] != 0) {
+                poison = id;
+            } else {
+                regen = id;
+            }
+        }
+    }
+    CHECK(poison != NGE_ENTITY_INVALID && regen != NGE_ENTITY_INVALID);
+    CHECK(level_holds(boss) && level_holds(poison));
+    go(3, LEVEL_ARRIVE_UP_STAIRS);
+    CHECK(NGE_ENTITY_IS_ALIVE(boss) && NGE_OWNER_OF(boss) == NGE_OWNER_AREA(2) &&
+          !NGE_ENTITY_HAS_COMPONENTS(boss, NGE_COMPONENT_LOCATION));
+    CHECK(!level_holds(boss) && !level_holds(regen));
+    CHECK(NGE_ENTITY_IS_ALIVE(regen) && NGE_OWNER_OF(regen) == boss);   /* lasts for ever: stays */
+    CHECK(NGE_ENTITY_STATE(poison) == NGE_ENTITY_FREE || NGE_OWNER_OF(poison) != boss);   /* ended */
+    CHECK(!(status_mask[boss] & STATUS_POISONED));
+    go(2, LEVEL_ARRIVE_DOWN_STAIRS);
+    CHECK(NGE_OWNER_OF(boss) == LEVEL_AREA && NGE_ENTITY_HAS_COMPONENTS(boss, NGE_COMPONENT_LOCATION) &&
+          is_floor(NGE_LOCATION_X(boss), NGE_LOCATION_Y(boss)) && level_holds(boss));
+
+    /* ---- a persistent boss killed: its persistent item survives, dropped where it died (R10, R10a) ---- */
+    ring = gen_item(IT_RING, NGE_OWNER_WORLD);
+    inv_stow(ring, boss);
+    nge_entity_set_flags(ring, NGE_ENTITY_PERSISTENT);
+    potion = gen_item(IT_SWORD, NGE_OWNER_WORLD);
+    inv_stow(potion, boss);
+    item_slot[potion] = SLOT_WEAPON;                  /* equipped */
+    nge_entity_set_flags(potion, NGE_ENTITY_PERSISTENT);
+    {
+        uint8_t bx = NGE_LOCATION_X(boss);
+        uint8_t by = NGE_LOCATION_Y(boss);
+
+        health_damage(boss, NGE_ENTITY_INVALID, 255, DMG_MAGIC);
+        CHECK(NGE_ENTITY_STATE(boss) == NGE_ENTITY_DYING);   /* persistent, but it dies */
+        level_release_dying();
+        CHECK(NGE_ENTITY_STATE(boss) == NGE_ENTITY_FREE);
+        CHECK(NGE_ENTITY_IS_ALIVE(ring) && NGE_ENTITY_HAS_FLAGS(ring, NGE_ENTITY_PERSISTENT) &&
+              NGE_OWNER_OF(ring) == LEVEL_AREA && NGE_LOCATION_X(ring) == bx && NGE_LOCATION_Y(ring) == by);
+        CHECK(NGE_ENTITY_IS_ALIVE(potion) && NGE_OWNER_OF(potion) == LEVEL_AREA &&
+              item_slot[potion] == SLOT_NONE && NGE_LOCATION_X(potion) == bx && NGE_LOCATION_Y(potion) == by);
+    }
+    /* The player at 0 hp is kept: the game ends instead */
+    health_damage(player, NGE_ENTITY_INVALID, 255, DMG_MAGIC);
+    CHECK(NGE_ENTITY_IS_ALIVE(player) && NGE_ENTITY_HAS_FLAGS(player, NGE_ENTITY_PERSISTENT));
+    health_hp[player] = health_hp_max[player];   /* healing does nothing at 0 hp: back by hand */
+
+    /* ---- requests: kept in range, the first wins (R2, R15) ---- */
+    level_clear_request();
+    CHECK(!level_pending());
+    level_request(0, LEVEL_ARRIVE_ANY);                 /* a fall upwards: not out of the dungeon */
+    CHECK(level_pending());
+    level_request(5, LEVEL_ARRIVE_ANY);                 /* ignored: the first wins */
+    level_take_request(&d, &arrival);
+    CHECK(d == 1 && arrival == LEVEL_ARRIVE_ANY && !level_pending());
+    level_request(0, LEVEL_ARRIVE_DOWN_STAIRS);         /* up the stairs from depth 1: out */
+    level_take_request(&d, &arrival);
+    CHECK(d == 0 && arrival == LEVEL_ARRIVE_DOWN_STAIRS);
+    level_request(LEVEL_DEPTH_BOTTOM + 1, LEVEL_ARRIVE_UP_STAIRS);
+    level_take_request(&d, &arrival);
+    CHECK(d == LEVEL_DEPTH_BOTTOM);
+    level_request(3, LEVEL_ARRIVE_ANY);
+    level_clear_request();
+    CHECK(!level_pending());
+
+    /* ---- entities sent away (R18) ---- */
+    go(4, LEVEL_ARRIVE_ANY);
+    monster = placed_creature(CR_GOBLIN);
+    potion = gen_item(IT_POTION, NGE_OWNER_WORLD);
+    inv_stow(potion, monster);
+    ring = gen_item(IT_RING, NGE_OWNER_WORLD);
+    inv_stow(ring, monster);
+    nge_entity_set_flags(ring, NGE_ENTITY_PERSISTENT);
+    CHECK(level_send(monster, 4) == 0 && NGE_ENTITY_IS_ALIVE(monster));   /* the same depth: nothing */
+    seen_count = 0;
+    {
+        uint8_t mx = NGE_LOCATION_X(monster);
+        uint8_t my = NGE_LOCATION_Y(monster);
+
+        CHECK(level_send(monster, 5) == 1);
+        CHECK(NGE_ENTITY_STATE(monster) == NGE_ENTITY_DYING && NGE_ENTITY_STATE(potion) == NGE_ENTITY_DYING);
+        nge_event_process(record);
+        CHECK(seen_count == 1 && seen[0].id == EV_LEFT_LEVEL && seen[0].target == monster && seen[0].p1 == 5);
+        level_release_dying();
+        CHECK(NGE_ENTITY_STATE(monster) == NGE_ENTITY_FREE && NGE_ENTITY_STATE(potion) == NGE_ENTITY_FREE);
+        CHECK(NGE_ENTITY_IS_ALIVE(ring) && NGE_OWNER_OF(ring) == LEVEL_AREA &&
+              NGE_LOCATION_X(ring) == mx && NGE_LOCATION_Y(ring) == my);   /* dropped where it was */
+    }
+    boss = placed_creature(CR_GOBLIN);
+    nge_entity_set_flags(boss, NGE_ENTITY_PERSISTENT);
+    CHECK(level_send(boss, LEVEL_DEPTH_BOTTOM + 3) == 1);   /* kept to the bottom */
+    CHECK(NGE_ENTITY_IS_ALIVE(boss) && NGE_OWNER_OF(boss) == NGE_OWNER_AREA(LEVEL_DEPTH_BOTTOM) &&
+          !NGE_ENTITY_HAS_COMPONENTS(boss, NGE_COMPONENT_LOCATION));
+    go(LEVEL_DEPTH_BOTTOM, LEVEL_ARRIVE_ANY);
+    CHECK(NGE_OWNER_OF(boss) == LEVEL_AREA && NGE_ENTITY_HAS_COMPONENTS(boss, NGE_COMPONENT_LOCATION));
+
+    /* ---- a boss left behind with what it carries: both parked, still held (R10a, R12) ---- */
+    go(5, LEVEL_ARRIVE_ANY);
+    boss = placed_creature(CR_GOBLIN);
+    nge_entity_set_flags(boss, NGE_ENTITY_PERSISTENT);
+    ring = gen_item(IT_RING, NGE_OWNER_WORLD);
+    inv_stow(ring, boss);                              /* not persistent itself: kept by its holder */
+    sword = gen_item(IT_SWORD, NGE_OWNER_WORLD);
+    inv_stow(sword, boss);
+    nge_entity_set_flags(sword, NGE_ENTITY_PERSISTENT);
+    go(6, LEVEL_ARRIVE_UP_STAIRS);
+    CHECK(NGE_ENTITY_IS_ALIVE(boss) && NGE_OWNER_OF(boss) == NGE_OWNER_AREA(5));
+    CHECK(NGE_ENTITY_IS_ALIVE(ring) && NGE_OWNER_OF(ring) == boss &&
+          !NGE_ENTITY_HAS_COMPONENTS(ring, NGE_COMPONENT_LOCATION));
+    CHECK(NGE_ENTITY_IS_ALIVE(sword) && NGE_OWNER_OF(sword) == boss);
+    go(5, LEVEL_ARRIVE_DOWN_STAIRS);
+    CHECK(NGE_OWNER_OF(boss) == LEVEL_AREA && NGE_OWNER_OF(ring) == boss && NGE_OWNER_OF(sword) == boss);
 
     return test_summary("level");
 }

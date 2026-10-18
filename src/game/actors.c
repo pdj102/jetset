@@ -8,6 +8,7 @@
 #include "game/dev.h"
 #include "game/components/attrs.h"
 #include "game/components/health.h"
+#include "game/components/kind.h"
 #include "game/effects/effects.h"
 #include "game/gen/gen.h"
 #include "game/level/level.h"
@@ -19,6 +20,21 @@ static const uint8_t dev_kit[] = {
     IT_SWORD, IT_RING, IT_RING, IT_RING, IT_POTION, IT_ANTIDOTE, IT_FOOD, IT_ELIXIR, IT_STRENGTH,
 };
 #endif
+
+/* A persistent entity: made once a game, in its depth's area (game/level/level.h) */
+typedef struct actor_persistent {
+    uint8_t cls;     /* CLASS_CREATURE or CLASS_ITEM */
+    uint8_t kind;    /* CR_* or IT_* */
+    uint8_t depth;   /* 1 to LEVEL_DEPTH_BOTTOM */
+} actor_persistent_t;
+
+/* The persistent entities besides the player: later the quest object and the final boss */
+static const actor_persistent_t persistents[] = {
+#if GAME_DEV_KIT
+    { CLASS_CREATURE, CR_GOBLIN, 2 },   /* for trying out parking: the same goblin on every visit */
+#endif
+    { CLASS_NONE, 0, 0 },               /* the end */
+};
 
 nge_entity_id_t actor_player;
 
@@ -36,8 +52,20 @@ void actors_create(void)
      * first, so entity 0: on a tick where others are due too, its turn
      * comes first (timers fire in ID order)
      */
+    const actor_persistent_t *p;
+    nge_entity_id_t id;
+
     actor_player = gen_creature(CR_PLAYER, NGE_OWNER_WORLD);
     nge_util_assert(actor_player != NGE_ENTITY_INVALID);
+
+    /* Not placed: each is placed when its depth's level is generated */
+    for (p = persistents; p->cls != CLASS_NONE; p++) {
+        nge_util_assert(p->depth >= 1 && p->depth <= LEVEL_DEPTH_BOTTOM);
+        id = (p->cls == CLASS_CREATURE) ? gen_creature(p->kind, NGE_OWNER_AREA(p->depth))
+                                        : gen_item(p->kind, NGE_OWNER_AREA(p->depth));
+        nge_util_assert(id != NGE_ENTITY_INVALID);
+        nge_entity_set_flags(id, NGE_ENTITY_PERSISTENT);
+    }
 
 #if GAME_DEV_KIT
     {

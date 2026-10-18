@@ -189,11 +189,11 @@ Banked so far:
 | 52/53 | `ecs` render system | the system (`ecs/systems/nge_render.c`), with literals, about 2.4K | the sprite component (10 bytes per entity), the sprite records for hardware sprites 0 to `NGE_RENDER_SPRITES`-1, and its working data (`nge_render_pdata.c`, about 1.8K) |
 | 54/55 | `ecs` timer system | the clock and firing timers (`ecs/systems/nge_timer.c`, about 1.2K with asserts) | none: its tables and the clock are in slot 0 |
 | 88/89 | `input` | setup, the key-to-ASCII tables and waiting (`input/nge_input_setup.c`, about 0.5K) | none |
-| 102/103 | game `level` | setting up the map and the level generator, with literals (`game/level/level_bank.c`, `level_gen.c`, about 2.9K, 3.1K with asserts) | the room list and corridor links (`level_pdata.c`, 83 bytes) |
+| 102/103 | game `level` | setting up the map, the level generator, and leaving a level (`game/level/level_bank.c`, `level_gen.c`, `level_travel.c`, about 5.0K with asserts) | the room list, corridor links and stairs (`level_pdata.c`, 138 bytes) |
 | 106/107 | game `gen` creatures | the creature generator (`game/gen/gen_creature_bank.c`, about 0.6K) | the base creatures: a `const` table and its names (`gen_creature_pdata.c`, with `constseg PAGE_107`) |
 | 108/109 | game `gen` items | the item generator (`gen_item_bank.c`, about 0.4K) | the base items (`gen_item_pdata.c`) |
 | 110/111 | game `gen` shared | helpers every generator calls, and the game components' functions (`gen_shared_bank.c`, `components/kind.c`, `stats.c`, `item.c`, `inventory.c`, `health.c`, `attack.c`): they take copies of base data on the stack, as the class's table is mapped out while they run | none |
-| 112/113 | game `actions` | what entities do, one file per action (`game/actions/act_move.c`, `act_pickup.c`, `act_drop.c`, `act_equip.c`, `act_melee.c`) and their shared endings (`act_shared.c`); the dispatcher `act_do()` and the reason table are common (`act.c`) | none yet |
+| 112/113 | game `actions` | what entities do, one file per action (`game/actions/act_move.c`, `act_pickup.c`, `act_drop.c`, `act_equip.c`, `act_melee.c`, `act_use.c`, `act_open.c`, `act_stairs.c`) and their shared endings (`act_shared.c`), about 7.0K with asserts; the dispatcher `act_do()` and the reason table are common (`act.c`) | none yet |
 | 114/115 | game `player` | the player's commands, the firing screen and the reasons for refused commands (`game/player/player_bank.c`); the handlers called for every event and timer firing are common (`player.c`) | none |
 | 118/119 | game `messages` | the message window's reactions to events and to refused commands, with their texts (`game/messages/messages_bank.c`) | none |
 | 120/121 | game `effects` | applying, ending and recomputing effects: the mechanism (`game/effects/effects_core.c`) and the game's side (`game/effects/effects_game.c`) | the effect definitions with their texts, and the kind of each active effect (`game/effects/effects_pdata.c`) |
@@ -309,8 +309,12 @@ part runs:
 ```text
 src/game/level/
   level.h, level_internal.h
-  level.c          common: level_can_enter()   (every turn)
-  level_bank.c     page 102: level_init() and the layout builder   (once per level)
+  level.c          common: level_can_enter(), level_holds(), requests,
+                   level_release_dying()   (every turn or frame)
+  level_bank.c     page 102: level_init()   (once)
+  level_gen.c      page 102: the layout builder   (once per level)
+  level_travel.c   page 102: leaving a level, parking, sending   (once per change)
+  level_pdata.c    page 103: the room list, links, doorways and stairs
 ```
 
 - **What stays common:** anything called every frame or many times a turn

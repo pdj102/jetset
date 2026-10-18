@@ -56,8 +56,8 @@ extern char screen_name[SCREEN_NAME_MAX + 1];
 void screen_init(void);
 
 /**
- * @brief Draw the stats window's fixed parts: the name, and placeholders
- *        for the gold and depth. The values are shown with screen_show_*().
+ * @brief Draw the stats window's fixed parts: the name, and a placeholder
+ *        for the gold. The values are shown with screen_show_*().
  */
 void screen_draw_stats(void);
 
@@ -72,6 +72,9 @@ void screen_show_abilities(const uint8_t *scores);
 
 /** @brief Show the statuses (STATUS_*, game/components/attrs.h) in the stats window: "Poisoned", or nothing. */
 void screen_show_status(uint8_t status);
+
+/** @brief Show the depth (the current level) in the stats window: "Depth     2". */
+void screen_show_depth(uint8_t depth);
 
 /** @brief Show the turn count in the stats window. */
 void screen_show_turn(uint16_t turn);

@@ -13,7 +13,7 @@
 #      headers.
 #   Game code (src/game) is linked only into the tests listed with it below
 #   (GEN_GAME_SRCS, with the components and effects, for test_gen, LEVEL_GAME_SRCS and those for test_level,
-#   ACT_GAME_SRCS and the gen ones for test_act, the gen ones for
+#   ACT_GAME_SRCS and the level and gen ones for test_act, the gen ones for
 #   test_inventory, UI_GAME_SRCS and the action ones for test_ui).
 #   Library files that only work on the Next (inline asm traps) are listed in
 #   LIB_EXCLUDE and replaced by fakes in support/test.c.
@@ -48,13 +48,15 @@ GEN_GAME_SRCS := $(addprefix $(GAMEDIR)/,gen/gen.c gen/gen_shared_bank.c \
                  gen/gen_feature_bank.c gen/gen_feature_pdata.c \
                  effects/effects_core.c effects/effects_game.c effects/effects_pdata.c)
 GEN_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(GEN_GAME_SRCS))
+LEVEL_GAME_SRCS := $(addprefix $(GAMEDIR)/,level/level.c level/level_bank.c level/level_gen.c \
+                   level/level_travel.c level/level_pdata.c)
+LEVEL_ONLY_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(LEVEL_GAME_SRCS))
+LEVEL_GAME_OBJS := $(LEVEL_ONLY_OBJS) $(GEN_GAME_OBJS)
+# The stairs actions send entities between levels: the actions need the level module
 ACT_GAME_SRCS := $(wildcard $(GAMEDIR)/actions/*.c)
-ACT_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(ACT_GAME_SRCS)) $(GEN_GAME_OBJS)
+ACT_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(ACT_GAME_SRCS)) $(LEVEL_GAME_OBJS)
 UI_GAME_SRCS := $(addprefix $(GAMEDIR)/,ui/ui_bank.c player/player_bank.c screen.c messages/messages_bank.c)
 UI_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(UI_GAME_SRCS)) $(ACT_GAME_OBJS)
-LEVEL_GAME_SRCS := $(addprefix $(GAMEDIR)/,level/level.c level/level_bank.c level/level_gen.c \
-                   level/level_pdata.c)
-LEVEL_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(LEVEL_GAME_SRCS)) $(GEN_GAME_OBJS)
 
 TEST_SRCS := $(wildcard test_*.c)
 TESTS := $(patsubst %.c,$(BUILD)/%,$(TEST_SRCS))

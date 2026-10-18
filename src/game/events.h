@@ -26,6 +26,8 @@
  * | EV_ATTRS_CHANGED  | the entity          | -        | -        |
  * | EV_OPENED         | the feature         | opener   | -        |
  * | EV_CLOSED         | the feature         | closer   | -        |
+ * | EV_ARRIVED        | the player          | -        | p1: depth, p2: LEVEL_ARRIVE_* |
+ * | EV_LEFT_LEVEL     | the entity (maybe dying) | -   | p1: the depth it went to |
  */
 
 #include "event/nge_event.h"
@@ -47,5 +49,7 @@
 #define EV_ATTRS_CHANGED  (NGE_EVENT_USER + 14)    /**< Derived attributes or statuses changed (effects_recompute()). */
 #define EV_OPENED         (NGE_EVENT_USER + 15)    /**< Opened by the source (act_open()). */
 #define EV_CLOSED         (NGE_EVENT_USER + 16)    /**< Closed by the source (act_close()). */
+#define EV_ARRIVED        (NGE_EVENT_USER + 17)    /**< Arrived on a new level, at depth p1, as p2 says (game/level/level.h). */
+#define EV_LEFT_LEVEL     (NGE_EVENT_USER + 18)    /**< Left the current level for depth p1 (level_send()). */
 
 #endif

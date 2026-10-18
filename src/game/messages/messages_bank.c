@@ -19,6 +19,7 @@
 #include "game/effects/effects.h"
 #include "game/events.h"
 #include "game/gen/gen.h"
+#include "game/level/level.h"
 #include "game/screen.h"
 
 #define MESSAGE_MAX  41   /* a message window line, and its NUL */
@@ -106,6 +107,18 @@ static void say_damage(nge_entity_id_t target, uint8_t taken, uint8_t p2)
         add(line, outcome == DMG_RESISTED ? " damage (resisted)."
                   : outcome == DMG_VULNERABLE ? " damage (vulnerable)!" : " damage.");
     }
+    screen_message(line);
+}
+
+/* EV_ARRIVED: "You go down to level 2.", by how the player came (LEVEL_ARRIVE_*) */
+static void say_arrived(uint8_t depth, uint8_t arrival)
+{
+    char line[MESSAGE_MAX];
+
+    strcpy(line, arrival == LEVEL_ARRIVE_UP_STAIRS ? "You go down to level "
+                 : arrival == LEVEL_ARRIVE_DOWN_STAIRS ? "You go up to level " : "You find yourself on level ");
+    add_number(line, depth);
+    add(line, ".");
     screen_message(line);
 }
 
@@ -200,6 +213,12 @@ void messages_on_event(const nge_event_t *e) NGE_BANKED
             say_effect(p1, EFFECT_TEXT_END);
         }
         break;
+    case EV_ARRIVED:
+        say_arrived(p1, p2);
+        break;
+    case EV_LEFT_LEVEL:
+        say_named("The ", target, p1 < level_depth ? " goes up and away." : " goes down and away.");
+        break;
     default:
         break;
     }
@@ -272,6 +291,9 @@ void messages_act_failed(const act_t *a) NGE_BANKED
         break;
     case ACT_R_OBSTRUCTED:
         screen_message("Something is in the way.");
+        break;
+    case ACT_R_NO_STAIRS:
+        screen_message("There are no stairs that way here.");
         break;
     default:
         break;

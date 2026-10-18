@@ -25,8 +25,10 @@
  * health_damage() always posts EV_DAMAGED, even when 0 is taken: p1 the
  * amount taken, p2 the outcome and type packed (EV_DMG_OUTCOME(),
  * EV_DMG_TYPE()). At 0 hp it posts EV_DIED and destroys the entity, unless
- * it is persistent (NGE_ENTITY_PERSISTENT: the player), when the game
- * reacts to EV_DIED. An entity at 0 hp takes no more damage and can't be
+ * it is the player (KIND_IS_PLAYER(), persistent), when the game reacts to
+ * EV_DIED. Any other persistent entity (a boss) loses its persistent flag
+ * and is destroyed; what it owns keeps its own (a quest object it carries
+ * drops where it died). An entity at 0 hp takes no more damage and can't be
  * healed.
  *
  * hp_max, ac and the masks are attributes (game/components/attrs.h): the
@@ -108,7 +110,7 @@ uint8_t health_dealt(nge_entity_id_t id, uint8_t amount, uint8_t type, uint8_t *
 
 /**
  * @brief Damage an entity with health (see above): posts EV_DAMAGED, and
- *        at 0 hp EV_DIED and destroys it (unless persistent). Does nothing
+ *        at 0 hp EV_DIED and destroys it (unless the player). Does nothing
  *        to an entity at 0 hp.
  * @param source The entity that caused it, or NGE_ENTITY_INVALID (a trap).
  * @return The amount taken.

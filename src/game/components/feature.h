@@ -4,7 +4,7 @@
 /**
  * @file feature.h
  * @brief The feature component: a fixed, interactive part of a level (a
- *        door; later chests, fountains, traps, stairs), and its state.
+ *        door, stairs; later chests, fountains, traps), and its state.
  *
  * A feature is an entity of CLASS_FEATURE (game/components/kind.h),
  * generated from its kind's base record (gen_feature(), game/gen/gen.h).
@@ -44,6 +44,8 @@
 
 /* What a kind can do: bits of its base record's `can` */
 #define FCAN_OPEN    0x01   /**< Can be opened and closed. */
+#define FCAN_ASCEND  0x02   /**< Leads up a level: stood on (act_ascend()). */
+#define FCAN_DESCEND 0x04   /**< Leads down a level: stood on (act_descend()). */
 
 /* Tables in slot 0 (feature_cdata.c): read-only for game code; meaningful only with COMPONENT_FEATURE */
 extern uint8_t feature_state[NGE_ENTITY_MAX];   /**< FEAT_* bits. */

@@ -18,6 +18,7 @@
 
 #include "core/nge_bank.h"
 #include "ecs/nge_entity.h"
+#include "game/gen/gen_kinds.h"
 
 /** Component bit: the game's first component (see nge_entity.h). */
 #define COMPONENT_KIND  NGE_COMPONENT(NGE_COMPONENT_USER + 0)
@@ -26,7 +27,7 @@
 #define CLASS_NONE      0
 #define CLASS_CREATURE  1   /**< Monsters and the player (gen_creature()). */
 #define CLASS_ITEM      2   /**< Weapons, armour, potions... (gen_item()). */
-#define CLASS_FEATURE   3   /**< Doors; later chests, fountains, traps, stairs (gen_feature()). */
+#define CLASS_FEATURE   3   /**< Doors, stairs; later chests, fountains, traps (gen_feature()). */
 
 /* Tables in slot 0 (kind_cdata.c): meaningful only with COMPONENT_KIND */
 extern uint8_t kind_class[NGE_ENTITY_MAX];   /**< CLASS_*. */
@@ -35,6 +36,9 @@ extern uint8_t kind_index[NGE_ENTITY_MAX];   /**< Index into the class's table (
 /** The entity has the kind component and is of class c. */
 #define KIND_IS(id, c) \
     (NGE_ENTITY_HAS_COMPONENTS(id, COMPONENT_KIND) && kind_class[id] == (c))
+
+/** The entity is the player: the creature of kind CR_PLAYER. */
+#define KIND_IS_PLAYER(id)  (KIND_IS(id, CLASS_CREATURE) && kind_index[id] == CR_PLAYER)
 
 /** @brief Give an entity in use the kind component: class c, index i in its table. */
 void kind_add(nge_entity_id_t id, uint8_t c, uint8_t i) NGE_BANKED;

@@ -28,8 +28,10 @@
 #define IT_COUNT     7
 
 /* Features (CLASS_FEATURE) */
-#define FT_DOOR      0
-#define FT_COUNT     1
+#define FT_DOOR         0
+#define FT_STAIRS_UP    1
+#define FT_STAIRS_DOWN  2
+#define FT_COUNT        3
 
 /* Item subclasses, in each item's base record */
 #define ITEM_POTION  0

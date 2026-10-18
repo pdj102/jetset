@@ -19,6 +19,7 @@
 #include "game/game.h"
 #include "game/effects/effects.h"
 #include "game/gen/gen.h"
+#include "game/events.h"
 #include "game/level/level.h"
 #include "game/messages/messages.h"
 #include "game/player/player.h"
@@ -36,6 +37,12 @@ static uint8_t last_state;
 void game_set_state(game_state_t state)
 {
     last_state = (uint8_t)state;
+}
+
+void game_over(uint8_t reason)
+{
+    (void)reason;
+    last_state = (uint8_t)GAME_OVER;
 }
 
 static char text[NGE_TILEMAP_WIDTH + 1];
@@ -288,6 +295,26 @@ int main(void)
     CHECK(said("You have nothing to fire.") && nge_timer_stopped());
     player_command(NGE_KEY_F);
     CHECK(last_state == GAME_FIRE);
+
+    /* ---- stairs: > and < (SYMBOL SHIFT T and R), refused off stairs; arriving and leaving said ---- */
+    nge_event_flush();
+    nge_timer_stop();
+    player_command(NGE_KEY_T | (NGE_MOD_SYM << 8));
+    CHECK(said("There are no stairs that way here.") && nge_timer_stopped() && !level_pending());
+    player_command(NGE_KEY_R | (NGE_MOD_SYM << 8));
+    CHECK(said("There are no stairs that way here.") && nge_timer_stopped());
+    nge_event_post(actor_player, EV_ARRIVED, NGE_EVENT_NONE, 2, LEVEL_ARRIVE_UP_STAIRS);
+    nge_event_process(messages_on_event);
+    CHECK(said("You go down to level 2."));
+    nge_event_post(actor_player, EV_ARRIVED, NGE_EVENT_NONE, 1, LEVEL_ARRIVE_DOWN_STAIRS);
+    nge_event_process(messages_on_event);
+    CHECK(said("You go up to level 1."));
+    nge_event_post(actor_player, EV_ARRIVED, NGE_EVENT_NONE, 3, LEVEL_ARRIVE_ANY);
+    nge_event_process(messages_on_event);
+    CHECK(said("You find yourself on level 3."));
+    nge_event_post(door, EV_LEFT_LEVEL, NGE_EVENT_NONE, 1, 0);       /* anything named: the door will do */
+    nge_event_process(messages_on_event);
+    CHECK(said("The door goes down and away."));
 
     /* ---- asserts ---- */
     TEST_EXPECT_HALT(ui_items_enter(UI_SCREENS));
