@@ -4,6 +4,7 @@
 
 #include "core/nge_util.h"
 #include "ecs/nge_ecs.h"
+#include "ecs/components/nge_location.h"
 #include "ecs/nge_owner.h"
 #include "ecs/systems/nge_render.h"
 #include "ecs/systems/nge_timer.h"
@@ -14,6 +15,7 @@
 #include "event/nge_event.h"
 
 #include "game/actors.h"
+#include "game/components/feature.h"
 #include "game/components/health.h"
 #include "game/components/inventory.h"
 #include "game/components/item.h"
@@ -199,8 +201,11 @@ void game_set_state(game_state_t state)
     case GAME_USE:
         ui_items_enter(UI_USE);
         break;
-    case GAME_TARGET:
-        player_target_enter();
+    case GAME_FIRE:
+        player_direction_enter(PLAYER_PROMPT_FIRE);
+        break;
+    case GAME_CLOSE:
+        player_direction_enter(PLAYER_PROMPT_CLOSE);
         break;
     case GAME_DEAD:
         dead_enter();
@@ -222,8 +227,9 @@ static void pre_update(void)
 
 /*
  * Release the entities destroyed this frame (after their events are
- * handled). What they own: items fall to the floor where they were (if
- * they were on the map), effects are destroyed with them
+ * handled). A placed feature leaves floor. What they own: items fall to the
+ * floor where they were (if they were on the map), effects are destroyed
+ * with them
  */
 static void release_dying(void)
 {
@@ -232,6 +238,9 @@ static void release_dying(void)
     uint8_t i;
 
     while ((id = nge_entity_next_dying()) != NGE_ENTITY_INVALID) {
+        if (FEATURE_IS(id) && NGE_ENTITY_HAS_COMPONENTS(id, NGE_COMPONENT_LOCATION)) {
+            level_put_floor(NGE_LOCATION_X(id), NGE_LOCATION_Y(id));   /* a feature gone: floor */
+        }
         inv_drop_all(id);
         NGE_OWNER_FOR_EACH_OWNED(i, owned, id) {
             if (!ITEM_IS(owned)) {
@@ -286,8 +295,11 @@ void game_run(void)
         case GAME_USE:
             ui_items_update(UI_USE);
             break;
-        case GAME_TARGET:
-            player_target_update();
+        case GAME_FIRE:
+            player_direction_update(PLAYER_PROMPT_FIRE);
+            break;
+        case GAME_CLOSE:
+            player_direction_update(PLAYER_PROMPT_CLOSE);
             break;
         case GAME_DEAD:
             dead_update();

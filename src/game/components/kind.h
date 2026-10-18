@@ -26,7 +26,7 @@
 #define CLASS_NONE      0
 #define CLASS_CREATURE  1   /**< Monsters and the player (gen_creature()). */
 #define CLASS_ITEM      2   /**< Weapons, armour, potions... (gen_item()). */
-#define CLASS_FEATURE   3   /**< Fountains, altars, traps... (reserved). */
+#define CLASS_FEATURE   3   /**< Doors; later chests, fountains, traps, stairs (gen_feature()). */
 
 /* Tables in slot 0 (kind_cdata.c): meaningful only with COMPONENT_KIND */
 extern uint8_t kind_class[NGE_ENTITY_MAX];   /**< CLASS_*. */

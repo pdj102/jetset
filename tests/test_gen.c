@@ -159,6 +159,26 @@ int main(void)
         }
     }
     CHECK(ok);
+    /* Features: names, hooks and info from their records; a door is a closed, openable, solid feature */
+    for (kind = 0; kind < FT_COUNT; kind++) {
+        gen_feature_info_t info;
+
+        id = gen_feature(kind, AREA);
+        gen_feature_info(kind, &info);
+        gen_name(id, buf, sizeof(buf));
+        ok = ok && strcmp(buf, gen_features[kind].name) == 0 && feature_state[id] == gen_features[kind].state &&
+             memcmp(&info, &gen_features[kind].info, sizeof(info)) == 0;
+        for (i = 0; i < GEN_HOOKS; i++) {
+            ok = ok && gen_feature_hook(kind, (uint8_t)i) == gen_features[kind].hooks[i] &&
+                 gen_hook(id, (uint8_t)i) == gen_features[kind].hooks[i];
+        }
+    }
+    CHECK(ok);
+    CHECK(gen_features[FT_DOOR].info.can == FCAN_OPEN && gen_features[FT_DOOR].state == 0 &&
+          gen_features[FT_DOOR].where.rarity == 0);
+    TEST_EXPECT_HALT(gen_feature_hook(FT_COUNT, GEN_HOOK_USE));
+    CHECK(test_halt_count == 1);
+
     /* A worn hook names a worn effect; the other hooks name effects that can be applied */
     ok = 1;
     for (kind = 0; kind < IT_COUNT; kind++) {

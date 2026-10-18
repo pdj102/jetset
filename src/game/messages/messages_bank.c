@@ -149,7 +149,7 @@ void messages_on_event(const nge_event_t *e) NGE_BANKED
         }
         break;
     case EV_STOOD_ON:
-        if (source == actor_player) {
+        if (source == actor_player && KIND_IS(target, CLASS_ITEM)) {   /* features show on the map */
             say_named("You see a ", target, " here.");
         }
         break;
@@ -161,6 +161,16 @@ void messages_on_event(const nge_event_t *e) NGE_BANKED
     case EV_DROPPED:
         if (source == actor_player) {
             say_named("You drop a ", target, ".");
+        }
+        break;
+    case EV_OPENED:
+        if (source == actor_player) {
+            say_named("You open the ", target, ".");
+        }
+        break;
+    case EV_CLOSED:
+        if (source == actor_player) {
+            say_named("You close the ", target, ".");
         }
         break;
     case EV_EQUIPPED:
@@ -206,7 +216,7 @@ void messages_act_failed(const act_t *a) NGE_BANKED
     case ACT_R_BLOCKED:
         screen_message("You bump into a wall.");
         break;
-    case ACT_R_BLOCKED_CREATURE:
+    case ACT_R_BLOCKED_ENTITY:
         say_named("There is a ", target, " in the way.");
         break;
     case ACT_R_NOTHING_HERE:
@@ -247,6 +257,21 @@ void messages_act_failed(const act_t *a) NGE_BANKED
         break;
     case ACT_R_CANT_USE:
         screen_message("You can't use that.");
+        break;
+    case ACT_R_NOTHING_THERE:
+        screen_message("There is nothing there.");
+        break;
+    case ACT_R_CANT_OPEN:
+        screen_message("That doesn't open or close.");
+        break;
+    case ACT_R_ALREADY_OPEN:
+        say_named("The ", target, " is already open.");
+        break;
+    case ACT_R_ALREADY_CLOSED:
+        say_named("The ", target, " is already closed.");
+        break;
+    case ACT_R_OBSTRUCTED:
+        screen_message("Something is in the way.");
         break;
     default:
         break;

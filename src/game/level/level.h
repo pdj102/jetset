@@ -31,6 +31,10 @@
 #define LEVEL_WIDTH     60                  /**< Map size in tiles: larger than the view. */
 #define LEVEL_HEIGHT    40
 
+/* Map tiles features are drawn with (game/components/feature.h): they block nothing, the feature does */
+#define LEVEL_TILE_DOOR_SHUT  '+'    /**< A closed door. */
+#define LEVEL_TILE_DOOR_OPEN  '\''  /**< An open door. */
+
 /**
  * @brief Set up the map in the map view (nge_map_init(), which maps its
  *        page into slot 1), what each tile blocks, and clip sprites to it.
@@ -45,7 +49,9 @@ void level_init(void) NGE_BANKED;
  * Destroys the entities the level's area owns except the player (the
  * game releases them at the end of the frame), then builds the map: up to
  * 10 rooms (LEVEL_ROOMS_MIN-LEVEL_ROOMS_MAX) in a grid, joined by corridors
- * so every room can be reached; places 4 to 10 random items and 2 to 5
+ * so every room can be reached, with a door entity (open or closed) in
+ * about a third of the doorways (game/components/feature.h) and plain
+ * floor in the rest; places 4 to 10 random items and 2 to 5
  * random monsters for the depth (game/gen/gen.h) on free floor in the
  * rooms; and moves the player onto free floor in a room, owned by
  * LEVEL_AREA, with the camera on them.
@@ -58,6 +64,12 @@ void level_init(void) NGE_BANKED;
  * @param player The player: an entity in use, kept from level to level.
  */
 void level_generate(uint8_t depth, nge_entity_id_t player) NGE_BANKED;
+
+/**
+ * @brief Put the level's plain floor at (x, y): where a destroyed feature
+ *        was (game.c's clean-up).
+ */
+void level_put_floor(uint8_t x, uint8_t y) NGE_BANKED;
 
 /**
  * @brief Can entity id enter tile (x, y) of the level: neither the map nor

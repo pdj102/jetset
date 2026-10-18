@@ -20,10 +20,10 @@
 #define LEVEL_ROCK      0      /* tile 0: transparent; solid */
 #define LEVEL_WALL_H    '-'    /* walls: solid */
 #define LEVEL_WALL_V    '|'
-#define LEVEL_CORNER    '+'
+#define LEVEL_CORNER    '-'    /* a room's corners: as its top and bottom walls ('+' is a closed door) */
 #define LEVEL_FLOOR     '.'    /* floors: open */
 #define LEVEL_FLOOR2    ','
-#define LEVEL_DOOR      '\''   /* an open door: open */
+#define LEVEL_FLOOR_INK NGE_INK_YELLOW
 #define LEVEL_CORRIDOR  '#'    /* open */
 
 /*
@@ -39,6 +39,9 @@
 
 #define LEVEL_ROOMS_MIN     5  /* rooms per level; the other cells are junctions */
 #define LEVEL_ROOMS_MAX     10
+#define LEVEL_LOOPS_MAX     2  /* extra links after the spanning tree: 0 to LEVEL_LOOPS_MAX */
+#define LEVEL_DOORS_MAX     12 /* door entities per level */
+#define LEVEL_DOOR_CHANCE   3  /* a doorway gets a door 1 time in LEVEL_DOOR_CHANCE */
 #define LEVEL_ITEMS_MIN     4  /* items per level */
 #define LEVEL_ITEMS_MAX     10
 #define LEVEL_MONSTERS_MIN  2  /* monsters per level */
@@ -65,6 +68,12 @@ extern level_room_t level_rooms[LEVEL_CELLS];       /* by cell */
 extern uint8_t      level_room_cells[LEVEL_ROOMS_MAX];  /* the cells with rooms */
 extern uint8_t      level_room_count;               /* entries in level_room_cells */
 extern uint8_t      level_links[LEVEL_CELLS];       /* LEVEL_LINK_* to the cell's right and below */
+
+/* Doorways: where corridors meet rooms, found while making corridors (page 103) */
+#define LEVEL_DOORWAYS_MAX  (2 * (LEVEL_CELLS - 1 + LEVEL_LOOPS_MAX))   /* two per link */
+extern uint8_t level_doorway_x[LEVEL_DOORWAYS_MAX];
+extern uint8_t level_doorway_y[LEVEL_DOORWAYS_MAX];
+extern uint8_t level_doorway_count;
 
 #define LEVEL_LINK_RIGHT  0x01
 #define LEVEL_LINK_DOWN   0x02

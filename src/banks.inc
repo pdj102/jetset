@@ -49,6 +49,7 @@
 //                        118/119  messages: what the player is told / (unused)
 //                        120/121  effects: the effect system / the effect
 //                                 definitions and the active effects' kinds
+//                        122/123  gen feature: feature generator / base features
 //             132-223  game assets (maps, graphics, level data)
 
 // nge sprite: setup functions and loaders
@@ -99,6 +100,9 @@
 
 // game effects: applying, ending and recomputing effects (game/effects)
 #pragma define CRT_ORG_PAGE_120 = 0x78C000
+
+// game gen: the feature generator
+#pragma define CRT_ORG_PAGE_122 = 0x7AC000
 
 // nge map: set-up functions
 #pragma define CRT_ORG_PAGE_44 = 0x2CC000

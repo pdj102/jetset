@@ -1,5 +1,5 @@
 /*
- * The player's commands, and the firing screen: banked in page 114 with their
+ * The player's commands, and the direction prompts: banked in page 114 with their
  * literals (a banked game module, see "Banked game modules" in
  * docs/memory_map.md). They run when a key is pressed, not every frame,
  * and pass their literals only to common code (the screen and messages).
@@ -11,11 +11,13 @@
 
 #include "game/player/player.h"
 
+#include "core/nge_util.h"
 #include "ecs/systems/nge_timer.h"
 
 #include "game/actions/act.h"
 #include "game/actors.h"
 #include "game/components/attrs.h"
+#include "game/components/feature.h"
 #include "game/components/health.h"
 #include "game/components/stats.h"
 #include "game/dev.h"
@@ -70,8 +72,9 @@ void player_act(uint8_t action, act_t *a) NGE_BANKED
 }
 
 /*
- * The move command, and bump to attack: a move blocked by something that
- * can be damaged attacks it instead (act_move()'s check mode finds it)
+ * The move command, bump to attack and bump to open: a move blocked by
+ * something that can be damaged attacks it instead, and one blocked by a
+ * closed door opens it (act_move()'s check mode finds the blocker)
  */
 static void move(int8_t dx, int8_t dy)
 {
@@ -81,10 +84,14 @@ static void move(int8_t dx, int8_t dy)
     a.actor = actor_player;
     a.dx = dx;
     a.dy = dy;
-    if (act_move(&a, ACT_CHECK) == ACT_FAIL && a.reason == ACT_R_BLOCKED_CREATURE) {
+    if (act_move(&a, ACT_CHECK) == ACT_FAIL && a.reason == ACT_R_BLOCKED_ENTITY) {
         blocker = a.target;
         if (NGE_ENTITY_HAS_ANY_COMPONENTS(blocker, COMPONENT_HEALTH)) {
             player_act(ACT_MELEE, &a);   /* a.target: the blocker */
+            return;
+        }
+        if (FEATURE_IS(blocker) && !FEATURE_IS_OPEN(blocker)) {
+            player_act(ACT_OPEN, &a);    /* a.target: the door */
             return;
         }
     }
@@ -129,7 +136,10 @@ void player_command(nge_key_event_t ev) NGE_BANKED
         game_set_state(GAME_USE);
         break;
     case 'f':
-        game_set_state(GAME_TARGET);
+        game_set_state(GAME_FIRE);
+        break;
+    case 'c':
+        game_set_state(GAME_CLOSE);
         break;
     case 'Q':
         screen_message("You quit.");
@@ -164,27 +174,55 @@ void player_show_stats(void) NGE_BANKED
     screen_show_status(status_mask[actor_player]);
 }
 
-/* ---- The firing screen ---- */
+/* ---- Direction prompts ---- */
 
-void player_target_enter(void) NGE_BANKED
+#define NO_ACTION  0xFF   /* nothing to do yet: say so */
+
+/* A prompt for a direction, and what a direction does */
+typedef struct player_prompt {
+    const char *question;
+    const char *help;
+    uint8_t     action;   /* ACT_* in that direction, or NO_ACTION */
+} player_prompt_t;
+
+static const player_prompt_t prompts[PLAYER_PROMPTS] = {
+    [PLAYER_PROMPT_FIRE]  = { "Fire in which direction?", "Direction: fire   Other keys: back", NO_ACTION },
+    [PLAYER_PROMPT_CLOSE] = { "Close in which direction?", "Direction: close   Other keys: back", ACT_CLOSE },
+};
+
+void player_direction_enter(uint8_t prompt) NGE_BANKED
 {
-    screen_message("Fire in which direction?");
-    screen_help("Direction: fire   Other keys: back");
+    nge_util_assert(prompt < PLAYER_PROMPTS);
+
+    screen_message(prompts[prompt].question);
+    screen_help(prompts[prompt].help);
 }
 
-void player_target_update(void) NGE_BANKED
+void player_direction_update(uint8_t prompt) NGE_BANKED
 {
     nge_key_event_t ev = nge_key_get();
+
+    if (ev != NGE_KEY_NONE) {
+        player_direction_key(prompt, ev);
+    }
+}
+
+void player_direction_key(uint8_t prompt, nge_key_event_t ev) NGE_BANKED
+{
+    act_t a = { 0 };
     int8_t dx;
     int8_t dy;
 
-    if (ev == NGE_KEY_NONE) {
-        return;
-    }
-    if (key_direction(ev, &dx, &dy)) {
+    nge_util_assert(prompt < PLAYER_PROMPTS);
+    if (!key_direction(ev, &dx, &dy)) {
+        screen_message("Never mind.");
+    } else if (prompts[prompt].action == NO_ACTION) {
         screen_message("You have nothing to fire.");
     } else {
-        screen_message("Never mind.");
+        a.target = NGE_ENTITY_INVALID;   /* what is in that direction */
+        a.dx = dx;
+        a.dy = dy;
+        player_act(prompts[prompt].action, &a);
     }
     game_set_state(GAME_PLAY);
 }

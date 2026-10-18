@@ -9,14 +9,17 @@
 #include "ecs/systems/nge_render_internal.h"
 #include "ecs/systems/nge_timer.h"
 #include "event/nge_event.h"
+#include "map/nge_map.h"
 
 #include "game/components/attrs.h"
 #include "game/components/health.h"
+#include "game/components/feature.h"
 #include "game/components/inventory.h"
 #include "game/components/item.h"
 #include "game/game.h"
 #include "game/effects/effects.h"
 #include "game/gen/gen.h"
+#include "game/level/level.h"
 #include "game/messages/messages.h"
 #include "game/player/player.h"
 #include "game/screen.h"
@@ -81,6 +84,9 @@ int main(void)
     nge_entity_id_t sword;
     nge_entity_id_t ring1;
     nge_entity_id_t ring2;
+    nge_entity_id_t door;
+    uint8_t x;
+    uint8_t y;
 
     test_init();
 
@@ -89,6 +95,16 @@ int main(void)
     nge_timer_init();
     nge_event_init();
     screen_init();
+    nge_map_init(LEVEL_WIDTH, LEVEL_HEIGHT, &screen_map_view);    /* floor everywhere */
+    nge_map_clear_blocks(NGE_BLOCK_SOLID);
+    nge_map_set_block('.', NGE_BLOCK_NONE);
+    nge_map_set_block(LEVEL_TILE_DOOR_SHUT, NGE_BLOCK_NONE);
+    nge_map_set_block(LEVEL_TILE_DOOR_OPEN, NGE_BLOCK_NONE);
+    for (y = 0; y < LEVEL_HEIGHT; y++) {
+        for (x = 0; x < LEVEL_WIDTH; x++) {
+            NGE_MAP_TILE(x, y).tile_id = '.';
+        }
+    }
     actor_player = gen_creature(CR_PLAYER, AREA);
     nge_location_set(actor_player, 5, 5);
     nge_render_set_view(AREA);
@@ -232,6 +248,46 @@ int main(void)
     last_state = NO_STATE;
     ui_items_enter(UI_UNEQUIP);
     CHECK(last_state == GAME_PLAY && said("You aren't using anything."));
+
+    /* ---- doors: bump to open, c and a direction to close ---- */
+    door = gen_feature(FT_DOOR, AREA);
+    feature_place(door, 6, 5);                                     /* east of the player, closed */
+    nge_event_flush();
+    nge_timer_stop();
+    player_command(NGE_KEY_L);                                     /* 'l': east, into the door */
+    CHECK(FEATURE_IS_OPEN(door) && NGE_LOCATION_X(actor_player) == 5 && !nge_timer_stopped());
+    nge_event_process(messages_on_event);
+    CHECK(said("You open the door."));
+    /* Walking into the open doorway and back: the map shows it, no "You see a door here." */
+    player_command(NGE_KEY_L);
+    CHECK(NGE_LOCATION_X(actor_player) == 6);
+    nge_event_process(messages_on_event);
+    CHECK(said("You open the door."));
+    player_command(NGE_KEY_H);
+    nge_event_flush();
+    nge_timer_stop();
+    last_state = NO_STATE;
+    player_command(NGE_KEY_C);
+    CHECK(last_state == GAME_CLOSE);
+    player_direction_enter(PLAYER_PROMPT_CLOSE);
+    CHECK(said("Close in which direction?") && starts(row(31), "Direction: close   Other keys: back"));
+    last_state = NO_STATE;
+    player_direction_key(PLAYER_PROMPT_CLOSE, NGE_KEY_L);
+    CHECK(last_state == GAME_PLAY && !FEATURE_IS_OPEN(door) && !nge_timer_stopped());
+    nge_event_process(messages_on_event);
+    CHECK(said("You close the door."));
+    /* Refused: told why, the turn kept */
+    nge_timer_stop();
+    player_direction_key(PLAYER_PROMPT_CLOSE, NGE_KEY_L);
+    CHECK(said("The door is already closed.") && nge_timer_stopped());
+    player_direction_key(PLAYER_PROMPT_CLOSE, NGE_KEY_H);          /* west: nothing there */
+    CHECK(said("There is nothing there.") && nge_timer_stopped());
+    player_direction_key(PLAYER_PROMPT_CLOSE, NGE_KEY_A);          /* not a direction */
+    CHECK(said("Never mind.") && last_state == GAME_PLAY);
+    player_direction_key(PLAYER_PROMPT_FIRE, NGE_KEY_L);
+    CHECK(said("You have nothing to fire.") && nge_timer_stopped());
+    player_command(NGE_KEY_F);
+    CHECK(last_state == GAME_FIRE);
 
     /* ---- asserts ---- */
     TEST_EXPECT_HALT(ui_items_enter(UI_SCREENS));

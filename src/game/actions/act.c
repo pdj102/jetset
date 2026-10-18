@@ -10,7 +10,7 @@
 const uint8_t act_reason_flags[ACT_R_COUNT] = {
     [ACT_R_NONE]             = 0,
     [ACT_R_BLOCKED]          = 0,   /* refused: nothing tried */
-    [ACT_R_BLOCKED_CREATURE] = 0,
+    [ACT_R_BLOCKED_ENTITY] = 0,
     [ACT_R_NO_INVENTORY]     = 0,
     [ACT_R_NOTHING_HERE]     = 0,
     [ACT_R_NOT_ITEM]         = 0,
@@ -28,6 +28,11 @@ const uint8_t act_reason_flags[ACT_R_COUNT] = {
     [ACT_R_OUT_OF_RANGE]     = 0,
     [ACT_R_MISSED]           = ACT_RF_ATTEMPTED,   /* the attack was made: the turn is used */
     [ACT_R_CANT_USE]         = 0,
+    [ACT_R_NOTHING_THERE]    = 0,
+    [ACT_R_CANT_OPEN]        = 0,
+    [ACT_R_ALREADY_OPEN]     = 0,
+    [ACT_R_ALREADY_CLOSED]   = 0,
+    [ACT_R_OBSTRUCTED]       = 0,
 };
 
 uint8_t act_do(uint8_t action, act_t *a, uint8_t mode)
@@ -48,6 +53,10 @@ uint8_t act_do(uint8_t action, act_t *a, uint8_t mode)
         return act_melee(a, mode);
     case ACT_USE:
         return act_use(a, mode);
+    case ACT_OPEN:
+        return act_open(a, mode);
+    case ACT_CLOSE:
+        return act_close(a, mode);
     default:
         nge_util_abort("bad action");
         return ACT_FAIL;

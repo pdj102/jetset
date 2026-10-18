@@ -27,6 +27,10 @@
 #define IT_STRENGTH  6   /* potion of strength */
 #define IT_COUNT     7
 
+/* Features (CLASS_FEATURE) */
+#define FT_DOOR      0
+#define FT_COUNT     1
+
 /* Item subclasses, in each item's base record */
 #define ITEM_POTION  0
 #define ITEM_WEAPON  1

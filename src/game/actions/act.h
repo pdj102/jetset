@@ -3,8 +3,8 @@
 
 /**
  * @file act.h
- * @brief Actions: what an entity does (move, attack, pick up, use; later
- *        open...), the same for the player and for monsters.
+ * @brief Actions: what an entity does (move, attack, pick up, use, open,
+ *        close...), the same for the player and for monsters.
  *
  * Every action has the same API: it takes a context (act_t, on the
  * caller's stack) and a mode, and returns ACT_SUCCESS or ACT_FAIL:
@@ -12,7 +12,7 @@
  *     act_t a = { 0 };
  *     a.actor = id;
  *     a.dx = 1;
- *     if (act_move(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_BLOCKED_CREATURE) {
+ *     if (act_move(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_BLOCKED_ENTITY) {
  *         ...a.target is in the way: attack it?
  *     }
  *     if (a.used) {
@@ -41,8 +41,8 @@
  * time, one turn of the actor (its speed: game/components/stats.h).
  *
  * Actions don't call each other for choices: the caller combines them
- * (bump to attack: a move refused with ACT_R_BLOCKED_CREATURE, then a melee
- * on a.target). Consequences (damage, effects: game/effects/effects.h) use
+ * (bump to attack or open: a move refused with ACT_R_BLOCKED_ENTITY, then
+ * a melee or an open on a.target). Consequences (damage, effects: game/effects/effects.h) use
  * no turn: an action's apply step calls them.
  *
  * Callers: player commands, monster AI, and timer and event handlers (a
@@ -91,12 +91,14 @@ typedef struct act {
 #define ACT_UNEQUIP 4
 #define ACT_MELEE   5
 #define ACT_USE     6
-#define ACT_COUNT   7
+#define ACT_OPEN    7
+#define ACT_CLOSE   8
+#define ACT_COUNT   9
 
 /* Reasons (refused or attempted: the table in act.c) */
 #define ACT_R_NONE              0   /**< Succeeded. */
 #define ACT_R_BLOCKED           1   /**< Refused: the map blocks the way (a wall, the edge). */
-#define ACT_R_BLOCKED_CREATURE  2   /**< Refused: an entity blocks the way; a->target is it. */
+#define ACT_R_BLOCKED_ENTITY    2   /**< Refused: an entity blocks the way; a->target is it. */
 #define ACT_R_NO_INVENTORY      3   /**< Refused: the actor can't carry things. */
 #define ACT_R_NOTHING_HERE      4   /**< Refused: no item on the actor's tile (to pick up). */
 #define ACT_R_NOT_ITEM          5   /**< Refused: the target can't be carried. */
@@ -114,7 +116,12 @@ typedef struct act {
 #define ACT_R_OUT_OF_RANGE      17  /**< Refused: the target is out of the attack's reach. */
 #define ACT_R_MISSED            18  /**< Attempted: the attack missed (the turn is used). */
 #define ACT_R_CANT_USE          19  /**< Refused: using the item does nothing (a sword). */
-#define ACT_R_COUNT             20
+#define ACT_R_NOTHING_THERE     20  /**< Refused: no feature in that direction (to open or close). */
+#define ACT_R_CANT_OPEN         21  /**< Refused: the target doesn't open or close (not a feature, or not a door). */
+#define ACT_R_ALREADY_OPEN      22  /**< Refused: it is open already. */
+#define ACT_R_ALREADY_CLOSED    23  /**< Refused: it is closed already. */
+#define ACT_R_OBSTRUCTED        24  /**< Refused: something (an item, a creature) is in the doorway. */
+#define ACT_R_COUNT             25
 
 /**
  * @brief Move one tile.
@@ -123,7 +130,7 @@ typedef struct act {
  * 0). Succeeds if the actor can enter the tile (nge_block_can_enter(),
  * with its pass flags): it moves there and posts EV_MOVED, and EV_STOOD_ON
  * for each entity on the tile. Refused
- * with ACT_R_BLOCKED or ACT_R_BLOCKED_CREATURE (a->target: the blocker).
+ * with ACT_R_BLOCKED or ACT_R_BLOCKED_ENTITY (a->target: the blocker).
  */
 uint8_t act_move(act_t *a, uint8_t mode) NGE_BANKED;
 
@@ -203,6 +210,26 @@ uint8_t act_melee(act_t *a, uint8_t mode) NGE_BANKED;
  * ACT_R_CANT_USE.
  */
 uint8_t act_use(act_t *a, uint8_t mode) NGE_BANKED;
+
+/**
+ * @brief Open a feature next to the actor (a door; game/components/feature.h).
+ *
+ * In: actor (alive, placed in an area), and target, or (with target
+ * NGE_ENTITY_INVALID) a direction dx, dy: the feature on that tile. Out:
+ * target. Succeeds if it is a feature that opens, in the same area at
+ * most one move away, and closed: opens it (it blocks nothing and is drawn open)
+ * and posts EV_OPENED. Refused with ACT_R_NOTHING_THERE, ACT_R_CANT_OPEN,
+ * ACT_R_OUT_OF_RANGE or ACT_R_ALREADY_OPEN.
+ */
+uint8_t act_open(act_t *a, uint8_t mode) NGE_BANKED;
+
+/**
+ * @brief Close a feature next to the actor: as act_open(), for an open one
+ *        with nothing else on its tile. Posts EV_CLOSED. Refused with
+ *        ACT_R_NOTHING_THERE, ACT_R_CANT_OPEN, ACT_R_OUT_OF_RANGE,
+ *        ACT_R_ALREADY_CLOSED or ACT_R_OBSTRUCTED.
+ */
+uint8_t act_close(act_t *a, uint8_t mode) NGE_BANKED;
 
 /** @brief Call action (ACT_MOVE...) by number: for the AI and delayed actions. */
 uint8_t act_do(uint8_t action, act_t *a, uint8_t mode);

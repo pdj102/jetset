@@ -17,11 +17,13 @@
 #include "game/components/attrs.h"
 #include "game/components/health.h"
 #include "game/components/inventory.h"
+#include "game/components/feature.h"
 #include "game/components/item.h"
 #include "game/components/stats.h"
 #include "game/effects/effects.h"
 #include "game/events.h"
 #include "game/gen/gen.h"
+#include "game/level/level.h"
 
 #define AREA   NGE_OWNER_AREA(0)
 #define FLOOR  '.'
@@ -123,6 +125,8 @@ int main(void)
     nge_entity_id_t blob;
     nge_entity_id_t biter;
     nge_entity_id_t thing;
+    nge_entity_id_t door;
+    nge_entity_id_t opener;
     unsigned int s;
     int roll;
     int hp;
@@ -142,6 +146,8 @@ int main(void)
     nge_map_init(10, 10, &window);
     nge_map_clear_blocks(NGE_BLOCK_SOLID);
     nge_map_set_block(FLOOR, NGE_BLOCK_NONE);
+    nge_map_set_block(LEVEL_TILE_DOOR_SHUT, NGE_BLOCK_NONE);   /* as the level sets them: the door blocks */
+    nge_map_set_block(LEVEL_TILE_DOOR_OPEN, NGE_BLOCK_NONE);
     for (y = 0; y < 10; y++) {
         for (x = 0; x < 10; x++) {
             NGE_MAP_TILE(x, y).tile_id = FLOOR;
@@ -185,7 +191,7 @@ int main(void)
     nge_location_set(rat, 6, 5);
     a = move(player, 1, 0);                                   /* the rat at (6, 5) */
     CHECK(act_move(&a, ACT_DO) == ACT_FAIL);
-    CHECK(a.reason == ACT_R_BLOCKED_CREATURE && a.target == rat && a.used == 0);
+    CHECK(a.reason == ACT_R_BLOCKED_ENTITY && a.target == rat && a.used == 0);
     CHECK(at(player, 5, 5) && events() == 0);
     /* A creature doesn't block itself: the rat moves away from the potion's tile... */
     a = move(rat, 0, 1);
@@ -206,14 +212,14 @@ int main(void)
     a = move(player, 0, -1);                                  /* the wall */
     ok = ok && act_move(&a, ACT_CHECK) == ACT_FAIL && a.reason == ACT_R_BLOCKED && a.used == 0;
     a = move(player, 0, 1);                                   /* the rat, now at (5, 6) */
-    ok = ok && act_move(&a, ACT_CHECK) == ACT_FAIL && a.reason == ACT_R_BLOCKED_CREATURE && a.target == rat;
+    ok = ok && act_move(&a, ACT_CHECK) == ACT_FAIL && a.reason == ACT_R_BLOCKED_ENTITY && a.target == rat;
     r2 = rand();
     CHECK(ok);
     CHECK(at(player, 5, 5) && events() == 0 && r1 == r2);
 
     /* ---- act_do: the same as calling the action ---- */
     a = move(player, 0, 1);
-    CHECK(act_do(ACT_MOVE, &a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_BLOCKED_CREATURE && a.target == rat);
+    CHECK(act_do(ACT_MOVE, &a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_BLOCKED_ENTITY && a.target == rat);
     a = move(player, -1, 0);
     CHECK(act_do(ACT_MOVE, &a, ACT_DO) == ACT_SUCCESS && at(player, 4, 5) && a.used == 1);
     events();
@@ -578,6 +584,86 @@ int main(void)
     CHECK(act_use(&a, ACT_DO) == ACT_SUCCESS && !STATUS_HAS(player, STATUS_POISONED));   /* cured */
     CHECK(events() == 4 && seen[0].id == EV_USED && seen[1].id == EV_ATTRS_CHANGED &&
           seen[2].id == EV_EFFECT_ENDED && seen[3].id == EV_EFFECT_STARTED && seen[3].p1 == EF_CURE);
+
+    /* ---- open and close: a goblin at (7, 1), a closed door east of it at (8, 1) ---- */
+    opener = creature(CR_GOBLIN, 7, 1);
+    door = gen_feature(FT_DOOR, AREA);
+    feature_place(door, 8, 1);
+    events();
+    /* A closed door blocks a move: the door is the blocker (bump to open) */
+    a = move(opener, 1, 0);
+    CHECK(act_move(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_BLOCKED_ENTITY && a.target == door);
+    /* Check mode: possible, nothing changes */
+    a = ctx(opener);
+    a.dx = 1;
+    CHECK(act_open(&a, ACT_CHECK) == ACT_SUCCESS && a.used == 0 && a.target == door);
+    CHECK(!FEATURE_IS_OPEN(door) && events() == 0);
+    /* Open, by direction: the door opens, the turn used, the event */
+    CHECK(act_open(&a, ACT_DO) == ACT_SUCCESS && a.reason == ACT_R_NONE && a.used == 1);
+    CHECK(FEATURE_IS_OPEN(door) && NGE_MAP_TILE(8, 1).tile_id == LEVEL_TILE_DOOR_OPEN);
+    CHECK(events() == 1 && is(0, door, EV_OPENED, opener));
+    CHECK(act_open(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_ALREADY_OPEN && a.used == 0);
+    /* Open, it can be walked through */
+    a = move(opener, 1, 0);
+    CHECK(act_move(&a, ACT_DO) == ACT_SUCCESS && at(opener, 8, 1));
+    events();                                                  /* EV_MOVED only: no EV_STOOD_ON message for a door */
+    /* Back out; closing it with an item in the doorway: something is in the way */
+    a = move(opener, -1, 0);
+    act_move(&a, ACT_DO);
+    thing = gen_item(IT_POTION, AREA);
+    nge_location_set(thing, 8, 1);                            /* an item in the doorway */
+    events();
+    a = ctx(opener);
+    a.target = door;
+    CHECK(act_close(&a, ACT_CHECK) == ACT_FAIL && a.reason == ACT_R_OBSTRUCTED);
+    CHECK(act_close(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_OBSTRUCTED && a.used == 0 && FEATURE_IS_OPEN(door));
+    nge_location_remove(thing);
+    /* Close, by target: closed, blocking again, the event */
+    CHECK(act_close(&a, ACT_CHECK) == ACT_SUCCESS && a.used == 0 && FEATURE_IS_OPEN(door));
+    CHECK(act_do(ACT_CLOSE, &a, ACT_DO) == ACT_SUCCESS && a.used == 1 && !FEATURE_IS_OPEN(door));
+    CHECK(NGE_MAP_TILE(8, 1).tile_id == LEVEL_TILE_DOOR_SHUT && events() == 1 && is(0, door, EV_CLOSED, opener));
+    a = move(opener, 1, 0);
+    CHECK(act_move(&a, ACT_CHECK) == ACT_FAIL && a.target == door);
+    a = ctx(opener);
+    a.target = door;
+    CHECK(act_close(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_ALREADY_CLOSED);
+    CHECK(act_do(ACT_OPEN, &a, ACT_DO) == ACT_SUCCESS && FEATURE_IS_OPEN(door));   /* by number */
+    events();
+    /* Refused: nothing there, not a feature, too far */
+    a = ctx(opener);
+    a.dy = -1;                                                /* (7, 0): floor */
+    CHECK(act_open(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_NOTHING_THERE && a.target == NGE_ENTITY_INVALID);
+    CHECK(act_close(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_NOTHING_THERE);
+    a = ctx(opener);
+    a.target = thing;                                         /* an item */
+    CHECK(act_open(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_CANT_OPEN);
+    a = ctx(opener);
+    a.dx = -1;                                                /* (6, 1): a creature, not a feature */
+    biter = creature(CR_RAT, 6, 1);
+    CHECK(act_open(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_NOTHING_THERE);
+    a = ctx(biter);
+    a.target = door;                                          /* two tiles away */
+    CHECK(act_open(&a, ACT_CHECK) == ACT_FAIL && a.reason == ACT_R_OUT_OF_RANGE);
+    nge_owner_set(biter, NGE_OWNER_AREA(1));
+    nge_location_set(biter, 7, 1);                            /* next to it, but in another area */
+    a = ctx(biter);
+    a.target = door;
+    CHECK(act_open(&a, ACT_CHECK) == ACT_FAIL && a.reason == ACT_R_OUT_OF_RANGE);
+    nge_location_set(opener, 8, 1);                           /* in the open doorway */
+    a = ctx(opener);
+    a.target = door;
+    CHECK(act_close(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_OBSTRUCTED);   /* itself in the way */
+    nge_location_set(opener, 7, 1);
+    nge_location_remove(door);
+    a = ctx(opener);
+    a.target = door;                                          /* not placed */
+    CHECK(act_close(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_OUT_OF_RANGE);
+    nge_location_set(door, 8, 1);
+    nge_entity_destroy(door);
+    a = ctx(opener);
+    a.target = door;                                          /* dying */
+    CHECK(act_close(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_CANT_OPEN);
+    CHECK(events() == 0);
 
     /* ---- every reason is refused, but a miss ---- */
     ok = 1;

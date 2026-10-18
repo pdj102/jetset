@@ -44,6 +44,8 @@ GEN_GAME_SRCS := $(addprefix $(GAMEDIR)/,gen/gen.c gen/gen_shared_bank.c \
                  components/item.c components/item_cdata.c components/inventory.c \
                  components/inventory_cdata.c components/health.c components/health_cdata.c \
                  components/attack.c components/attack_cdata.c components/attrs_cdata.c \
+                 components/feature.c components/feature_cdata.c \
+                 gen/gen_feature_bank.c gen/gen_feature_pdata.c \
                  effects/effects_core.c effects/effects_game.c effects/effects_pdata.c)
 GEN_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(GEN_GAME_SRCS))
 ACT_GAME_SRCS := $(wildcard $(GAMEDIR)/actions/*.c)
@@ -113,6 +115,9 @@ $(BUILD)/test_attack: $(BUILD)/test_attack.o $(LIB_OBJS) $(SUPPORT_OBJS) $(GEN_G
 	$(HOSTCC) $(CFLAGS) $^ -o $@
 
 $(BUILD)/test_stats: $(BUILD)/test_stats.o $(LIB_OBJS) $(SUPPORT_OBJS) $(GEN_GAME_OBJS)
+	$(HOSTCC) $(CFLAGS) $^ -o $@
+
+$(BUILD)/test_feature: $(BUILD)/test_feature.o $(LIB_OBJS) $(SUPPORT_OBJS) $(GEN_GAME_OBJS)
 	$(HOSTCC) $(CFLAGS) $^ -o $@
 
 $(BUILD)/test_effects: $(BUILD)/test_effects.o $(LIB_OBJS) $(SUPPORT_OBJS) $(GEN_GAME_OBJS)

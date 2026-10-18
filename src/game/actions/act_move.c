@@ -41,7 +41,7 @@ uint8_t act_move(act_t *a, uint8_t mode) NGE_BANKED
     if (!nge_block_can_enter(area, x, y, pass, actor, &blocker)) {
         if (blocker != NGE_ENTITY_INVALID) {
             a->target = blocker;
-            return act_fail(a, ACT_R_BLOCKED_CREATURE);
+            return act_fail(a, ACT_R_BLOCKED_ENTITY);
         }
         return act_fail(a, ACT_R_BLOCKED);
     }

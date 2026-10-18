@@ -12,6 +12,7 @@
 #include "game/level/level_internal.h"
 
 #include "game/screen.h"
+#include "io/nge_tm_stream.h"
 
 /*
  * What each tile ID blocks. Everything is solid unless set otherwise, so a
@@ -22,8 +23,19 @@ static void set_up_blocks(void)
     nge_map_clear_blocks(NGE_BLOCK_SOLID);
     nge_map_set_block(LEVEL_FLOOR, NGE_BLOCK_NONE);
     nge_map_set_block(LEVEL_FLOOR2, NGE_BLOCK_NONE);
-    nge_map_set_block(LEVEL_DOOR, NGE_BLOCK_NONE);
     nge_map_set_block(LEVEL_CORRIDOR, NGE_BLOCK_NONE);
+    /* Features' tiles: the feature blocks (a closed door), not its tile */
+    nge_map_set_block(LEVEL_TILE_DOOR_SHUT, NGE_BLOCK_NONE);
+    nge_map_set_block(LEVEL_TILE_DOOR_OPEN, NGE_BLOCK_NONE);
+}
+
+void level_put_floor(uint8_t x, uint8_t y) NGE_BANKED
+{
+    nge_tile_t tile;
+
+    tile.tile_id = LEVEL_FLOOR;
+    tile.tile_attr = (uint8_t)(LEVEL_FLOOR_INK << 4);
+    nge_map_set(x, y, &tile);
 }
 
 void level_init(void) NGE_BANKED

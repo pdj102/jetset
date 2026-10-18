@@ -21,10 +21,10 @@
 
 #include "core/nge_util.h"
 #include "ecs/components/nge_location.h"
+#include "game/components/feature.h"
 #include "game/gen/gen.h"
 #include "io/nge_tm_stream.h"
 
-#define LOOPS_MAX       2    /* extra links after the tree: 0 to LOOPS_MAX */
 #define PLACE_ATTEMPTS  20   /* tries to find a free floor tile */
 
 /* A cell's column and row in the grid (unsigned: no sign handling in the division) */
@@ -76,9 +76,13 @@ static void clear(nge_entity_id_t player)
     }
     NGE_OWNER_FOR_EACH_OWNED(i, id, LEVEL_AREA) {
         if (id != player) {
+            if (FEATURE_IS(id)) {
+                nge_location_remove(id);   /* the map is new: no floor to put back where it was */
+            }
             nge_entity_destroy(id);
         }
     }
+    level_doorway_count = 0;
 }
 
 /* ---- Rooms and junctions ---- */
@@ -99,7 +103,7 @@ static void draw_room(const level_room_t *r)
                 put(x, y, LEVEL_WALL_V, NGE_INK_WHITE);
             } else {
                 /* Floor, with a variant pattern here and there */
-                put(x, y, (rand() & 7) == 0 ? LEVEL_FLOOR2 : LEVEL_FLOOR, NGE_INK_YELLOW);
+                put(x, y, (rand() & 7) == 0 ? LEVEL_FLOOR2 : LEVEL_FLOOR, LEVEL_FLOOR_INK);
             }
         }
     }
@@ -222,10 +226,10 @@ static void make_tree(void)
     }
 }
 
-/* Up to LOOPS_MAX extra links between neighbours not yet linked: more than one route */
+/* Up to LEVEL_LOOPS_MAX extra links between neighbours not yet linked: more than one route */
 static void make_loops(void)
 {
-    uint8_t loops = roll(LOOPS_MAX + 1);
+    uint8_t loops = roll(LEVEL_LOOPS_MAX + 1);
     uint8_t tries = PLACE_ATTEMPTS;
 
     while (loops > 0 && tries-- > 0) {
@@ -247,9 +251,15 @@ static void make_loops(void)
 
 /* ---- Corridors ---- */
 
+/* A doorway: floor for now (so no corridor covers it), remembered for place_doors() */
 static void door(uint8_t x, uint8_t y)
 {
-    put(x, y, LEVEL_DOOR, NGE_INK_RED);
+    nge_util_assert(level_doorway_count < LEVEL_DOORWAYS_MAX);
+
+    put(x, y, LEVEL_FLOOR, LEVEL_FLOOR_INK);
+    level_doorway_x[level_doorway_count] = x;
+    level_doorway_y[level_doorway_count] = y;
+    level_doorway_count++;
 }
 
 /*
@@ -357,6 +367,33 @@ static void make_corridors(void)
 /* ---- Entities ---- */
 
 /*
+ * A door in about one doorway in LEVEL_DOOR_CHANCE, LEVEL_DOORS_MAX at
+ * most, half of them open; the other doorways stay floor. Stops if no
+ * entity is free
+ */
+static void place_doors(void)
+{
+    nge_entity_id_t id;
+    uint8_t doors = 0;
+    uint8_t i;
+
+    for (i = 0; i < level_doorway_count && doors < LEVEL_DOORS_MAX; i++) {
+        if (roll(LEVEL_DOOR_CHANCE) != 0) {
+            continue;
+        }
+        id = gen_feature(FT_DOOR, LEVEL_AREA);
+        if (id == NGE_ENTITY_INVALID) {
+            return;
+        }
+        feature_place(id, level_doorway_x[i], level_doorway_y[i]);
+        if (rand() & 1) {
+            feature_open(id);
+        }
+        doors++;
+    }
+}
+
+/*
  * A random floor tile, in a random room, with no entity on it
  * @return 1 and the tile in (x, y), or 0 if none was found in PLACE_ATTEMPTS tries
  */
@@ -422,6 +459,7 @@ void level_generate(uint8_t depth, nge_entity_id_t player) NGE_BANKED
     make_tree();
     make_loops();
     make_corridors();
+    place_doors();
     place_random(roll_between(LEVEL_ITEMS_MIN, LEVEL_ITEMS_MAX), depth, 0);
     place_random(roll_between(LEVEL_MONSTERS_MIN, LEVEL_MONSTERS_MAX), depth, 1);
     place_player(player);

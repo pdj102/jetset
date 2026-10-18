@@ -22,15 +22,6 @@
 #include "game/gen/gen.h"
 #include "game/events.h"
 
-/* The distance between two tiles, in moves: the larger of the x and y distances */
-static uint8_t distance(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2)
-{
-    uint8_t dx = (x1 > x2) ? (uint8_t)(x1 - x2) : (uint8_t)(x2 - x1);
-    uint8_t dy = (y1 > y2) ? (uint8_t)(y1 - y2) : (uint8_t)(y2 - y1);
-
-    return (dx > dy) ? dx : dy;
-}
-
 uint8_t act_melee(act_t *a, uint8_t mode) NGE_BANKED
 {
     nge_entity_id_t actor = a->actor;
@@ -80,7 +71,7 @@ uint8_t act_melee(act_t *a, uint8_t mode) NGE_BANKED
     if (!NGE_ENTITY_HAS_COMPONENTS(target, NGE_COMPONENT_LOCATION) || NGE_OWNER_OF(target) != area) {
         return act_fail(a, ACT_R_OUT_OF_RANGE);
     }
-    roll = distance(x, y, NGE_LOCATION_X(target), NGE_LOCATION_Y(target));
+    roll = act_distance(x, y, NGE_LOCATION_X(target), NGE_LOCATION_Y(target));
     if (roll == 0 || roll > attack_range[ATTACK_MELEE][attacker]) {
         return act_fail(a, ACT_R_OUT_OF_RANGE);
     }

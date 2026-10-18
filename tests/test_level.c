@@ -12,6 +12,7 @@
 #include "ecs/systems/nge_timer.h"
 #include "map/nge_map.h"
 
+#include "game/components/feature.h"
 #include "game/components/item.h"
 #include "game/components/kind.h"
 #include "game/gen/gen.h"
@@ -34,6 +35,17 @@ static int is_floor(uint8_t x, uint8_t y)
 {
     return tile(x, y) == LEVEL_FLOOR || tile(x, y) == LEVEL_FLOOR2;
 }
+
+/* A doorway in a wall: plain floor, or a door's tile */
+static int is_doorway(uint8_t x, uint8_t y)
+{
+    return tile(x, y) == LEVEL_FLOOR || tile(x, y) == LEVEL_TILE_DOOR_SHUT || tile(x, y) == LEVEL_TILE_DOOR_OPEN;
+}
+
+/* Totals over every depth checked */
+static int doors_open;
+static int doors_shut;
+static int doorways_seen;
 
 /* Release the entities destroyed by the last level_generate(), as the game does each frame */
 static void release_dying(void)
@@ -113,6 +125,7 @@ static int check_level(int depth)
     int links = 0;
     int items = 0;
     int monsters = 0;
+    int doors = 0;
     int x;
     int y;
     uint8_t i;
@@ -157,11 +170,11 @@ static int check_level(int depth)
                         return fail(depth, "a corner isn't a corner");
                     }
                 } else if (edge_y) {
-                    if (t != LEVEL_WALL_H && t != LEVEL_DOOR) {
+                    if (t != LEVEL_WALL_H && !is_doorway((uint8_t)x, (uint8_t)y)) {
                         return fail(depth, "a top or bottom wall broken");
                     }
                 } else if (edge_x) {
-                    if (t != LEVEL_WALL_V && t != LEVEL_DOOR) {
+                    if (t != LEVEL_WALL_V && !is_doorway((uint8_t)x, (uint8_t)y)) {
                         return fail(depth, "a side wall broken");
                     }
                 } else if (!is_floor((uint8_t)x, (uint8_t)y)) {
@@ -223,6 +236,45 @@ static int check_level(int depth)
         if (id == player) {
             continue;
         }
+        if (KIND_IS(id, CLASS_FEATURE)) {
+            /*
+             * Doors: placed alone in a doorway, drawn as a map tile (no
+             * sprite) for its state, blocking only while closed
+             */
+            uint8_t fx;
+            uint8_t fy;
+            uint8_t d;
+
+            if (kind_index[id] != FT_DOOR || !FEATURE_IS(id) ||
+                !NGE_ENTITY_HAS_COMPONENTS(id, NGE_COMPONENT_LOCATION | NGE_COMPONENT_BLOCK) ||
+                NGE_ENTITY_HAS_ANY_COMPONENTS(id, NGE_COMPONENT_SPRITE)) {
+                return fail(depth, "a feature isn't a placed door drawn as a tile");
+            }
+            fx = NGE_LOCATION_X(id);
+            fy = NGE_LOCATION_Y(id);
+            for (d = 0; d < level_doorway_count; d++) {
+                if (level_doorway_x[d] == fx && level_doorway_y[d] == fy) {
+                    break;
+                }
+            }
+            if (d == level_doorway_count || entities_at(fx, fy) != 1) {
+                return fail(depth, "a door isn't alone in a doorway");
+            }
+            if (FEATURE_IS_OPEN(id) ? (tile(fx, fy) != LEVEL_TILE_DOOR_OPEN || NGE_BLOCK_OF(id) != NGE_BLOCK_NONE)
+                                    : (tile(fx, fy) != LEVEL_TILE_DOOR_SHUT || NGE_BLOCK_OF(id) != NGE_BLOCK_SOLID)) {
+                return fail(depth, "a door's tile or blocking doesn't match its state");
+            }
+            if (nge_map_block(fx, fy) != NGE_BLOCK_NONE) {
+                return fail(depth, "a door's map tile blocks");
+            }
+            doors++;
+            if (FEATURE_IS_OPEN(id)) {
+                doors_open++;
+            } else {
+                doors_shut++;
+            }
+            continue;
+        }
         if (!NGE_ENTITY_HAS_COMPONENTS(id, COMPONENT_KIND | NGE_COMPONENT_LOCATION | NGE_COMPONENT_SPRITE)) {
             return fail(depth, "an entity in the area isn't a placed, drawn, generated one");
         }
@@ -246,6 +298,23 @@ static int check_level(int depth)
     if (monsters < LEVEL_MONSTERS_MIN || monsters > LEVEL_MONSTERS_MAX) {
         return fail(depth, "monster count");
     }
+    /* Doors: at most the maximum; every doorway without one is floor, two per link to a room */
+    if (doors > LEVEL_DOORS_MAX) {
+        return fail(depth, "door count");
+    }
+    for (i = 0; i < level_doorway_count; i++) {
+        uint8_t dx = level_doorway_x[i];
+        uint8_t dy = level_doorway_y[i];
+
+        if (nge_location_find(LEVEL_AREA, dx, dy, COMPONENT_FEATURE, 0) == NGE_ENTITY_INVALID &&
+            tile(dx, dy) != LEVEL_FLOOR) {
+            return fail(depth, "a doorway without a door isn't floor");
+        }
+    }
+    if (level_doorway_count > links * 2) {
+        return fail(depth, "more doorways than link ends");
+    }
+    doorways_seen += level_doorway_count;
     return 1;
 }
 
@@ -300,6 +369,9 @@ int main(void)
         ok = check_level(depth);
     }
     CHECK(ok);
+    /* About a third of doorways get doors, about half of them open */
+    CHECK(doors_open + doors_shut > doorways_seen / 5 && doors_open + doors_shut < doorways_seen / 2);
+    CHECK(doors_open > (doors_open + doors_shut) / 3 && doors_shut > (doors_open + doors_shut) / 3);
 
     /* ---- the same depth gives the same level; another depth doesn't ---- */
     level_generate(7, player);
@@ -313,6 +385,20 @@ int main(void)
     take(again, again_items);
     CHECK(memcmp(snapshot, again, sizeof(again)) == 0);
     CHECK(memcmp(snapshot_items, again_items, sizeof(again_items)) == 0);
+
+    /* ---- regenerating: the last level's doors are destroyed with no location (no floor to put back) ---- */
+    level_generate(11, player);
+    release_dying();
+    id = NGE_ENTITY_INVALID;
+    NGE_OWNER_FOR_EACH_OWNED(i, id, LEVEL_AREA) {
+        if (FEATURE_IS(id)) {
+            break;
+        }
+    }
+    CHECK(id != NGE_ENTITY_INVALID && FEATURE_IS(id));
+    level_generate(12, player);
+    CHECK(NGE_ENTITY_STATE(id) == NGE_ENTITY_DYING && !NGE_ENTITY_HAS_COMPONENTS(id, NGE_COMPONENT_LOCATION));
+    release_dying();
 
     /* ---- regenerating: the last level's items are destroyed, the player kept ---- */
     id = NGE_ENTITY_INVALID;

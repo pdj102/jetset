@@ -35,4 +35,7 @@ uint8_t act_succeed(act_t *a);
 /* End a check (ACT_CHECK) that found the action possible: nothing used. Returns ACT_SUCCESS */
 uint8_t act_checked(act_t *a);
 
+/* The distance between two tiles, in moves: the larger of the x and y distances */
+uint8_t act_distance(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2);
+
 #endif

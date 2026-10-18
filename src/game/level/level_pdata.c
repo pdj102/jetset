@@ -10,3 +10,6 @@ level_room_t level_rooms[LEVEL_CELLS];
 uint8_t      level_room_cells[LEVEL_ROOMS_MAX];
 uint8_t      level_room_count;
 uint8_t      level_links[LEVEL_CELLS];
+uint8_t      level_doorway_x[LEVEL_DOORWAYS_MAX];
+uint8_t      level_doorway_y[LEVEL_DOORWAYS_MAX];
+uint8_t      level_doorway_count;

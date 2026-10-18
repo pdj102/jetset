@@ -24,6 +24,7 @@
 
 #include "ecs/components/nge_block.h"
 #include "game/components/attack.h"
+#include "game/components/feature.h"
 #include "game/components/health.h"
 #include "game/components/inventory.h"
 #include "game/components/item.h"
@@ -85,9 +86,18 @@ typedef struct gen_item_base {
     gen_where_t  where;
 } gen_item_base_t;
 
+typedef struct gen_feature_base {
+    const char        *name;   /* in the table's page */
+    gen_feature_info_t info;   /* its looks, what it can do, what it blocks when closed */
+    uint8_t            state;  /* FEAT_* it starts in */
+    uint8_t            hooks[GEN_HOOKS];   /* EF_* by GEN_HOOK_* (none yet) */
+    gen_where_t        where;  /* for random features, later (gen_feature_random()) */
+} gen_feature_base_t;
+
 /* The tables, in the classes' odd pages: read only by their own page's code */
 extern const gen_creature_base_t gen_creatures[CR_COUNT];   /* page 107 */
 extern const gen_item_base_t     gen_items[IT_COUNT];       /* page 109 */
+extern const gen_feature_base_t  gen_features[FT_COUNT];    /* page 123 */
 
 /* ---- Shared helpers, banked in page 110: pointer arguments in common memory ---- */
 
@@ -108,11 +118,13 @@ uint8_t gen_pick(const gen_where_t *where, uint8_t count, uint8_t depth) NGE_BAN
 
 void gen_creature_name(uint8_t kind, char *buf, uint8_t size) NGE_BANKED;
 void gen_item_name(uint8_t kind, char *buf, uint8_t size) NGE_BANKED;
+void gen_feature_name(uint8_t kind, char *buf, uint8_t size) NGE_BANKED;
 
 /* ---- Each class's hooks, banked with its table (called by gen_hook()) ---- */
 
 uint8_t gen_creature_hook(uint8_t kind, uint8_t hook) NGE_BANKED;
 uint8_t gen_item_hook(uint8_t kind, uint8_t hook) NGE_BANKED;
+uint8_t gen_feature_hook(uint8_t kind, uint8_t hook) NGE_BANKED;
 
 /*
  * Copy a name into buf: at most size-1 characters and a NUL. A macro, so

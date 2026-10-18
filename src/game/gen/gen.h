@@ -27,7 +27,7 @@
  * caller's buffer (on the stack, in common memory).
  *
  * Banking: each class's generator is banked with its table (creatures: code
- * page 106, table page 107; items: 108/109). Don't call them while game
+ * page 106, table page 107; items: 108/109; features: 122/123). Don't call them while game
  * code has its own page mapped in slot 6 or 7. gen_name() is in common memory.
  */
 
@@ -35,6 +35,7 @@
 
 #include "core/nge_bank.h"
 #include "ecs/nge_entity.h"
+#include "ecs/components/nge_block.h"
 #include "ecs/nge_owner.h"
 #include "game/gen/gen_kinds.h"
 
@@ -64,6 +65,34 @@ nge_entity_id_t gen_item(uint8_t kind, nge_owner_t owner) NGE_BANKED;
 
 /** @brief Create a random item that appears at depth, weighted by rarity (see gen_creature_random()). */
 nge_entity_id_t gen_item_random(uint8_t depth, nge_owner_t owner) NGE_BANKED;
+
+/**
+ * @brief Create a feature of kind (FT_*), owned by owner (an area): the
+ *        feature component in its kind's starting state. Not placed: the
+ *        caller places it with feature_place() (game/components/feature.h),
+ *        which draws it.
+ * @return The entity, or NGE_ENTITY_INVALID if no entity is free.
+ */
+nge_entity_id_t gen_feature(uint8_t kind, nge_owner_t owner) NGE_BANKED;
+
+/** A feature's look: a map tile and its ink (NGE_INK_*). */
+typedef struct gen_feature_look {
+    uint8_t tile_id;
+    uint8_t ink;
+} gen_feature_look_t;
+
+/** What a feature kind can do and how it looks: the part of its base record the feature component uses. */
+typedef struct gen_feature_info {
+    gen_feature_look_t look[2];   /**< Closed ([0]) and open ([1]). */
+    uint8_t            can;       /**< FCAN_* (game/components/feature.h). */
+    nge_block_t        block_shut;   /**< What it blocks while closed. */
+} gen_feature_info_t;
+
+/**
+ * @brief Copy a feature kind's (FT_*) info into *info (in common memory:
+ *        on the caller's stack). Banked with the feature table (page 122).
+ */
+void gen_feature_info(uint8_t kind, gen_feature_info_t *info) NGE_BANKED;
 
 /**
  * @brief The equipment slots an item kind (IT_*) can go in: a mask of

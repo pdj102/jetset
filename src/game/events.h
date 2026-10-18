@@ -24,6 +24,8 @@
  * | EV_MISSED         | the entity missed   | attacker | p1: d20 roll, p2: weapon or NGE_EVENT_NONE |
  * | EV_EFFECT_ENDED   | the entity affected | the effect (dying) | p1: EF_* |
  * | EV_ATTRS_CHANGED  | the entity          | -        | -        |
+ * | EV_OPENED         | the feature         | opener   | -        |
+ * | EV_CLOSED         | the feature         | closer   | -        |
  */
 
 #include "event/nge_event.h"
@@ -43,5 +45,7 @@
 #define EV_MISSED         (NGE_EVENT_USER + 12)    /**< Missed by the source's attack. */
 #define EV_EFFECT_ENDED   (NGE_EVENT_USER + 13)    /**< Effect p1 ended on the target: expired or cured. */
 #define EV_ATTRS_CHANGED  (NGE_EVENT_USER + 14)    /**< Derived attributes or statuses changed (effects_recompute()). */
+#define EV_OPENED         (NGE_EVENT_USER + 15)    /**< Opened by the source (act_open()). */
+#define EV_CLOSED         (NGE_EVENT_USER + 16)    /**< Closed by the source (act_close()). */
 
 #endif
