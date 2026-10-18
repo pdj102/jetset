@@ -142,8 +142,6 @@ int main(void)
 
     test_init();
 
-    CHECK(COMPONENT_EFFECT == NGE_COMPONENT(NGE_COMPONENT_USER + 7));
-
     /* ---- the definitions: well formed, each duration with only what it uses ---- */
     ok = 1;
     for (i = 1; i < EF_COUNT; i++) {

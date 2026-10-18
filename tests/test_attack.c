@@ -41,9 +41,6 @@ int main(void)
     test_init();
     nge_entity_init();
 
-    CHECK(COMPONENT_MELEE == NGE_COMPONENT(NGE_COMPONENT_USER + 5));
-    CHECK(COMPONENT_RANGED == NGE_COMPONENT(NGE_COMPONENT_USER + 6));
-
     /* ---- add and remove ---- */
     id = with_attack(-2, 3, 6, 4);
     CHECK(ATTACK_HAS(id, ATTACK_MELEE) && attack_to_hit[ATTACK_MELEE][id] == -2 &&

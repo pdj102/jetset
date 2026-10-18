@@ -25,14 +25,11 @@
 
 #include "core/nge_bank.h"
 #include "ecs/nge_entity.h"
+#include "game/components/components.h"
 
 /* Uses of the component: the tables' rows */
 #define ATTACK_MELEE  0
 #define ATTACK_KIND_COUNT  1   /**< Uses with tables (ATTACK_RANGED comes with ranged weapons). */
-
-/** Component bits: the game's sixth and (later) seventh components (see nge_entity.h). */
-#define COMPONENT_MELEE   NGE_COMPONENT(NGE_COMPONENT_USER + 5)
-#define COMPONENT_RANGED  NGE_COMPONENT(NGE_COMPONENT_USER + 6)   /**< Reserved. */
 
 /** The component bit of a use. */
 #define ATTACK_COMPONENT(kind)  ((kind) == ATTACK_MELEE ? COMPONENT_MELEE : COMPONENT_RANGED)

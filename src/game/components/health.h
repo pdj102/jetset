@@ -44,9 +44,7 @@
 
 #include "core/nge_bank.h"
 #include "ecs/nge_entity.h"
-
-/** Component bit: the game's fifth component (see nge_entity.h). */
-#define COMPONENT_HEALTH  NGE_COMPONENT(NGE_COMPONENT_USER + 4)
+#include "game/components/components.h"
 
 /* Damage types: a number in events and calls, a bit (DMG_BIT()) in the masks */
 #define DMG_BLUNT   0

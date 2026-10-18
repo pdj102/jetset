@@ -27,9 +27,7 @@
 #include "core/nge_bank.h"
 #include "ecs/nge_entity.h"
 #include "ecs/nge_owner.h"
-
-/** Component bit: the game's fourth component (see nge_entity.h). */
-#define COMPONENT_INVENTORY  NGE_COMPONENT(NGE_COMPONENT_USER + 3)
+#include "game/components/components.h"
 
 /* Tables in slot 0 (inventory_cdata.c): meaningful only with COMPONENT_INVENTORY */
 extern uint8_t  inv_capacity[NGE_ENTITY_MAX];   /**< Items it can stow, 1 or more. */

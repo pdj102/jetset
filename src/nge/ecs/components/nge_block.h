@@ -30,12 +30,10 @@
 
 #include <stdint.h>
 
+#include "ecs/components/nge_components.h"
 #include "ecs/nge_entity.h"
 #include "ecs/nge_owner.h"
 #include "map/nge_map.h"
-
-/** Component bit: component number 2, reserved for nge (see nge_entity.h). */
-#define NGE_COMPONENT_BLOCK  NGE_COMPONENT(2)
 
 /* Tables in slot 0 (nge_block_cdata.c): meaningful only for entities with NGE_COMPONENT_BLOCK */
 extern nge_block_t nge_block_of[NGE_ENTITY_MAX];     /**< What the entity blocks. */

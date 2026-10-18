@@ -45,8 +45,6 @@ int main(void)
 
     test_init();
 
-    CHECK(COMPONENT_FEATURE == NGE_COMPONENT(NGE_COMPONENT_USER + 8));
-
     nge_map_init(10, 10, &window);
     nge_map_clear_blocks(NGE_BLOCK_SOLID);
     nge_map_set_block(FLOOR, NGE_BLOCK_NONE);

@@ -34,9 +34,7 @@
 #include "core/nge_bank.h"
 #include "ecs/components/nge_block.h"
 #include "ecs/nge_entity.h"
-
-/** Component bit: the game's ninth component (see nge_entity.h). */
-#define COMPONENT_FEATURE  NGE_COMPONENT(NGE_COMPONENT_USER + 8)
+#include "game/components/components.h"
 
 /* State: bits of feature_state */
 #define FEAT_OPEN    0x01   /**< Open (a door); else closed. */

@@ -37,18 +37,25 @@ commit.
 - Base data that never changes is read through a copying function
   (`gen_name()`, `gen_feature_info()`), not kept per entity.
 
-### P-COMP-1 · must · Components follow the shape of game/components/health.h
-There is no single write-up yet: `health.h` and `feature.h` are the models.
-- `COMPONENT_<NAME>` is the next free `NGE_COMPONENT(NGE_COMPONENT_USER + n)`,
-  at most 11 (16 bits, 0-3 nge's). The numbers are spread over the headers:
-  `grep -rn "NGE_COMPONENT_USER +" src/game` finds the next free one.
-- Its tables are in `components/<name>_cdata.c` (slot 0), one per field,
-  `[NGE_ENTITY_MAX]` (N-DATA-3), read-only for code outside the component.
+### P-COMP-1 · must · Components follow game/components/components.h
+The mechanism is in `ecs/components/nge_components.h`, the game's shape
+in `game/components/components.h`.
+- A new component's mask is added to the one list in `components.h`, as
+  `NGE_COMPONENT(NGE_COMPONENT_USER + COMPONENT_COUNT)`, and
+  `COMPONENT_COUNT` goes up by one. No mask is defined anywhere else. An nge
+  component is added to the list in `nge_components.h`, below
+  `NGE_COMPONENT_USER`.
+- Its tables are one per field, `[NGE_ENTITY_MAX]` (N-DATA-3), in
+  `components/<name>_cdata.c` (slot 0) when common code or several systems
+  read them, else in its module's page data. They are read-only outside
+  the component.
 - `<name>_add()` gives an entity the component from a base record (or a
   start state). Its functions hold its rules (G-ARCH-1), are banked in page
   110, and check their entity with asserts.
-- Code outside the component that tests for it uses an `<NAME>_IS(id)`
-  macro in its header (`ITEM_IS()`, `FEATURE_IS()`), not the mask.
+- Code outside the component tests for it with the macro in its header
+  (`ITEM_IS()`, `FEATURE_IS()`, `INV_HAS()`), not the mask.
+Check: `grep -rn "NGE_COMPONENT(" src` finds masks only in the two lists
+(and `NGE_COMPONENT()` itself in `ecs/nge_entity.h`).
 
 ### P-EFFECT-1 · must · Effects follow game/effects/effects.h and effects_core.h
 - A new effect is a row in `effects_pdata.c` named from a kind's hook. Only

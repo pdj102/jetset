@@ -25,9 +25,7 @@
 
 #include "core/nge_bank.h"
 #include "ecs/nge_entity.h"
-
-/** Component bit: the game's third component (see nge_entity.h). */
-#define COMPONENT_ITEM  NGE_COMPONENT(NGE_COMPONENT_USER + 2)
+#include "game/components/components.h"
 
 /* Equipment slots (a holder's inv_slots and an item kind's fits are masks of SLOT_BIT()) */
 #define SLOT_NONE     0    /**< Not equipped: stowed, or on the floor. */

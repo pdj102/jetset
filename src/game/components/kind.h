@@ -18,10 +18,8 @@
 
 #include "core/nge_bank.h"
 #include "ecs/nge_entity.h"
+#include "game/components/components.h"
 #include "game/gen/gen_kinds.h"
-
-/** Component bit: the game's first component (see nge_entity.h). */
-#define COMPONENT_KIND  NGE_COMPONENT(NGE_COMPONENT_USER + 0)
 
 /* Classes of base entity: one generator and one table each */
 #define CLASS_NONE      0

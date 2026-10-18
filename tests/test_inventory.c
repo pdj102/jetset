@@ -54,8 +54,6 @@ int main(void)
 
     test_init();
 
-    CHECK(COMPONENT_ITEM == NGE_COMPONENT(NGE_COMPONENT_USER + 2));
-    CHECK(COMPONENT_INVENTORY == NGE_COMPONENT(NGE_COMPONENT_USER + 3));
     CHECK(SLOT_COUNT <= 16 && (SLOTS_HUMANOID & SLOT_BIT(SLOT_NONE)) == 0);
 
     /* ---- the generators give the components from the base records ---- */

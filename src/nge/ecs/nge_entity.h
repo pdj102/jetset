@@ -62,18 +62,11 @@ typedef uint16_t nge_component_mask_t; /**< One bit per component; uint32_t for 
 #define NGE_ENTITY_PERSISTENT  0x04   /**< nge_entity_destroy() leaves the entity alive. */
 #define NGE_ENTITY_FLAG_USER   0x08   /**< First of five flags for the game: 0x08 to 0x80. */
 
-/** Component n (0-15) as a mask bit. */
-#define NGE_COMPONENT(n)  ((nge_component_mask_t)1 << (n))
-
-/*
- * Component numbers 0-3 are nge's:
- *   0  location (ecs/components/nge_location.h, NGE_COMPONENT_LOCATION)
- *   1  sprite (ecs/systems/nge_render.h, NGE_COMPONENT_SPRITE)
- *   2  block (ecs/components/nge_block.h, NGE_COMPONENT_BLOCK)
- *   3  timer (ecs/systems/nge_timer.h, NGE_COMPONENT_TIMER)
- * The game's are NGE_COMPONENT_USER (4) to 15.
+/**
+ * Component n as a mask bit. The numbers, nge's and the game's range, and
+ * what a component is, are in ecs/components/nge_components.h.
  */
-#define NGE_COMPONENT_USER  4
+#define NGE_COMPONENT(n)  ((nge_component_mask_t)1 << (n))
 
 /* Tables in slot 0 (nge_entity_cdata.c): read-only for game code, written by the functions below */
 extern nge_entity_flags_t   nge_entity_flags[NGE_ENTITY_MAX];      /**< Per entity. */

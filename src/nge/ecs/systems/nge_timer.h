@@ -65,15 +65,13 @@
 #include <stdint.h>
 
 #include "core/nge_bank.h"
+#include "ecs/components/nge_components.h"
 #include "ecs/nge_entity.h"
 
 #ifndef NGE_TIMER_TICKS_PER_TURN
 /** Ticks in a turn, 1 to 255: the turn counter's unit. */
 #define NGE_TIMER_TICKS_PER_TURN  10
 #endif
-
-/** Component bit: component number 3, reserved for nge (see nge_entity.h). */
-#define NGE_COMPONENT_TIMER  NGE_COMPONENT(3)
 
 /**
  * The game's dispatch function: in common memory; calls the handler for kind.

@@ -121,8 +121,23 @@ int main(void)
     test_init();
     srand(3);
 
-    CHECK(COMPONENT_KIND == NGE_COMPONENT(NGE_COMPONENT_USER + 0));
-    CHECK(COMPONENT_STATS == NGE_COMPONENT(NGE_COMPONENT_USER + 1));
+    /* ---- every component, nge's and the game's, has a bit of its own (game/components/components.h) ---- */
+    {
+        static const nge_component_mask_t masks[] = {
+            NGE_COMPONENT_LOCATION, NGE_COMPONENT_SPRITE, NGE_COMPONENT_BLOCK, NGE_COMPONENT_TIMER,
+            COMPONENT_KIND, COMPONENT_STATS, COMPONENT_ITEM, COMPONENT_INVENTORY, COMPONENT_HEALTH,
+            COMPONENT_MELEE, COMPONENT_RANGED, COMPONENT_EFFECT, COMPONENT_FEATURE,
+        };
+        nge_component_mask_t seen = 0;
+        unsigned int m;
+
+        ok = sizeof(masks) / sizeof(masks[0]) == NGE_COMPONENT_USER + COMPONENT_COUNT;
+        for (m = 0; m < sizeof(masks) / sizeof(masks[0]); m++) {
+            ok = ok && masks[m] != 0 && (masks[m] & (masks[m] - 1)) == 0 && (seen & masks[m]) == 0;
+            seen |= masks[m];
+        }
+        CHECK(ok);
+    }
 
     /* ---- every kind: its components match its base record ---- */
     reset();

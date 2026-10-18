@@ -38,6 +38,7 @@
 #include <stdint.h>
 
 #include "core/nge_bank.h"
+#include "ecs/components/nge_components.h"
 #include "ecs/nge_entity.h"
 #include "ecs/nge_owner.h"
 #include "map/nge_map.h"
@@ -49,9 +50,6 @@
 
 /** Number of layers: 0 is drawn underneath, NGE_RENDER_LAYERS-1 on top. */
 #define NGE_RENDER_LAYERS  4
-
-/** Component bit: component number 1, reserved for nge (see nge_entity.h). */
-#define NGE_COMPONENT_SPRITE  NGE_COMPONENT(1)
 
 /**
  * @brief Set up the system: nothing drawn, no view. Call after

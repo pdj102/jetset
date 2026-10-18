@@ -50,9 +50,7 @@
 
 #include "core/nge_bank.h"
 #include "ecs/nge_entity.h"
-
-/** Component bit: an active effect (the game's eighth component). */
-#define COMPONENT_EFFECT  NGE_COMPONENT(NGE_COMPONENT_USER + 7)
+#include "game/components/components.h"
 
 /* Effects: rows of the definitions table; EF_NONE (0) is an empty hook */
 #define EF_NONE         0

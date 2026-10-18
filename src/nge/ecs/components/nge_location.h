@@ -24,11 +24,9 @@
 
 #include <stdint.h>
 
+#include "ecs/components/nge_components.h"
 #include "ecs/nge_entity.h"
 #include "ecs/nge_owner.h"
-
-/** Component bit: component number 0, reserved for nge (see nge_entity.h). */
-#define NGE_COMPONENT_LOCATION  NGE_COMPONENT(0)
 
 /** Pixels per tile: the fine position is 0 to NGE_LOCATION_FINE-1. */
 #define NGE_LOCATION_FINE  8

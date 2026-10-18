@@ -31,9 +31,7 @@
 
 #include "core/nge_bank.h"
 #include "ecs/nge_entity.h"
-
-/** Component bit: the game's second component (see nge_entity.h). */
-#define COMPONENT_STATS  NGE_COMPONENT(NGE_COMPONENT_USER + 1)
+#include "game/components/components.h"
 
 /* Abilities: rows of stats_ability */
 #define ABIL_STR    0   /**< Strength. */

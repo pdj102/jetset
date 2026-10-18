@@ -24,7 +24,6 @@ int main(void)
 
     test_init();
 
-    CHECK(COMPONENT_STATS == NGE_COMPONENT(NGE_COMPONENT_USER + 1));
     CHECK(ABIL_COUNT == 6 && ATTR_ABILITY(ABIL_STR) == ATTR_STR && ATTR_ABILITY(ABIL_CHA) == ATTR_CHA &&
           ATTR_CHA + 1 == ATTR_COUNT);
 

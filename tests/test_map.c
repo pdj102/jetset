@@ -86,7 +86,7 @@ static void random_camera(void)
             continue;
         }
         mw = vw + rand() % (NGE_MAP_STRIDE - vw + 1);
-        mh = vh + rand() % (NGE_MAP_MAX_HEIGHT - vh + 1);
+        mh = vh + rand() % (NGE_MAP_HEIGHT_MAX - vh + 1);
 
         nge_map_init((uint8_t)mw, (uint8_t)mh, &w);
         fill_map();
