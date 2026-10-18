@@ -26,16 +26,17 @@
  * their target (ecs/nge_owner.h): destroying the target destroys or moves
  * what it owns, so its effects go with it.
  *
- * The clock can be stopped and started: the player's handler stops it,
- * and the game starts it again once the player has used their turn.
- * nge_timer_stop() lets the rest of the current tick fire first, so
+ * Each nge_timer_advance() fires every timer due at the next tick, so a
+ * turn-based game waits for the player between calls: the player's
+ * handler sets the game's own flag, and the game stops calling advance
+ * until a command clears it. The rest of the tick still fires first, so
  * everything due at the same time acts.
  *
  *     static void game_on_timer(nge_entity_id_t id, uint8_t kind, uint8_t cycles)
  *     {
  *         switch (kind) {
  *         case TIMER_PLAYER:
- *             nge_timer_stop();            // wait for a command
+ *             player_turn = 1;             // wait for a command
  *             break;
  *         case TIMER_MONSTER:
  *             monster_act(id);             // may be banked
@@ -44,11 +45,14 @@
  *         }
  *     }
  *
- *     while (nge_timer_advance(game_on_timer)) {   // 0 once stopped
+ *     while (!player_turn && nge_timer_advance(game_on_timer)) {
  *         nge_event_process(game_on_event);
  *     }
- *     ...the player's command uses their turn...
- *     nge_timer_start();
+ *     ...the player's command uses their turn: player_turn = 0...
+ *
+ * The clock can also be paused: after nge_timer_stop() (game over, a
+ * prompt), nge_timer_advance() does nothing until nge_timer_start(). Called
+ * from a handler, the rest of the current tick still fires first.
  *
  * The dispatch function is the game's, in common memory (a pointer to a
  * banked function doesn't switch banks); it switches on kind and calls the

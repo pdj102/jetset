@@ -52,7 +52,7 @@ extern game_state_t game_state;
 /** @brief Change state: flush the key events and run the new state's entry action. */
 void game_set_state(game_state_t state);
 
-/** @brief End the game for reason (GAME_OVER_*): the clock stops, and the game-over state says why. */
+/** @brief End the game for reason (GAME_OVER_*): the clock is paused, and the game-over state says why. */
 void game_over(uint8_t reason);
 
 /** @brief Run the game, starting at the title. Never returns. */

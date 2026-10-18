@@ -7,17 +7,21 @@
  *        and the view following them. The item screens are in game/ui.
  *
  * The player entity is actor_player (game/actors.h). Their timer
- * (TIMER_PLAYER) fires every `speed` ticks: player_on_turn() stops the
- * clock, and the game passes key events to player_command() until a
- * command uses the turn, which starts the clock again. A command that is
+ * (TIMER_PLAYER) fires every `speed` ticks: player_on_turn() sets
+ * player_turn, and while it is set time stands still (the game advances
+ * no timers) and the game passes key events to player_command(). A command
+ * that uses the turn clears it, and time passes again. A command that is
  * refused (a wall in the way) tells the player why and keeps their turn.
+ * The rest of the tick the player's timer fired in still runs first, so
+ * everything due at the same time acts.
  *
  * Each direction prompt (fire, close) is a game state (game/game.h): its
  * entry action and update are here, called by game_set_state() and the
  * frame loop.
  *
- * Banking: player_on_turn() and player_on_event() are in common memory
- * (called for every timer firing and event); the commands and screens are
+ * Banking: player_init(), player_on_turn() and player_on_event() are in
+ * common memory (called for every timer firing and event); the commands
+ * and screens are
  * banked (NGE_BANKED, page 114): don't call them while game code has its
  * own page mapped in slot 6 or 7.
  */
@@ -30,7 +34,13 @@
 #include "game/actions/act.h"
 #include "input/nge_input.h"
 
-/** @brief The player's timer fired (TIMER_PLAYER): stop the clock until a command uses the turn. */
+/** 1 while it is the player's turn: no time passes until a command uses it. Read-only outside game/player. */
+extern uint8_t player_turn;
+
+/** @brief Reset the module for a new game: not the player's turn. */
+void player_init(void);
+
+/** @brief The player's timer fired (TIMER_PLAYER): it is their turn (player_turn) until a command uses it. */
 void player_on_turn(nge_entity_id_t id);
 
 /**
@@ -56,7 +66,7 @@ void player_command(nge_key_event_t ev) NGE_BANKED;
 /**
  * @brief Do an action (ACT_*, game/actions/act.h) for the player: on a
  *        refusal they are told why and keep their turn; if the turn is
- *        used, the clock runs again. a (on the caller's stack) holds the
+ *        used, their turn ends and time passes again. a (on the caller's stack) holds the
  *        inputs; the actor is set here.
  */
 void player_act(uint8_t action, act_t *a) NGE_BANKED;

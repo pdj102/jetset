@@ -7,7 +7,6 @@
 
 #include "core/nge_util.h"
 #include "ecs/components/nge_location.h"
-#include "ecs/systems/nge_timer.h"
 #include "map/nge_map.h"
 
 #include "game/actors.h"
@@ -16,11 +15,18 @@
 #include "game/events.h"
 #include "game/screen.h"
 
+uint8_t player_turn;
+
+void player_init(void)
+{
+    player_turn = 0;
+}
+
 void player_on_turn(nge_entity_id_t id)
 {
     (void)id;
     nge_util_assert(effects_check(id));   /* the derived values are up to date */
-    nge_timer_stop();   /* until a command uses the turn */
+    player_turn = 1;   /* until a command uses the turn */
 }
 
 void player_on_event(const nge_event_t *e)

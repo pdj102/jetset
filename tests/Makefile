@@ -55,7 +55,8 @@ LEVEL_GAME_OBJS := $(LEVEL_ONLY_OBJS) $(GEN_GAME_OBJS)
 # The stairs actions send entities between levels: the actions need the level module
 ACT_GAME_SRCS := $(wildcard $(GAMEDIR)/actions/*.c)
 ACT_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(ACT_GAME_SRCS)) $(LEVEL_GAME_OBJS)
-UI_GAME_SRCS := $(addprefix $(GAMEDIR)/,ui/ui_bank.c player/player_bank.c screen.c messages/messages_bank.c)
+UI_GAME_SRCS := $(addprefix $(GAMEDIR)/,ui/ui_bank.c player/player.c player/player_bank.c screen.c \
+                messages/messages_bank.c)
 UI_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(UI_GAME_SRCS)) $(ACT_GAME_OBJS)
 
 TEST_SRCS := $(wildcard test_*.c)

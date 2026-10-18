@@ -39,7 +39,7 @@ static nge_entity_id_t create(uint8_t kind, nge_owner_t owner)
     if (b.inventory.capacity != 0) {
         inv_add(id, b.inventory.capacity, b.inventory.slots);
     }
-    /* Its turns, every speed ticks: the player's stop the clock for a command */
+    /* Its turns, every speed ticks: the player's wait for a command (player_turn) */
     nge_timer_add(id, (b.flags & CREATURE_PLAYER) ? TIMER_PLAYER : TIMER_MONSTER, stats_speed[id], 0);
     if (b.hooks[GEN_HOOK_INNATE] != EF_NONE) {
         effect_apply(b.hooks[GEN_HOOK_INNATE], id, NGE_ENTITY_INVALID);   /* an entity of its own, owned by it */

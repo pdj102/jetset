@@ -12,8 +12,8 @@
  *
  * | Kind          | Entity                  | Handler                                     |
  * |---------------|-------------------------|---------------------------------------------|
- * | TIMER_PLAYER  | the player              | player_on_turn(): stops the clock until a   |
- * |               |                         | command uses the turn (game/player.h)       |
+ * | TIMER_PLAYER  | the player              | player_on_turn(): their turn: no time       |
+ * |               |                         | passes until a command uses it (player.h)   |
  * | TIMER_EFFECT  | an active effect, owned | effects_on_timer(): its op each period, and |
  * |               | by what it affects      | its end after its cycles (game/effects)     |
  * | TIMER_MONSTER | a monster               | none yet (no AI): it waits                  |

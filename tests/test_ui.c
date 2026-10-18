@@ -169,25 +169,25 @@ int main(void)
     CHECK(last_state == NO_STATE && starts(panel(0), "       Shed a Burden "));   /* (28 - 13) / 2 */
     CHECK(starts(panel(2), " a) sword") && starts(panel(3), " b) ring of health ") && starts(panel(4), "         "));
     CHECK(starts(row(31), "Letter: drop it   Other keys: back"));
-    nge_timer_stop();
+    player_turn = 1;
     ui_items_key(UI_DROP, NGE_KEY_B);
     CHECK(last_state == GAME_PLAY);
     CHECK(NGE_OWNER_OF(ring2) == AREA && NGE_LOCATION_X(ring2) == 5 && NGE_LOCATION_Y(ring2) == 5);
-    CHECK(!nge_timer_stopped());                                   /* the turn is used */
+    CHECK(!player_turn);                                   /* the turn is used */
     CHECK(nge_event_count() == 1);
     nge_event_flush();
     /* Another key: never mind, nothing done, the turn kept */
-    nge_timer_stop();
+    player_turn = 1;
     ui_items_enter(UI_DROP);
     ui_items_key(UI_DROP, NGE_KEY_Z);                              /* 'z': past the list */
-    CHECK(last_state == GAME_PLAY && stowed(sword) && nge_timer_stopped());
+    CHECK(last_state == GAME_PLAY && stowed(sword) && player_turn);
     CHECK(said("Never mind."));
     ui_items_enter(UI_DROP);
     ui_items_key(UI_DROP, NGE_KEY_Q | (NGE_MOD_CAPS << 8));        /* 'Q': not a letter of the list */
-    CHECK(stowed(sword) && nge_timer_stopped());
+    CHECK(stowed(sword) && player_turn);
     ui_items_enter(UI_DROP);
     ui_items_key(UI_DROP, NGE_KEY_B);                              /* 'b': just past the list (a: sword) */
-    CHECK(stowed(sword) && nge_timer_stopped() && said("Never mind."));
+    CHECK(stowed(sword) && player_turn && said("Never mind."));
     /* A potion in the pack: dropped and listed, but nothing to equip */
     ring2 = gen_item(IT_POTION, actor_player);
 
@@ -196,32 +196,32 @@ int main(void)
     CHECK(starts(panel(0), "        Arm Thyself "));
     CHECK(starts(panel(2), " a) sword") && starts(panel(3), "     "));   /* ring1 in use, the potion fits nothing */
     ui_items_key(UI_EQUIP, NGE_KEY_A);
-    CHECK(item_slot[sword] == SLOT_WEAPON && !nge_timer_stopped());
-    nge_timer_stop();
+    CHECK(item_slot[sword] == SLOT_WEAPON && !player_turn);
+    player_turn = 1;
     ui_items_enter(UI_UNEQUIP);
     CHECK(starts(panel(0), "           Divest"));
     CHECK(starts(panel(2), " a) sword (in hand)") && starts(panel(3), " b) ring of health (left)"));
     ui_items_key(UI_UNEQUIP, NGE_KEY_B);
     CHECK(item_slot[ring1] == SLOT_NONE && item_slot[sword] == SLOT_WEAPON);
     /* A refusal: told why, the turn kept */
-    nge_timer_stop();
+    player_turn = 1;
     inv_capacity[actor_player] = (uint8_t)inv_count(actor_player);
     ui_items_enter(UI_UNEQUIP);
     ui_items_key(UI_UNEQUIP, NGE_KEY_A);
-    CHECK(item_slot[sword] == SLOT_WEAPON && nge_timer_stopped());
+    CHECK(item_slot[sword] == SLOT_WEAPON && player_turn);
     CHECK(said("You can't carry any more."));
     inv_capacity[actor_player] = 20;
     nge_event_flush();
 
     /* ---- use: only what does something when used; a letter uses it up ---- */
-    nge_timer_stop();
+    player_turn = 1;
     last_state = NO_STATE;
     ui_items_enter(UI_USE);
     CHECK(last_state == NO_STATE && starts(panel(0), "          Partake "));   /* (28 - 7) / 2 */
     CHECK(starts(panel(2), " a) healing potion") && starts(panel(3), "     "));   /* not the ring */
     CHECK(starts(row(31), "Letter: use it   Other keys: back"));
     ui_items_key(UI_USE, NGE_KEY_A);
-    CHECK(last_state == GAME_PLAY && NGE_ENTITY_STATE(ring2) == NGE_ENTITY_DYING && !nge_timer_stopped());
+    CHECK(last_state == GAME_PLAY && NGE_ENTITY_STATE(ring2) == NGE_ENTITY_DYING && !player_turn);
     nge_event_process(messages_on_event);
     CHECK(starts(row(29), "You drink the healing potion.") && said("You feel much better."));
     last_state = NO_STATE;
@@ -260,9 +260,9 @@ int main(void)
     door = gen_feature(FT_DOOR, AREA);
     feature_place(door, 6, 5);                                     /* east of the player, closed */
     nge_event_flush();
-    nge_timer_stop();
+    player_turn = 1;
     player_command(NGE_KEY_L);                                     /* 'l': east, into the door */
-    CHECK(FEATURE_IS_OPEN(door) && NGE_LOCATION_X(actor_player) == 5 && !nge_timer_stopped());
+    CHECK(FEATURE_IS_OPEN(door) && NGE_LOCATION_X(actor_player) == 5 && !player_turn);
     nge_event_process(messages_on_event);
     CHECK(said("You open the door."));
     /* Walking into the open doorway and back: the map shows it, no "You see a door here." */
@@ -272,7 +272,7 @@ int main(void)
     CHECK(said("You open the door."));
     player_command(NGE_KEY_H);
     nge_event_flush();
-    nge_timer_stop();
+    player_turn = 1;
     last_state = NO_STATE;
     player_command(NGE_KEY_C);
     CHECK(last_state == GAME_CLOSE);
@@ -280,29 +280,29 @@ int main(void)
     CHECK(said("Close in which direction?") && starts(row(31), "Direction: close   Other keys: back"));
     last_state = NO_STATE;
     player_direction_key(PLAYER_PROMPT_CLOSE, NGE_KEY_L);
-    CHECK(last_state == GAME_PLAY && !FEATURE_IS_OPEN(door) && !nge_timer_stopped());
+    CHECK(last_state == GAME_PLAY && !FEATURE_IS_OPEN(door) && !player_turn);
     nge_event_process(messages_on_event);
     CHECK(said("You close the door."));
     /* Refused: told why, the turn kept */
-    nge_timer_stop();
+    player_turn = 1;
     player_direction_key(PLAYER_PROMPT_CLOSE, NGE_KEY_L);
-    CHECK(said("The door is already closed.") && nge_timer_stopped());
+    CHECK(said("The door is already closed.") && player_turn);
     player_direction_key(PLAYER_PROMPT_CLOSE, NGE_KEY_H);          /* west: nothing there */
-    CHECK(said("There is nothing there.") && nge_timer_stopped());
+    CHECK(said("There is nothing there.") && player_turn);
     player_direction_key(PLAYER_PROMPT_CLOSE, NGE_KEY_A);          /* not a direction */
     CHECK(said("Never mind.") && last_state == GAME_PLAY);
     player_direction_key(PLAYER_PROMPT_FIRE, NGE_KEY_L);
-    CHECK(said("You have nothing to fire.") && nge_timer_stopped());
+    CHECK(said("You have nothing to fire.") && player_turn);
     player_command(NGE_KEY_F);
     CHECK(last_state == GAME_FIRE);
 
     /* ---- stairs: > and < (SYMBOL SHIFT T and R), refused off stairs; arriving and leaving said ---- */
     nge_event_flush();
-    nge_timer_stop();
+    player_turn = 1;
     player_command(NGE_KEY_T | (NGE_MOD_SYM << 8));
-    CHECK(said("There are no stairs that way here.") && nge_timer_stopped() && !level_pending());
+    CHECK(said("There are no stairs that way here.") && player_turn && !level_pending());
     player_command(NGE_KEY_R | (NGE_MOD_SYM << 8));
-    CHECK(said("There are no stairs that way here.") && nge_timer_stopped());
+    CHECK(said("There are no stairs that way here.") && player_turn);
     nge_event_post(actor_player, EV_ARRIVED, NGE_EVENT_NONE, 2, LEVEL_ARRIVE_UP_STAIRS);
     nge_event_process(messages_on_event);
     CHECK(said("You go down to level 2."));
@@ -315,6 +315,14 @@ int main(void)
     nge_event_post(door, EV_LEFT_LEVEL, NGE_EVENT_NONE, 1, 0);       /* anything named: the door will do */
     nge_event_process(messages_on_event);
     CHECK(said("The door goes down and away."));
+
+    /* ---- the player's turn: their timer starts it, a new game resets it ---- */
+    player_init();
+    CHECK(!player_turn);
+    player_on_turn(actor_player);
+    CHECK(player_turn);
+    player_init();
+    CHECK(!player_turn);
 
     /* ---- asserts ---- */
     TEST_EXPECT_HALT(ui_items_enter(UI_SCREEN_COUNT));

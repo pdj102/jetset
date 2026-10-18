@@ -68,7 +68,7 @@ void player_act(uint8_t action, act_t *a) NGE_BANKED
         messages_act_failed(a);
     }
     if (a->used) {
-        nge_timer_start();
+        player_turn = 0;   /* time passes again */
     }
 }
 

@@ -85,16 +85,17 @@ static void game_on_timer(nge_entity_id_t id, uint8_t kind, uint8_t cycles)
 /* ---- Turns ---- */
 
 /*
- * Time passes until the clock stops for the player's turn, each step's
- * events handled before the next, up to ADVANCES_PER_FRAME steps a frame.
- * It stops too once a change of level is asked for: nothing more happens
- * on the level being left
+ * Time passes until the player's turn (player_turn), each step's events
+ * handled before the next, up to ADVANCES_PER_FRAME steps a frame. It
+ * stops too once a change of level is asked for (nothing more happens on
+ * the level being left), and when the clock is paused (game over:
+ * nge_timer_advance() then does nothing)
  */
 static void pass_time(void)
 {
     uint8_t steps = ADVANCES_PER_FRAME;
 
-    while (steps-- > 0 && !level_pending() && nge_timer_advance(game_on_timer)) {
+    while (steps-- > 0 && !player_turn && !level_pending() && nge_timer_advance(game_on_timer)) {
         nge_event_process(game_on_event);
     }
     if (nge_timer_turns != shown_turn) {
@@ -111,7 +112,7 @@ static void play_update(void)
     nge_key_event_t ev;
 
     pass_time();
-    if (!nge_timer_stopped()) {
+    if (!player_turn) {
         return;   /* not the player's turn yet: more time passes next frame */
     }
     ev = nge_key_get();
@@ -136,6 +137,7 @@ static void new_game_enter(void)
     nge_render_set_view(LEVEL_AREA);
     nge_timer_init();        /* turn 0, the clock running */
     nge_event_init();
+    player_init();           /* not the player's turn until their timer fires */
     level_clear_request();
     actors_create();
     level_generate(1, actor_player, LEVEL_ARRIVE_ANY);   /* the first level; the camera on the player */
@@ -276,7 +278,7 @@ static void post_update(void)
 void game_over(uint8_t reason)
 {
     over_reason = reason;
-    nge_timer_stop();   /* no more turns */
+    nge_timer_stop();   /* pause the clock: nothing more acts, even in the rest of this frame's steps */
     game_set_state(GAME_OVER);
 }
 
