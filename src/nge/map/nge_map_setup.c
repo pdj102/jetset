@@ -32,7 +32,7 @@ void nge_map_init(uint8_t width, uint8_t height, const nge_rect_t *window) NGE_B
 
     /* The view must fit inside the map, and the map in its memory */
     nge_util_assert(width >= nge_map.view_w && width <= NGE_MAP_STRIDE);
-    nge_util_assert(height >= nge_map.view_h && height <= NGE_MAP_MAX_HEIGHT);
+    nge_util_assert(height >= nge_map.view_h && height <= NGE_MAP_HEIGHT_MAX);
 
     nge_map.cam_x = 0;
     nge_map.cam_y = 0;

@@ -10,8 +10,8 @@
 
 /* Everything fits in the 8K page (also checked by scripts/check-banks.sh) */
 typedef char nge_map_page_check[(NGE_MAP_BLOCK_ENTRIES + sizeof(nge_map_t) +
-                                 NGE_MAP_STRIDE * NGE_MAP_MAX_HEIGHT * sizeof(nge_tile_t)) <= 8192 ? 1 : -1];
+                                 NGE_MAP_STRIDE * NGE_MAP_HEIGHT_MAX * sizeof(nge_tile_t)) <= 8192 ? 1 : -1];
 
 nge_block_t nge_map_blocks[NGE_MAP_BLOCK_ENTRIES];
 nge_map_t   nge_map;
-nge_tile_t  nge_map_tiles[NGE_MAP_STRIDE * NGE_MAP_MAX_HEIGHT];
+nge_tile_t  nge_map_tiles[NGE_MAP_STRIDE * NGE_MAP_HEIGHT_MAX];

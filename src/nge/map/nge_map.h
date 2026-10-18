@@ -46,9 +46,9 @@
 #define NGE_MAP_STRIDE      80
 #endif
 
-#ifndef NGE_MAP_MAX_HEIGHT
+#ifndef NGE_MAP_HEIGHT_MAX
 /** Maximum map height in tiles. 80 x 48 tiles of 2 bytes fill 7.5K of the 8K page. */
-#define NGE_MAP_MAX_HEIGHT  48
+#define NGE_MAP_HEIGHT_MAX  48
 #endif
 
 /** Page holding the map's data (src/banks.inc), and the slot it is mapped into. */
@@ -91,7 +91,7 @@ typedef struct nge_map {
 /* The map's data, in page NGE_MAP_PAGE in slot 1 (nge_map_cdata.c) */
 extern nge_block_t nge_map_blocks[NGE_MAP_BLOCK_ENTRIES];        /**< What each tile ID blocks. */
 extern nge_map_t   nge_map;                                      /**< State: read-only for the game. */
-extern nge_tile_t  nge_map_tiles[NGE_MAP_STRIDE * NGE_MAP_MAX_HEIGHT];   /**< Row-major tiles. */
+extern nge_tile_t  nge_map_tiles[NGE_MAP_STRIDE * NGE_MAP_HEIGHT_MAX];   /**< Row-major tiles. */
 
 /** Address of the first tile of map row y. */
 #define NGE_MAP_ROW(y)  (nge_map_tiles + (uint16_t)(y) * NGE_MAP_STRIDE)
@@ -121,7 +121,7 @@ extern nge_tile_t  nge_map_tiles[NGE_MAP_STRIDE * NGE_MAP_MAX_HEIGHT];   /**< Ro
  * NGE_MAP_TILE(), and with nge_map_clear_blocks() and nge_map_set_block()).
  *
  * @param width Map width in tiles, from the window width to NGE_MAP_STRIDE.
- * @param height Map height in tiles, from the window height to NGE_MAP_MAX_HEIGHT.
+ * @param height Map height in tiles, from the window height to NGE_MAP_HEIGHT_MAX.
  * @param window Window on the hardware tilemap, inclusive tile coordinates.
  */
 void nge_map_init(uint8_t width, uint8_t height, const nge_rect_t *window) NGE_BANKED;

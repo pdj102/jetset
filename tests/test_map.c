@@ -15,7 +15,7 @@ static void fill_map(void)
 {
     uint16_t i;
 
-    for (i = 0; i < NGE_MAP_STRIDE * NGE_MAP_MAX_HEIGHT; i++) {
+    for (i = 0; i < NGE_MAP_STRIDE * NGE_MAP_HEIGHT_MAX; i++) {
         nge_map_tiles[i].tile_id = (uint8_t)(i % NGE_MAP_STRIDE);
         nge_map_tiles[i].tile_attr = (uint8_t)(i / NGE_MAP_STRIDE);
     }
@@ -82,7 +82,7 @@ static void random_camera(void)
         w.y2 = w.y1 + rand() % (NGE_TILEMAP_HEIGHT - w.y1);
         vw = w.x2 - w.x1 + 1;
         vh = w.y2 - w.y1 + 1;
-        if (vh > NGE_MAP_MAX_HEIGHT) {
+        if (vh > NGE_MAP_HEIGHT_MAX) {
             continue;
         }
         mw = vw + rand() % (NGE_MAP_STRIDE - vw + 1);
@@ -144,7 +144,7 @@ int main(void)
     /* ---- init: an empty map, whatever was there ---- */
     nge_map_init(60, 40, &window);
     CHECK(nge_map_tiles[0].tile_id == 0 && nge_map_tiles[0].tile_attr == 0);
-    CHECK(nge_map_tiles[NGE_MAP_STRIDE * NGE_MAP_MAX_HEIGHT - 1].tile_id == 0);
+    CHECK(nge_map_tiles[NGE_MAP_STRIDE * NGE_MAP_HEIGHT_MAX - 1].tile_id == 0);
     CHECK(nge_map_blocks[0] == NGE_BLOCK_NONE && nge_map_blocks[255] == NGE_BLOCK_NONE);
     fill_map();
     CHECK(nge_map.view_w == 32 && nge_map.view_h == 9);
@@ -187,7 +187,7 @@ int main(void)
     CHECK(!nge_map.dirty);
 
     /* The whole tilemap as a window */
-    nge_map_init(NGE_MAP_STRIDE, NGE_MAP_MAX_HEIGHT, &full);
+    nge_map_init(NGE_MAP_STRIDE, NGE_MAP_HEIGHT_MAX, &full);
     nge_map_set_camera(255, 255);
     CHECK(nge_map.cam_x == 40 && nge_map.cam_y == 16);
     mark_tilemap();
@@ -260,7 +260,7 @@ int main(void)
     fill_map();                                              /* tile ID = column */
     nge_map_clear_blocks(NGE_BLOCK_SOLID);
     CHECK(nge_map_blocks[0] == NGE_BLOCK_SOLID && nge_map_blocks[255] == NGE_BLOCK_SOLID);
-    CHECK(nge_map_tiles[NGE_MAP_STRIDE * NGE_MAP_MAX_HEIGHT - 1].tile_id == NGE_MAP_STRIDE - 1);   /* tiles untouched */
+    CHECK(nge_map_tiles[NGE_MAP_STRIDE * NGE_MAP_HEIGHT_MAX - 1].tile_id == NGE_MAP_STRIDE - 1);   /* tiles untouched */
     nge_map_set_block(7, NGE_BLOCK_NONE);
     nge_map_set_block(9, NGE_BLOCK_NO_FLOOR | NGE_BLOCK_USER);
     CHECK(nge_map_block(7, 0) == NGE_BLOCK_NONE && nge_map_block(7, 39) == NGE_BLOCK_NONE);
@@ -270,8 +270,8 @@ int main(void)
     CHECK(nge_map_block(60, 0) == NGE_BLOCK_EDGE && nge_map_block(0, 40) == NGE_BLOCK_EDGE);
     CHECK(nge_map_block(255, 255) == NGE_BLOCK_EDGE);
     /* Init again (a new level): the table and the tiles are cleared */
-    nge_map_init(NGE_MAP_STRIDE, NGE_MAP_MAX_HEIGHT, &window);
-    CHECK(nge_map_block(9, NGE_MAP_MAX_HEIGHT - 1) == NGE_BLOCK_NONE);
+    nge_map_init(NGE_MAP_STRIDE, NGE_MAP_HEIGHT_MAX, &window);
+    CHECK(nge_map_block(9, NGE_MAP_HEIGHT_MAX - 1) == NGE_BLOCK_NONE);
     CHECK(nge_map_get(9, 5)->tile_id == 0);
     CHECK(nge_map_block(NGE_MAP_STRIDE, 0) == NGE_BLOCK_EDGE);
     nge_map_init(60, 40, &window);
@@ -285,7 +285,7 @@ int main(void)
     CHECK(test_halt_count == 1);
     TEST_EXPECT_HALT(nge_map_init(NGE_MAP_STRIDE + 1, 40, &window));
     CHECK(test_halt_count == 1);
-    TEST_EXPECT_HALT(nge_map_init(60, NGE_MAP_MAX_HEIGHT + 1, &window));
+    TEST_EXPECT_HALT(nge_map_init(60, NGE_MAP_HEIGHT_MAX + 1, &window));
     CHECK(test_halt_count == 1);
 
     return test_summary("map");
