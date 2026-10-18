@@ -110,7 +110,7 @@ void gen_render(nge_entity_id_t id, const gen_render_t *r) NGE_BANKED;
 /*
  * A random kind from 0 to count-1 appearing at depth, weighted by rarity:
  * where[kind] is each kind's where part, copied from the class's table
- * @return The kind, or 0xFF if none appears there
+ * @return The kind, or KIND_INVALID if none appears there
  */
 uint8_t gen_pick(const gen_where_t *where, uint8_t count, uint8_t depth) NGE_BANKED;
 

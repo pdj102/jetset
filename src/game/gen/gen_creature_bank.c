@@ -63,7 +63,7 @@ nge_entity_id_t gen_creature_random(uint8_t depth, nge_owner_t owner) NGE_BANKED
         where[kind] = gen_creatures[kind].where;
     }
     kind = gen_pick(where, CR_COUNT, depth);
-    return (kind == 0xFF) ? NGE_ENTITY_INVALID : create(kind, owner);
+    return (kind == KIND_INVALID) ? NGE_ENTITY_INVALID : create(kind, owner);
 }
 
 uint8_t gen_creature_hook(uint8_t kind, uint8_t hook) NGE_BANKED

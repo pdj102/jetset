@@ -39,4 +39,6 @@
 #define ITEM_RING    2
 #define ITEM_FOOD    3
 
+#define KIND_INVALID 0xFF /* Invalid kind */
+
 #endif

@@ -48,7 +48,7 @@ nge_entity_id_t gen_item_random(uint8_t depth, nge_owner_t owner) NGE_BANKED
         where[kind] = gen_items[kind].where;
     }
     kind = gen_pick(where, IT_COUNT, depth);
-    return (kind == 0xFF) ? NGE_ENTITY_INVALID : create(kind, owner);
+    return (kind == KIND_INVALID) ? NGE_ENTITY_INVALID : create(kind, owner);
 }
 
 uint16_t gen_item_fits(uint8_t kind) NGE_BANKED

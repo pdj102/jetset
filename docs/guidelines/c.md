@@ -20,13 +20,16 @@ macros that compile to nothing with `NDEBUG`, like `assert()`, evaluate
 none (see C-IDIOM-1).
 Check: `grep -n "#define [a-z]"`. Each hit must meet the exception.
 
-### C-NAME-3 · must · No identifiers starting with an underscore
+### C-NAME-3 · must · Never declare, define or #define a reserved identifier
 Names beginning with `_` followed by a capital letter, or with `__`, are
-reserved for the compiler and library at any scope, and so are all names
-beginning with `_` at file scope. This includes macro parameters. The
-toolchain's own names (`__SDCC`, `__z88dk_fastcall`) are used, never
-defined.
-Check: `grep -nE "\b_[A-Z_a-z]" src` outside toolchain names.
+reserved for the compiler and library. So are all names beginning with `_`
+at file scope. Declaring or defining one, or using one as a macro name, is
+undefined behaviour (C11 7.1.3). The toolchain's own names (`__SDCC`,
+`__z88dk_fastcall`) are used, never defined. A macro parameter is neither a
+declaration nor a macro name, so it isn't covered here. A name like
+`_Expression` breaks C-NAME-1 instead.
+Check: `grep -nE "\b_[A-Z_a-z]" src`, outside toolchain names and macro
+parameter lists.
 
 ### C-NAME-4 · should · File-local functions and variables are static
 A function or variable used only in its own `.c` file is `static`, and is
@@ -97,7 +100,7 @@ is known to fit.
 
 ### C-IDIOM-5 · should · Sentinels are compared by name
 Test against the named value: `id != NGE_ENTITY_INVALID`, `p != NULL`,
-`kind != GEN_KIND_INVALID`. Never compare with the raw number (`0xFF`) or rely on
+`kind != KIND_INVALID`. Never compare with the raw number (`0xFF`) or rely on
 truthiness for a value that isn't a boolean.
 
 ### C-IDIOM-6 · should · Use fixed-width types for data

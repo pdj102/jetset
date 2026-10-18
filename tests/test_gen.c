@@ -298,7 +298,7 @@ int main(void)
         lo += gen_pick(where, 3, 5) == 1;
     }
     CHECK(lo > 180);                                                 /* 100 against 1 */
-    CHECK(gen_pick(where, 3, 0) == 0xFF);
+    CHECK(gen_pick(where, 3, 0) == KIND_INVALID);
     /* A kind too deep, ahead of the one that appears, is passed over */
     ok = 1;
     for (i = 0; i < 200 && ok; i++) {

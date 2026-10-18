@@ -48,7 +48,7 @@ uint8_t gen_pick(const gen_where_t *where, uint8_t count, uint8_t depth) NGE_BAN
         }
     }
     if (total == 0) {
-        return 0xFF;
+        return KIND_INVALID; 
     }
 
     pick = (uint16_t)((unsigned int)rand() % total);
@@ -60,5 +60,5 @@ uint8_t gen_pick(const gen_where_t *where, uint8_t count, uint8_t depth) NGE_BAN
             pick -= where[kind].rarity;
         }
     }
-    return 0xFF;   /* not reached */
+    return KIND_INVALID;   /* not reached */
 }
