@@ -28,7 +28,7 @@ void gen_name(nge_entity_id_t id, char *buf, uint8_t size)
 uint8_t gen_hook(nge_entity_id_t id, uint8_t hook)
 {
     nge_util_assert(id < NGE_ENTITY_MAX);
-    nge_util_assert(hook < GEN_HOOKS);
+    nge_util_assert(hook < GEN_HOOK_COUNT);
 
     if (KIND_IS(id, CLASS_CREATURE)) {
         return gen_creature_hook(kind_index[id], hook);

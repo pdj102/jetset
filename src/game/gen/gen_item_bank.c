@@ -68,7 +68,7 @@ uint8_t gen_item_subclass(uint8_t kind) NGE_BANKED
 uint8_t gen_item_hook(uint8_t kind, uint8_t hook) NGE_BANKED
 {
     nge_util_assert(kind < IT_COUNT);
-    nge_util_assert(hook < GEN_HOOKS);
+    nge_util_assert(hook < GEN_HOOK_COUNT);
 
     return gen_items[kind].hooks[hook];
 }

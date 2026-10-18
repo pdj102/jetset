@@ -71,7 +71,7 @@ typedef struct gen_creature_base {
     attack_base_t melee;      /* its natural melee attack (fists, a bite); dice 0 for none */
     gen_inventory_t inventory;
     uint8_t      flags;   /* CREATURE_* */
-    uint8_t      hooks[GEN_HOOKS];   /* EF_* by GEN_HOOK_*: hit, innate */
+    uint8_t      hooks[GEN_HOOK_COUNT];   /* EF_* by GEN_HOOK_*: hit, innate */
     gen_where_t  where;
 } gen_creature_base_t;
 
@@ -82,7 +82,7 @@ typedef struct gen_item_base {
     uint16_t     fits;       /* the slots it can be equipped in (SLOT_BIT() mask), 0 for none */
     health_base_t health;    /* no hit points: it can't be damaged (no component) */
     attack_base_t melee;     /* as a melee weapon; dice 0 for none */
-    uint8_t      hooks[GEN_HOOKS];   /* EF_* by GEN_HOOK_*: use, hit, worn */
+    uint8_t      hooks[GEN_HOOK_COUNT];   /* EF_* by GEN_HOOK_*: use, hit, worn */
     gen_where_t  where;
 } gen_item_base_t;
 
@@ -90,7 +90,7 @@ typedef struct gen_feature_base {
     const char        *name;   /* in the table's page */
     gen_feature_info_t info;   /* its looks, what it can do, what it blocks when closed */
     uint8_t            state;  /* FEAT_* it starts in */
-    uint8_t            hooks[GEN_HOOKS];   /* EF_* by GEN_HOOK_* (none yet) */
+    uint8_t            hooks[GEN_HOOK_COUNT];   /* EF_* by GEN_HOOK_* (none yet) */
     gen_where_t        where;  /* for random features, later (gen_feature_random()) */
 } gen_feature_base_t;
 

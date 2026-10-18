@@ -317,7 +317,7 @@ int main(void)
     CHECK(said("The door goes down and away."));
 
     /* ---- asserts ---- */
-    TEST_EXPECT_HALT(ui_items_enter(UI_SCREENS));
+    TEST_EXPECT_HALT(ui_items_enter(UI_SCREEN_COUNT));
     CHECK(test_halt_count == 1);
 
     return test_summary("ui");

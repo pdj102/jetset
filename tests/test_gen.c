@@ -147,13 +147,13 @@ int main(void)
     for (kind = 0; kind < IT_COUNT; kind++) {
         id = gen_item(kind, AREA);
         ok = ok && gen_item_subclass(kind) == gen_items[kind].subclass;
-        for (i = 0; i < GEN_HOOKS; i++) {
+        for (i = 0; i < GEN_HOOK_COUNT; i++) {
             ok = ok && gen_item_hook(kind, (uint8_t)i) == gen_items[kind].hooks[i] &&
                  gen_hook(id, (uint8_t)i) == gen_items[kind].hooks[i] && gen_items[kind].hooks[i] < EF_COUNT;
         }
     }
     for (kind = 0; kind < CR_COUNT; kind++) {
-        for (i = 0; i < GEN_HOOKS; i++) {
+        for (i = 0; i < GEN_HOOK_COUNT; i++) {
             ok = ok && gen_creature_hook(kind, (uint8_t)i) == gen_creatures[kind].hooks[i] &&
                  gen_creatures[kind].hooks[i] < EF_COUNT;
         }
@@ -168,7 +168,7 @@ int main(void)
         gen_name(id, buf, sizeof(buf));
         ok = ok && strcmp(buf, gen_features[kind].name) == 0 && feature_state[id] == gen_features[kind].state &&
              memcmp(&info, &gen_features[kind].info, sizeof(info)) == 0;
-        for (i = 0; i < GEN_HOOKS; i++) {
+        for (i = 0; i < GEN_HOOK_COUNT; i++) {
             ok = ok && gen_feature_hook(kind, (uint8_t)i) == gen_features[kind].hooks[i] &&
                  gen_hook(id, (uint8_t)i) == gen_features[kind].hooks[i];
         }
@@ -182,14 +182,14 @@ int main(void)
     /* A worn hook names a worn effect; the other hooks name effects that can be applied */
     ok = 1;
     for (kind = 0; kind < IT_COUNT; kind++) {
-        for (i = 0; i < GEN_HOOKS; i++) {
+        for (i = 0; i < GEN_HOOK_COUNT; i++) {
             uint8_t ef = gen_items[kind].hooks[i];
 
             ok = ok && (ef == EF_NONE || (effect_defs[ef].duration == EFFECT_WORN) == (i == GEN_HOOK_WORN));
         }
     }
     for (kind = 0; kind < CR_COUNT; kind++) {
-        for (i = 0; i < GEN_HOOKS; i++) {
+        for (i = 0; i < GEN_HOOK_COUNT; i++) {
             uint8_t ef = gen_creatures[kind].hooks[i];
 
             ok = ok && (ef == EF_NONE || (i != GEN_HOOK_WORN && i != GEN_HOOK_USE &&
@@ -208,7 +208,7 @@ int main(void)
     CHECK(gen_hook(id, GEN_HOOK_INNATE) == EF_REGEN && nge_owner_count(id) == 1);   /* its innate effect */
     chest = nge_entity_create();                               /* no kind: no hooks */
     CHECK(gen_hook(chest, GEN_HOOK_USE) == EF_NONE);
-    TEST_EXPECT_HALT(gen_hook(id, GEN_HOOKS));
+    TEST_EXPECT_HALT(gen_hook(id, GEN_HOOK_COUNT));
     CHECK(test_halt_count == 1);
     TEST_EXPECT_HALT(gen_item_hook(IT_COUNT, GEN_HOOK_USE));
     CHECK(test_halt_count == 1);

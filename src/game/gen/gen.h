@@ -106,7 +106,7 @@ uint16_t gen_item_fits(uint8_t kind) NGE_BANKED;
 #define GEN_HOOK_HIT     1   /**< Weapons and creatures: applied to what a hit leaves alive (act_melee()). */
 #define GEN_HOOK_WORN    2   /**< Items: its modifiers and statuses count while equipped. */
 #define GEN_HOOK_INNATE  3   /**< Creatures: applied when generated. */
-#define GEN_HOOKS        4
+#define GEN_HOOK_COUNT   4
 
 /**
  * @brief The effect an entity's kind names for hook (GEN_HOOK_*): EF_NONE

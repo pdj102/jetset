@@ -203,14 +203,14 @@ typedef struct player_prompt {
     uint8_t     action;   /* ACT_* in that direction, or NO_ACTION */
 } player_prompt_t;
 
-static const player_prompt_t prompts[PLAYER_PROMPTS] = {
+static const player_prompt_t prompts[PLAYER_PROMPT_COUNT] = {
     [PLAYER_PROMPT_FIRE]  = { "Fire in which direction?", "Direction: fire   Other keys: back", NO_ACTION },
     [PLAYER_PROMPT_CLOSE] = { "Close in which direction?", "Direction: close   Other keys: back", ACT_CLOSE },
 };
 
 void player_direction_enter(uint8_t prompt) NGE_BANKED
 {
-    nge_util_assert(prompt < PLAYER_PROMPTS);
+    nge_util_assert(prompt < PLAYER_PROMPT_COUNT);
 
     screen_message(prompts[prompt].question);
     screen_help(prompts[prompt].help);
@@ -231,7 +231,7 @@ void player_direction_key(uint8_t prompt, nge_key_event_t ev) NGE_BANKED
     int8_t dx;
     int8_t dy;
 
-    nge_util_assert(prompt < PLAYER_PROMPTS);
+    nge_util_assert(prompt < PLAYER_PROMPT_COUNT);
     if (!key_direction(ev, &dx, &dy)) {
         screen_message("Never mind.");
     } else if (prompts[prompt].action == NO_ACTION) {

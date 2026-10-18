@@ -24,5 +24,6 @@
 #define TIMER_PLAYER   0   /**< The player's turn: wait for a command. */
 #define TIMER_EFFECT   1   /**< An active effect: its period's op; it ends on its last cycle. */
 #define TIMER_MONSTER  2   /**< A monster's turn (no AI yet: it waits a move). */
+#define TIMER_COUNT    3   /**< The number of timer kinds. */
 
 #endif

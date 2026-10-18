@@ -69,7 +69,7 @@ nge_entity_id_t gen_creature_random(uint8_t depth, nge_owner_t owner) NGE_BANKED
 uint8_t gen_creature_hook(uint8_t kind, uint8_t hook) NGE_BANKED
 {
     nge_util_assert(kind < CR_COUNT);
-    nge_util_assert(hook < GEN_HOOKS);
+    nge_util_assert(hook < GEN_HOOK_COUNT);
 
     return gen_creatures[kind].hooks[hook];
 }

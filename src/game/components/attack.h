@@ -28,7 +28,7 @@
 
 /* Uses of the component: the tables' rows */
 #define ATTACK_MELEE  0
-#define ATTACK_KINDS  1   /**< Uses with tables (ATTACK_RANGED comes with ranged weapons). */
+#define ATTACK_KIND_COUNT  1   /**< Uses with tables (ATTACK_RANGED comes with ranged weapons). */
 
 /** Component bits: the game's sixth and (later) seventh components (see nge_entity.h). */
 #define COMPONENT_MELEE   NGE_COMPONENT(NGE_COMPONENT_USER + 5)
@@ -55,12 +55,12 @@ typedef struct attack_base {
 #define ATTACK_BASE_HAS(b)  ((b)->dice != 0)
 
 /* Tables in slot 0 (attack_cdata.c): [use][entity], meaningful only with the use's component */
-extern int8_t  attack_to_hit[ATTACK_KINDS][NGE_ENTITY_MAX];
-extern uint8_t attack_dice[ATTACK_KINDS][NGE_ENTITY_MAX];
-extern uint8_t attack_sides[ATTACK_KINDS][NGE_ENTITY_MAX];
-extern int8_t  attack_bonus[ATTACK_KINDS][NGE_ENTITY_MAX];
-extern uint8_t attack_type[ATTACK_KINDS][NGE_ENTITY_MAX];
-extern uint8_t attack_range[ATTACK_KINDS][NGE_ENTITY_MAX];
+extern int8_t  attack_to_hit[ATTACK_KIND_COUNT][NGE_ENTITY_MAX];
+extern uint8_t attack_dice[ATTACK_KIND_COUNT][NGE_ENTITY_MAX];
+extern uint8_t attack_sides[ATTACK_KIND_COUNT][NGE_ENTITY_MAX];
+extern int8_t  attack_bonus[ATTACK_KIND_COUNT][NGE_ENTITY_MAX];
+extern uint8_t attack_type[ATTACK_KIND_COUNT][NGE_ENTITY_MAX];
+extern uint8_t attack_range[ATTACK_KIND_COUNT][NGE_ENTITY_MAX];
 
 /** The entity has an attack of this use. */
 #define ATTACK_HAS(id, kind)  NGE_ENTITY_HAS_ANY_COMPONENTS(id, ATTACK_COMPONENT(kind))

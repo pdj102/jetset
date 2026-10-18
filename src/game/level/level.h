@@ -56,6 +56,7 @@
 #define LEVEL_ARRIVE_ANY          0   /**< On random free floor: a fall, a teleport. */
 #define LEVEL_ARRIVE_UP_STAIRS    1   /**< On its up stairs: came down. */
 #define LEVEL_ARRIVE_DOWN_STAIRS  2   /**< On its down stairs: came up. */
+#define LEVEL_ARRIVE_COUNT        3   /**< Number of ways to arrive. */
 
 /** The current level's depth: 1 to LEVEL_DEPTH_BOTTOM once a game has started, 0 before. Read-only. */
 extern uint8_t level_depth;

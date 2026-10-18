@@ -64,7 +64,7 @@ void player_act(uint8_t action, act_t *a) NGE_BANKED;
 /* Direction prompts: rows of a table (player_bank.c), one game state each */
 #define PLAYER_PROMPT_FIRE   0   /**< GAME_FIRE: fire (nothing to fire yet). */
 #define PLAYER_PROMPT_CLOSE  1   /**< GAME_CLOSE: close the door in that direction (act_close()). */
-#define PLAYER_PROMPTS       2
+#define PLAYER_PROMPT_COUNT       2
 
 /** @brief A direction prompt's entry action: ask, and set the help bar. */
 void player_direction_enter(uint8_t prompt) NGE_BANKED;

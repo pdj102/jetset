@@ -20,7 +20,7 @@ static void check_entity(nge_entity_id_t id, uint8_t kind)
     (void)kind;
     nge_util_assert(id < NGE_ENTITY_MAX);
     nge_util_assert(NGE_ENTITY_STATE(id) != NGE_ENTITY_FREE);
-    nge_util_assert(kind < ATTACK_KINDS);
+    nge_util_assert(kind < ATTACK_KIND_COUNT);
 }
 
 void attack_add(nge_entity_id_t id, uint8_t kind, const attack_base_t *b) NGE_BANKED

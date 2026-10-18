@@ -40,7 +40,7 @@ void gen_feature_info(uint8_t kind, gen_feature_info_t *info) NGE_BANKED
 uint8_t gen_feature_hook(uint8_t kind, uint8_t hook) NGE_BANKED
 {
     nge_util_assert(kind < FT_COUNT);
-    nge_util_assert(hook < GEN_HOOKS);
+    nge_util_assert(hook < GEN_HOOK_COUNT);
 
     return gen_features[kind].hooks[hook];
 }

@@ -68,6 +68,7 @@
 /* effect_text(): which text */
 #define EFFECT_TEXT_START  0   /**< When it starts: "You feel sick." */
 #define EFFECT_TEXT_END    1   /**< When it ends: "The poison wears off." */
+#define EFFECT_TEXT_COUNT  2
 
 /**
  * @brief Apply effect ef (not EF_NONE) to target: an instant effect runs

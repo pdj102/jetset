@@ -176,7 +176,7 @@ static void over_update(void)
 
 void game_set_state(game_state_t state)
 {
-    nge_util_assert(state < GAME_STATES);
+    nge_util_assert(state < GAME_STATE_COUNT);
 
     nge_key_flush();
     game_state = state;

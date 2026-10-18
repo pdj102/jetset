@@ -37,13 +37,14 @@ typedef enum game_state {
     GAME_FIRE,        /**< Choosing a direction to fire in. */
     GAME_CLOSE,       /**< Choosing a direction to close a door in. */
     GAME_OVER,        /**< The game is over (game_over()); any key returns to the title. */
-    GAME_STATES       /**< Number of states. */
+    GAME_STATE_COUNT       /**< Number of states. */
 } game_state_t;
 
 /** Why the game ended (game_over()). */
 #define GAME_OVER_DIED     0   /**< The player died. */
 #define GAME_OVER_QUIT     1   /**< The player quit. */
 #define GAME_OVER_ESCAPED  2   /**< The player climbed out of the dungeon (later: with the quest object, a win). */
+#define GAME_OVER_COUNT    3   /**< Number of reasons. */
 
 /** The current state: read-only, change it with game_set_state(). */
 extern game_state_t game_state;

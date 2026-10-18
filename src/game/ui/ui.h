@@ -31,7 +31,7 @@
 #define UI_EQUIP      2   /**< Choose an item to equip. */
 #define UI_UNEQUIP    3   /**< Choose an item to take off. */
 #define UI_USE        4   /**< Choose an item to use up: drink, eat. */
-#define UI_SCREENS    5
+#define UI_SCREEN_COUNT    5
 
 /**
  * @brief Entry action of an item screen's state: show the screen. A screen

@@ -115,7 +115,7 @@ int main(void)
     TEST_EXPECT_HALT(attack_add(id, ATTACK_MELEE, &b));
     CHECK(test_halt_count == 1);
     b.dice = 1;
-    TEST_EXPECT_HALT(attack_add(id, ATTACK_KINDS, &b));
+    TEST_EXPECT_HALT(attack_add(id, ATTACK_KIND_COUNT, &b));
     CHECK(test_halt_count == 1);
     TEST_EXPECT_HALT(attack_hits(id, ATTACK_MELEE, target, 0));
     CHECK(test_halt_count == 1);

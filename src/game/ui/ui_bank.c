@@ -51,7 +51,7 @@ typedef struct ui_item_screen {
     uint8_t     action;  /* ACT_* on the item chosen, or NO_ACTION */
 } ui_item_screen_t;
 
-static const ui_item_screen_t screens[UI_SCREENS] = {
+static const ui_item_screen_t screens[UI_SCREEN_COUNT] = {
     [UI_INVENTORY] = { "Worldly Possessions", "Any key: back", "You are carrying nothing.",
                        LIST_ALL, NO_ACTION },
     [UI_DROP]      = { "Shed a Burden", "Letter: drop it   Other keys: back", "You have nothing to drop.",
@@ -165,7 +165,7 @@ void ui_items_enter(uint8_t screen) NGE_BANKED
     nge_entity_id_t ids[LIST_MAX];
     uint8_t n;
 
-    nge_util_assert(screen < UI_SCREENS);
+    nge_util_assert(screen < UI_SCREEN_COUNT);
     s = &screens[screen];
     n = collect(s->list, ids);
     if (n == 0 && s->action != NO_ACTION) {
@@ -195,7 +195,7 @@ void ui_items_key(uint8_t screen, nge_key_event_t ev) NGE_BANKED
     uint8_t n;
     uint8_t c;
 
-    nge_util_assert(screen < UI_SCREENS);
+    nge_util_assert(screen < UI_SCREEN_COUNT);
     s = &screens[screen];
     if (s->action != NO_ACTION) {
         n = collect(s->list, ids);
