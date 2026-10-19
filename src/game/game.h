@@ -20,6 +20,22 @@
  * screen keeps animating. Change state with game_set_state(), which throws
  * away waiting key events (keys typed for one mode don't leak into the next)
  * and runs the new state's entry action.
+ *
+ * The play state is a turn engine with two phases. While it isn't the
+ * player's turn, the world acts: the clock advances (nge_timer_advance(),
+ * ecs/systems/nge_timer.h) from one tick at which timers are due to the
+ * next, firing each entity's timer there (monsters' turns, effects'
+ * ticks), at most CLOCK_ADVANCES_MAX (game.c) times a frame. It stops
+ * when the player's timer fires (player_turn, game/player/player.h), when
+ * a change of level is asked for, or when the clock is paused (game
+ * over). Then the player acts: no time passes, and one key event a frame
+ * goes to player_command() until a command uses the turn.
+ *
+ * Events are handled in three places, each for a reason: after each
+ * advance of the clock (consequences in time order), in the post-update
+ * (the state's own events: a command, a screen's choice), and after a
+ * change of level (the arrival, before the clean-up releases what it
+ * names).
  */
 
 #include <stdint.h>
