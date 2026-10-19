@@ -10,7 +10,11 @@ The build produces `bin/main.nex`. Generated compiler and emulator files are ign
 
 ## Code guidelines
 
-All C code follows the rules in `docs/guidelines/` (index: `docs/guidelines/README.md`). Before writing code, read the files that apply to the folder you are changing; before handing it over, check it against them. The `review` skill does both checks. The rules cover naming, headers, constant groups, comments, toolchain traps, the engine's layers, banking and data placement, module initialisation, the game's modules and architecture, and the design patterns (each written up in its owning header).
+Rules for C code are in `docs/guidelines/` (`README.md` says which files apply to which folders).
+
+- Only when writing or changing C code in `src/` or `tests/`: first read the rule titles for that folder (`grep -h "^### " docs/guidelines/<files>`), and read a rule's full text only if the change touches it. Mention a rule only if the change breaks it.
+- Not for questions, design discussion, docs, git or build tasks: don't read or apply the guidelines.
+- Never run a review yourself: reviews are only by `/review`, when the user asks.
 
 ## Development conventions
 

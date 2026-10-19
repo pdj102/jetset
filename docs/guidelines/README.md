@@ -62,10 +62,13 @@ No rule repeats these:
 
 ## Using the guidelines
 
-- **Writing code:** read the files for the folder you are changing before
-  you start, then check the result against them before handing it over.
-- **Reviewing code:** the `review` skill (`.claude/skills/review/`) checks
-  a diff, files or folders against these rules, and reports findings as
+- **Writing code:** read the rule titles for the folder you are changing
+  (`grep -h "^### " docs/guidelines/<files>`, about 1,600 tokens for all
+  six), and the full text of a rule only when the change touches it. Each
+  title states its rule, so keep titles self-contained when adding rules.
+- **Reviewing code:** only when asked, with `/review`
+  (`.claude/skills/review/`). It checks a diff, files or folders against the
+  full rules, asks first when the scope is large, and reports findings as
   `RULE-ID path:line: what is wrong`.
 - **Missing rules:** a review that finds a problem no rule covers lists it
   under "possible new rules". Add it here only if it passes the test at

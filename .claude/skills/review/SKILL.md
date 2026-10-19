@@ -1,6 +1,7 @@
 ---
 name: review
-description: Review Jetset C code against the project's guidelines (docs/guidelines/), or check code just written against them before handing it over. Use when asked to review code, a diff, a module or the whole game, to check code against the guidelines or standards, or after generating C code in src/ or tests/. Arguments: nothing (the uncommitted diff), a commit range, files, folders, or "all".
+description: Review C code against docs/guidelines/. Run with /review [nothing for the uncommitted diff | a commit range | files | folders | all].
+disable-model-invocation: true
 ---
 
 # Review against the Jetset guidelines
@@ -18,6 +19,15 @@ From the arguments:
 - files or folders: those files, all of each one, not only the changes;
 - `all`: every `.c`, `.h` and `.asm` file under `src/`, and `tests/`. Split
   the work by folder and report per folder.
+
+**Check the size before reading any rules.** Count the files in scope and,
+for a diff, the changed lines (`git diff --stat`), and give the size in one
+line.
+- No argument (the uncommitted diff) and more than 10 files or 400 changed
+  lines: stop. Ask whether to review it all or to narrow it (one folder, one
+  commit), and wait for the answer.
+- An explicit scope (`all`, a range, files or folders): the user chose it,
+  so go on after giving the size.
 
 For a diff, review the changed lines and anything they break nearby (a
 header comment that no longer matches, a table row or switch case the change
@@ -70,9 +80,3 @@ End with a count of findings per strength. Say plainly if there were none.
 Don't fix anything unless asked. When asked to fix, fix the **must**
 findings first, then build (`make`) and run `make test`, and report both
 results.
-
-## Checking code you have just written
-
-Before handing over new or changed C code in `src/` or `tests/`, run steps
-2 and 3 over it as a diff review, fix what you find, and mention in one line
-any rule you broke on purpose (with the comment citing its ID in the code).
