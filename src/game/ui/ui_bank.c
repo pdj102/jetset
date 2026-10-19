@@ -18,7 +18,6 @@
 #include "io/nge_print.h"
 #include "io/nge_tm_stream.h"
 
-#include "game/actions/act.h"
 #include "game/actors.h"
 #include "game/components/inventory.h"
 #include "game/components/item.h"
@@ -26,14 +25,12 @@
 #include "game/effects/effects.h"
 #include "game/game.h"
 #include "game/gen/gen.h"
-#include "game/player/player.h"
 #include "game/screen.h"
 
 #define PANEL_W     28   /* the map window, in tiles */
 #define LIST_ROW    2    /* the first item's row: under the title and a blank row */
 #define LIST_MAX    25   /* items in a list: the rows under the title (a to y) */
 #define NAME_MAX    20   /* a kind's name, and its NUL */
-#define NO_ACTION   0xFF /* a screen that only shows */
 
 /* Which items a list shows */
 #define LIST_STOWED      0   /* in the pack, in ID order */
@@ -48,20 +45,18 @@ typedef struct ui_item_screen {
     const char *help;    /* the help bar while it is open */
     const char *empty;   /* when the list is empty */
     uint8_t     list;    /* LIST_* */
-    uint8_t     action;  /* ACT_* on the item chosen, or NO_ACTION */
 } ui_item_screen_t;
 
 static const ui_item_screen_t screens[UI_SCREEN_COUNT] = {
-    [UI_INVENTORY] = { "Worldly Possessions", "Any key: back", "You are carrying nothing.",
-                       LIST_ALL, NO_ACTION },
+    [UI_INVENTORY] = { "Worldly Possessions", "Any key: back", "You are carrying nothing.", LIST_ALL },
     [UI_DROP]      = { "Shed a Burden", "Letter: drop it   Other keys: back", "You have nothing to drop.",
-                       LIST_STOWED, ACT_DROP },
+                       LIST_STOWED },
     [UI_EQUIP]     = { "Arm Thyself", "Letter: equip it   Other keys: back", "You have nothing to equip.",
-                       LIST_EQUIPPABLE, ACT_EQUIP },
+                       LIST_EQUIPPABLE },
     [UI_UNEQUIP]   = { "Divest", "Letter: take it off   Other keys: back", "You aren't using anything.",
-                       LIST_EQUIPPED, ACT_UNEQUIP },
+                       LIST_EQUIPPED },
     [UI_USE]       = { "Partake", "Letter: use it   Other keys: back", "You have nothing to use.",
-                       LIST_USABLE, ACT_USE },
+                       LIST_USABLE },
 };
 
 /* Where an equipped item is, after its name */
@@ -159,54 +154,58 @@ static void draw(const ui_item_screen_t *s, const nge_entity_id_t *ids, uint8_t 
     }
 }
 
-void ui_items_enter(uint8_t screen) NGE_BANKED
+/* Open a screen over the map window: no sprites over it, its list, its keys */
+static void open_screen(const ui_item_screen_t *s, const nge_entity_id_t *ids, uint8_t n)
 {
-    const ui_item_screen_t *s;
-    nge_entity_id_t ids[LIST_MAX];
-    uint8_t n;
-
-    nge_util_assert(screen < UI_SCREEN_COUNT);
-    s = &screens[screen];
-    n = collect(s->list, ids);
-    if (n == 0 && s->action != NO_ACTION) {
-        screen_message(s->empty);   /* nothing to choose */
-        game_set_state(GAME_PLAY);
-        return;
-    }
-    nge_render_set_view(NGE_RENDER_NO_VIEW);   /* no sprites over the screen; GAME_PLAY shows them again */
+    nge_key_flush();   /* keys typed for play don't choose */
+    nge_render_set_view(NGE_RENDER_NO_VIEW);
     draw(s, ids, n);
     screen_help(s->help);
 }
 
-void ui_items_update(uint8_t screen) NGE_BANKED
+/* Close it: the map, the sprites, the stats and play's help drawn again */
+static void close_screen(void)
 {
-    nge_key_event_t ev = nge_key_get();
-
-    if (ev != NGE_KEY_NONE) {
-        ui_items_key(screen, ev);
-    }
+    game_play_redraw();
+    nge_key_flush();   /* a key held down doesn't leak into play */
 }
 
-void ui_items_key(uint8_t screen, nge_key_event_t ev) NGE_BANKED
+nge_entity_id_t ui_item_key(const nge_entity_id_t *ids, uint8_t n, nge_key_event_t ev) NGE_BANKED
+{
+    uint8_t c = (uint8_t)(nge_key_ascii(ev) - 'a');   /* any key but a to y wraps past the list */
+
+    if (c >= n) {
+        screen_message("Never mind.");
+        return NGE_ENTITY_INVALID;
+    }
+    return ids[c];
+}
+
+nge_entity_id_t ui_choose_item(uint8_t screen) NGE_BANKED
 {
     const ui_item_screen_t *s;
     nge_entity_id_t ids[LIST_MAX];
-    act_t a = { 0 };
+    nge_entity_id_t chosen;
     uint8_t n;
-    uint8_t c;
 
-    nge_util_assert(screen < UI_SCREEN_COUNT);
+    nge_util_assert(screen < UI_SCREEN_COUNT && screen != UI_INVENTORY);
     s = &screens[screen];
-    if (s->action != NO_ACTION) {
-        n = collect(s->list, ids);
-        c = (uint8_t)(nge_key_ascii(ev) - 'a');
-        if (c >= n) {
-            screen_message("Never mind.");
-        } else {
-            a.item = ids[c];
-            a.kind = SLOT_NONE;   /* equip: the first free slot it fits */
-            player_act(s->action, &a);
-        }
+    n = collect(s->list, ids);
+    if (n == 0) {
+        screen_message(s->empty);   /* nothing to choose: the screen isn't opened */
+        return NGE_ENTITY_INVALID;
     }
-    game_set_state(GAME_PLAY);
+    open_screen(s, ids, n);
+    chosen = ui_item_key(ids, n, game_wait_key(0));
+    close_screen();
+    return chosen;
+}
+
+void ui_show_inventory(void) NGE_BANKED
+{
+    nge_entity_id_t ids[LIST_MAX];
+
+    open_screen(&screens[UI_INVENTORY], ids, collect(screens[UI_INVENTORY].list, ids));
+    game_wait_key(0);   /* any key: back */
+    close_screen();
 }

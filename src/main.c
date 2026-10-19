@@ -2,7 +2,7 @@
  * Entry point: the basis of a classic roguelike. Sets up the hardware, the
  * screen (src/game/screen.h), the map (src/game/level/level.h) and the
  * graphics once, then runs the game loop (src/game/game.h): the title,
- * then a new game (GAME_NEW_GAME: the player and the first level).
+ * then a game (play_run(): the player and the first level).
  */
 #include "core/nge_util.h"
 #include "ecs/nge_ecs.h"
@@ -31,7 +31,7 @@ int main(void)
     nge_sprite_init();
     level_init();
 
-    /* Every module the frame loop uses in a valid state: GAME_NEW_GAME sets them up again for each game */
+    /* Every module the frames use in a valid state: each new game sets them up again (play_start()) */
     nge_ecs_init();     /* ECS data page into slot 0; every entity free */
     nge_render_init();
     nge_timer_init();

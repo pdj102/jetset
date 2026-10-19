@@ -23,11 +23,13 @@
 #include "game/components/stats.h"
 #include "game/dev.h"
 #include "game/components/inventory.h"
+#include "game/components/item.h"
 #include "game/game.h"
 #include "game/level/level.h"
 #include "game/messages/messages.h"
 #include "game/screen.h"
 #include "game/target/target.h"
+#include "game/ui/ui.h"
 
 /* Characters of the movement keys (nge_key_ascii): cursor keys */
 #define CHAR_LEFT   8
@@ -124,6 +126,40 @@ static void look(void)
     }
 }
 
+/* Choose an item on a screen (UI_*), then do the action (ACT_*) with it */
+static void item_command(uint8_t screen, uint8_t action)
+{
+    act_t a = { 0 };
+
+    a.item = ui_choose_item(screen);
+    if (a.item != NGE_ENTITY_INVALID) {
+        a.kind = SLOT_NONE;   /* equip: the first free slot it fits */
+        player_act(action, &a);
+    }
+}
+
+/* Close: choose a direction, then close the door that way */
+static void close_command(void)
+{
+    act_t a = { 0 };
+
+    if (player_ask_direction(PLAYER_PROMPT_CLOSE, &a.dx, &a.dy)) {
+        a.target = NGE_ENTITY_INVALID;   /* what is in that direction */
+        player_act(ACT_CLOSE, &a);
+    }
+}
+
+/* Fire: choose a direction; there is nothing to fire yet */
+static void fire_command(void)
+{
+    int8_t dx;
+    int8_t dy;
+
+    if (player_ask_direction(PLAYER_PROMPT_FIRE, &dx, &dy)) {
+        screen_message("You have nothing to fire.");
+    }
+}
+
 static void stairs(uint8_t action)
 {
     act_t a = { 0 };
@@ -146,25 +182,25 @@ void player_command(nge_key_event_t ev) NGE_BANKED
         pick_up();
         break;
     case 'i':
-        game_set_state(GAME_INVENTORY);
+        ui_show_inventory();
         break;
     case 'd':
-        game_set_state(GAME_DROP);
+        item_command(UI_DROP, ACT_DROP);
         break;
     case 'w':
-        game_set_state(GAME_EQUIP);
+        item_command(UI_EQUIP, ACT_EQUIP);
         break;
     case 'r':
-        game_set_state(GAME_UNEQUIP);
+        item_command(UI_UNEQUIP, ACT_UNEQUIP);
         break;
     case 'u':
-        game_set_state(GAME_USE);
+        item_command(UI_USE, ACT_USE);
         break;
     case 'f':
-        game_set_state(GAME_FIRE);
+        fire_command();
         break;
     case 'c':
-        game_set_state(GAME_CLOSE);
+        close_command();
         break;
     case 'x':
         look();
@@ -212,55 +248,39 @@ void player_show_stats(void) NGE_BANKED
     screen_show_status(status_mask[actor_player]);
 }
 
-/* ---- Direction prompts ---- */
+/* ---- The direction prompt ---- */
 
-#define NO_ACTION  0xFF   /* nothing to do yet: say so */
-
-/* A prompt for a direction, and what a direction does */
+/* A prompt for a direction */
 typedef struct player_prompt {
     const char *question;
     const char *help;
-    uint8_t     action;   /* ACT_* in that direction, or NO_ACTION */
 } player_prompt_t;
 
 static const player_prompt_t prompts[PLAYER_PROMPT_COUNT] = {
-    [PLAYER_PROMPT_FIRE]  = { "Fire in which direction?", "Direction: fire   Other keys: back", NO_ACTION },
-    [PLAYER_PROMPT_CLOSE] = { "Close in which direction?", "Direction: close   Other keys: back", ACT_CLOSE },
+    [PLAYER_PROMPT_FIRE]  = { "Fire in which direction?", "Direction: fire   Other keys: back" },
+    [PLAYER_PROMPT_CLOSE] = { "Close in which direction?", "Direction: close   Other keys: back" },
 };
 
-void player_direction_enter(uint8_t prompt) NGE_BANKED
+uint8_t player_direction_key(nge_key_event_t ev, int8_t *dx, int8_t *dy) NGE_BANKED
 {
+    if (!player_key_direction(ev, dx, dy)) {
+        screen_message("Never mind.");
+        return 0;
+    }
+    return 1;
+}
+
+uint8_t player_ask_direction(uint8_t prompt, int8_t *dx, int8_t *dy) NGE_BANKED
+{
+    uint8_t answered;
+
     nge_util_assert(prompt < PLAYER_PROMPT_COUNT);
 
+    nge_key_flush();   /* keys typed for play don't answer */
     screen_message(prompts[prompt].question);
     screen_help(prompts[prompt].help);
-}
-
-void player_direction_update(uint8_t prompt) NGE_BANKED
-{
-    nge_key_event_t ev = nge_key_get();
-
-    if (ev != NGE_KEY_NONE) {
-        player_direction_key(prompt, ev);
-    }
-}
-
-void player_direction_key(uint8_t prompt, nge_key_event_t ev) NGE_BANKED
-{
-    act_t a = { 0 };
-    int8_t dx;
-    int8_t dy;
-
-    nge_util_assert(prompt < PLAYER_PROMPT_COUNT);
-    if (!player_key_direction(ev, &dx, &dy)) {
-        screen_message("Never mind.");
-    } else if (prompts[prompt].action == NO_ACTION) {
-        screen_message("You have nothing to fire.");
-    } else {
-        a.target = NGE_ENTITY_INVALID;   /* what is in that direction */
-        a.dx = dx;
-        a.dy = dy;
-        player_act(prompts[prompt].action, &a);
-    }
-    game_set_state(GAME_PLAY);
+    answered = player_direction_key(game_wait_key(0), dx, dy);
+    game_play_help();
+    nge_key_flush();   /* a key held down doesn't leak into play */
+    return answered;
 }

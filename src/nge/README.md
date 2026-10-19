@@ -77,7 +77,7 @@ Every `<module>_init()` (nge and game alike) must:
   rely on the NEX file's zeros or on an earlier call (page data is
   uninitialised, see "Page data" in docs/memory_map.md).
 - **Be safe to call more than once.** A new game calls the inits again
-  (`GAME_NEW_GAME` in src/game/game.c), so an init must not leak resources
+  (`play_start()` in src/game/game.c), so an init must not leak resources
   (close streams it opened before) and must undo what the last use left
   behind (`nge_render_init()` hides the sprites it drew; `nge_map_init()`
   clears the tiles and the block table).

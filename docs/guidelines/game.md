@@ -114,15 +114,21 @@ Code that moves the player to another depth calls `level_request()`. Only
 `change_level()` in `game.c` and the new game call `level_generate()`. See
 P-LEVEL-1.
 
-### G-FLOW-2 · must · Change state with game_set_state() or game_over()
-States change only through these, which flush the keys and run the entry
-action. A new state is a `game_state_t` value with a case in both switches
-in `game.c`.
+### G-FLOW-2 · withdrawn · Change state with game_set_state() or game_over()
+*Withdrawn* (2026-10-19): the game has no states any more
+([docs/game_loop.md](../game_loop.md)). A game ends through `game_over()`
+(G-FLOW-4), and the player chooses through choosers (P-CHOOSE-1).
 
 ### G-FLOW-3 · should · What the player is told comes from messages/
 Texts for events and refused actions are in `messages_bank.c`
 (`messages_on_event()`, `messages_act_failed()`). Other modules call
 `screen_message()` only for their own prompts and screens.
+
+### G-FLOW-4 · must · A game ends only through game_over()
+Code that ends the game (the player dies, quits, escapes) calls
+`game_over()` with a `GAME_OVER_*` reason. It stops the clock, so nothing
+more acts, and the play loop ends at the end of that frame, once the
+frame's events are handled. Nothing else ends the play loop.
 
 ## Development aids
 

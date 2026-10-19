@@ -3,7 +3,7 @@
 
 /**
  * @file player.h
- * @brief The player: what their keys do, the direction prompts, their turn,
+ * @brief The player: what their keys do, the direction prompt, their turn,
  *        and the view following them. The item screens are in game/ui.
  *
  * The player entity is actor_player (game/actors.h). Their timer
@@ -15,9 +15,10 @@
  * The rest of the tick the player's timer fired in still runs first, so
  * everything due at the same time acts.
  *
- * Each direction prompt (fire, close) is a game state (game/game.h): its
- * entry action and update are here, called by game_set_state() and the
- * frame loop.
+ * A command that needs a choice calls a chooser (game/game.h): an item
+ * screen (game/ui/ui.h), the direction prompt (player_ask_direction()) or
+ * targeting (game/target/target.h). It then does the action with the
+ * answer, through player_act().
  *
  * Banking: player_init(), player_on_turn() and player_on_event() are in
  * common memory (called for every timer firing and event); the commands
@@ -57,16 +58,17 @@ void player_show_stats(void) NGE_BANKED;
  * @brief Carry out the command for a key event, during the player's turn:
  *        movement keys (cursor keys or h j k l) move (into a creature:
  *        attack; into a closed door: open it), g (or ,) picks up the item
- *        here, i d w r u open the inventory, drop, equip, take off and use
- *        screens, f and c the fire and close prompts, x looks (targeting,
- *        game/target/target.h), Q quits. Other keys do nothing.
+ *        here, i shows the inventory, d w r u choose an item to drop,
+ *        equip, take off or use, f and c ask a direction to fire or close
+ *        in, x looks (targeting, game/target/target.h), Q quits. Other keys
+ *        do nothing. A command may run frames while the player chooses.
  */
 void player_command(nge_key_event_t ev) NGE_BANKED;
 
 /**
  * @brief The direction of a movement key: the cursor keys (also CAPS+5-8)
  *        or h j k l. The one key map for moving, in play, the direction
- *        prompts and targeting.
+ *        prompt and targeting.
  * @return 1 and the direction in (dx, dy), or 0 (and (0, 0)) for any other key.
  */
 uint8_t player_key_direction(nge_key_event_t ev, int8_t *dx, int8_t *dy) NGE_BANKED;
@@ -79,22 +81,23 @@ uint8_t player_key_direction(nge_key_event_t ev, int8_t *dx, int8_t *dy) NGE_BAN
  */
 void player_act(uint8_t action, act_t *a) NGE_BANKED;
 
-/* Direction prompts: rows of a table (player_bank.c), one game state each */
-#define PLAYER_PROMPT_FIRE   0   /**< GAME_FIRE: fire (nothing to fire yet). */
-#define PLAYER_PROMPT_CLOSE  1   /**< GAME_CLOSE: close the door in that direction (act_close()). */
-#define PLAYER_PROMPT_COUNT       2
-
-/** @brief A direction prompt's entry action: ask, and set the help bar. */
-void player_direction_enter(uint8_t prompt) NGE_BANKED;
-
-/** @brief A direction prompt's update, once per frame: a key event goes to player_direction_key(). */
-void player_direction_update(uint8_t prompt) NGE_BANKED;
+/* The direction prompt's questions: rows of a table (player_bank.c) */
+#define PLAYER_PROMPT_FIRE   0   /**< Fire in which direction? */
+#define PLAYER_PROMPT_CLOSE  1   /**< Close in which direction? */
+#define PLAYER_PROMPT_COUNT  2
 
 /**
- * @brief A direction prompt's answer to a key event: a direction does the
- *        prompt's action that way (player_act()), another key says "Never
- *        mind.". Then back to play.
+ * @brief The direction prompt, a chooser: ask the question, wait for a key
+ *        and put play's help back.
+ * @return 1 and a direction in (dx, dy) for a movement key; 0 for any other
+ *         key ("Never mind.").
  */
-void player_direction_key(uint8_t prompt, nge_key_event_t ev) NGE_BANKED;
+uint8_t player_ask_direction(uint8_t prompt, int8_t *dx, int8_t *dy) NGE_BANKED;
+
+/**
+ * @brief The direction prompt's answer to one key event: 1 and the
+ *        direction, or 0 and "Never mind.".
+ */
+uint8_t player_direction_key(nge_key_event_t ev, int8_t *dx, int8_t *dy) NGE_BANKED;
 
 #endif

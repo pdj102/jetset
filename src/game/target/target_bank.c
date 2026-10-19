@@ -14,9 +14,7 @@
 #include "core/nge_util.h"
 #include "data/sprite_data.h"
 #include "ecs/components/nge_location.h"
-#include "ecs/systems/nge_render.h"
 #include "map/nge_map.h"
-#include "sprite/nge_sprite.h"
 
 #include "game/actors.h"
 #include "game/game.h"
@@ -99,21 +97,19 @@ uint8_t target_key(target_t *t, nge_key_event_t ev) NGE_BANKED
     return TARGET_STEP_CANCELLED;
 }
 
-/* The cursor's sprite on the cursor's tile, through the camera: green in range, red out of it */
-static void place(nge_sprite_attr_t *cursor, const target_t *t)
+/* The cursor (an overlay sprite) on the cursor's tile, through the camera: green in range, red out of it */
+static void place(const target_t *t)
 {
     uint16_t sx;
     uint16_t sy;
 
     nge_map_to_screen((uint16_t)t->x * NGE_MAP_TILE_PIXELS, (uint16_t)t->y * NGE_MAP_TILE_PIXELS, &sx, &sy);
-    nge_sprite_set(cursor, sx, sy, target_in_range(t) ? DEMO_SPRITE_CURSOR_IN : DEMO_SPRITE_CURSOR_OUT, 0,
-                   NGE_SPRITE_SCALE_1);
+    screen_overlay_set(SCREEN_OVERLAY_CURSOR, sx, sy,
+                       target_in_range(t) ? DEMO_SPRITE_CURSOR_IN : DEMO_SPRITE_CURSOR_OUT);
 }
 
 uint8_t target_choose(target_t *t) NGE_BANKED
 {
-    nge_sprite_attr_t cursor;   /* on the stack: common memory, where nge_sprite_upload() can read it */
-    nge_key_event_t ev;
     uint8_t step = TARGET_STEP_MOVING;
 
     nge_util_assert(t->purpose < TARGET_PURPOSE_COUNT);
@@ -122,24 +118,17 @@ uint8_t target_choose(target_t *t) NGE_BANKED
     nge_key_flush();   /* keys typed for play don't move the cursor */
     screen_message(purposes[t->purpose].prompt);
     screen_help(purposes[t->purpose].help);
-    place(&cursor, t);
+    place(t);
 
-    /* Frames of its own: presentation only, so no time passes (game/game.h) */
+    /* Frames that only draw, so no time passes (game_wait_key(), game/game.h) */
     while (step == TARGET_STEP_MOVING) {
-        game_frame_start();
-        nge_sprite_upload(SCREEN_SPRITE_CURSOR, &cursor, 1);
-        ev = nge_key_get();
-        if (ev != NGE_KEY_NONE) {
-            step = target_key(t, ev);
-            if (step == TARGET_STEP_MOVING) {
-                place(&cursor, t);
-            }
+        step = target_key(t, game_wait_key(0));
+        if (step == TARGET_STEP_MOVING) {
+            place(t);
         }
-        nge_render_update();   /* the entities' sprites, through the camera if it moved */
     }
 
-    nge_sprite_clear(&cursor, 1);
-    nge_sprite_upload(SCREEN_SPRITE_CURSOR, &cursor, 1);   /* hidden now: one sprite, so not worth waiting for vblank */
+    screen_overlay_hide(SCREEN_OVERLAY_CURSOR);
     nge_map_centre_camera(NGE_LOCATION_X(actor_player), NGE_LOCATION_Y(actor_player));
     game_play_help();
     nge_key_flush();   /* a choosing key held down doesn't leak into play */

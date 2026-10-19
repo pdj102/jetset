@@ -3,6 +3,13 @@
 Status: implemented (sections 5 to 7 describe the code as built). All the
 CSpect checks in section 7 passed on 2026-10-19.
 
+Changed since by the game loop's redesign ([game_loop.md](game_loop.md)):
+targeting is now one of several choosers. It waits with `game_wait_key()`
+instead of a frame loop of its own, and the cursor is overlay sprite
+`SCREEN_OVERLAY_CURSOR` (`game/screen.h`), whose record is in common memory
+and which the frame start uploads. Sections 4 and 5 describe the first
+version.
+
 Covers the targeting mode: the player moves a cursor over the map and
 chooses a tile or cancels. Also covers the first command that uses it,
 look. Ranged attacks and spells will use it later.

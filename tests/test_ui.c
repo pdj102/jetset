@@ -9,6 +9,7 @@
 #include "ecs/systems/nge_render_internal.h"
 #include "ecs/systems/nge_timer.h"
 #include "event/nge_event.h"
+#include "input/nge_input.h"
 #include "map/nge_map.h"
 
 #include "game/components/attrs.h"
@@ -27,31 +28,45 @@
 #include "game/ui/ui.h"
 
 #define AREA     NGE_OWNER_AREA(0)
-#define NO_STATE 0xEE
+#define EV(k)    ((nge_key_event_t)(k))
 
 /* What game.c and actors.c provide in the game (not linked here) */
-game_state_t game_state;
 nge_entity_id_t actor_player;
-static uint8_t last_state;
-
-void game_set_state(game_state_t state)
-{
-    last_state = (uint8_t)state;
-}
+static int redraws;   /* game_play_redraw() calls: a screen closed */
+static int waits;     /* game_wait_key() calls: a chooser waited for a key */
 
 void game_over(uint8_t reason)
 {
     (void)reason;
-    last_state = (uint8_t)GAME_OVER;
-}
-
-/* Targeting's frames (game/target): not run by these tests */
-void game_frame_start(void)
-{
 }
 
 void game_play_help(void)
 {
+}
+
+/* Doesn't redraw, so a closed screen's text is still there to check */
+void game_play_redraw(void)
+{
+    redraws++;
+}
+
+/* The key the player presses while a chooser waits: the next one set with press() */
+static nge_key_event_t pressed = NGE_KEY_NONE;
+
+static void press(nge_key_event_t ev)
+{
+    pressed = ev;
+}
+
+nge_key_event_t game_wait_key(uint16_t frames)
+{
+    nge_key_event_t ev = pressed;
+
+    (void)frames;
+    waits++;
+    pressed = NGE_KEY_NONE;
+    CHECK(ev != NGE_KEY_NONE);   /* a chooser waited with no key set up for it */
+    return ev;
 }
 
 static char text[NGE_TILEMAP_WIDTH + 1];
@@ -146,77 +161,90 @@ int main(void)
     nge_event_flush();
 
     /* ---- the inventory, empty: titled, says so, any key goes back ---- */
-    last_state = NO_STATE;
-    ui_items_enter(UI_INVENTORY);
-    CHECK(last_state == NO_STATE);                                 /* it stays open */
-    CHECK(nge_render_area == NGE_RENDER_NO_VIEW);                  /* no sprites over it */
+    redraws = 0;
+    waits = 0;
+    press(EV(NGE_KEY_A));
+    player_command(EV(NGE_KEY_I));
+    CHECK(waits == 1 && redraws == 1);                             /* it waited for a key, then closed */
+    CHECK(nge_render_area == NGE_RENDER_NO_VIEW);                  /* no sprites over it (the fake redraw keeps it so) */
     CHECK(strcmp(panel(0), "    Worldly Possessions     ") == 0);  /* centred */
     CHECK(strcmp(panel(1), "                            ") == 0);
     CHECK(starts(panel(2), " You are carrying nothing."));
     CHECK(starts(row(31), "Any key: back"));
-    ui_items_key(UI_INVENTORY, NGE_KEY_A);
-    CHECK(last_state == GAME_PLAY && stowed(actor_player) == 0);
+    CHECK(stowed(actor_player) == 0);
 
     /* ---- items: the pack in ID order, then what is in use, with its slot ---- */
     sword = gen_item(IT_SWORD, actor_player);
     ring1 = gen_item(IT_RING, actor_player);
     ring2 = gen_item(IT_RING, actor_player);
     item_slot[ring1] = SLOT_RING_L;
-    ui_items_enter(UI_INVENTORY);
+    press(EV(NGE_KEY_A));
+    ui_show_inventory();
     CHECK(starts(panel(2), " a) sword "));
     CHECK(starts(panel(3), " b) ring of health "));
     CHECK(starts(panel(4), " c) ring of health (left)"));
     CHECK(strcmp(panel(5), "                            ") == 0);   /* the rest cleared */
     /* A key only leaves: nothing is done to the item its letter shows */
-    last_state = NO_STATE;
-    ui_items_key(UI_INVENTORY, NGE_KEY_A);
-    CHECK(last_state == GAME_PLAY && stowed(sword) && nge_event_count() == 0);
+    CHECK(stowed(sword) && nge_event_count() == 0);
 
-    /* ---- drop: the pack only; a letter drops that item, on the player's tile ---- */
-    last_state = NO_STATE;
-    ui_items_enter(UI_DROP);
-    CHECK(last_state == NO_STATE && starts(panel(0), "       Shed a Burden "));   /* (28 - 13) / 2 */
+    /* ---- choosing: a letter gives its item, any other key nothing ---- */
+    {
+        nge_entity_id_t ids[2];
+
+        ids[0] = sword;
+        ids[1] = ring2;
+        CHECK(ui_item_key(ids, 2, EV(NGE_KEY_A)) == sword);
+        CHECK(ui_item_key(ids, 2, EV(NGE_KEY_B)) == ring2);
+        CHECK(ui_item_key(ids, 2, EV(NGE_KEY_C)) == NGE_ENTITY_INVALID && said("Never mind."));
+        CHECK(ui_item_key(ids, 2, EV(NGE_KEY_ENTER)) == NGE_ENTITY_INVALID);
+        CHECK(ui_item_key(ids, 2, EV(NGE_KEY_A | (NGE_MOD_CAPS << 8))) == NGE_ENTITY_INVALID);   /* 'A' */
+    }
+    press(EV(NGE_KEY_B));
+    CHECK(ui_choose_item(UI_DROP) == ring2 && nge_event_count() == 0);   /* chosen, not dropped */
+
+    /* ---- drop: the pack only; d and a letter drops that item, on the player's tile ---- */
+    player_turn = 1;
+    redraws = 0;
+    press(EV(NGE_KEY_B));
+    player_command(EV(NGE_KEY_D));
+    CHECK(redraws == 1 && starts(panel(0), "       Shed a Burden "));   /* (28 - 13) / 2 */
     CHECK(starts(panel(2), " a) sword") && starts(panel(3), " b) ring of health ") && starts(panel(4), "         "));
     CHECK(starts(row(31), "Letter: drop it   Other keys: back"));
-    player_turn = 1;
-    ui_items_key(UI_DROP, NGE_KEY_B);
-    CHECK(last_state == GAME_PLAY);
     CHECK(NGE_OWNER_OF(ring2) == AREA && NGE_LOCATION_X(ring2) == 5 && NGE_LOCATION_Y(ring2) == 5);
     CHECK(!player_turn);                                   /* the turn is used */
     CHECK(nge_event_count() == 1);
     nge_event_flush();
     /* Another key: never mind, nothing done, the turn kept */
     player_turn = 1;
-    ui_items_enter(UI_DROP);
-    ui_items_key(UI_DROP, NGE_KEY_Z);                              /* 'z': past the list */
-    CHECK(last_state == GAME_PLAY && stowed(sword) && player_turn);
-    CHECK(said("Never mind."));
-    ui_items_enter(UI_DROP);
-    ui_items_key(UI_DROP, NGE_KEY_Q | (NGE_MOD_CAPS << 8));        /* 'Q': not a letter of the list */
+    press(EV(NGE_KEY_Z));                                          /* 'z': past the list */
+    player_command(EV(NGE_KEY_D));
+    CHECK(stowed(sword) && player_turn && said("Never mind."));
+    press(EV(NGE_KEY_Q | (NGE_MOD_CAPS << 8)));                     /* 'Q': not a letter of the list */
+    player_command(EV(NGE_KEY_D));
     CHECK(stowed(sword) && player_turn);
-    ui_items_enter(UI_DROP);
-    ui_items_key(UI_DROP, NGE_KEY_B);                              /* 'b': just past the list (a: sword) */
+    press(EV(NGE_KEY_B));                                          /* 'b': just past the list (a: sword) */
+    player_command(EV(NGE_KEY_D));
     CHECK(stowed(sword) && player_turn && said("Never mind."));
     /* A potion in the pack: dropped and listed, but nothing to equip */
     ring2 = gen_item(IT_POTION, actor_player);
 
     /* ---- equip: what fits a slot; take off: what is in use, in slot order ---- */
-    ui_items_enter(UI_EQUIP);
+    press(EV(NGE_KEY_A));
+    player_command(EV(NGE_KEY_W));
     CHECK(starts(panel(0), "        Arm Thyself "));
     CHECK(starts(panel(2), " a) sword") && starts(panel(3), "     "));   /* ring1 in use, the potion fits nothing */
-    ui_items_key(UI_EQUIP, NGE_KEY_A);
     CHECK(item_slot[sword] == SLOT_WEAPON && !player_turn);
     player_turn = 1;
-    ui_items_enter(UI_UNEQUIP);
+    press(EV(NGE_KEY_B));
+    player_command(EV(NGE_KEY_R));
     CHECK(starts(panel(0), "           Divest"));
     CHECK(starts(panel(2), " a) sword (in hand)") && starts(panel(3), " b) ring of health (left)"));
-    ui_items_key(UI_UNEQUIP, NGE_KEY_B);
     CHECK(item_slot[ring1] == SLOT_NONE && item_slot[sword] == SLOT_WEAPON);
     /* A refusal: told why, the turn kept */
     player_turn = 1;
     inv_capacity[actor_player] = (uint8_t)inv_count(actor_player);
-    ui_items_enter(UI_UNEQUIP);
-    ui_items_key(UI_UNEQUIP, NGE_KEY_A);
+    press(EV(NGE_KEY_A));
+    player_command(EV(NGE_KEY_R));
     CHECK(item_slot[sword] == SLOT_WEAPON && player_turn);
     CHECK(said("You can't carry any more."));
     inv_capacity[actor_player] = 20;
@@ -224,22 +252,21 @@ int main(void)
 
     /* ---- use: only what does something when used; a letter uses it up ---- */
     player_turn = 1;
-    last_state = NO_STATE;
-    ui_items_enter(UI_USE);
-    CHECK(last_state == NO_STATE && starts(panel(0), "          Partake "));   /* (28 - 7) / 2 */
+    press(EV(NGE_KEY_A));
+    player_command(EV(NGE_KEY_U));
+    CHECK(starts(panel(0), "          Partake "));   /* (28 - 7) / 2 */
     CHECK(starts(panel(2), " a) healing potion") && starts(panel(3), "     "));   /* not the ring */
     CHECK(starts(row(31), "Letter: use it   Other keys: back"));
-    ui_items_key(UI_USE, NGE_KEY_A);
-    CHECK(last_state == GAME_PLAY && NGE_ENTITY_STATE(ring2) == NGE_ENTITY_DYING && !player_turn);
+    CHECK(NGE_ENTITY_STATE(ring2) == NGE_ENTITY_DYING && !player_turn);
     nge_event_process(messages_on_event);
     CHECK(starts(row(29), "You drink the healing potion.") && said("You feel much better."));
-    last_state = NO_STATE;
-    ui_items_enter(UI_USE);
-    CHECK(last_state == GAME_PLAY && said("You have nothing to use."));
+    waits = 0;
+    player_command(EV(NGE_KEY_U));
+    CHECK(waits == 0 && said("You have nothing to use."));   /* not opened: no key waited for */
     /* Food: eaten; the poison's start text */
     ring2 = gen_item(IT_FOOD, actor_player);
-    ui_items_enter(UI_USE);
-    ui_items_key(UI_USE, NGE_KEY_A);
+    press(EV(NGE_KEY_A));
+    player_command(EV(NGE_KEY_U));
     nge_event_process(messages_on_event);
     CHECK(starts(row(29), "You eat the dead rat.") && said("You feel sick."));
     effect_cure(actor_player, STATUS_POISONED);
@@ -251,59 +278,64 @@ int main(void)
     nge_event_process(messages_on_event);
     CHECK(said("You take 2 slashing damage."));
 
-    /* ---- a choosing screen with nothing to choose: says so, back to play at once ---- */
+    /* ---- a choosing screen with nothing to choose: says so, isn't opened ---- */
     nge_entity_destroy(ring1);
     nge_entity_destroy(ring2);                                     /* the potion */
     item_slot[sword] = SLOT_NONE;
     nge_entity_destroy(sword);
     nge_render_set_view(AREA);
-    last_state = NO_STATE;
-    ui_items_enter(UI_DROP);
-    CHECK(last_state == GAME_PLAY && nge_render_area == AREA);    /* not opened */
+    redraws = 0;
+    waits = 0;
+    CHECK(ui_choose_item(UI_DROP) == NGE_ENTITY_INVALID);
+    CHECK(nge_render_area == AREA && redraws == 0 && waits == 0);   /* not opened */
     CHECK(said("You have nothing to drop."));
-    last_state = NO_STATE;
-    ui_items_enter(UI_UNEQUIP);
-    CHECK(last_state == GAME_PLAY && said("You aren't using anything."));
+    CHECK(ui_choose_item(UI_UNEQUIP) == NGE_ENTITY_INVALID && said("You aren't using anything."));
 
     /* ---- doors: bump to open, c and a direction to close ---- */
     door = gen_feature(FT_DOOR, AREA);
     feature_place(door, 6, 5);                                     /* east of the player, closed */
     nge_event_flush();
     player_turn = 1;
-    player_command(NGE_KEY_L);                                     /* 'l': east, into the door */
+    player_command(EV(NGE_KEY_L));                                 /* 'l': east, into the door */
     CHECK(FEATURE_IS_OPEN(door) && NGE_LOCATION_X(actor_player) == 5 && !player_turn);
     nge_event_process(messages_on_event);
     CHECK(said("You open the door."));
     /* Walking into the open doorway and back: the map shows it, no "You see a door here." */
-    player_command(NGE_KEY_L);
+    player_command(EV(NGE_KEY_L));
     CHECK(NGE_LOCATION_X(actor_player) == 6);
     nge_event_process(messages_on_event);
     CHECK(said("You open the door."));
-    player_command(NGE_KEY_H);
+    player_command(EV(NGE_KEY_H));
     nge_event_flush();
     player_turn = 1;
-    last_state = NO_STATE;
-    player_command(NGE_KEY_C);
-    CHECK(last_state == GAME_CLOSE);
-    player_direction_enter(PLAYER_PROMPT_CLOSE);
+    press(EV(NGE_KEY_L));
+    player_command(EV(NGE_KEY_C));
     CHECK(said("Close in which direction?") && starts(row(31), "Direction: close   Other keys: back"));
-    last_state = NO_STATE;
-    player_direction_key(PLAYER_PROMPT_CLOSE, NGE_KEY_L);
-    CHECK(last_state == GAME_PLAY && !FEATURE_IS_OPEN(door) && !player_turn);
+    CHECK(!FEATURE_IS_OPEN(door) && !player_turn);
     nge_event_process(messages_on_event);
     CHECK(said("You close the door."));
     /* Refused: told why, the turn kept */
     player_turn = 1;
-    player_direction_key(PLAYER_PROMPT_CLOSE, NGE_KEY_L);
+    press(EV(NGE_KEY_L));
+    player_command(EV(NGE_KEY_C));
     CHECK(said("The door is already closed.") && player_turn);
-    player_direction_key(PLAYER_PROMPT_CLOSE, NGE_KEY_H);          /* west: nothing there */
+    press(EV(NGE_KEY_H));                                          /* west: nothing there */
+    player_command(EV(NGE_KEY_C));
     CHECK(said("There is nothing there.") && player_turn);
-    player_direction_key(PLAYER_PROMPT_CLOSE, NGE_KEY_A);          /* not a direction */
-    CHECK(said("Never mind.") && last_state == GAME_PLAY);
-    player_direction_key(PLAYER_PROMPT_FIRE, NGE_KEY_L);
+    press(EV(NGE_KEY_A));                                          /* not a direction */
+    player_command(EV(NGE_KEY_C));
+    CHECK(said("Never mind.") && player_turn);
+    press(EV(NGE_KEY_L));
+    player_command(EV(NGE_KEY_F));
     CHECK(said("You have nothing to fire.") && player_turn);
-    player_command(NGE_KEY_F);
-    CHECK(last_state == GAME_FIRE);
+    {
+        int8_t dx;
+        int8_t dy;
+
+        CHECK(player_direction_key(EV(NGE_KEY_K), &dx, &dy) && dx == 0 && dy == -1);
+        CHECK(player_direction_key(EV(NGE_KEY_RIGHT), &dx, &dy) && dx == 1 && dy == 0);
+        CHECK(!player_direction_key(EV(NGE_KEY_ENTER), &dx, &dy) && said("Never mind."));
+    }
 
     /* ---- stairs: > and < (SYMBOL SHIFT T and R), refused off stairs; arriving and leaving said ---- */
     nge_event_flush();
@@ -334,7 +366,11 @@ int main(void)
     CHECK(!player_turn);
 
     /* ---- asserts ---- */
-    TEST_EXPECT_HALT(ui_items_enter(UI_SCREEN_COUNT));
+    TEST_EXPECT_HALT(ui_choose_item(UI_SCREEN_COUNT));
+    CHECK(test_halt_count == 1);
+    TEST_EXPECT_HALT(ui_choose_item(UI_INVENTORY));   /* it only shows */
+    CHECK(test_halt_count == 1);
+    TEST_EXPECT_HALT(player_ask_direction(PLAYER_PROMPT_COUNT, NULL, NULL));
     CHECK(test_halt_count == 1);
 
     return test_summary("ui");

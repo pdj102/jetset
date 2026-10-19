@@ -86,12 +86,16 @@ Check: `grep -rn "NGE_COMPONENT(" src` finds masks only in the two lists
 - `feature_place()`, `feature_open()` and `feature_close()` keep the
   blocking and the tile in step. Actions check the rules first.
 
-### P-UI-1 · should · Item screens follow game/ui/ui.h
+### P-UI-1 · withdrawn · Item screens follow game/ui/ui.h
+*Withdrawn* (2026-10-19): item screens are choosers (P-CHOOSE-1). The old
+text follows.
 A new item screen is a row in the description table (`ui_bank.c`), a
 `UI_*` number and a game state. It returns to `GAME_PLAY`, whose entry
 action redraws what it covered.
 
-### P-STATE-1 · must · Game states follow game/game.h
+### P-STATE-1 · withdrawn · Game states follow game/game.h
+*Withdrawn* (2026-10-19): the game has no states any more (P-LOOP-1,
+P-CHOOSE-1). The old text follows.
 Each state has an entry action and a frame update, called from the
 switches in `game.c` (a banked state's functions are called directly,
 never through a table of pointers). Updates never wait: they take what
@@ -99,6 +103,29 @@ they need from the key events and return. The exceptions run frames
 themselves until the player answers: the title's name prompt, and
 targeting (`target_choose()`, game/target/target.h), whose frames do only
 `game_frame_start()` and `nge_render_update()`.
+
+### P-LOOP-1 · must · Loops that run frames follow game/game.h
+- Every loop that runs frames calls `game_frame_start()` first and
+  `game_frame_end()` last in each frame, or waits through
+  `game_wait_key()`, which does both. There is no other frame loop.
+- Only the play loop (`play_run()`) steps the world: the turn engine, the
+  frame's events, a change of level, the clean-up and the guard check.
+- The design and its requirements are in `docs/game_loop.md`.
+
+### P-CHOOSE-1 · must · Choosers follow game/game.h
+- A chooser (`ui_choose_item()`, `ui_show_inventory()`,
+  `player_ask_direction()`, `target_choose()`) is called by a command,
+  during the player's turn. It throws away waiting key events, shows its
+  screen or prompt, waits with `game_wait_key()`, puts back what it
+  covered (`game_play_redraw()` after a screen over the map window,
+  `game_play_help()` after a prompt), throws away waiting key events
+  again, and returns the answer.
+- It only chooses: it does no action and posts no events. The command does
+  the action with the answer, through `player_act()`.
+- Its answer to a key is a step function on one key event (`ui_item_key()`,
+  `player_direction_key()`, `target_key()`), with PC tests.
+- A new item screen is a row in the description table (`ui_bank.c`) and a
+  `UI_*` number.
 
 ### P-LEVEL-1 · must · Level changes follow game/level/level.h
 - Leaving the player's level is a request (`level_request()`), carried out

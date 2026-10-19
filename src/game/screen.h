@@ -27,9 +27,18 @@
 
 /*
  * Hardware sprites: 0 to NGE_RENDER_SPRITES-1 are the render system's (the
- * level's entities), then the game's own, drawn on top of them
+ * level's entities), then the overlay sprites, drawn on top of them
  */
-#define SCREEN_SPRITE_CURSOR  NGE_RENDER_SPRITES   /**< The targeting cursor (game/target/target.h). */
+#define SCREEN_SPRITE_OVERLAY  NGE_RENDER_SPRITES   /**< The first overlay sprite's hardware number. */
+
+/*
+ * Overlay sprites: the game's own sprites, not entities, for things that
+ * aren't on the map's level (the targeting cursor; later projectiles and
+ * effects). Their records are in common memory, and the frame start
+ * (game_frame_start(), game/game.h) uploads them every frame
+ */
+#define SCREEN_OVERLAY_CURSOR  0   /**< The targeting cursor (game/target/target.h). */
+#define SCREEN_OVERLAY_COUNT   4   /**< Overlay sprites: hardware sprites SCREEN_SPRITE_OVERLAY onwards. */
 
 /** The map view, in tilemap tiles (the window of the level's map). */
 extern const nge_rect_t screen_map_view;
@@ -91,6 +100,18 @@ void screen_show_turn(uint16_t turn);
  *        stays on the bottom line, older ones scroll up.
  */
 void screen_message(const char *text);
+
+/**
+ * @brief Show overlay sprite n (SCREEN_OVERLAY_*) at screen position (x, y)
+ *        with an 8-bit pattern, from the next frame.
+ */
+void screen_overlay_set(uint8_t n, uint16_t x, uint16_t y, uint8_t pattern);
+
+/** @brief Hide overlay sprite n, from the next frame. */
+void screen_overlay_hide(uint8_t n);
+
+/** @brief Send the overlay sprites to the hardware: once a frame, in the blanking period (game_frame_start()). */
+void screen_overlay_upload(void);
 
 /** @brief Show text on the help bar (row 31), replacing what was there: what the keys do now. */
 void screen_help(const char *text);

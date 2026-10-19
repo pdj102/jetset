@@ -14,9 +14,10 @@
  *         ... use the tile t.x, t.y ...
  *     }
  *
- * It blocks: it runs frames of its own (game_frame_start(), game/game.h)
- * until the player answers, during the player's turn. The screen stays
- * live, but no time passes and no events are handled until it returns.
+ * It is a chooser (game/game.h): it waits with game_wait_key() until the
+ * player answers, during the player's turn. The screen stays live, but no
+ * time passes and no events are handled until it returns. The cursor is an
+ * overlay sprite (SCREEN_OVERLAY_CURSOR, game/screen.h).
  *
  * What a tile is wanted for (the purpose, TARGET_*) chooses the prompt and
  * the help text, which this module owns: a caller's banked literals would

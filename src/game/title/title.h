@@ -3,24 +3,21 @@
 
 /**
  * @file title.h
- * @brief The title state (GAME_TITLE, game/game.h): the title message, then
- *        any key asks the player's name and starts play.
+ * @brief The title: the title message, then any key asks the player's
+ *        name. The main loop (game/game.h) starts a game when it returns.
  *
  * Banking: everything here is banked (NGE_BANKED, page 104), as it runs
- * once per game; the module has no common part. Don't call these while
- * game code has its own page mapped in slot 6 or 7.
+ * once per game; the module has no common part. Don't call it while game
+ * code has its own page mapped in slot 6 or 7.
  */
 
 #include "core/nge_bank.h"
 
-/** @brief Entry action of the title state: show the title. */
-void title_enter(void) NGE_BANKED;
-
 /**
- * @brief The title state's update, once per frame: on any key, ask the
- *        player's name (blocking: the screen stands still while they type),
- *        show the help and go to GAME_NEW_GAME (which starts the game).
+ * @brief Show the title, with no level: no entity sprites, the map window
+ *        cleared. Wait for a key, ask the player's name (running frames
+ *        until ENTER), greet them and return.
  */
-void title_update(void) NGE_BANKED;
+void title_run(void) NGE_BANKED;
 
 #endif

@@ -4,16 +4,18 @@
 /**
  * @file ui.h
  * @brief Screens shown in the map window: the player's item screens
- *        (inventory, drop, equip, take off, use).
+ *        (inventory, drop, equip, take off, use), as choosers (game/game.h).
  *
  * A screen hides the sprites, draws a title and a lettered list of items
  * over the map window (screen_panel, game/screen.h), and sets the help
- * bar. Each item screen is a row of a table of descriptions (ui_bank.c):
- * its title, its help, which items it lists and what choosing one does,
- * so a new one (read, zap) is a new row and a new game state.
+ * bar. It waits for a key (game_wait_key()), then draws the map, sprites,
+ * stats and play's help again (game_play_redraw()) and returns. Each item
+ * screen is a row of a table of descriptions (ui_bank.c): its title, its
+ * help, what to say when it has nothing to list, and which items it lists,
+ * so a new one (read, zap) is a new row and a UI_* number.
  *
- * Leaving a screen returns to GAME_PLAY, whose entry action redraws the map
- * and the stats and shows the sprites again (game.c).
+ * A screen only chooses: the command that opened it does the action with
+ * the item it returns (game/player/player.h).
  *
  * Banking: everything here is banked (NGE_BANKED, page 116), as screens
  * run on a key press, not every frame. Don't call these while game code
@@ -23,10 +25,11 @@
 #include <stdint.h>
 
 #include "core/nge_bank.h"
+#include "ecs/nge_entity.h"
 #include "input/nge_input.h"
 
 /* The item screens: rows of the description table */
-#define UI_INVENTORY  0   /**< What the player carries and uses; any key: back. */
+#define UI_INVENTORY  0   /**< What the player carries and uses: ui_show_inventory(). */
 #define UI_DROP       1   /**< Choose an item to drop. */
 #define UI_EQUIP      2   /**< Choose an item to equip. */
 #define UI_UNEQUIP    3   /**< Choose an item to take off. */
@@ -34,19 +37,22 @@
 #define UI_SCREEN_COUNT    5
 
 /**
- * @brief Entry action of an item screen's state: show the screen. A screen
- *        for choosing with nothing to choose says so and returns to play.
+ * @brief Show a choosing screen (any UI_* but UI_INVENTORY) and wait for
+ *        the player's choice. A screen with nothing to list isn't shown:
+ *        it says so in the message window.
+ * @return The item whose letter was pressed, or NGE_ENTITY_INVALID (another
+ *         key: "Never mind."; or nothing to choose).
  */
-void ui_items_enter(uint8_t screen) NGE_BANKED;
+nge_entity_id_t ui_choose_item(uint8_t screen) NGE_BANKED;
 
-/** @brief An item screen's update, once per frame: a key event goes to ui_items_key(). */
-void ui_items_update(uint8_t screen) NGE_BANKED;
+/** @brief Show the inventory until any key. */
+void ui_show_inventory(void) NGE_BANKED;
 
 /**
- * @brief An item screen's answer to a key event: act on the item a letter
- *        chooses (player_act()), or say "Never mind." for another key; any
- *        key leaves a screen that only shows. Then back to play.
+ * @brief A choosing screen's answer to one key event, for a list of n
+ *        items (ids, on the caller's stack): the item for a letter a to the
+ *        nth, or NGE_ENTITY_INVALID for any other key ("Never mind.").
  */
-void ui_items_key(uint8_t screen, nge_key_event_t ev) NGE_BANKED;
+nge_entity_id_t ui_item_key(const nge_entity_id_t *ids, uint8_t n, nge_key_event_t ev) NGE_BANKED;
 
 #endif

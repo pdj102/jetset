@@ -7,6 +7,7 @@
 #include "hw/nge_palette.h"
 #include "io/nge_print.h"
 #include "io/nge_tm_stream.h"
+#include "sprite/nge_sprite.h"
 #include "tilemap/nge_tilemap.h"
 
 #include "game/components/attrs.h"
@@ -35,6 +36,9 @@ static const char ability_names[ABIL_COUNT][4] = { "Str", "Dex", "Con", "Int", "
 
 /* The message window's bottom line has text: the next message goes on a new line */
 static uint8_t message_line_used;
+
+/* The overlay sprites' records: common memory, so the upload can read them from any caller */
+static nge_sprite_attr_t overlay[SCREEN_OVERLAY_COUNT];
 
 /* Game graphics palette (bank 0); text colours are banks 12-15 (nge_tm_load_ink_palette) */
 static const nge_palette_entry_9_t tile_palette[] = {
@@ -73,6 +77,7 @@ void screen_init(void)
         nge_close(help);
     }
     message_line_used = 0;
+    nge_sprite_clear(overlay, SCREEN_OVERLAY_COUNT);
     screen_stats = nge_open_tilemap(&stats_area, 0);
     screen_messages = nge_open_tilemap(&message_area, 0);
     screen_panel = nge_open_tilemap(&screen_map_view, 0);
@@ -164,6 +169,25 @@ void screen_message_line(void)
         nge_putc(NGE_CTRL_LF, screen_messages);   /* scrolls once at the bottom */
     }
     message_line_used = 1;
+}
+
+void screen_overlay_set(uint8_t n, uint16_t x, uint16_t y, uint8_t pattern)
+{
+    nge_util_assert(n < SCREEN_OVERLAY_COUNT);
+
+    nge_sprite_set(&overlay[n], x, y, pattern, 0, NGE_SPRITE_SCALE_1);
+}
+
+void screen_overlay_hide(uint8_t n)
+{
+    nge_util_assert(n < SCREEN_OVERLAY_COUNT);
+
+    nge_sprite_clear(&overlay[n], 1);
+}
+
+void screen_overlay_upload(void)
+{
+    nge_sprite_upload(SCREEN_SPRITE_OVERLAY, overlay, SCREEN_OVERLAY_COUNT);
 }
 
 void screen_help(const char *text)

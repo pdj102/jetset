@@ -22,15 +22,9 @@
 #define EV(k)  ((nge_key_event_t)(k))
 
 /* What game.c and actors.c provide in the game (not linked here) */
-game_state_t game_state;
 nge_entity_id_t actor_player;
 static int play_helps;   /* game_play_help() calls */
-static int frames_run;   /* game_frame_start() calls */
-
-void game_set_state(game_state_t state)
-{
-    (void)state;
-}
+static int waits;        /* game_wait_key() calls */
 
 void game_over(uint8_t reason)
 {
@@ -42,10 +36,15 @@ void game_play_help(void)
     play_helps++;
 }
 
+void game_play_redraw(void)
+{
+}
+
 /*
- * The keys pressed while targeting runs its frames: one event a frame from
- * the script, as if typed. When the script runs out, Q cancels, so a test
- * that goes wrong ends (out_of_keys says so)
+ * The keys the player presses while a chooser waits: a key event already
+ * waiting first, as the real one does, then the script's, one a wait. When
+ * the script runs out, Q cancels, so a test that goes wrong ends
+ * (out_of_keys says so)
  */
 static const nge_key_event_t *script;
 static int out_of_keys;
@@ -56,15 +55,20 @@ static void queue_key(nge_key_event_t ev)
     nge_input_count++;
 }
 
-void game_frame_start(void)
+nge_key_event_t game_wait_key(uint16_t frames)
 {
-    frames_run++;
-    if (script != NULL && *script != NGE_KEY_NONE) {
-        queue_key(*script++);
-    } else {
-        out_of_keys = 1;
-        queue_key(EV(NGE_KEY_Q));
+    nge_key_event_t ev = nge_key_get();
+
+    (void)frames;
+    waits++;
+    if (ev != NGE_KEY_NONE) {
+        return ev;
     }
+    if (script != NULL && *script != NGE_KEY_NONE) {
+        return *script++;
+    }
+    out_of_keys = 1;
+    return EV(NGE_KEY_Q);
 }
 
 static char text[NGE_TILEMAP_WIDTH + 1];
@@ -208,9 +212,9 @@ int main(void)
     queue_key(EV(NGE_KEY_LEFT));   /* typed before targeting: thrown away */
     script = right_right_enter;
     play_helps = 0;
-    frames_run = 0;
+    waits = 0;
     CHECK(target_choose(&t) == 1);
-    CHECK(t.x == 32 && t.y == 20 && frames_run == 3 && !out_of_keys);
+    CHECK(t.x == 32 && t.y == 20 && waits == 3 && !out_of_keys);
     CHECK(said(0, "Look at what?"));
     CHECK(play_helps == 1 && nge_key_get() == NGE_KEY_NONE);
     x = nge_map.cam_x;
