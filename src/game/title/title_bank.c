@@ -62,6 +62,6 @@ void title_update(void) NGE_BANKED
     ask_name();
     screen_message("Welcome to the dungeon.");
     screen_message("Move: cursor keys or h j k l.");
-    screen_message("i inventory, d drop, f fire, Q quit.");
+    screen_message("i inv, d drop, f fire, x look, Q quit.");
     game_set_state(GAME_NEW_GAME);
 }

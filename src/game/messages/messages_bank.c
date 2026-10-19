@@ -13,7 +13,10 @@
 
 #include <string.h>
 
+#include "ecs/components/nge_location.h"
+
 #include "game/actors.h"
+#include "game/components/components.h"
 #include "game/components/health.h"
 #include "game/components/kind.h"
 #include "game/effects/effects.h"
@@ -297,5 +300,24 @@ void messages_act_failed(const act_t *a) NGE_BANKED
         break;
     default:
         break;
+    }
+}
+
+void messages_look(uint8_t x, uint8_t y) NGE_BANKED
+{
+    nge_entity_id_t id;
+    uint8_t seen = 0;
+
+    /* Only entities with a kind: they have names */
+    NGE_LOCATION_FOR_EACH_AT(id, LEVEL_AREA, x, y, COMPONENT_KIND) {
+        if (id == actor_player) {
+            screen_message("You see yourself.");
+        } else {
+            say_named("You see a ", id, ".");
+        }
+        seen = 1;
+    }
+    if (!seen) {
+        screen_message("You see nothing there.");
     }
 }

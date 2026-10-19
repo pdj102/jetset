@@ -276,6 +276,23 @@ int main(void)
     CHECK(nge_map_block(NGE_MAP_STRIDE, 0) == NGE_BLOCK_EDGE);
     nge_map_init(60, 40, &window);
 
+    /* ---- the range test: dx*dx + dy*dy <= r*r + r, from (40, 20) ---- */
+    CHECK(nge_map_within(40, 20, 40, 20, 0));                                   /* r = 0: the tile itself */
+    CHECK(!nge_map_within(40, 20, 41, 20, 0));
+    CHECK(nge_map_within(40, 20, 41, 21, 1) && nge_map_within(40, 20, 39, 19, 1));   /* r = 1: the 8 neighbours */
+    CHECK(nge_map_within(40, 20, 41, 19, 1) && nge_map_within(40, 20, 40, 21, 1));
+    CHECK(!nge_map_within(40, 20, 42, 20, 1));
+    CHECK(nge_map_within(40, 20, 45, 20, 5));                                   /* r = 5: limit 30 */
+    CHECK(nge_map_within(40, 20, 45, 22, 5));                                   /* 29 */
+    CHECK(nge_map_within(40, 20, 44, 23, 5));                                   /* 25 */
+    CHECK(!nge_map_within(40, 20, 46, 20, 5));                                  /* 36 */
+    CHECK(!nge_map_within(40, 20, 45, 23, 5));                                  /* 34 */
+    CHECK(!nge_map_within(40, 20, 44, 24, 5));                                  /* 32 */
+    CHECK(nge_map_within(35, 18, 40, 20, 5) && nge_map_within(40, 20, 35, 18, 5));   /* either order, left and above */
+    CHECK(!nge_map_within(36, 17, 40, 20, 4) && !nge_map_within(40, 20, 36, 17, 4)); /* 25 > 20 */
+    CHECK(nge_map_within(0, 0, NGE_MAP_STRIDE - 1, NGE_MAP_HEIGHT_MAX - 1, 255));     /* any tile, at 255 */
+    CHECK(nge_map_within(NGE_MAP_STRIDE - 1, 0, 0, NGE_MAP_HEIGHT_MAX - 1, 255));
+
     /* ---- asserts ---- */
     TEST_EXPECT_HALT(nge_map_get(60, 0));
     CHECK(test_halt_count == 1);

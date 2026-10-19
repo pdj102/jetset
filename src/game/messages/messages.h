@@ -10,6 +10,8 @@
  * has its own page mapped in slot 6 or 7.
  */
 
+#include <stdint.h>
+
 #include "core/nge_bank.h"
 #include "ecs/nge_entity.h"
 #include "event/nge_event.h"
@@ -20,5 +22,12 @@ void messages_on_event(const nge_event_t *e) NGE_BANKED;
 
 /** @brief Tell the player why their action failed (a->reason, a on the caller's stack), if they need telling. */
 void messages_act_failed(const act_t *a) NGE_BANKED;
+
+/**
+ * @brief Look at tile (x, y) of the current level: one message for each game
+ *        entity on it, in ID order ("You see a ring.", "You see yourself."),
+ *        or "You see nothing there.".
+ */
+void messages_look(uint8_t x, uint8_t y) NGE_BANKED;
 
 #endif

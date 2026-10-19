@@ -14,7 +14,7 @@
 #   Game code (src/game) is linked only into the tests listed with it below
 #   (GEN_GAME_SRCS, with the components and effects, for test_gen, LEVEL_GAME_SRCS and those for test_level,
 #   ACT_GAME_SRCS and the level and gen ones for test_act, the gen ones for
-#   test_inventory, UI_GAME_SRCS and the action ones for test_ui).
+#   test_inventory, UI_GAME_SRCS and the action ones for test_ui and test_target).
 #   Library files that only work on the Next (inline asm traps) are listed in
 #   LIB_EXCLUDE and replaced by fakes in support/test.c.
 
@@ -56,7 +56,7 @@ LEVEL_GAME_OBJS := $(LEVEL_ONLY_OBJS) $(GEN_GAME_OBJS)
 ACT_GAME_SRCS := $(wildcard $(GAMEDIR)/actions/*.c)
 ACT_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(ACT_GAME_SRCS)) $(LEVEL_GAME_OBJS)
 UI_GAME_SRCS := $(addprefix $(GAMEDIR)/,ui/ui_bank.c player/player.c player/player_bank.c screen.c \
-                messages/messages_bank.c)
+                messages/messages_bank.c target/target_bank.c)
 UI_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(UI_GAME_SRCS)) $(ACT_GAME_OBJS)
 
 TEST_SRCS := $(wildcard test_*.c)
@@ -109,6 +109,9 @@ $(BUILD)/test_inventory: $(BUILD)/test_inventory.o $(LIB_OBJS) $(SUPPORT_OBJS) $
 	$(HOSTCC) $(CFLAGS) $^ -o $@
 
 $(BUILD)/test_ui: $(BUILD)/test_ui.o $(LIB_OBJS) $(SUPPORT_OBJS) $(UI_GAME_OBJS)
+	$(HOSTCC) $(CFLAGS) $^ -o $@
+
+$(BUILD)/test_target: $(BUILD)/test_target.o $(LIB_OBJS) $(SUPPORT_OBJS) $(UI_GAME_OBJS)
 	$(HOSTCC) $(CFLAGS) $^ -o $@
 
 $(BUILD)/test_health: $(BUILD)/test_health.o $(LIB_OBJS) $(SUPPORT_OBJS) $(GEN_GAME_OBJS)

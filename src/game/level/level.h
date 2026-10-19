@@ -47,6 +47,7 @@
 #include "ecs/nge_owner.h"
 #include "map/nge_map.h"
 
+#define LEVEL_DEPTH_SURFACE  0   /**< The surface: leaving the dungeon. */
 #define LEVEL_DEPTH_BOTTOM  10   /**< The deepest level: no down stairs. */
 #define LEVEL_AREA      NGE_OWNER_AREA(level_depth)   /**< Owner of the current level's entities. */
 #define LEVEL_WIDTH     60                  /**< Map size in tiles: larger than the view. */

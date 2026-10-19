@@ -14,7 +14,7 @@
 #include "hw/nge_palette.h"
 
 #define DEMO_SPRITE_PAGE      101 /**< SECTION PAGE_101 in sprite_data.asm. */
-#define DEMO_SPRITE_PATTERNS  8   /**< 8-bit patterns (see below). */
+#define DEMO_SPRITE_PATTERNS  10  /**< 8-bit patterns (see below). */
 
 /* Patterns */
 #define DEMO_SPRITE_WALKER    0   /**< 16x16 walking figure, 2 frames. */
@@ -23,6 +23,8 @@
 #define DEMO_SPRITE_SWORD     5   /**< 8x8 sword in the top-left. */
 #define DEMO_SPRITE_RAT       6   /**< 8x8 rat in the top-left. */
 #define DEMO_SPRITE_RING      7   /**< 8x8 ring in the top-left. */
+#define DEMO_SPRITE_CURSOR_IN   8   /**< The targeting cursor, in range: green corners of an 8x8 tile. */
+#define DEMO_SPRITE_CURSOR_OUT  9   /**< The targeting cursor, out of range: red. */
 #define DEMO_SPRITE_COLOURS   32  /**< Palette entries, from index 0. */
 
 extern const uint8_t demo_sprite_patterns[];

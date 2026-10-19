@@ -51,6 +51,17 @@
 #define NGE_MAP_HEIGHT_MAX  48
 #endif
 
+/** Not a map column or row: maps are at most NGE_MAP_STRIDE wide and NGE_MAP_HEIGHT_MAX high. */
+#define NGE_MAP_X_INVALID  0xFF
+#define NGE_MAP_Y_INVALID  0xFF
+
+/* The invalid coordinates are off every map */
+typedef char nge_map_invalid_check[(NGE_MAP_X_INVALID >= NGE_MAP_STRIDE && NGE_MAP_Y_INVALID >= NGE_MAP_HEIGHT_MAX) ? 1 : -1];
+
+/* nge_map_within()'s sums fit in 16 bits: the largest dx*dx + dy*dy on the biggest map */
+typedef char nge_map_within_check[((uint32_t)(NGE_MAP_STRIDE - 1) * (NGE_MAP_STRIDE - 1) +
+                                   (uint32_t)(NGE_MAP_HEIGHT_MAX - 1) * (NGE_MAP_HEIGHT_MAX - 1) <= 0xFFFF) ? 1 : -1];
+
 /** Page holding the map's data (src/banks.inc), and the slot it is mapped into. */
 #define NGE_MAP_PAGE  51
 #define NGE_MAP_SLOT  1
@@ -191,6 +202,18 @@ void nge_map_update(void);
 
 /** @brief Redraw the view now, whether it changed or not. */
 void nge_map_draw(void);
+
+/**
+ * @brief The one range test: tile (x1, y1) is within range r of tile
+ *        (x0, y0), on a circle: dx*dx + dy*dy <= r*r + r, which keeps the tiles
+ *        whose centres are closer than r + 1/2. Range 0 is the tile itself,
+ *        range 1 its 8 neighbours. Every range and distance test in a game
+ *        uses it, so a range means the same tiles everywhere.
+ *
+ * Cheap on the Next: zsdcc uses the Z80N's mul instruction for the squares.
+ * @return 1 if within range, 0 if not.
+ */
+uint8_t nge_map_within(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, uint8_t r);
 
 /**
  * @brief Convert a map pixel position to screen (sprite) coordinates.

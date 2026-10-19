@@ -52,6 +52,15 @@ uint8_t nge_map_centre_camera(uint8_t x, uint8_t y)
                               (y > half_h) ? y - half_h : 0);
 }
 
+uint8_t nge_map_within(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, uint8_t r)
+{
+    uint8_t dx = (x1 > x0) ? (uint8_t)(x1 - x0) : (uint8_t)(x0 - x1);
+    uint8_t dy = (y1 > y0) ? (uint8_t)(y1 - y0) : (uint8_t)(y0 - y1);
+
+    /* Fits in 16 bits: dx*dx + dy*dy by nge_map_within_check, r*r + r at most 65280 */
+    return (uint16_t)dx * dx + (uint16_t)dy * dy <= (uint16_t)r * r + r;
+}
+
 const nge_tile_t *nge_map_get(uint8_t x, uint8_t y)
 {
     nge_util_assert(x < nge_map.width && y < nge_map.height);

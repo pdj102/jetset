@@ -58,10 +58,18 @@ void player_show_stats(void) NGE_BANKED;
  *        movement keys (cursor keys or h j k l) move (into a creature:
  *        attack; into a closed door: open it), g (or ,) picks up the item
  *        here, i d w r u open the inventory, drop, equip, take off and use
- *        screens, f and c the fire and close prompts, Q quits. Other keys
- *        do nothing.
+ *        screens, f and c the fire and close prompts, x looks (targeting,
+ *        game/target/target.h), Q quits. Other keys do nothing.
  */
 void player_command(nge_key_event_t ev) NGE_BANKED;
+
+/**
+ * @brief The direction of a movement key: the cursor keys (also CAPS+5-8)
+ *        or h j k l. The one key map for moving, in play, the direction
+ *        prompts and targeting.
+ * @return 1 and the direction in (dx, dy), or 0 (and (0, 0)) for any other key.
+ */
+uint8_t player_key_direction(nge_key_event_t ev, int8_t *dx, int8_t *dy) NGE_BANKED;
 
 /**
  * @brief Do an action (ACT_*, game/actions/act.h) for the player: on a

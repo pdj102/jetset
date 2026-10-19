@@ -34,6 +34,10 @@ parameter lists.
 ### C-NAME-4 · should · File-local functions and variables are static
 A function or variable used only in its own `.c` file is `static`, and is
 not given the module prefix. Everything else is declared in a header.
+Exception: a static function that other files' comments or documents name
+keeps its module prefix, so the name can be found from them. These are the
+dispatch functions, `game_on_event()` and `game_on_timer()`, named in
+`game/game.h`, `game/timers.h` and the P- rules.
 
 ## Headers
 
@@ -57,6 +61,16 @@ headers, nge headers, and game headers, each group sorted.
 Headers hold `extern` declarations, types, macros and prototypes. Variables
 and functions are defined in exactly one `.c` file. The only definitions in
 headers are macros and the compile-time check typedefs (H-CHECK-1).
+
+### C-HDR-5 · should · A file includes only the headers it uses
+Each `#include` provides a name the file itself uses: a function, type,
+macro or constant. Remove an include when its last use goes. A header the
+file needs only because another header needs it isn't included: that
+header includes it (C-HDR-2).
+Why: an unused include is a false dependency. The build rebuilds the file
+whenever that header changes, and a reader, or a check of N-LAYER-1, takes
+it for a real one.
+Check: for each include, search the file for a name the header declares.
 
 ## Preprocessor
 

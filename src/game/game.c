@@ -1,27 +1,31 @@
+/*
+ * The main loop and the game states: common memory. Each state's entry
+ * action and frame update are called from the two switches here, directly,
+ * never through function pointers, so banked states (the title,
+ * game/title/title_bank.c) work: a pointer to a banked function doesn't
+ * switch banks (N-BANK-6). The dispatch functions game_on_event() and
+ * game_on_timer() are here too: nge calls them through pointers, so they
+ * must be in common memory.
+ */
 #include "game/game.h"
 
-#include <stddef.h>
 #include <stdlib.h>
 
 #include "core/nge_util.h"
 #include "ecs/nge_ecs.h"
-#include "ecs/components/nge_location.h"
-#include "ecs/nge_owner.h"
 #include "ecs/systems/nge_render.h"
 #include "ecs/systems/nge_timer.h"
+#include "event/nge_event.h"
 #include "hw/nge_frame.h"
 #include "input/nge_input.h"
 #include "map/nge_map.h"
 
-#include "event/nge_event.h"
-
 #include "game/actors.h"
-#include "game/components/health.h"
 #include "game/dev.h"
 #include "game/effects/effects.h"
 #include "game/events.h"
-#include "game/messages/messages.h"
 #include "game/level/level.h"
+#include "game/messages/messages.h"
 #include "game/player/player.h"
 #include "game/screen.h"
 #include "game/timers.h"
@@ -205,6 +209,11 @@ static void play_enter(void)
     player_show_stats();
     screen_show_turn(nge_timer_turns);
     screen_show_depth(level_depth);
+    game_play_help();
+}
+
+void game_play_help(void)
+{
     screen_help("g:get i:inv u:use w:wear r:off <>:stairs");
 }
 
@@ -275,9 +284,15 @@ void game_set_state(game_state_t state)
 
 /* ---- The frame loop ---- */
 
-/* 1. Before the state's update: first thing in the blanking period, so nothing changes mid-frame */
-static void pre_update(void)
+/*
+ * 1. Wait for the blanking period, then, before anything else so nothing
+ * changes mid-frame: upload the sprites, redraw the map if it changed, and
+ * read the keyboard
+ */
+void game_frame_start(void)
 {
+    nge_frame_wait_vblank();
+    frames++;
     nge_render_upload();
     nge_map_update();
     nge_input_update();
@@ -299,7 +314,7 @@ static void change_level(void)
     if (game_state == GAME_OVER) {
         return;
     }
-    if (depth == 0) {
+    if (depth == LEVEL_DEPTH_SURFACE) {
         game_over(GAME_OVER_ESCAPED);
         return;
     }
@@ -334,9 +349,7 @@ void game_run(void)
     game_set_state(GAME_TITLE);
 
     while (1) {
-        nge_frame_wait_vblank();
-        frames++;
-        pre_update();
+        game_frame_start();
 
         switch (game_state) {
         case GAME_TITLE:

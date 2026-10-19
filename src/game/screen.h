@@ -22,7 +22,14 @@
 #include <stdint.h>
 
 #include "core/nge_types.h"
+#include "ecs/systems/nge_render.h"
 #include "io/nge_stream.h"
+
+/*
+ * Hardware sprites: 0 to NGE_RENDER_SPRITES-1 are the render system's (the
+ * level's entities), then the game's own, drawn on top of them
+ */
+#define SCREEN_SPRITE_CURSOR  NGE_RENDER_SPRITES   /**< The targeting cursor (game/target/target.h). */
 
 /** The map view, in tilemap tiles (the window of the level's map). */
 extern const nge_rect_t screen_map_view;

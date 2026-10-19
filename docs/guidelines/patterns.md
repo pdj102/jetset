@@ -95,8 +95,10 @@ action redraws what it covered.
 Each state has an entry action and a frame update, called from the
 switches in `game.c` (a banked state's functions are called directly,
 never through a table of pointers). Updates never wait: they take what
-they need from the key events and return. The one exception is the title's
-name prompt, which runs frames itself until ENTER.
+they need from the key events and return. The exceptions run frames
+themselves until the player answers: the title's name prompt, and
+targeting (`target_choose()`, game/target/target.h), whose frames do only
+`game_frame_start()` and `nge_render_update()`.
 
 ### P-LEVEL-1 · must · Level changes follow game/level/level.h
 - Leaving the player's level is a request (`level_request()`), carried out

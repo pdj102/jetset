@@ -45,6 +45,15 @@ void game_over(uint8_t reason)
     last_state = (uint8_t)GAME_OVER;
 }
 
+/* Targeting's frames (game/target): not run by these tests */
+void game_frame_start(void)
+{
+}
+
+void game_play_help(void)
+{
+}
+
 static char text[NGE_TILEMAP_WIDTH + 1];
 
 /* Row y of the map window (the screen panel, columns 0-27) */

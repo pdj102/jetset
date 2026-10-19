@@ -12,6 +12,7 @@
 #include "game/player/player.h"
 
 #include "core/nge_util.h"
+#include "ecs/components/nge_location.h"
 #include "ecs/systems/nge_timer.h"
 
 #include "game/actions/act.h"
@@ -26,6 +27,7 @@
 #include "game/level/level.h"
 #include "game/messages/messages.h"
 #include "game/screen.h"
+#include "game/target/target.h"
 
 /* Characters of the movement keys (nge_key_ascii): cursor keys */
 #define CHAR_LEFT   8
@@ -33,8 +35,7 @@
 #define CHAR_DOWN   10
 #define CHAR_UP     11
 
-/* The direction of a movement key (the cursor keys, also CAPS+5-8, or h j k l): 1 and (dx, dy), or 0 */
-static uint8_t key_direction(nge_key_event_t ev, int8_t *dx, int8_t *dy)
+uint8_t player_key_direction(nge_key_event_t ev, int8_t *dx, int8_t *dy) NGE_BANKED
 {
     *dx = 0;
     *dy = 0;
@@ -107,6 +108,22 @@ static void pick_up(void)
     player_act(ACT_PICKUP, &a);
 }
 
+/* Look: choose a tile anywhere on the map, and hear what is on it. No turn is used */
+static void look(void)
+{
+    target_t t;
+
+    t.purpose = TARGET_LOOK;
+    t.origin_x = NGE_LOCATION_X(actor_player);
+    t.origin_y = NGE_LOCATION_Y(actor_player);
+    t.range = TARGET_RANGE_ANY;
+    t.x = t.origin_x;
+    t.y = t.origin_y;
+    if (target_choose(&t)) {
+        messages_look(t.x, t.y);
+    }
+}
+
 static void stairs(uint8_t action)
 {
     act_t a = { 0 };
@@ -119,7 +136,7 @@ void player_command(nge_key_event_t ev) NGE_BANKED
     int8_t dx;
     int8_t dy;
 
-    if (key_direction(ev, &dx, &dy)) {
+    if (player_key_direction(ev, &dx, &dy)) {
         move(dx, dy);
         return;
     }
@@ -148,6 +165,9 @@ void player_command(nge_key_event_t ev) NGE_BANKED
         break;
     case 'c':
         game_set_state(GAME_CLOSE);
+        break;
+    case 'x':
+        look();
         break;
     case '<':
         stairs(ACT_ASCEND);
@@ -232,7 +252,7 @@ void player_direction_key(uint8_t prompt, nge_key_event_t ev) NGE_BANKED
     int8_t dy;
 
     nge_util_assert(prompt < PLAYER_PROMPT_COUNT);
-    if (!key_direction(ev, &dx, &dy)) {
+    if (!player_key_direction(ev, &dx, &dy)) {
         screen_message("Never mind.");
     } else if (prompts[prompt].action == NO_ACTION) {
         screen_message("You have nothing to fire.");

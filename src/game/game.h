@@ -7,9 +7,8 @@
  *
  * game_run() runs one frame at a time, for ever:
  *
- *     wait for vblank
- *     1. pre-update:  upload the sprites, redraw the map if it changed,
- *                     read the keyboard (nge_input_update)
+ *     1. frame start: wait for vblank, upload the sprites, redraw the map
+ *                     if it changed, read the keyboard (game_frame_start())
  *     2. update:      the current state's update function
  *     3. post-update: handle events, change level if asked to (level_request(),
  *                     game/level/level.h), release destroyed entities, build
@@ -17,7 +16,12 @@
  *
  * Each state's update runs once per frame, takes at most what it needs from
  * the key events (nge_key_get()) and returns: nothing in it waits, so the
- * screen keeps animating. Change state with game_set_state(), which throws
+ * screen keeps animating. Two things wait, each running frames of its own
+ * until the player answers: the title's name prompt, and targeting
+ * (game/target/target.h), called by a command during the player's turn.
+ * Targeting's frames call game_frame_start() and nge_render_update() and
+ * nothing else: no time passes and no events are handled until it returns.
+ * Change state with game_set_state(), which throws
  * away waiting key events (keys typed for one mode don't leak into the next)
  * and runs the new state's entry action.
  *
@@ -70,6 +74,17 @@ void game_set_state(game_state_t state);
 
 /** @brief End the game for reason (GAME_OVER_*): the clock is paused, and the game-over state says why. */
 void game_over(uint8_t reason);
+
+/**
+ * @brief Start a frame: wait for the blanking period, upload the sprites,
+ *        redraw the map if it changed and read the keyboard. The main loop
+ *        calls it once a frame; so does anything that runs frames of its
+ *        own (targeting).
+ */
+void game_frame_start(void);
+
+/** @brief Show play's keys on the help bar (play's entry action, and after targeting). */
+void game_play_help(void);
 
 /** @brief Run the game, starting at the title. Never returns. */
 void game_run(void);
