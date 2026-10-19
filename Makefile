@@ -31,6 +31,14 @@ BIN_TARGET := $(BINDIR)/$(TARGET)
 #   make CFLAGS=-DNDEBUG     hardware: asserts and debug output compiled out, no RST $18
 CFLAGS ?= -DNGE_CSPECT
 
+# Header dependencies: zcc can't write them, so the host compiler lists the
+# headers each C file includes (obj/<file>.d), and a changed header
+# rebuilds every file that includes it. -MG: z88dk's own headers aren't on
+# the host's path, and are listed as they are; -MP keeps a deleted header
+# from stopping the build.
+HOSTCC ?= gcc
+DEPFLAGS = -MM -MG -MP -MT $@ -MF $(@:.o=.d) -D__SDCC
+
 export PATH := $(Z88DK_ROOT)/bin:$(PATH)
 export ZCCCFG
 
@@ -48,6 +56,7 @@ dataseg = $(shell sed -n '1,5s|^/\* *nge-dataseg: *\(PAGE_[0-9]*\) *\*/.*|-Cs--d
 $(OBJDIR)/%.o: src/%.c
 	@mkdir -p $(dir $@)
 	$(ZCC) -c +zxn -clib=sdcc_iy $(INCLUDES) $(CFLAGS) $(call dataseg,$<) $< -o $@
+	@$(HOSTCC) $(DEPFLAGS) $(INCLUDES) $(CFLAGS) $<
 
 $(OBJDIR)/%.o: src/%.asm
 	@mkdir -p $(dir $@)
@@ -100,3 +109,5 @@ test:
 clean:
 	rm -rf $(OBJDIR) $(BINDIR)
 	$(MAKE) -C tests clean
+
+-include $(OBJS:.o=.d)
