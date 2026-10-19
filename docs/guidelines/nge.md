@@ -35,7 +35,7 @@ Engine headers are included from `src/nge` with their folder
 ## Layers
 
 ### N-LAYER-1 · must · A folder includes only the folders below it
-`core <- hw <- tilemap, sprite, devices, input, sound <- io <- map, event <- ecs <- game`.
+`core <- hw <- tilemap, layer2, sprite, devices, input, sound <- io <- map, event <- ecs <- game`.
 Within `ecs/`: `systems/` may include `components/` and the core,
 `components/` only the core. The one exception is `core/nge_util`, which
 includes `io/` for its output. See "Folders and layers" in `src/nge/README.md`.

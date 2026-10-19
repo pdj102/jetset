@@ -144,10 +144,10 @@ code pages.
 | 44/45 | nge `map`: set-up code (init, block table, sprite clip) / unused. Its per-frame code is in common memory, its data in page 51 |
 | 46/47 | nge `event` (reserved; the event queue and its processing run every turn and are in common memory) |
 | 48-87 | nge `ecs` (20 pairs): 48/49 `entity` and `owner` (lifecycle and ownership code / lifecycle bookkeeping); 50 ECS data, mapped permanently into slot 0 (see [ECS data in slot 0](#ecs-data-in-slot-0)); 51 map data, mapped permanently into slot 1 (see [Always-mapped data pages](#always-mapped-data-pages)); 52/53 `render` system; 54/55 `timer` system |
-| 88-99 | Further nge modules (6 pairs): 88/89 `input` (setup, ASCII tables and waiting / unused) |
+| 88-99 | Further nge modules (6 pairs): 88/89 `input` (setup, ASCII tables and waiting / unused); 90/91 `layer2` (Layer 2 drawing / unused) |
 | 100 | Game: free (assets) |
 | 101 | Game: sprite patterns and palette (slot 7, through the loaders) |
-| 102-131 | Game code pairs (15), allocated from 102 up: 102/103 `level` (setting up the map and generating levels / the room list); 104/105 `title` (the title state / unused); 106/107 `gen` creatures (generator / base creatures); 108/109 `gen` items (generator / base items); 110/111 `gen` shared (helpers and the game components' add functions / unused); 112/113 `actions` (the actions / unused); 114/115 `player` (commands and the firing screen / unused); 116/117 `ui` (the item screens / unused); 118/119 `messages` (what the player is told / unused); 120/121 `effects` (the effect system / the effect definitions and active effects' kinds); 122/123 `gen` features (generator / base features); 124/125 `target` (targeting / unused) |
+| 102-131 | Game code pairs (15), allocated from 102 up: 102/103 `level` (setting up the map and generating levels / the room list); 104/105 `title` (the title state / unused); 106/107 `gen` creatures (generator / base creatures); 108/109 `gen` items (generator / base items); 110/111 `gen` shared (helpers and the game components' add functions / unused); 112/113 `actions` (the actions / unused); 114/115 `player` (commands and the firing screen / unused); 116/117 `ui` (the item screens / unused); 118/119 `messages` (what the player is told / unused); 120/121 `effects` (the effect system / the effect definitions and active effects' kinds); 122/123 `gen` features (generator / base features); 124/125 `target` (targeting / unused); 126/127 `proto` (development prototypes, `GAME_DEV_KIT` only / unused) |
 | 132-223 | Game assets: maps, graphics, level data |
 
 - **Module code, string literals and constants:** the even page. A banked
@@ -189,6 +189,7 @@ Banked so far:
 | 52/53 | `ecs` render system | the system (`ecs/systems/nge_render.c`), with literals, about 2.4K | the sprite component (10 bytes per entity), the sprite records for hardware sprites 0 to `NGE_RENDER_SPRITES`-1, and its working data (`nge_render_pdata.c`, about 1.8K) |
 | 54/55 | `ecs` timer system | the clock and firing timers (`ecs/systems/nge_timer.c`, about 1.2K with asserts) | none: its tables and the clock are in slot 0 |
 | 88/89 | `input` | setup, the key-to-ASCII tables and waiting (`input/nge_input_setup.c`, about 0.5K) | none |
+| 90/91 | `layer2` | Layer 2 drawing: set-up, fills, text, scrolling (`layer2/nge_layer2_draw.c`); it maps the layer's pages (16-25) into slot 7 while it writes | none |
 | 102/103 | game `level` | setting up the map, the level generator, and leaving a level (`game/level/level_bank.c`, `level_gen.c`, `level_travel.c`, about 5.0K with asserts) | the room list, corridor links and stairs (`level_pdata.c`, 138 bytes) |
 | 106/107 | game `gen` creatures | the creature generator (`game/gen/gen_creature_bank.c`, about 0.6K) | the base creatures: a `const` table and its names (`gen_creature_pdata.c`, with `constseg PAGE_107`) |
 | 108/109 | game `gen` items | the item generator (`gen_item_bank.c`, about 0.4K) | the base items (`gen_item_pdata.c`) |
@@ -198,6 +199,7 @@ Banked so far:
 | 118/119 | game `messages` | the message window's reactions to events and to refused commands, with their texts (`game/messages/messages_bank.c`) | none |
 | 120/121 | game `effects` | applying, ending and recomputing effects: the mechanism (`game/effects/effects_core.c`) and the game's side (`game/effects/effects_game.c`) | the effect definitions with their texts, and the kind of each active effect (`game/effects/effects_pdata.c`) |
 | 122/123 | game `gen` features | the feature generator and its name, hook and kind-data copies (`game/gen/gen_feature_bank.c`) | the base features (`game/gen/gen_feature_pdata.c`) |
+| 126/127 | game `proto` | development prototypes, in `GAME_DEV_KIT` builds only: the Layer 2 UI prototype (`game/proto/proto_bank.c`) | none |
 | 124/125 | game `target` | targeting: the cursor, its keys and the purposes' prompts (`game/target/target_bank.c`); the cursor is an overlay sprite (`game/screen.h`) | none |
 | 116/117 | game `ui` | the item screens shown in the map window (inventory, drop, equip, take off) and their table of descriptions (`game/ui/ui_bank.c`) | none |
 | 104/105 | game `title` | the title state and the name prompt, with literals (`game/title/title_bank.c`, about 0.4K; no common part) | none |

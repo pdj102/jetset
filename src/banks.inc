@@ -32,6 +32,8 @@
 //             54/55  timer system: code / (unused); its data is in page 50
 //   88-99   further nge modules (6 pairs)
 //             88/89  input: setup, ASCII tables and waiting / (unused)
+//             90/91  layer2: Layer 2 drawing / (unused); the layer itself is
+//                    in pages 16-25
 //   100-223 game
 //             100      free (game assets)
 //             101      sprite patterns and palette (slot 7, via the loaders)
@@ -51,6 +53,7 @@
 //                                 definitions and the active effects' kinds
 //                        122/123  gen feature: feature generator / base features
 //                        124/125  target: targeting and its cursor / (unused)
+//                        126/127  proto: development prototypes, GAME_DEV_KIT only / (unused)
 //             132-223  game assets (maps, graphics, level data)
 
 // nge sprite: setup functions and loaders
@@ -71,6 +74,9 @@
 
 // nge input: setup, ASCII tables and waiting
 #pragma define CRT_ORG_PAGE_88 = 0x58C000
+
+// nge layer2: Layer 2 drawing
+#pragma define CRT_ORG_PAGE_90 = 0x5AC000
 
 // game level: setting up and building a level
 #pragma define CRT_ORG_PAGE_102 = 0x66C000
@@ -107,6 +113,9 @@
 
 // game target: targeting (game/target)
 #pragma define CRT_ORG_PAGE_124 = 0x7CC000
+
+// game proto: development prototypes (game/proto, GAME_DEV_KIT only)
+#pragma define CRT_ORG_PAGE_126 = 0x7EC000
 
 // nge map: set-up functions
 #pragma define CRT_ORG_PAGE_44 = 0x2CC000

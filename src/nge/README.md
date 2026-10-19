@@ -35,6 +35,7 @@ Includes are written from `src/nge`, with the folder:
 | `core/` | Basic types (`nge_types.h`), banked-function marker (`nge_bank.h`), asserts and debug output (`nge_util`) |
 | `hw/` | Hardware setup, frame sync, MMU paging, palettes |
 | `tilemap/` | Tilemap layer |
+| `layer2/` | Layer 2 at 320 x 256 as 8 x 8 cells: fills, text from the tilemap's font, scrolling up, shown above the sprites (`nge_layer2`; banked in page 90; the layer in pages 16-25). Prototype stage: no PC test yet, as it writes slot 7 by address |
 | `sprite/` | Hardware sprites |
 | `map/` | The map: one tile map larger than the screen, shown through a tilemap window, with a block table by tile ID. Its data is in page 51, always in slot 1 (no map pointers); set-up banked in page 44 |
 | `input/` | Keyboard: a per-frame snapshot of the keys (held, pressed, released), key events with auto-repeat, ASCII (`nge_input`; setup and tables banked in page 88) |
@@ -57,7 +58,7 @@ core, and the core neither.
 A folder may include only the folders before it in this chain:
 
 ```
-core  <-  hw  <-  tilemap, sprite, devices, input, sound  <-  io  <-  map, event  <-  ecs  <-  game
+core  <-  hw  <-  tilemap, layer2, sprite, devices, input, sound  <-  io  <-  map, event  <-  ecs  <-  game
 ```
 
 - Stream devices live in `io/`, not with the hardware they drive, so

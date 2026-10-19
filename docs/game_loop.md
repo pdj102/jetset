@@ -501,3 +501,37 @@ CSpect checks, each step:
 - **The step 1 PC test** (no events or releases outside play) isn't a
   separate test: `play_step()` is static and only `play_run()` calls it,
   which a reading of `game.c` shows.
+
+## 10. Step 5: the Layer 2 UI prototype
+
+Built, not yet checked on CSpect. Shift+L on the title runs it
+(`game/proto/proto_bank.c`, debug builds only); ENTER returns to the title.
+It uses a new nge module, `layer2/` (page 90): 320 x 256 Layer 2 as 8 x 8
+cells, with fills, text from the tilemap's font, and scrolling up by a row.
+
+What it shows, against the questions of D9:
+
+1. **Layering:** Layer 2 above the sprites and the tilemap (order LSU),
+   transparent (`$E3`) over the map area, with an opaque stats panel (blue)
+   and message and help panels (grey, black) where the tilemap UI's windows
+   are.
+2. **Drawing speed:** at start it times a fill of the 4 message rows, one
+   glyph, a 40-character line, and a scroll of the 4 message rows up one
+   row. The times are shown in the panel and on the CSpect console
+   (`layer2: ...`). M adds a message (a scroll and a line) and logs its
+   time. All of it is done with the CPU (`memset`, `memmove`, a C glyph
+   loop); DMA is the next step if the times are too long.
+3. **Pixel scrolling:** the whole tilemap (a test pattern: a wall every 8
+   tiles, row numbers at the left) scrolls a pixel a frame while an arrow
+   key (or CAPS+5-8, or h j k l) is held, wrapping. Four overlay sprites
+   stand on tiles, and are placed through the same scroll in the same
+   blanking period, so they should stay on their tiles.
+
+Results (to fill in after the CSpect check, and on hardware later):
+
+| Check | Result |
+|---|---|
+| Panels opaque, map visible through the transparent area, sprites under the panels | |
+| Fill, glyph, line, scroll times (us) | |
+| Tilemap scrolls smoothly; sprites stay on their tiles | |
+| The title and a new game work after ENTER | |

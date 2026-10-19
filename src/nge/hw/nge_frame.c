@@ -17,7 +17,7 @@
  * again and the read retried if it changed (the line crossed 255 -> 256 or
  * the frame wrapped back to line 0 between the reads).
  */
-static uint16_t frame_line(void)
+uint16_t nge_frame_line(void)
 {
     uint8_t h;
     uint8_t l;
@@ -39,11 +39,11 @@ static uint16_t frame_line(void)
  */
 void nge_frame_wait_vblank(void)
 {
-    while (frame_line() >= NGE_FRAME_VBLANK_LINE)
+    while (nge_frame_line() >= NGE_FRAME_VBLANK_LINE)
     {
     }
 
-    while (frame_line() < NGE_FRAME_VBLANK_LINE)
+    while (nge_frame_line() < NGE_FRAME_VBLANK_LINE)
     {
     }
 }

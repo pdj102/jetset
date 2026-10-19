@@ -22,7 +22,9 @@
 #include "io/nge_print.h"
 #include "io/nge_tm_stream.h"
 
+#include "game/dev.h"
 #include "game/game.h"
+#include "game/proto/proto.h"
 #include "game/screen.h"
 
 /*
@@ -56,15 +58,28 @@ static void ask_name(void)
     }
 }
 
-void title_run(void) NGE_BANKED
+/* The title, with no level: no entity sprites, and the map window cleared */
+static void show_title(void)
 {
-    /* No level on the title: no entity sprites, and the map window cleared */
     nge_render_set_view(NGE_RENDER_NO_VIEW);
     nge_tm_cls(screen_panel);
     nge_key_flush();
     screen_message("NGE ROGUE. Press any key to start.");
     screen_help("Any key: start a new game");
+}
+
+void title_run(void) NGE_BANKED
+{
+    show_title();
+#if GAME_DEV_KIT
+    /* Development: Shift+L runs the Layer 2 UI prototype (game/proto/proto.h), then the title again */
+    while (nge_key_ascii(game_wait_key(0)) == 'L') {
+        proto_layer2_run();
+        show_title();
+    }
+#else
     game_wait_key(0);
+#endif
 
     ask_name();
     screen_message("Welcome to the dungeon.");

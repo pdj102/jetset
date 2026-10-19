@@ -10,7 +10,8 @@
  * a healing potion, an antidote, a dead rat, an elixir and a potion of
  * strength in the player's pack, and the player resistant to fire, immune
  * to acid and vulnerable to cold (game/actors.c); X hurts the player,
- * cycling through the damage types (game/player).
+ * cycling through the damage types (game/player); Shift+L on the title
+ * runs the Layer 2 UI prototype (game/proto).
  */
 
 #ifndef GAME_DEV_KIT
