@@ -532,6 +532,8 @@ Results (to fill in after the CSpect check, and on hardware later):
 | Check | Result |
 |---|---|
 | Panels opaque, map visible through the transparent area, sprites under the panels | |
-| Fill, glyph, line, scroll times (us) | |
-| Tilemap scrolls smoothly; sprites stay on their tiles | |
+| Fill, glyph, line, scroll times (us) | CSpect, 2026-10-20, first version (CPU loops, the 4-bit font read per pixel): fill 4 rows 24,320; glyph 1,742; 40-character line 69,696; scroll 4 rows 26,816; a message (scroll and line) 89,472. Hardware, 2026-10-20, the same version: fill 19,712; glyph 1,606; line 64,256; scroll 22,016 (so a message about 86,000). Hardware times are about 0.81 of CSpect's throughout |
+| CPU speed (calibration loop) | CSpect: 18.9 T-states a microsecond at turbo setting 28MHz (register 7 reads `0x33`), about 2/3 of nominal. Hardware: 23.2, which is the 28MHz wait state (about one per memory access: the calibration loop's 26 T-state pass takes 31). Fill and scroll come to about 45 T a byte, the CPU's copying speed with the wait state; a glyph to about 580 T a pixel, which is the code. So the next steps are a column-bitmask font for glyphs (about 75% of a message's time), and DMA for fill and scroll |
+| Tilemap scrolls smoothly; sprites stay on their tiles | Hardware: yes. A sprite going off the left or top edge vanished whole: the prototype wrapped its position at 320 x 256 like the tilemap, which put it at the far right or bottom, outside the sprite clip window. Fixed: a position that would run off the right or bottom is placed off the left or top instead, wrapped to 9 bits (512 - k), so the visible part shows (checked on hardware). Step 6 needs the same in the render system once the camera moves by pixels: today a sprite can't be partly off the view's left or top, as the camera moves by whole tiles from the screen's edge |
+| Panels and layering | Hardware: correct |
 | The title and a new game work after ENTER | |

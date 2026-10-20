@@ -105,6 +105,42 @@ static uint32_t timer_us(void)
     return lines * US_PER_LINE;
 }
 
+/*
+ * CPU calibration: a loop of known length, timed like the drawing, gives
+ * the T-states the CPU really runs a microsecond (28 at 28MHz with no wait
+ * states). spin() is 26032 T-states a call: call 17, ld bc 10, 999 passes
+ * of the loop at 26 (dec bc 6, ld a,b 4, or c 4, jr nz taken 12), the last
+ * at 21 (jr nz not taken 7), ret 10
+ */
+#define SPIN_T      26032UL   /* T-states a call of spin() */
+#define SPIN_CALLS  200       /* about 0.19 s at 28MHz; each call well under a frame at any speed */
+
+static void spin(void) __naked
+{
+    __asm
+        ld bc, 1000
+    proto_spin_loop:
+        dec bc
+        ld a, b
+        or c
+        jr nz, proto_spin_loop
+        ret
+    __endasm;
+}
+
+/* The CPU's speed in tenths of a T-state a microsecond (280 at 28MHz): the ticks add about 1% */
+static uint16_t cpu_speed(void)
+{
+    uint16_t i;
+
+    timer_start();
+    for (i = 0; i < SPIN_CALLS; i++) {
+        spin();
+        timer_tick();
+    }
+    return (uint16_t)(SPIN_T * SPIN_CALLS * 10 / timer_us());
+}
+
 /* Append the decimal digits of v to s, a buffer of size bytes */
 static void add_u32(char *s, uint8_t size, uint32_t v)
 {
@@ -211,17 +247,34 @@ static void draw_test_map(void)
     }
 }
 
-/* The test sprites on their tiles, through the scroll (wrapping as the tilemap does) */
+/* Sprite positions are 9 bits: one off the left or top edge by k pixels is at 512 - k */
+#define SPRITE_COORD_MASK  0x1FF
+#define SPRITE_PIXELS      16
+
+/*
+ * The test sprites on their tiles, through the scroll. The tilemap wraps at
+ * 320 x 256, so a tile's screen position is (its pixel - scroll) wrapped to
+ * the screen; a sprite that would then run off the right or bottom edge is
+ * placed off the left or top instead (wrapped to 9 bits), so the part of it
+ * still on the screen shows. Placing it at the right edge would put it
+ * outside the sprite clip window, and it would vanish whole
+ */
 static void place_sprites(uint16_t sx, uint8_t sy)
 {
     uint8_t i;
-    uint16_t x;
-    uint16_t y;
+    int16_t x;
+    int16_t y;
 
     for (i = 0; i < SPRITES; i++) {
-        x = ((uint16_t)sprite_tile_x[i] * 8 + 320 - sx) % 320;
-        y = ((uint16_t)sprite_tile_y[i] * 8 + 256 - sy) % 256;
-        screen_overlay_set(i, x, y, sprite_pattern[i]);
+        x = (int16_t)(((uint16_t)sprite_tile_x[i] * 8 + 320 - sx) % 320);
+        y = (int16_t)(((uint16_t)sprite_tile_y[i] * 8 + 256 - sy) % 256);
+        if (x > 320 - SPRITE_PIXELS) {
+            x -= 320;
+        }
+        if (y > 256 - SPRITE_PIXELS) {
+            y -= 256;
+        }
+        screen_overlay_set(i, (uint16_t)x & SPRITE_COORD_MASK, (uint16_t)y & SPRITE_COORD_MASK, sprite_pattern[i]);
     }
 }
 
@@ -248,9 +301,11 @@ static void measure(void)
     uint32_t glyph_us;
     uint32_t line_us;
     uint32_t scroll_us;
+    uint16_t speed;
     uint8_t col;
 
     calibrate();
+    speed = cpu_speed();
 
     /* Fill the 4 message rows, a column at a time */
     timer_start();
@@ -282,6 +337,14 @@ static void measure(void)
     text(STATS_X1 + 1, 12, " 4 rows", INK, PANEL);
     text(STATS_X1 + 1, 13, "line: 40", INK, PANEL);
     nge_util_debugf("layer2: frame %u lines, turbo reg %u\n", frame_lines, ZXN_READ_REG(REG_TURBO_MODE));
+    line[0] = '\0';
+    add_str(line, sizeof(line), "CPU ");
+    add_u32(line, sizeof(line), speed / 10);
+    add_str(line, sizeof(line), ".");
+    add_u32(line, sizeof(line), speed % 10);
+    add_str(line, sizeof(line), " T/us");
+    nge_layer2_text(STATS_X1 + 1, 15, line, INK, PANEL);
+    nge_util_debugf("layer2: cpu %s (%u calls of %u T)\n", line, SPIN_CALLS, (uint16_t)SPIN_T);
 }
 
 void proto_layer2_run(void) NGE_BANKED
