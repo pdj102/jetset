@@ -52,7 +52,10 @@ handler: both write to the system variables and would corrupt those tiles.
 
 The program starts straight after the tile definitions, at `$6A00`, and runs
 through slots 3, 4 and 5 up to the stack. None of these slots ever changes, so
-anything that has to be reachable at any time belongs in the program:
+anything that has to be reachable at any time belongs in the program. nge is
+linked as a library (`obj/nge.lib`, built by the Makefile), so only the nge
+modules something uses take room here: the linker takes every object file it
+is given, used or not. The game's own objects are all linked:
 
 - code, constant data, initialised data and BSS
 - the code that changes the MMU (it must not page itself out)
@@ -71,10 +74,10 @@ The current CSpect build (`bin/main.map`) uses:
 
 | Address | Contents |
 |---|---|
-| `$6A00`-`$AD73` | Code and constant data (`CODE`) |
-| `$AD74`-`$AD89` | Initialised data (`DATA`) |
-| `$AD8A`-`$AEB3` | Uninitialised data (`BSS`) |
-| `$AEB4`-`$BDFF` | Free, about 3.8K (about 9.2K in the hardware build, without asserts and their messages) |
+| `$6A00`-`$B93E` | Code and constant data (`CODE`) |
+| `$B93F`-`$B95B` | Initialised data (`DATA`) |
+| `$B95C`-`$BAC8` | Uninitialised data (`BSS`) |
+| `$BAC9`-`$BDFF` | Free, 823 bytes (about 7.3K in the hardware build, without asserts and their messages) |
 | `$BE00`-`$BFFF` | Stack, 512 bytes |
 
 The link step checks `__BSS_END_tail` in the map file and fails the build if
@@ -147,7 +150,7 @@ code pages.
 | 88-99 | Further nge modules (6 pairs): 88/89 `input` (setup, ASCII tables and waiting / unused); 90/91 `layer2` (Layer 2 drawing / unused) |
 | 100 | Game: free (assets) |
 | 101 | Game: sprite patterns and palette (slot 7, through the loaders) |
-| 102-131 | Game code pairs (15), allocated from 102 up: 102/103 `level` (setting up the map and generating levels / the room list); 104/105 `title` (the title state / unused); 106/107 `gen` creatures (generator / base creatures); 108/109 `gen` items (generator / base items); 110/111 `gen` shared (helpers and the game components' add functions / unused); 112/113 `actions` (the actions / unused); 114/115 `player` (commands and the firing screen / unused); 116/117 `ui` (the item screens / unused); 118/119 `messages` (what the player is told / unused); 120/121 `effects` (the effect system / the effect definitions and active effects' kinds); 122/123 `gen` features (generator / base features); 124/125 `target` (targeting / unused); 126/127 `proto` (development prototypes, `GAME_DEV_KIT` only / unused) |
+| 102-131 | Game code pairs (15), allocated from 102 up: 102/103 `level` (setting up the map and generating levels / the room list); 104/105 `title` (the title state / unused); 106/107 `gen` creatures (generator / base creatures); 108/109 `gen` items (generator / base items); 110/111 `gen` shared (helpers and the game components' add functions / unused); 112/113 `actions` (the actions / unused); 114/115 `player` (commands and the firing screen / unused); 116/117 `ui` (the item screens / unused); 118/119 `messages` (what the player is told / unused); 120/121 `effects` (the effect system / the effect definitions and active effects' kinds); 122/123 `gen` features (generator / base features); 124/125 `target` (targeting / unused) |
 | 132-223 | Game assets: maps, graphics, level data |
 
 - **Module code, string literals and constants:** the even page. A banked
@@ -199,7 +202,6 @@ Banked so far:
 | 118/119 | game `messages` | the message window's reactions to events and to refused commands, with their texts (`game/messages/messages_bank.c`) | none |
 | 120/121 | game `effects` | applying, ending and recomputing effects: the mechanism (`game/effects/effects_core.c`) and the game's side (`game/effects/effects_game.c`) | the effect definitions with their texts, and the kind of each active effect (`game/effects/effects_pdata.c`) |
 | 122/123 | game `gen` features | the feature generator and its name, hook and kind-data copies (`game/gen/gen_feature_bank.c`) | the base features (`game/gen/gen_feature_pdata.c`) |
-| 126/127 | game `proto` | development prototypes, in `GAME_DEV_KIT` builds only: the Layer 2 UI prototype (`game/proto/proto_bank.c`) | none |
 | 124/125 | game `target` | targeting: the cursor, its keys and the purposes' prompts (`game/target/target_bank.c`); the cursor is an overlay sprite (`game/screen.h`) | none |
 | 116/117 | game `ui` | the item screens shown in the map window (inventory, drop, equip, take off) and their table of descriptions (`game/ui/ui_bank.c`) | none |
 | 104/105 | game `title` | the title state and the name prompt, with literals (`game/title/title_bank.c`, about 0.4K; no common part) | none |

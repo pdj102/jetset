@@ -8,7 +8,7 @@
 #include "ecs/nge_entity.h"
 #include "ecs/nge_owner.h"
 #include "ecs/systems/nge_render.h"
-#include "io/nge_tm_stream.h"
+#include "io/nge_text.h"
 #include "map/nge_map.h"
 
 #include "game/components/feature.h"

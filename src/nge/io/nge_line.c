@@ -6,7 +6,7 @@
 #include "hw/nge_frame.h"
 #include "input/nge_input.h"
 #include "io/nge_stream_dev.h"
-#include "io/nge_tm_stream.h"
+#include "io/nge_text.h"
 
 #define CHAR_BACKSPACE  8
 #define CHAR_ENTER      13

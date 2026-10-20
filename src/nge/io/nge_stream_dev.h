@@ -39,6 +39,20 @@ typedef struct nge_tm_state {
 } nge_tm_state_t;
 
 /**
+ * @brief State of a Layer 2 cell stream (io/nge_l2_stream.h).
+ */
+typedef struct nge_l2_state {
+    nge_rect_t area; /**< Cells, inclusive. */
+    uint8_t cx;      /**< Cursor column (absolute); x2 + 1 means a wrap is pending. */
+    uint8_t cy;      /**< Cursor row (absolute). */
+    uint8_t ink;     /**< Text colour, RRRGGGBB. */
+    uint8_t paper;   /**< Background colour, RRRGGGBB. */
+    uint8_t esc;     /**< Control-code state machine state. */
+    uint8_t arg;     /**< Saved first parameter of AT. */
+    uint8_t clip;    /**< Non-zero: clip at the edges, never wrap or scroll. */
+} nge_l2_state_t;
+
+/**
  * @brief An output stream.
  */
 struct nge_file {
@@ -47,6 +61,7 @@ struct nge_file {
     nge_flush_fn flush; /**< Device flush function; NULL if unbuffered. */
     union {
         nge_tm_state_t tm; /**< Tilemap window state. */
+        nge_l2_state_t l2; /**< Layer 2 cell state. */
     } u;
 };
 

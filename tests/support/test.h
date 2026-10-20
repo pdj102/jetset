@@ -96,6 +96,21 @@ void test_port_reset(void);
 /** Copy tile ids of row y, columns x1..x2, into out as a string. */
 void test_tilemap_row(uint8_t y, uint8_t x1, uint8_t x2, char *out);
 
+/* ---- Layer 2: the fake drawing (support/test_layer2.c) records a cell at a time ---- */
+
+/** A Layer 2 cell as the fake draws it: a fill is a space in its colour (ink and paper both). */
+typedef struct test_l2_cell {
+    uint8_t c;       /**< The character drawn, ' ' after a fill. */
+    uint8_t ink;     /**< Its colour. */
+    uint8_t paper;   /**< Its background. */
+} test_l2_cell_t;
+
+extern test_l2_cell_t test_layer2[32][40];   /**< By row, then column (NGE_LAYER2_ROWS x NGE_LAYER2_COLS). */
+extern uint8_t test_layer2_shown;           /**< The last nge_layer2_show(). */
+
+/** Copy the characters of Layer 2 row y, columns x1..x2, into out as a string. */
+void test_layer2_row(uint8_t y, uint8_t x1, uint8_t x2, char *out);
+
 /* ---- CSpect DebugOut: the fake nge_cspect_trap() records each call ---- */
 
 #define TEST_CSPECT_MAX_LINES 16

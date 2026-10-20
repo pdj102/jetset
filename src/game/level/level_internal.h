@@ -12,6 +12,7 @@
  */
 
 #include "game/level/level.h"
+#include "io/nge_text.h"
 
 /*
  * Map cells: an ASCII font tile and its text colour (palette bank, attribute

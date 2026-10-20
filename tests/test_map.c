@@ -31,16 +31,28 @@ static void mark_tilemap(void)
     }
 }
 
-/* The window shows the view at the camera, and nothing else changed */
+/*
+ * The window shows the view at the camera, with a column and a row more
+ * where the map has them and the tilemap has room (for a fine offset), and
+ * nothing else changed
+ */
 static int tilemap_matches(void)
 {
     int x;
     int y;
+    int x2 = nge_map.window.x2;
+    int y2 = nge_map.window.y2;
 
+    if (nge_map.cam_x + nge_map.view_w < nge_map.width && x2 + 1 < NGE_TILEMAP_WIDTH) {
+        x2++;
+    }
+    if (nge_map.cam_y + nge_map.view_h < nge_map.height && y2 + 1 < NGE_TILEMAP_HEIGHT) {
+        y2++;
+    }
     for (y = 0; y < NGE_TILEMAP_HEIGHT; y++) {
         for (x = 0; x < NGE_TILEMAP_WIDTH; x++) {
             const nge_tile_t *t = &test_tilemap[y * NGE_TILEMAP_WIDTH + x];
-            int in = x >= nge_map.window.x1 && x <= nge_map.window.x2 && y >= nge_map.window.y1 && y <= nge_map.window.y2;
+            int in = x >= nge_map.window.x1 && x <= x2 && y >= nge_map.window.y1 && y <= y2;
 
             if (in) {
                 const nge_tile_t *e = &nge_map_tiles[(nge_map.cam_y + y - nge_map.window.y1) * NGE_MAP_STRIDE
@@ -122,6 +134,9 @@ static void random_camera(void)
             }
             ok = ok && nge_map.cam_x == ex && nge_map.cam_y == ey;
             ok = ok && moved == nge_map.dirty;
+            if (nge_map.dirty) {
+                mark_tilemap();   /* a draw at the map's edge leaves the last extra column or row: under the panels */
+            }
             nge_map_update();
             ok = ok && tilemap_matches() && !nge_map.dirty;
         }
@@ -292,6 +307,51 @@ int main(void)
     CHECK(!nge_map_within(36, 17, 40, 20, 4) && !nge_map_within(40, 20, 36, 17, 4)); /* 25 > 20 */
     CHECK(nge_map_within(0, 0, NGE_MAP_STRIDE - 1, NGE_MAP_HEIGHT_MAX - 1, 255));     /* any tile, at 255 */
     CHECK(nge_map_within(NGE_MAP_STRIDE - 1, 0, 0, NGE_MAP_HEIGHT_MAX - 1, 255));
+
+    /* ---- the pixel camera: a tile and a fine offset (window 32 x 9 at (2, 22): room right and below) ---- */
+    nge_map_init(60, 40, &window);
+    fill_map();
+    nge_map_update();
+    CHECK(nge_map_set_camera_px(83, 45) == 1);
+    CHECK(nge_map.cam_x == 10 && nge_map.fine_x == 3 && nge_map.cam_y == 5 && nge_map.fine_y == 5);
+    CHECK(NGE_MAP_CAMERA_PX() == 83 && NGE_MAP_CAMERA_PY() == 45);
+    CHECK(nge_map.dirty && nge_map.scroll_dirty);
+    mark_tilemap();
+    nge_map_update();
+    CHECK(!nge_map.dirty && !nge_map.scroll_dirty);
+    CHECK(test_regs[0x30] == 3 && test_regs[0x2F] == 0 && test_regs[0x31] == 5);   /* the tilemap's scroll */
+    CHECK(tilemap_matches());   /* the view, and the column and row past it */
+    CHECK(test_tilemap[22 * NGE_TILEMAP_WIDTH + 34].tile_id == nge_map_tiles[5 * NGE_MAP_STRIDE + 42].tile_id);
+    CHECK(test_tilemap[31 * NGE_TILEMAP_WIDTH + 2].tile_id == nge_map_tiles[14 * NGE_MAP_STRIDE + 10].tile_id);
+    /* Within the tile: only the scroll changes */
+    CHECK(nge_map_set_camera_px(84, 45) == 1 && !nge_map.dirty && nge_map.scroll_dirty);
+    nge_map_update();
+    CHECK(test_regs[0x30] == 4);
+    CHECK(nge_map_set_camera_px(84, 45) == 0 && !nge_map.scroll_dirty);   /* no move */
+    /* Clamped: the view's far edge on the map's, with no fine offset there: (60 - 32) * 8, (40 - 9) * 8 */
+    CHECK(nge_map_set_camera_px(1000, 1000) == 1);
+    CHECK(nge_map.cam_x == 28 && nge_map.fine_x == 0 && nge_map.cam_y == 31 && nge_map.fine_y == 0);
+    mark_tilemap();
+    nge_map_update();
+    CHECK(tilemap_matches());   /* no column or row past the map's edge */
+    CHECK(test_tilemap[22 * NGE_TILEMAP_WIDTH + 34].tile_id == MARK_ID);
+    /* The tile functions set the fine offset to 0 */
+    nge_map_set_camera_px(83, 45);
+    nge_map_update();
+    CHECK(nge_map_set_camera(10, 5) == 1 && nge_map.fine_x == 0 && nge_map.fine_y == 0);
+    CHECK(!nge_map.dirty && nge_map.scroll_dirty);
+    nge_map_update();
+    CHECK(test_regs[0x30] == 0 && test_regs[0x31] == 0);
+    /* Screen coordinates through the fine offset */
+    nge_map_set_camera_px(83, 45);
+    CHECK(nge_map_to_screen(93, 49, &sx, &sy) && sx == 2 * 8 + 10 && sy == 22 * 8 + 4);
+    CHECK(!nge_map_to_screen(82, 49, &sx, &sy) && sx == (uint16_t)(2 * 8 - 1));   /* a pixel left of the view */
+    /* A fine offset needs room past the window: none with the whole tilemap */
+    nge_map_init(60, 40, &full);
+    TEST_EXPECT_HALT(nge_map_set_camera_px(3, 0));
+    CHECK(test_halt_count == 1);
+    CHECK(nge_map_set_camera_px(8, 0) == 1 && nge_map.cam_x == 1);   /* whole tiles are fine */
+    nge_map_init(60, 40, &window);
 
     /* ---- asserts ---- */
     TEST_EXPECT_HALT(nge_map_get(60, 0));

@@ -21,8 +21,7 @@
  * underneath. Text is drawn from the tilemap's font (the tile definitions
  * in bank 5: tile number = character code, 4 bits a pixel, 0 background),
  * converted by nge_layer2_init() into a bitmask a pixel column, for
- * characters 32 to 127 (others draw as a space). Fills use the DMA
- * (nge_layer2_set_dma()); scrolls use the CPU, which is faster for them.
+ * characters 32 to 127 (others draw as a space).
  *
  * Banking: banked (NGE_BANKED, page 90). Cells are passed by value, so no
  * caller passes a pointer into its own page. Strings passed in must be in
@@ -50,12 +49,6 @@ void nge_layer2_init(void) NGE_BANKED;
 
 /** @brief Show (1) or hide (0) Layer 2, and put the layer order back to sprites on top when hidden. */
 void nge_layer2_show(uint8_t on) NGE_BANKED;
-
-/**
- * @brief Do fills with the DMA (1, the default after nge_layer2_init())
- *        or the CPU (0). For comparing the two.
- */
-void nge_layer2_set_dma(uint8_t on) NGE_BANKED;
 
 /** @brief Fill the cells from (x1, y1) to (x2, y2), inclusive, with a colour. */
 void nge_layer2_fill(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, uint8_t colour) NGE_BANKED;

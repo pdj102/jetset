@@ -9,7 +9,14 @@
  * - map: the game's grid of tiles (map tile coordinates, (0,0) top-left).
  * - window: the fixed rectangle of the hardware tilemap the map is shown in.
  * - view: the part of the map that is visible; the same size as the window.
- * - camera: the top-left corner of the view, in map tiles.
+ * - camera: the top-left corner of the view, in map pixels: the tile
+ *   (cam_x, cam_y) and the pixels into it (fine_x, fine_y, 0-7). The view
+ *   is drawn from the camera's tile, one tile wider and taller than the
+ *   window where the map has the tiles, with the tilemap's hardware scroll
+ *   set to the fine offset; the extra column and row show only when the
+ *   fine offset is not 0. A fine offset needs the tilemap to have room past
+ *   the window for them (asserted), and that room to hold nothing else (it
+ *   is drawn over).
  *
  * There is one map. All its data (its state nge_map, its tiles
  * nge_map_tiles and its block table nge_map_blocks) is in page
@@ -96,13 +103,20 @@ typedef struct nge_map {
     uint8_t view_h;       /**< Window height in tiles. */
     uint8_t cam_x;        /**< Left column of the view, map tiles. */
     uint8_t cam_y;        /**< Top row of the view, map tiles. */
-    uint8_t dirty;        /**< The view needs redrawing. */
+    uint8_t fine_x;       /**< Pixels into the camera's tile, rightwards (0-7). */
+    uint8_t fine_y;       /**< Pixels into the camera's tile, downwards (0-7). */
+    uint8_t dirty;        /**< The view's tiles need redrawing. */
+    uint8_t scroll_dirty; /**< The tilemap's scroll needs setting to the fine offset. */
 } nge_map_t;
 
 /* The map's data, in page NGE_MAP_PAGE in slot 1 (nge_map_cdata.c) */
 extern nge_block_t nge_map_blocks[NGE_MAP_BLOCK_ENTRIES];        /**< What each tile ID blocks. */
 extern nge_map_t   nge_map;                                      /**< State: read-only for the game. */
 extern nge_tile_t  nge_map_tiles[NGE_MAP_STRIDE * NGE_MAP_HEIGHT_MAX];   /**< Row-major tiles. */
+
+/** The camera, in map pixels: the view's left edge and top edge. */
+#define NGE_MAP_CAMERA_PX()  ((uint16_t)nge_map.cam_x * NGE_MAP_TILE_PIXELS + nge_map.fine_x)
+#define NGE_MAP_CAMERA_PY()  ((uint16_t)nge_map.cam_y * NGE_MAP_TILE_PIXELS + nge_map.fine_y)
 
 /** Address of the first tile of map row y. */
 #define NGE_MAP_ROW(y)  (nge_map_tiles + (uint16_t)(y) * NGE_MAP_STRIDE)
@@ -158,10 +172,18 @@ void nge_map_clip_sprites(void) NGE_BANKED;
 nge_block_t nge_map_block(uint8_t x, uint8_t y);
 
 /**
- * @brief Move the camera to (x, y), clamped so the view stays inside the map.
+ * @brief Move the camera to tile (x, y), clamped so the view stays inside
+ *        the map, with no fine offset.
  * @return 1 if the camera moved (the view will be redrawn), 0 if not.
  */
 uint8_t nge_map_set_camera(uint8_t x, uint8_t y);
+
+/**
+ * @brief Move the camera to map pixel (x, y), clamped so the view stays
+ *        inside the map: the tile and the fine offset both follow.
+ * @return 1 if the camera moved, 0 if not.
+ */
+uint8_t nge_map_set_camera_px(uint16_t x, uint16_t y);
 
 /**
  * @brief Move the camera by (dx, dy) tiles, clamped so the view stays inside the map.
@@ -197,7 +219,11 @@ void nge_map_set(uint8_t x, uint8_t y, const nge_tile_t *tile);
  */
 void nge_map_invalidate(void);
 
-/** @brief Redraw the view if it changed since it was last drawn. */
+/**
+ * @brief Redraw the view's tiles if they changed since they were last
+ *        drawn, and set the tilemap's scroll to the fine offset if that
+ *        changed: once a frame, in the blanking period.
+ */
 void nge_map_update(void);
 
 /** @brief Redraw the view now, whether it changed or not. */

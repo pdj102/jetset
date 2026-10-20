@@ -6,9 +6,9 @@
  * @brief Device-independent character streams, for output and input.
  *
  * Streams are opened by a device driver (see nge_tm_stream.h,
- * nge_uart_stream.h and nge_kbd_stream.h). Output streams are written
- * through nge_putc() or the helpers in nge_print.h. Input streams are read
- * with nge_getc(), which is non-blocking (it returns at once, with NGE_EOF
+ * nge_l2_stream.h, nge_uart_stream.h and nge_kbd_stream.h). Output streams
+ * are written through nge_putc() or the helpers in nge_print.h. Input
+ * streams are read with nge_getc(), which is non-blocking (it returns at once, with NGE_EOF
  * if nothing is waiting), or with the line editor and the blocking reads in
  * nge_line.h (nge_getc_wait(), nge_gets()).
  */

@@ -12,14 +12,25 @@ BINDIR := bin
 #                     and one level of subfolders (ecs/components, ecs/systems)
 #   src/game/         game code, and one level of subfolders (banked game modules)
 #   src/data/         graphics and other data (.asm)
-SRCS := \
-	src/main.c \
+NGE_SRCS := \
 	$(sort $(wildcard src/nge/*/*.c src/nge/*/*/*.c)) \
-	$(sort $(wildcard src/nge/*/*.asm src/nge/*/*/*.asm)) \
+	$(sort $(wildcard src/nge/*/*.asm src/nge/*/*/*.asm))
+GAME_SRCS := \
+	src/main.c \
 	$(sort $(wildcard src/game/*.c src/game/*/*.c)) \
 	$(sort $(wildcard src/data/*.asm))
+SRCS := $(NGE_SRCS) $(GAME_SRCS)
 
-OBJS := $(patsubst src/%,$(OBJDIR)/%.o,$(basename $(SRCS)))
+NGE_OBJS := $(patsubst src/%,$(OBJDIR)/%.o,$(basename $(NGE_SRCS)))
+GAME_OBJS := $(patsubst src/%,$(OBJDIR)/%.o,$(basename $(GAME_SRCS)))
+OBJS := $(NGE_OBJS) $(GAME_OBJS)
+
+# nge is linked as a library, so only the modules something uses are linked:
+# the linker takes every object file it is given, used or not, and common
+# memory has no room for unused ones (the tilemap stream, when the UI moved
+# to Layer 2). The game's objects are all linked
+NGE_LIB := $(OBJDIR)/nge.lib
+Z80ASM := $(Z88DK_ROOT)/bin/z88dk-z80asm
 
 # Includes are written from these roots: "hw/nge_hw.h", "data/sprite_data.h"
 INCLUDES := -Isrc/nge -Isrc
@@ -87,9 +98,13 @@ LDFLAGS := \
 	-pragma-define:CLIB_BANKING_STACK_SIZE=32 \
 	-pragma-include:$(BANKS_INC)
 
-$(BIN_TARGET).nex: $(OBJS) $(BANKS_INC)
+$(NGE_LIB): $(NGE_OBJS)
+	@rm -f $@
+	$(Z80ASM) -mz80n -x$@ $(NGE_OBJS)
+
+$(BIN_TARGET).nex: $(GAME_OBJS) $(NGE_LIB) $(BANKS_INC)
 	@mkdir -p $(BINDIR)
-	$(ZCC) +zxn -subtype=nex -clib=sdcc_iy $(LDFLAGS) $(OBJS) -o $(BIN_TARGET) -m -create-app
+	$(ZCC) +zxn -subtype=nex -clib=sdcc_iy $(LDFLAGS) $(GAME_OBJS) -L$(OBJDIR) -lnge -o $(BIN_TARGET) -m -create-app
 	@end=$$(sed -n 's/^__BSS_END_tail *= \$$\([0-9A-Fa-f]*\).*/\1/p' $(BIN_TARGET).map); \
 	if [ -z "$$end" ]; then echo "error: __BSS_END_tail not found in $(BIN_TARGET).map"; rm -f $@; exit 1; fi; \
 	if [ $$((0x$$end)) -gt $$(($(STACK_BOTTOM))) ]; then \

@@ -6,10 +6,11 @@
  * @brief Screens shown in the map window: the player's item screens
  *        (inventory, drop, equip, take off, use), as choosers (game/game.h).
  *
- * A screen hides the sprites, draws a title and a lettered list of items
+ * A screen draws a title and a lettered list of items on an opaque panel
  * over the map window (screen_panel, game/screen.h), and sets the help
- * bar. It waits for a key (game_wait_key()), then draws the map, sprites,
- * stats and play's help again (game_play_redraw()) and returns. Each item
+ * bar. It waits for a key (game_wait_key()), then makes the panel
+ * transparent again (screen_show_map()), so the map and sprites under it
+ * show as they were, shows play's help and returns. Each item
  * screen is a row of a table of descriptions (ui_bank.c): its title, its
  * help, what to say when it has nothing to list, and which items it lists,
  * so a new one (read, zap) is a new row and a UI_* number.

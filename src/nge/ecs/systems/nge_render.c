@@ -162,8 +162,8 @@ static void animate(nge_entity_id_t id)
  */
 static uint8_t collect(void)
 {
-    uint16_t view_x = (uint16_t)nge_map.cam_x * NGE_MAP_TILE_PIXELS;
-    uint16_t view_y = (uint16_t)nge_map.cam_y * NGE_MAP_TILE_PIXELS;
+    uint16_t view_x = NGE_MAP_CAMERA_PX();   /* the pixel camera: sprites stay on their tiles at any fine offset */
+    uint16_t view_y = NGE_MAP_CAMERA_PY();
     int16_t view_w = (int16_t)nge_map.view_w * NGE_MAP_TILE_PIXELS;
     int16_t view_h = (int16_t)nge_map.view_h * NGE_MAP_TILE_PIXELS;
     uint16_t base_x = (uint16_t)nge_map.window.x1 * NGE_MAP_TILE_PIXELS;

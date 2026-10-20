@@ -10,6 +10,7 @@
 #include "ecs/systems/nge_timer.h"
 #include "event/nge_event.h"
 #include "input/nge_input.h"
+#include "layer2/nge_layer2.h"
 #include "map/nge_map.h"
 
 #include "game/components/attrs.h"
@@ -32,7 +33,6 @@
 
 /* What game.c and actors.c provide in the game (not linked here) */
 nge_entity_id_t actor_player;
-static int redraws;   /* game_play_redraw() calls: a screen closed */
 static int waits;     /* game_wait_key() calls: a chooser waited for a key */
 
 void game_over(uint8_t reason)
@@ -40,15 +40,25 @@ void game_over(uint8_t reason)
     (void)reason;
 }
 
+/* Frames: only the development V key (player_bank.c) runs them, and no test presses it */
+void game_frame_start(void)
+{
+}
+
+void game_frame_end(void)
+{
+}
+
 void game_play_help(void)
 {
 }
 
-/* Doesn't redraw, so a closed screen's text is still there to check */
 void game_play_redraw(void)
 {
-    redraws++;
 }
+
+/* Layer 2 as it was while the last chooser waited: a closed screen clears its panel */
+static test_l2_cell_t seen[32][40];
 
 /* The key the player presses while a chooser waits: the next one set with press() */
 static nge_key_event_t pressed = NGE_KEY_NONE;
@@ -64,6 +74,7 @@ nge_key_event_t game_wait_key(uint16_t frames)
 
     (void)frames;
     waits++;
+    memcpy(seen, test_layer2, sizeof(seen));
     pressed = NGE_KEY_NONE;
     CHECK(ev != NGE_KEY_NONE);   /* a chooser waited with no key set up for it */
     return ev;
@@ -71,19 +82,40 @@ nge_key_event_t game_wait_key(uint16_t frames)
 
 static char text[NGE_TILEMAP_WIDTH + 1];
 
-/* Row y of the map window (the screen panel, columns 0-27) */
+/* Row y of the map window (the screen panel, columns 0-27) as it was while the last chooser waited */
 static const char *panel(uint8_t y)
 {
-    test_tilemap_row(y, 0, 27, text);
+    uint8_t x;
+
+    for (x = 0; x < 28; x++) {
+        text[x] = (char)seen[y][x].c;
+    }
+    text[28] = '\0';
     return text;
 }
 
-/* Row y of the whole screen */
-static const char *row(uint8_t y)
+/* Row y of the whole screen as it was while the last chooser waited */
+static const char *seen_row(uint8_t y)
 {
-    test_tilemap_row(y, 0, 39, text);
+    uint8_t x;
+
+    for (x = 0; x < 40; x++) {
+        text[x] = (char)seen[y][x].c;
+    }
+    text[40] = '\0';
     return text;
 }
+
+/* Row y of the whole screen, now */
+static const char *row(uint8_t y)
+{
+    test_layer2_row(y, 0, 39, text);
+    return text;
+}
+
+/* The map window is covered (an opaque panel at its top-left), now or as it was while the last chooser waited */
+#define COVERED_NOW()  (test_layer2[0][0].paper != NGE_LAYER2_TRANSPARENT)
+#define COVERED_SEEN() (seen[0][0].paper != NGE_LAYER2_TRANSPARENT)
 
 /* Text starts with s */
 static int starts(const char *t, const char *s)
@@ -144,33 +176,33 @@ int main(void)
     /* ---- the stats window: the player's stats, from the base record ---- */
     screen_draw_stats();
     player_show_stats();
-    test_tilemap_row(2, 28, 39, text);
+    test_layer2_row(2, 28, 39, text);
     CHECK(strcmp(text, "HP   12/ 12 ") == 0);
-    test_tilemap_row(3, 28, 39, text);
+    test_layer2_row(3, 28, 39, text);
     CHECK(strcmp(text, "AC       10 ") == 0);
-    test_tilemap_row(5, 28, 39, text);
+    test_layer2_row(5, 28, 39, text);
     CHECK(strcmp(text, "Str      16 ") == 0);
-    test_tilemap_row(10, 28, 39, text);
+    test_layer2_row(10, 28, 39, text);
     CHECK(strcmp(text, "Cha      10 ") == 0);
-    test_tilemap_row(12, 28, 39, text);
+    test_layer2_row(12, 28, 39, text);
     CHECK(strncmp(text, "Gold", 4) == 0);
     effect_apply(EF_STRENGTH, actor_player, NGE_ENTITY_INVALID);
     player_show_stats();
-    test_tilemap_row(5, 28, 39, text);
+    test_layer2_row(5, 28, 39, text);
     CHECK(strcmp(text, "Str      17 ") == 0);
     nge_event_flush();
 
     /* ---- the inventory, empty: titled, says so, any key goes back ---- */
-    redraws = 0;
     waits = 0;
+    CHECK(!COVERED_NOW());
     press(EV(NGE_KEY_A));
     player_command(EV(NGE_KEY_I));
-    CHECK(waits == 1 && redraws == 1);                             /* it waited for a key, then closed */
-    CHECK(nge_render_area == NGE_RENDER_NO_VIEW);                  /* no sprites over it (the fake redraw keeps it so) */
+    CHECK(waits == 1 && COVERED_SEEN() && !COVERED_NOW());          /* covered while it waited, uncovered when closed */
+    CHECK(nge_render_area == AREA);                                /* the sprites aren't hidden: the panel covers them */
     CHECK(strcmp(panel(0), "    Worldly Possessions     ") == 0);  /* centred */
     CHECK(strcmp(panel(1), "                            ") == 0);
     CHECK(starts(panel(2), " You are carrying nothing."));
-    CHECK(starts(row(31), "Any key: back"));
+    CHECK(starts(seen_row(31), "Any key: back"));
     CHECK(stowed(actor_player) == 0);
 
     /* ---- items: the pack in ID order, then what is in use, with its slot ---- */
@@ -204,12 +236,11 @@ int main(void)
 
     /* ---- drop: the pack only; d and a letter drops that item, on the player's tile ---- */
     player_turn = 1;
-    redraws = 0;
     press(EV(NGE_KEY_B));
     player_command(EV(NGE_KEY_D));
-    CHECK(redraws == 1 && starts(panel(0), "       Shed a Burden "));   /* (28 - 13) / 2 */
+    CHECK(!COVERED_NOW() && starts(panel(0), "       Shed a Burden "));   /* (28 - 13) / 2 */
     CHECK(starts(panel(2), " a) sword") && starts(panel(3), " b) ring of health ") && starts(panel(4), "         "));
-    CHECK(starts(row(31), "Letter: drop it   Other keys: back"));
+    CHECK(starts(seen_row(31), "Letter: drop it   Other keys: back"));
     CHECK(NGE_OWNER_OF(ring2) == AREA && NGE_LOCATION_X(ring2) == 5 && NGE_LOCATION_Y(ring2) == 5);
     CHECK(!player_turn);                                   /* the turn is used */
     CHECK(nge_event_count() == 1);
@@ -256,7 +287,7 @@ int main(void)
     player_command(EV(NGE_KEY_U));
     CHECK(starts(panel(0), "          Partake "));   /* (28 - 7) / 2 */
     CHECK(starts(panel(2), " a) healing potion") && starts(panel(3), "     "));   /* not the ring */
-    CHECK(starts(row(31), "Letter: use it   Other keys: back"));
+    CHECK(starts(seen_row(31), "Letter: use it   Other keys: back"));
     CHECK(NGE_ENTITY_STATE(ring2) == NGE_ENTITY_DYING && !player_turn);
     nge_event_process(messages_on_event);
     CHECK(starts(row(29), "You drink the healing potion.") && said("You feel much better."));
@@ -284,10 +315,9 @@ int main(void)
     item_slot[sword] = SLOT_NONE;
     nge_entity_destroy(sword);
     nge_render_set_view(AREA);
-    redraws = 0;
     waits = 0;
     CHECK(ui_choose_item(UI_DROP) == NGE_ENTITY_INVALID);
-    CHECK(nge_render_area == AREA && redraws == 0 && waits == 0);   /* not opened */
+    CHECK(!COVERED_NOW() && waits == 0);                            /* not opened */
     CHECK(said("You have nothing to drop."));
     CHECK(ui_choose_item(UI_UNEQUIP) == NGE_ENTITY_INVALID && said("You aren't using anything."));
 
@@ -310,7 +340,7 @@ int main(void)
     player_turn = 1;
     press(EV(NGE_KEY_L));
     player_command(EV(NGE_KEY_C));
-    CHECK(said("Close in which direction?") && starts(row(31), "Direction: close   Other keys: back"));
+    CHECK(said("Close in which direction?") && starts(seen_row(31), "Direction: close   Other keys: back"));
     CHECK(!FEATURE_IS_OPEN(door) && !player_turn);
     nge_event_process(messages_on_event);
     CHECK(said("You close the door."));

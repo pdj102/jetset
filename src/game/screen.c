@@ -1,3 +1,8 @@
+/*
+ * The screen's layout and its windows: common memory. The windows are
+ * Layer 2 streams (io/nge_l2_stream.h) over the tilemap, which holds only
+ * the map.
+ */
 #include "game/screen.h"
 
 #include <stddef.h>
@@ -5,8 +10,11 @@
 
 #include "core/nge_util.h"
 #include "hw/nge_palette.h"
+#include "io/nge_l2_stream.h"
 #include "io/nge_print.h"
+#include "io/nge_text.h"
 #include "io/nge_tm_stream.h"
+#include "layer2/nge_layer2.h"
 #include "sprite/nge_sprite.h"
 #include "tilemap/nge_tilemap.h"
 
@@ -34,13 +42,15 @@ char screen_name[SCREEN_NAME_MAX + 1] = "Rogue";
 /* The abilities' names, by ABIL_* */
 static const char ability_names[ABIL_COUNT][4] = { "Str", "Dex", "Con", "Int", "Wis", "Cha" };
 
+#define PAPER  0x00   /* the windows' background on Layer 2 (RRRGGGBB): black */
+
 /* The message window's bottom line has text: the next message goes on a new line */
 static uint8_t message_line_used;
 
 /* The overlay sprites' records: common memory, so the upload can read them from any caller */
 static nge_sprite_attr_t overlay[SCREEN_OVERLAY_COUNT];
 
-/* Game graphics palette (bank 0); text colours are banks 12-15 (nge_tm_load_ink_palette) */
+/* Game graphics palette (bank 0); the map's text colours are banks 12-15 (nge_tm_load_ink_palette) */
 static const nge_palette_entry_9_t tile_palette[] = {
     { 0x00, 0x00 },
     { 0xE0, 0x00 },
@@ -56,12 +66,15 @@ static const nge_tile_t empty_tile = {
 
 void screen_init(void)
 {
+    /* The tilemap: the map's layer */
     nge_write_palette9(RPC_SELECT_TILEMAP_PALETTE_0, 0, tile_palette, 4);
     nge_tm_load_ink_palette();
-
     nge_tilemap_init();
     nge_tilemap_clear(&empty_tile);
     nge_tilemap_set_scroll(0, 0);
+
+    /* Layer 2: the windows' layer, all transparent, before the windows are drawn on it */
+    nge_layer2_init();
 
     /* Called again, it starts afresh: close the streams it opened before */
     if (screen_stats != NULL) {
@@ -78,43 +91,49 @@ void screen_init(void)
     }
     message_line_used = 0;
     nge_sprite_clear(overlay, SCREEN_OVERLAY_COUNT);
-    screen_stats = nge_open_tilemap(&stats_area, 0);
-    screen_messages = nge_open_tilemap(&message_area, 0);
-    screen_panel = nge_open_tilemap(&screen_map_view, 0);
-    help = nge_open_tilemap(&help_area, 0);
+    screen_stats = nge_open_layer2(&stats_area, PAPER);
+    screen_messages = nge_open_layer2(&message_area, PAPER);
+    screen_panel = nge_open_layer2(&screen_map_view, PAPER);
+    help = nge_open_layer2(&help_area, PAPER);
     nge_util_assert(help != NULL);   /* streams are handed out in turn: if one failed, the last did */
 
-    nge_tm_clip(1, screen_stats);
-    nge_tm_clip(1, screen_panel);
-    nge_tm_clip(1, help);
-    nge_tm_cls(screen_stats);
-    nge_tm_cls(screen_messages);
-    nge_tm_cls(help);
+    nge_text_clip(1, screen_stats);
+    nge_text_clip(1, screen_panel);
+    nge_text_clip(1, help);
+    nge_text_cls(screen_stats);
+    nge_text_cls(screen_messages);
+    nge_text_cls(help);
+}
+
+void screen_show_map(void)
+{
+    nge_layer2_fill(screen_map_view.x1, screen_map_view.y1, screen_map_view.x2, screen_map_view.y2,
+                    NGE_LAYER2_TRANSPARENT);
 }
 
 void screen_draw_stats(void)
 {
-    nge_tm_cls(screen_stats);
-    nge_tm_ink(NGE_INK_YELLOW, screen_stats);
+    nge_text_cls(screen_stats);
+    nge_text_ink(NGE_INK_YELLOW, screen_stats);
     nge_puts("Name: ", screen_stats);
     nge_puts(screen_name, screen_stats);
-    nge_tm_at(STATS_ROW_GOLD, 0, screen_stats);
-    nge_tm_ink(NGE_INK_WHITE, screen_stats);
+    nge_text_at(STATS_ROW_GOLD, 0, screen_stats);
+    nge_text_ink(NGE_INK_WHITE, screen_stats);
     nge_puts("Gold      0", screen_stats);
 }
 
 void screen_show_depth(uint8_t depth)
 {
-    nge_tm_at(STATS_ROW_GOLD + 1, 0, screen_stats);
-    nge_tm_ink(NGE_INK_CYAN, screen_stats);
+    nge_text_at(STATS_ROW_GOLD + 1, 0, screen_stats);
+    nge_text_ink(NGE_INK_CYAN, screen_stats);
     nge_puts("Depth ", screen_stats);
     nge_putu16w(depth, 5, ' ', screen_stats);
 }
 
 void screen_show_hp(uint8_t hp, uint8_t hp_max)
 {
-    nge_tm_at(STATS_ROW_HP, 0, screen_stats);
-    nge_tm_ink(NGE_INK_WHITE, screen_stats);
+    nge_text_at(STATS_ROW_HP, 0, screen_stats);
+    nge_text_ink(NGE_INK_WHITE, screen_stats);
     nge_puts("HP ", screen_stats);
     nge_putu16w(hp, 4, ' ', screen_stats);
     nge_putc('/', screen_stats);
@@ -123,8 +142,8 @@ void screen_show_hp(uint8_t hp, uint8_t hp_max)
 
 void screen_show_ac(uint8_t ac)
 {
-    nge_tm_at(STATS_ROW_AC, 0, screen_stats);
-    nge_tm_ink(NGE_INK_WHITE, screen_stats);
+    nge_text_at(STATS_ROW_AC, 0, screen_stats);
+    nge_text_ink(NGE_INK_WHITE, screen_stats);
     nge_puts("AC ", screen_stats);
     nge_putu16w(ac, 8, ' ', screen_stats);
 }
@@ -133,9 +152,9 @@ void screen_show_abilities(const uint8_t *scores)
 {
     uint8_t a;
 
-    nge_tm_ink(NGE_INK_WHITE, screen_stats);
+    nge_text_ink(NGE_INK_WHITE, screen_stats);
     for (a = 0; a < ABIL_COUNT; a++) {
-        nge_tm_at((uint8_t)(STATS_ROW_ABILITIES + a), 0, screen_stats);
+        nge_text_at((uint8_t)(STATS_ROW_ABILITIES + a), 0, screen_stats);
         nge_puts(ability_names[a], screen_stats);
         nge_putu16w(scores[a], 8, ' ', screen_stats);
     }
@@ -143,18 +162,18 @@ void screen_show_abilities(const uint8_t *scores)
 
 void screen_show_status(uint8_t status)
 {
-    nge_tm_at(STATS_ROW_STATUS, 0, screen_stats);
-    nge_tm_clreol(screen_stats);
+    nge_text_at(STATS_ROW_STATUS, 0, screen_stats);
+    nge_text_clreol(screen_stats);
     if (status & STATUS_POISONED) {
-        nge_tm_ink(NGE_INK_RED, screen_stats);
+        nge_text_ink(NGE_INK_RED, screen_stats);
         nge_puts("Poisoned", screen_stats);
     }
 }
 
 void screen_show_turn(uint16_t turn)
 {
-    nge_tm_at(STATS_ROW_TURN, 0, screen_stats);
-    nge_tm_ink(NGE_INK_CYAN, screen_stats);
+    nge_text_at(STATS_ROW_TURN, 0, screen_stats);
+    nge_text_ink(NGE_INK_CYAN, screen_stats);
     nge_puts("Turn ", screen_stats);
     nge_putu16w(turn, 6, ' ', screen_stats);
 }
@@ -192,14 +211,14 @@ void screen_overlay_upload(void)
 
 void screen_help(const char *text)
 {
-    nge_tm_cls(help);
-    nge_tm_ink(NGE_INK_CYAN, help);
+    nge_text_cls(help);
+    nge_text_ink(NGE_INK_CYAN, help);
     nge_puts(text, help);
 }
 
 void screen_message(const char *text)
 {
     screen_message_line();
-    nge_tm_ink(NGE_INK_WHITE, screen_messages);
+    nge_text_ink(NGE_INK_WHITE, screen_messages);
     nge_puts(text, screen_messages);
 }

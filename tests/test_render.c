@@ -125,6 +125,21 @@ int main(void)
     }
     CHECK(ok);
 
+    /* ---- the pixel camera: sprites move with the map's fine offset (room below the window) ---- */
+    reset();
+    a = make(AREA0, 5, 25, 7, 0);
+    nge_map_set_camera_px(0, 20 * 8 + 3);
+    CHECK(frame() == 1 && attr(0, 0) == 40 && attr(0, 1) == (uint8_t)(176 + 40 - 3));
+    /* Partly off the top of the window: still drawn, 3 pixels above it */
+    reset();
+    a = make(AREA0, 5, 20, 7, 0);
+    nge_map_set_camera_px(0, 20 * 8 + 3);
+    CHECK(frame() == 1 && attr(0, 1) == (uint8_t)(176 - 3));
+    /* Wholly above it: not drawn (its record is sent hidden) */
+    nge_map_set_camera_px(0, 22 * 8 + 1);
+    CHECK(frame() == 1 && !visible(0));
+    nge_map_set_camera(0, 20);
+
     /* ---- what is drawn: alive, both components, owned by the view's area ---- */
     reset();
     a = make(AREA0, 1, 21, 1, 0);

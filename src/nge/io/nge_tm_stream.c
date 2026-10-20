@@ -2,23 +2,10 @@
 
 #include <stddef.h>
 
-#include "hw/nge_palette.h"
 #include "io/nge_stream_dev.h"
 #include "tilemap/nge_tilemap.h"
 
 #define BLANK_TILE_ID  0x20
-
-#define INK_BANK_SIZE     16 /* palette entries per attribute palette offset */
-#define INK_BANK_ENTRIES  4  /* entries 0-3 are all the font pixels use */
-
-/* One row per NGE_INK_* bank: entry 0 is transparent, 1-3 are the ink colour.
-   Colours are 9-bit: RRRGGGBB plus the low blue bit. */
-static const nge_palette_entry_9_t ink_banks[][INK_BANK_ENTRIES] = {
-    { {0x00, 0}, {0xFF, 1}, {0xFF, 1}, {0xFF, 1} }, /* NGE_INK_WHITE */
-    { {0x00, 0}, {0xFC, 0}, {0xFC, 0}, {0xFC, 0} }, /* NGE_INK_YELLOW */
-    { {0x00, 0}, {0x1F, 1}, {0x1F, 1}, {0x1F, 1} }, /* NGE_INK_CYAN */
-    { {0x00, 0}, {0xE0, 0}, {0xE0, 0}, {0xE0, 0} }, /* NGE_INK_RED */
-};
 
 /* Control-code state machine states */
 #define ESC_NONE  0
@@ -215,50 +202,4 @@ NGE_FILE *nge_open_tilemap(const nge_rect_t *area, uint8_t attr)
         tm_sync(tm);
     }
     return s;
-}
-
-void nge_tm_ink(uint8_t n, NGE_FILE *stream)
-{
-    nge_putc(NGE_CTRL_INK, stream);
-    nge_putc(n, stream);
-}
-
-void nge_tm_attr(uint8_t a, NGE_FILE *stream)
-{
-    nge_putc(NGE_CTRL_ATTR, stream);
-    nge_putc(a, stream);
-}
-
-void nge_tm_at(uint8_t y, uint8_t x, NGE_FILE *stream)
-{
-    nge_putc(NGE_CTRL_AT, stream);
-    nge_putc(y, stream);
-    nge_putc(x, stream);
-}
-
-void nge_tm_cls(NGE_FILE *stream)
-{
-    nge_putc(NGE_CTRL_CLS, stream);
-}
-
-void nge_tm_clreol(NGE_FILE *stream)
-{
-    nge_putc(NGE_CTRL_CLREOL, stream);
-}
-
-void nge_tm_clip(uint8_t on, NGE_FILE *stream)
-{
-    nge_putc(NGE_CTRL_CLIP, stream);
-    nge_putc(on, stream);
-}
-
-void nge_tm_load_ink_palette(void)
-{
-    uint8_t bank;
-
-    for (bank = 0; bank < sizeof(ink_banks) / sizeof(ink_banks[0]); bank++) {
-        nge_write_palette9(RPC_SELECT_TILEMAP_PALETTE_0,
-                           (uint8_t)((NGE_INK_WHITE + bank) * INK_BANK_SIZE),
-                           ink_banks[bank], INK_BANK_ENTRIES);
-    }
 }

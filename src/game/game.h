@@ -97,9 +97,9 @@ void game_frame_end(void);
 nge_key_event_t game_wait_key(uint16_t frames);
 
 /**
- * @brief Draw again everything a screen may have covered or changed: the
- *        level's sprites, the map, the stats, the turn, the depth, and
- *        play's help. Item screens call it when they close.
+ * @brief Draw the level's screen afresh, for a new game or a new level:
+ *        the map view uncovered (screen_show_map()), the level's sprites,
+ *        the map, the stats, the turn, the depth, and play's help.
  */
 void game_play_redraw(void);
 

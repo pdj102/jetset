@@ -15,16 +15,13 @@
 #include <string.h>
 
 #include "core/nge_util.h"
-#include "ecs/systems/nge_render.h"
 #include "input/nge_input.h"
 #include "io/nge_kbd_stream.h"
 #include "io/nge_line.h"
 #include "io/nge_print.h"
-#include "io/nge_tm_stream.h"
+#include "io/nge_text.h"
 
-#include "game/dev.h"
 #include "game/game.h"
-#include "game/proto/proto.h"
 #include "game/screen.h"
 
 /*
@@ -42,9 +39,9 @@ static void ask_name(void)
     nge_util_assert(keyboard != NULL);
     screen_help("Type a name, then ENTER");
     screen_message_line();
-    nge_tm_ink(NGE_INK_YELLOW, screen_messages);
+    nge_text_ink(NGE_INK_YELLOW, screen_messages);
     nge_puts("What is your name? ", screen_messages);
-    nge_tm_ink(NGE_INK_WHITE, screen_messages);
+    nge_text_ink(NGE_INK_WHITE, screen_messages);
     nge_line_begin(&line, name, sizeof(name), keyboard, screen_messages);
     do {
         game_frame_start();
@@ -58,11 +55,10 @@ static void ask_name(void)
     }
 }
 
-/* The title, with no level: no entity sprites, and the map window cleared */
+/* The title, with no level: an opaque panel covers the map window and its sprites */
 static void show_title(void)
 {
-    nge_render_set_view(NGE_RENDER_NO_VIEW);
-    nge_tm_cls(screen_panel);
+    nge_text_cls(screen_panel);
     nge_key_flush();
     screen_message("NGE ROGUE. Press any key to start.");
     screen_help("Any key: start a new game");
@@ -71,15 +67,7 @@ static void show_title(void)
 void title_run(void) NGE_BANKED
 {
     show_title();
-#if GAME_DEV_KIT
-    /* Development: Shift+L runs the Layer 2 UI prototype (game/proto/proto.h), then the title again */
-    while (nge_key_ascii(game_wait_key(0)) == 'L') {
-        proto_layer2_run();
-        show_title();
-    }
-#else
     game_wait_key(0);
-#endif
 
     ask_name();
     screen_message("Welcome to the dungeon.");

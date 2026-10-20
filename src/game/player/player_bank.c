@@ -14,6 +14,7 @@
 #include "core/nge_util.h"
 #include "ecs/components/nge_location.h"
 #include "ecs/systems/nge_timer.h"
+#include "map/nge_map.h"
 
 #include "game/actions/act.h"
 #include "game/actors.h"
@@ -160,6 +161,63 @@ static void fire_command(void)
     }
 }
 
+#if GAME_DEV_KIT
+/* -1, 0 or 1: the movement keys held for one axis (the cursor keys, CAPS+5-8, or h j k l) */
+static int8_t held_axis(uint8_t less, uint8_t less_caps, uint8_t less_key, uint8_t more, uint8_t more_caps,
+                        uint8_t more_key)
+{
+    uint8_t caps = nge_key_down(NGE_KEY_CAPS);
+
+    if (nge_key_down(less) || nge_key_down(less_key) || (caps && nge_key_down(less_caps))) {
+        return -1;
+    }
+    if (nge_key_down(more) || nge_key_down(more_key) || (caps && nge_key_down(more_caps))) {
+        return 1;
+    }
+    return 0;
+}
+
+/*
+ * Development: pan the view a pixel a frame while a movement key is held,
+ * to check the pixel camera (docs/ui_layer2.md, R11): the map and the
+ * sprites should move together. Any other key centres the camera on the
+ * player again. No time passes
+ */
+static void pan_view(void)
+{
+    nge_key_event_t ev;
+    int8_t dx;
+    int8_t dy;
+    int16_t x = (int16_t)NGE_MAP_CAMERA_PX();
+    int16_t y = (int16_t)NGE_MAP_CAMERA_PY();
+
+    nge_key_flush();
+    screen_help("Development: arrows pan the view   Other keys: back");
+    for (;;) {
+        game_frame_start();
+        ev = nge_key_get();
+        if (ev != NGE_KEY_NONE && !player_key_direction(ev, &dx, &dy)) {
+            break;
+        }
+        x += held_axis(NGE_KEY_LEFT, NGE_KEY_5, NGE_KEY_H, NGE_KEY_RIGHT, NGE_KEY_8, NGE_KEY_L);
+        y += held_axis(NGE_KEY_UP, NGE_KEY_7, NGE_KEY_K, NGE_KEY_DOWN, NGE_KEY_6, NGE_KEY_J);
+        if (x < 0) {
+            x = 0;
+        }
+        if (y < 0) {
+            y = 0;
+        }
+        nge_map_set_camera_px((uint16_t)x, (uint16_t)y);
+        x = (int16_t)NGE_MAP_CAMERA_PX();   /* clamped at the map's far edges */
+        y = (int16_t)NGE_MAP_CAMERA_PY();
+        game_frame_end();
+    }
+    nge_map_centre_camera(NGE_LOCATION_X(actor_player), NGE_LOCATION_Y(actor_player));
+    game_play_help();
+    nge_key_flush();
+}
+#endif
+
 static void stairs(uint8_t action)
 {
     act_t a = { 0 };
@@ -227,6 +285,9 @@ void player_command(nge_key_event_t ev) NGE_BANKED
     case 'F':
         /* Development: fall to the next level, anywhere on it (no turn used): falls before there are holes */
         level_request((uint8_t)(level_depth + 1), LEVEL_ARRIVE_ANY);
+        break;
+    case 'V':
+        pan_view();   /* development: pan the view a pixel at a time */
         break;
 #endif
     default:

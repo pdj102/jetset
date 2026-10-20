@@ -128,5 +128,7 @@ slot 0. See "When slot 0 is mapped out" in `docs/memory_map.md`.
 
 ### N-TEST-1 · should · Every nge module has a PC test
 `tests/test_<module>.c` for each module, run by `make test`. Hardware-only
-drivers (`devices/`) are exempt, and their streams are tested through
-fakes in `tests/support`.
+drivers (`devices/`) and the Layer 2 drawing (`layer2/`, which writes slot
+7 by address) are exempt: they are left out of the test build
+(`LIB_EXCLUDE`), and what uses them is tested through fakes in
+`tests/support`.

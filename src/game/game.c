@@ -216,6 +216,7 @@ void game_play_help(void)
 void game_play_redraw(void)
 {
     nge_render_set_view(LEVEL_AREA);
+    screen_show_map();   /* the title's panel, or a screen's, gone */
     nge_map_invalidate();
     screen_draw_stats();
     player_show_stats();

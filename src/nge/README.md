@@ -35,12 +35,12 @@ Includes are written from `src/nge`, with the folder:
 | `core/` | Basic types (`nge_types.h`), banked-function marker (`nge_bank.h`), asserts and debug output (`nge_util`) |
 | `hw/` | Hardware setup, frame sync, MMU paging, palettes |
 | `tilemap/` | Tilemap layer |
-| `layer2/` | Layer 2 at 320 x 256 as 8 x 8 cells: fills, text from the tilemap's font, scrolling up, shown above the sprites (`nge_layer2`; banked in page 90; the layer in pages 16-25). Prototype stage: no PC test yet, as it writes slot 7 by address |
+| `layer2/` | Layer 2 at 320 x 256 as 8 x 8 cells: fills, text from the tilemap's font (converted to column bitmasks), scrolling up, shown above the sprites (`nge_layer2`; banked in page 90, with assembly for the drawing; the layer in pages 16-25). It writes slot 7 by address, so the PC tests use a fake (`tests/support/test_layer2.c`) |
 | `sprite/` | Hardware sprites |
 | `map/` | The map: one tile map larger than the screen, shown through a tilemap window, with a block table by tile ID. Its data is in page 51, always in slot 1 (no map pointers); set-up banked in page 44 |
 | `input/` | Keyboard: a per-frame snapshot of the keys (held, pressed, released), key events with auto-repeat, ASCII (`nge_input`; setup and tables banked in page 88) |
 | `devices/` | Raw device drivers (CSpect DebugOut, UART), no streams |
-| `io/` | Streams (output and input), print and printf, the stream devices for the tilemap, CSpect, UART and keyboard, and the line editor (`nge_line`) |
+| `io/` | Streams (output and input), print and printf, the text control codes and colours for any text stream (`nge_text`), the stream devices for the tilemap, Layer 2 cells (`nge_l2_stream`), CSpect, UART and keyboard, and the line editor (`nge_line`) |
 | `event/` | Events: a queue in common memory of things that have happened (target, event, source, two payloads), handled in order through the game's dispatch function (`nge_event`) |
 | `ecs/` | Entity component system core, data every entity has: `nge_entity` (IDs, lifecycle, flags, component masks; lifecycle banked in pages 48/49), `nge_owner` (the owner of every entity: an entity, the world or an area; changes banked in page 48), `nge_ecs` (ECS start-up: the ECS data page in slot 0 and its guard area) |
 | `ecs/components/` | What a component is, and every component number, nge's and the game's range (`nge_components.h`); components shared by several systems, with their data in slot 0: `nge_location` (tile and pixel position; entities at a tile), `nge_block` (what an entity blocks and can enter; whether a tile can be entered, map and entities together) |

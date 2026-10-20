@@ -19,16 +19,48 @@ static uint8_t clamp(int16_t v, uint8_t max)
     return (v > max) ? max : (uint8_t)v;
 }
 
-/* Move the camera to an already clamped position */
+/* Move the camera to an already clamped position: a tile and the pixels into it */
+static uint8_t camera_px_to(uint8_t x, uint8_t y, uint8_t fx, uint8_t fy)
+{
+    uint8_t moved = 0;
+
+    if (x != nge_map.cam_x || y != nge_map.cam_y) {
+        nge_map.cam_x = x;
+        nge_map.cam_y = y;
+        nge_map.dirty = 1;
+        moved = 1;
+    }
+    if (fx != nge_map.fine_x || fy != nge_map.fine_y) {
+        nge_map.fine_x = fx;
+        nge_map.fine_y = fy;
+        nge_map.scroll_dirty = 1;
+        moved = 1;
+    }
+    return moved;
+}
+
+/* Move the camera to an already clamped tile, with no fine offset */
 static uint8_t camera_to(uint8_t x, uint8_t y)
 {
-    if (x == nge_map.cam_x && y == nge_map.cam_y) {
-        return 0;
+    return camera_px_to(x, y, 0, 0);
+}
+
+uint8_t nge_map_set_camera_px(uint16_t x, uint16_t y)
+{
+    uint16_t max_x = (uint16_t)(nge_map.width - nge_map.view_w) * NGE_MAP_TILE_PIXELS;
+    uint16_t max_y = (uint16_t)(nge_map.height - nge_map.view_h) * NGE_MAP_TILE_PIXELS;
+
+    if (x > max_x) {
+        x = max_x;
     }
-    nge_map.cam_x = x;
-    nge_map.cam_y = y;
-    nge_map.dirty = 1;
-    return 1;
+    if (y > max_y) {
+        y = max_y;
+    }
+    /* A fine offset shows the column or row past the window: the tilemap must have room for it */
+    nge_util_assert(x % NGE_MAP_TILE_PIXELS == 0 || nge_map.window.x2 + 1 < NGE_TILEMAP_WIDTH);
+    nge_util_assert(y % NGE_MAP_TILE_PIXELS == 0 || nge_map.window.y2 + 1 < NGE_TILEMAP_HEIGHT);
+    return camera_px_to((uint8_t)(x / NGE_MAP_TILE_PIXELS), (uint8_t)(y / NGE_MAP_TILE_PIXELS),
+                        (uint8_t)(x % NGE_MAP_TILE_PIXELS), (uint8_t)(y % NGE_MAP_TILE_PIXELS));
 }
 
 uint8_t nge_map_set_camera(uint8_t x, uint8_t y)
@@ -100,14 +132,25 @@ void nge_map_update(void)
     if (nge_map.dirty) {
         nge_map_draw();
     }
+    if (nge_map.scroll_dirty) {
+        nge_tilemap_set_scroll(nge_map.fine_x, nge_map.fine_y);
+        nge_map.scroll_dirty = 0;
+    }
 }
 
 void nge_map_draw(void)
 {
     const nge_tile_t *src = NGE_MAP_ROW(nge_map.cam_y) + nge_map.cam_x;
     nge_tile_t *dst = nge_tilemap_cell(nge_map.window.x1, nge_map.window.y1);
-    uint16_t bytes = (uint16_t)nge_map.view_w * sizeof(nge_tile_t);
-    uint8_t rows = nge_map.view_h;
+    /*
+     * The view, and a column and a row more where the map has them and the
+     * tilemap has room past the window: what a fine offset shows
+     */
+    uint8_t cols = (uint8_t)(nge_map.view_w + (nge_map.cam_x + nge_map.view_w < nge_map.width &&
+                                               nge_map.window.x2 + 1 < NGE_TILEMAP_WIDTH));
+    uint8_t rows = (uint8_t)(nge_map.view_h + (nge_map.cam_y + nge_map.view_h < nge_map.height &&
+                                               nge_map.window.y2 + 1 < NGE_TILEMAP_HEIGHT));
+    uint16_t bytes = (uint16_t)cols * sizeof(nge_tile_t);
 
     /* One memcpy (a single LDIR) per row */
     while (rows--) {
@@ -120,8 +163,8 @@ void nge_map_draw(void)
 
 uint8_t nge_map_to_screen(uint16_t map_x, uint16_t map_y, uint16_t *screen_x, uint16_t *screen_y)
 {
-    uint16_t view_x = (uint16_t)nge_map.cam_x * NGE_MAP_TILE_PIXELS;
-    uint16_t view_y = (uint16_t)nge_map.cam_y * NGE_MAP_TILE_PIXELS;
+    uint16_t view_x = NGE_MAP_CAMERA_PX();
+    uint16_t view_y = NGE_MAP_CAMERA_PY();
 
     /*
      * Positions left of or above the view wrap round to large values, which

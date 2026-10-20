@@ -15,8 +15,11 @@
  *         27 | messages  40 x 5               |
  *         31 +-------------------------------+
  *
- * The map view is drawn directly by the level's nge_map; the stats and
- * message windows are tilemap streams.
+ * The map is on the tilemap, drawn by the level's nge_map, and nothing else
+ * is. The windows are on Layer 2 (layer2/nge_layer2.h), above the sprites
+ * and the tilemap: the stats, messages and help bar are Layer 2 streams
+ * (io/nge_l2_stream.h) on a black background, and the panel stream lies
+ * over the map view, transparent until something is drawn on it.
  */
 
 #include <stdint.h>
@@ -51,10 +54,15 @@ extern NGE_FILE *screen_messages;
 
 /**
  * Panel stream over the map view (screen_map_view), clip mode: screens
- * like the inventory draw here (game/ui/ui.h). Drawing over the map
- * means it must be redrawn afterwards (nge_map_invalidate()).
+ * like the inventory draw here (game/ui/ui.h). Clearing it
+ * (nge_text_cls()) makes the map view an opaque black panel, which covers
+ * the map and the sprites; screen_show_map() makes it transparent again,
+ * and nothing under it needs drawing again.
  */
 extern NGE_FILE *screen_panel;
+
+/** @brief Make the map view transparent again: what a panel covered shows. */
+void screen_show_map(void);
 
 /** Longest player name: it follows "Name: " on one stats line. */
 #define SCREEN_NAME_MAX  6
@@ -63,7 +71,8 @@ extern NGE_FILE *screen_panel;
 extern char screen_name[SCREEN_NAME_MAX + 1];
 
 /**
- * @brief Set up the tilemap, its palettes and the screen's areas:
+ * @brief Set up the tilemap for the map, Layer 2 for the windows
+ *        (nge_layer2_init()), and the screen's areas:
  *
  *     rows 0-26   map view (28 wide) | stats (12 wide)
  *     rows 27-30  messages (4 lines)

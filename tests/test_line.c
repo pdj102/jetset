@@ -5,7 +5,6 @@
 #include "io/nge_kbd_stream.h"
 #include "io/nge_line.h"
 #include "io/nge_stream_dev.h"
-#include "io/nge_tm_stream.h"
 
 /* A scripted input stream: the characters of script, then NGE_EOF (and -2 in the script is one NGE_EOF) */
 static const int *script;

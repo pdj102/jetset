@@ -1,7 +1,12 @@
 /* nge-dataseg: PAGE_90 */
 /*
  * Layer 2 drawing: banked in page 90 with its literals, and with its one
- * table, the font as column bitmasks. The table is in the code page, not
+ * table, the font as column bitmasks.
+ *
+ * The fills, scrolls and glyphs are done by the CPU, in assembly. The DMA
+ * was tried for fills and scrolls and taken out: at 320 x 256, a cell
+ * column's rows are only 32 bytes, and the DMA's set-up for each was no
+ * cheaper than the CPU's copy (docs/game_loop.md, section 10). The table is in the code page, not
  * the odd data page as page data usually is, because every function here
  * maps a Layer 2 page into slot 7, where page 91 would be: the font must
  * stay readable in slot 6 while that page is mapped.
@@ -50,58 +55,7 @@ typedef char nge_layer2_cells_check[(8192 / (CELL * COLUMN) == CELLS_PER_PAGE) ?
  */
 static uint8_t font[FONT_COUNT][CELL];
 
-static uint8_t use_dma;   /* 1: fills and scrolls by DMA (nge_layer2_set_dma()) */
-
-/* ---- The zxn DMA (port 0x6B, zxn mode: the length is the byte count) ---- */
-
-#define DMA_DISABLE        0x83   /* WR6 */
-#define DMA_WR0_A_TO_B     0x7D   /* transfer A to B; port A address and length follow */
-#define DMA_WR1_MEM_INC    0x54   /* port A memory, incrementing; a timing byte follows */
-#define DMA_WR1_MEM_FIXED  0x64   /* port A memory, fixed: a fill; a timing byte follows */
-#define DMA_WR2_MEM_INC    0x50   /* port B memory, incrementing; a timing byte follows */
-#define DMA_TIMING_2       0x02   /* 2-cycle accesses: the fastest */
-#define DMA_WR4_CONTINUOUS 0xAD   /* continuous mode (the CPU waits until it ends); port B address follows */
-#define DMA_WR5_STOP       0x82   /* stop at the end of the block */
-#define DMA_LOAD           0xCF   /* WR6 */
-#define DMA_ENABLE         0x87   /* WR6 */
-
-
-/*
- * Set the DMA up for transfers of n bytes (n > 0) from src, incrementing,
- * or always from the byte at src (fixed: a fill), to memory. Each transfer
- * is then started by dma_to(), which writes only the destination: the rest
- * stays set between transfers.
- *
- * Only fills use the DMA. A scroll moves 24 bytes a pixel column, and the
- * DMA's set-up for each column cost more than it saved: 20.7 ms against
- * 14.4 by the CPU for the 4 message rows (CSpect, 2026-10-20)
- */
-static void dma_begin(const uint8_t *src, uint16_t n, uint8_t fixed)
-{
-    IO_DMA = DMA_DISABLE;
-    IO_DMA = DMA_WR0_A_TO_B;
-    IO_DMA = (uint8_t)(uint16_t)src;
-    IO_DMA = (uint8_t)((uint16_t)src >> 8);
-    IO_DMA = (uint8_t)n;
-    IO_DMA = (uint8_t)(n >> 8);
-    IO_DMA = fixed ? DMA_WR1_MEM_FIXED : DMA_WR1_MEM_INC;
-    IO_DMA = DMA_TIMING_2;
-    IO_DMA = DMA_WR2_MEM_INC;
-    IO_DMA = DMA_TIMING_2;
-    IO_DMA = DMA_WR5_STOP;
-}
-
-/* A transfer to dst, from the source dma_begin() set: 5 port writes */
-static void dma_to(uint8_t *dst)
-{
-    IO_DMA = DMA_WR4_CONTINUOUS;
-    IO_DMA = (uint8_t)(uint16_t)dst;
-    IO_DMA = (uint8_t)((uint16_t)dst >> 8);
-    IO_DMA = DMA_LOAD;
-    IO_DMA = DMA_ENABLE;   /* continuous: the CPU waits until the block is done */
-}
-
-/* The CPU's fill and scroll of a cell column (assembly on the Next, below) */
+/* The fill and scroll of a cell column (assembly on the Next, below) */
 static void fill_cols(uint8_t *p, uint8_t cells, uint8_t colour);
 static void scroll_cols(uint8_t *p, uint8_t cells, uint8_t fill);
 
@@ -173,7 +127,6 @@ void nge_layer2_init(void) NGE_BANKED
     }
 
     make_font();
-    use_dma = 1;
     nge_layer2_fill(0, 0, NGE_LAYER2_COLS - 1, NGE_LAYER2_ROWS - 1, NGE_LAYER2_TRANSPARENT);
     nge_layer2_show(1);
 }
@@ -191,11 +144,6 @@ void nge_layer2_show(uint8_t on) NGE_BANKED
     }
 }
 
-void nge_layer2_set_dma(uint8_t on) NGE_BANKED
-{
-    use_dma = on;
-}
-
 /* ---- Drawing ---- */
 
 void nge_layer2_fill(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, uint8_t colour) NGE_BANKED
@@ -203,153 +151,15 @@ void nge_layer2_fill(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, uint8_t col
     uint8_t old = nge_mmu_get(SLOT);
     uint8_t cells;
     uint8_t col;
-    uint8_t i;
-    uint8_t *p;
 
     nge_util_assert(x1 <= x2 && x2 < NGE_LAYER2_COLS && y1 <= y2 && y2 < NGE_LAYER2_ROWS);
 
     cells = (uint8_t)(y2 - y1 + 1);
-    if (use_dma) {
-        dma_begin(&colour, (uint16_t)cells * CELL, 1);   /* colour: on the stack, common memory */
-    }
     for (col = x1; col <= x2; col++) {
-        p = map_col(col) + (uint16_t)y1 * CELL;
-        if (use_dma) {
-            for (i = 0; i < CELL; i++) {
-                dma_to(p);
-                p += COLUMN;
-            }
-        } else {
-            fill_cols(p, cells, colour);
-        }
+        fill_cols(map_col(col) + (uint16_t)y1 * CELL, cells, colour);
     }
     nge_mmu_map(SLOT, old);
 }
-
-#ifdef __SDCC
-/*
- * Draw the 8 columns of a glyph's bitmasks (mask) into the cell whose first
- * pixel column is at p: about 31 T-states a pixel, the 8 rows unrolled. Each pixel's colour is
- * chosen without a branch: the mask's top bit into the carry, then
- * sbc a,a (0 or $FF), and (ink ^ paper), xor paper. Registers: HL the
- * pixel, C the column's bits, D ink ^ paper, E paper;
- * the other set: HL the masks, B the columns left. A cell's 8 pixels
- * never cross a 256-byte column, so inc l moves down. The arguments are on
- * the stack as zsdcc passes them: p, mask (words), then ink, paper (bytes)
- */
-static void glyph_cols(uint8_t *p, const uint8_t *mask, uint8_t ink, uint8_t paper) __naked
-{
-    (void)p;
-    (void)mask;
-    (void)ink;
-    (void)paper;
-
-    __asm
-        ld hl, 2
-        add hl, sp
-        ld e, (hl)
-        inc hl
-        ld d, (hl)              ; de = p
-        inc hl
-        ld c, (hl)
-        inc hl
-        ld b, (hl)              ; bc = mask
-        inc hl
-        ld a, (hl)              ; a = ink
-        inc hl
-        ld l, (hl)              ; l = paper
-        xor l
-        ld h, a                 ; h = ink ^ paper
-        push bc
-        push de
-        ld d, h
-        ld e, l                 ; d = ink ^ paper, e = paper
-        pop hl                  ; hl = p
-        exx
-        pop hl                  ; the other set: hl = mask
-        ld b, 8                 ; and b = columns
-    nge_layer2_glyph_col:
-        ld a, (hl)
-        inc hl
-        exx
-        ld c, a                 ; the column bits, top pixel first
-        rlc c
-        sbc a, a
-        and d
-        xor e
-        ld (hl), a
-        inc l
-        rlc c
-        sbc a, a
-        and d
-        xor e
-        ld (hl), a
-        inc l
-        rlc c
-        sbc a, a
-        and d
-        xor e
-        ld (hl), a
-        inc l
-        rlc c
-        sbc a, a
-        and d
-        xor e
-        ld (hl), a
-        inc l
-        rlc c
-        sbc a, a
-        and d
-        xor e
-        ld (hl), a
-        inc l
-        rlc c
-        sbc a, a
-        and d
-        xor e
-        ld (hl), a
-        inc l
-        rlc c
-        sbc a, a
-        and d
-        xor e
-        ld (hl), a
-        inc l
-        rlc c
-        sbc a, a
-        and d
-        xor e
-        ld (hl), a
-        ld a, l
-        sub 7
-        ld l, a
-        inc h                   ; the next pixel column, 256 bytes on
-        exx
-        djnz nge_layer2_glyph_col
-        exx
-        ret
-    __endasm;
-}
-#else
-/* The same in C, for builds without zsdcc */
-static void glyph_cols(uint8_t *p, const uint8_t *mask, uint8_t ink, uint8_t paper)
-{
-    uint8_t *q;
-    uint8_t bits;
-    uint8_t x;
-    uint8_t y;
-
-    for (x = 0; x < CELL; x++) {
-        bits = *mask++;
-        q = p;
-        for (y = 0; y < CELL; y++) {
-            *q++ = (bits & 0x80) ? ink : paper;
-            bits <<= 1;
-        }
-        p += COLUMN;
-    }
-}
-#endif
 
 #ifdef __SDCC
 /*
@@ -499,6 +309,131 @@ static void scroll_cols(uint8_t *p, uint8_t cells, uint8_t fill)
     for (i = 0; i < CELL; i++) {
         memmove(p, p + CELL, (uint16_t)cells * CELL);
         memset(p + (uint16_t)cells * CELL, fill, CELL);
+        p += COLUMN;
+    }
+}
+#endif
+
+#ifdef __SDCC
+/*
+ * Draw the 8 columns of a glyph's bitmasks (mask) into the cell whose first
+ * pixel column is at p: about 31 T-states a pixel, the 8 rows unrolled. Each pixel's colour is
+ * chosen without a branch: the mask's top bit into the carry, then
+ * sbc a,a (0 or $FF), and (ink ^ paper), xor paper. Registers: HL the
+ * pixel, C the column's bits, D ink ^ paper, E paper;
+ * the other set: HL the masks, B the columns left. A cell's 8 pixels
+ * never cross a 256-byte column, so inc l moves down. The arguments are on
+ * the stack as zsdcc passes them: p, mask (words), then ink, paper (bytes)
+ */
+static void glyph_cols(uint8_t *p, const uint8_t *mask, uint8_t ink, uint8_t paper) __naked
+{
+    (void)p;
+    (void)mask;
+    (void)ink;
+    (void)paper;
+
+    __asm
+        ld hl, 2
+        add hl, sp
+        ld e, (hl)
+        inc hl
+        ld d, (hl)              ; de = p
+        inc hl
+        ld c, (hl)
+        inc hl
+        ld b, (hl)              ; bc = mask
+        inc hl
+        ld a, (hl)              ; a = ink
+        inc hl
+        ld l, (hl)              ; l = paper
+        xor l
+        ld h, a                 ; h = ink ^ paper
+        push bc
+        push de
+        ld d, h
+        ld e, l                 ; d = ink ^ paper, e = paper
+        pop hl                  ; hl = p
+        exx
+        pop hl                  ; the other set: hl = mask
+        ld b, 8                 ; and b = columns
+    nge_layer2_glyph_col:
+        ld a, (hl)
+        inc hl
+        exx
+        ld c, a                 ; the column bits, top pixel first
+        rlc c
+        sbc a, a
+        and d
+        xor e
+        ld (hl), a
+        inc l
+        rlc c
+        sbc a, a
+        and d
+        xor e
+        ld (hl), a
+        inc l
+        rlc c
+        sbc a, a
+        and d
+        xor e
+        ld (hl), a
+        inc l
+        rlc c
+        sbc a, a
+        and d
+        xor e
+        ld (hl), a
+        inc l
+        rlc c
+        sbc a, a
+        and d
+        xor e
+        ld (hl), a
+        inc l
+        rlc c
+        sbc a, a
+        and d
+        xor e
+        ld (hl), a
+        inc l
+        rlc c
+        sbc a, a
+        and d
+        xor e
+        ld (hl), a
+        inc l
+        rlc c
+        sbc a, a
+        and d
+        xor e
+        ld (hl), a
+        ld a, l
+        sub 7
+        ld l, a
+        inc h                   ; the next pixel column, 256 bytes on
+        exx
+        djnz nge_layer2_glyph_col
+        exx
+        ret
+    __endasm;
+}
+#else
+/* The same in C, for builds without zsdcc */
+static void glyph_cols(uint8_t *p, const uint8_t *mask, uint8_t ink, uint8_t paper)
+{
+    uint8_t *q;
+    uint8_t bits;
+    uint8_t x;
+    uint8_t y;
+
+    for (x = 0; x < CELL; x++) {
+        bits = *mask++;
+        q = p;
+        for (y = 0; y < CELL; y++) {
+            *q++ = (bits & 0x80) ? ink : paper;
+            bits <<= 1;
+        }
         p += COLUMN;
     }
 }

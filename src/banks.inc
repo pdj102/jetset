@@ -53,7 +53,6 @@
 //                                 definitions and the active effects' kinds
 //                        122/123  gen feature: feature generator / base features
 //                        124/125  target: targeting and its cursor / (unused)
-//                        126/127  proto: development prototypes, GAME_DEV_KIT only / (unused)
 //             132-223  game assets (maps, graphics, level data)
 
 // nge sprite: setup functions and loaders
@@ -113,9 +112,6 @@
 
 // game target: targeting (game/target)
 #pragma define CRT_ORG_PAGE_124 = 0x7CC000
-
-// game proto: development prototypes (game/proto, GAME_DEV_KIT only)
-#pragma define CRT_ORG_PAGE_126 = 0x7EC000
 
 // nge map: set-up functions
 #pragma define CRT_ORG_PAGE_44 = 0x2CC000

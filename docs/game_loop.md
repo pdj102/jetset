@@ -455,7 +455,9 @@ Later, each with its own spec:
 5. **Layer 2 UI prototype:** Layer 2 above the tilemap and sprites, text
    drawing speed, message scrolling by DMA, and pixel-scrolling the tilemap
    with sprites through a pixel camera. Decides D9 against its fallback.
-6. **The UI on Layer 2, and pixel scrolling.**
+6. **The UI on Layer 2, and pixel scrolling.** Specified and built in
+   [ui_layer2.md](ui_layer2.md): the UI on Layer 2, and a pixel camera
+   (the game still moves it a tile at a time until step 7).
 7. **Animations.**
 8. **Demo mode.**
 

@@ -31,6 +31,15 @@ void game_over(uint8_t reason)
     (void)reason;
 }
 
+/* Frames: only the development V key (player_bank.c) runs them, and no test presses it */
+void game_frame_start(void)
+{
+}
+
+void game_frame_end(void)
+{
+}
+
 void game_play_help(void)
 {
     play_helps++;
@@ -79,12 +88,12 @@ static const char *message(int n)
     int y;
 
     for (y = 30; y >= 27; y--) {
-        test_tilemap_row((uint8_t)y, 0, 39, text);
+        test_layer2_row((uint8_t)y, 0, 39, text);
         if (text[0] != ' ') {
             break;
         }
     }
-    test_tilemap_row((uint8_t)(y - n), 0, 39, text);
+    test_layer2_row((uint8_t)(y - n), 0, 39, text);
     return text;
 }
 

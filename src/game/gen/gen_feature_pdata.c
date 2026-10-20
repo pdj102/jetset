@@ -11,7 +11,7 @@
 #include "game/gen/gen_internal.h"
 
 #include "game/level/level.h"
-#include "io/nge_tm_stream.h"
+#include "io/nge_text.h"
 
 const gen_feature_base_t gen_features[FT_COUNT] = {
     [FT_DOOR] = {

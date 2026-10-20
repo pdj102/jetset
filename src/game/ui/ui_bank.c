@@ -14,9 +14,8 @@
 #include <string.h>
 
 #include "core/nge_util.h"
-#include "ecs/systems/nge_render.h"
 #include "io/nge_print.h"
-#include "io/nge_tm_stream.h"
+#include "io/nge_text.h"
 
 #include "game/actors.h"
 #include "game/components/inventory.h"
@@ -134,18 +133,18 @@ static void draw(const ui_item_screen_t *s, const nge_entity_id_t *ids, uint8_t 
     char name[NAME_MAX];
     uint8_t i;
 
-    nge_tm_cls(screen_panel);
-    nge_tm_at(0, (uint8_t)((PANEL_W - strlen(s->title)) / 2), screen_panel);
-    nge_tm_ink(NGE_INK_YELLOW, screen_panel);
+    nge_text_cls(screen_panel);
+    nge_text_at(0, (uint8_t)((PANEL_W - strlen(s->title)) / 2), screen_panel);
+    nge_text_ink(NGE_INK_YELLOW, screen_panel);
     nge_puts(s->title, screen_panel);
 
-    nge_tm_ink(NGE_INK_WHITE, screen_panel);
+    nge_text_ink(NGE_INK_WHITE, screen_panel);
     if (n == 0) {
-        nge_tm_at(LIST_ROW, 1, screen_panel);
+        nge_text_at(LIST_ROW, 1, screen_panel);
         nge_puts(s->empty, screen_panel);
     }
     for (i = 0; i < n; i++) {
-        nge_tm_at((uint8_t)(LIST_ROW + i), 1, screen_panel);
+        nge_text_at((uint8_t)(LIST_ROW + i), 1, screen_panel);
         nge_putc((uint8_t)('a' + i), screen_panel);
         nge_puts(") ", screen_panel);
         gen_name(ids[i], name, sizeof(name));
@@ -154,19 +153,19 @@ static void draw(const ui_item_screen_t *s, const nge_entity_id_t *ids, uint8_t 
     }
 }
 
-/* Open a screen over the map window: no sprites over it, its list, its keys */
+/* Open a screen over the map window (an opaque panel: draw() clears it), with its list and its keys */
 static void open_screen(const ui_item_screen_t *s, const nge_entity_id_t *ids, uint8_t n)
 {
     nge_key_flush();   /* keys typed for play don't choose */
-    nge_render_set_view(NGE_RENDER_NO_VIEW);
     draw(s, ids, n);
     screen_help(s->help);
 }
 
-/* Close it: the map, the sprites, the stats and play's help drawn again */
+/* Close it: the panel transparent again, so the map and sprites under it show, and play's help */
 static void close_screen(void)
 {
-    game_play_redraw();
+    screen_show_map();
+    game_play_help();
     nge_key_flush();   /* a key held down doesn't leak into play */
 }
 

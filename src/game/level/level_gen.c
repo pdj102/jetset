@@ -24,7 +24,7 @@
 #include "game/components/feature.h"
 #include "game/dev.h"
 #include "game/gen/gen.h"
-#include "io/nge_tm_stream.h"
+#include "io/nge_text.h"
 
 #define PLACE_ATTEMPTS  20   /* tries to find a free floor tile */
 

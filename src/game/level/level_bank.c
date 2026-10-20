@@ -12,7 +12,6 @@
 #include "game/level/level_internal.h"
 
 #include "game/screen.h"
-#include "io/nge_tm_stream.h"
 
 /*
  * What each tile ID blocks. Everything is solid unless set otherwise, so a

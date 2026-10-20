@@ -15,8 +15,9 @@
 #   (GEN_GAME_SRCS, with the components and effects, for test_gen, LEVEL_GAME_SRCS and those for test_level,
 #   ACT_GAME_SRCS and the level and gen ones for test_act, the gen ones for
 #   test_inventory, UI_GAME_SRCS and the action ones for test_ui and test_target).
-#   Library files that only work on the Next (inline asm traps) are listed in
-#   LIB_EXCLUDE and replaced by fakes in support/test.c.
+#   Library files that only work on the Next (inline asm traps, Layer 2
+#   drawing by address) are listed in LIB_EXCLUDE and replaced by fakes in
+#   support/ (test.c, test_layer2.c).
 
 Z88DK_ROOT ?= /home/paul/src/z88dk
 HOSTCC ?= gcc
@@ -29,11 +30,11 @@ Z88DK_ARCH_H := $(Z88DK_ROOT)/include/_DEVELOPMENT/common/arch/zxn.h
 Z88DK_CONFIG_DIR := $(Z88DK_ROOT)/libsrc/newlib/target/zxn
 
 # Library code that cannot run on the PC
-LIB_EXCLUDE := devices/nge_cspect_trap.c
+LIB_EXCLUDE := devices/nge_cspect_trap.c layer2/nge_layer2_draw.c
 
 LIB_SRCS := $(filter-out $(addprefix $(SRCDIR)/,$(LIB_EXCLUDE)),$(wildcard $(SRCDIR)/*/*.c $(SRCDIR)/*/*/*.c))
 LIB_OBJS := $(patsubst $(SRCDIR)/%.c,$(BUILD)/lib/%.o,$(LIB_SRCS))
-SUPPORT_OBJS := $(BUILD)/support/test.o $(BUILD)/support/zxn_io.o
+SUPPORT_OBJS := $(BUILD)/support/test.o $(BUILD)/support/test_layer2.o $(BUILD)/support/zxn_io.o
 
 # Game code tested on the PC, linked only into the tests that need it
 GAMEDIR := ../src/game
@@ -141,7 +142,7 @@ $(BUILD)/lib/%.o: $(SRCDIR)/%.c $(GEN)/zxn_names.h $(GEN)/zxn_io.h
 	@mkdir -p $(dir $@)
 	$(HOSTCC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
-$(BUILD)/support/test.o: support/test.c $(GEN)/zxn_names.h $(GEN)/zxn_io.h
+$(BUILD)/support/%.o: support/%.c $(GEN)/zxn_names.h $(GEN)/zxn_io.h
 	@mkdir -p $(dir $@)
 	$(HOSTCC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 

@@ -34,8 +34,8 @@ static void test_status_bar(void)
     CHECK_STR(row, "5         ");
 
     /* Clip mode: overflow is dropped and LF does not scroll */
-    nge_tm_clip(1, h);
-    nge_tm_cls(h);
+    nge_text_clip(1, h);
+    nge_text_cls(h);
     nge_puts("SCORE 123456", h);
     nge_putc('\n', h);
     nge_puts("X", h);
@@ -43,9 +43,9 @@ static void test_status_bar(void)
     CHECK_STR(row, "XCORE 1234");
 
     /* Redraw a shorter number, then clear to the end of the line */
-    nge_tm_at(0, 6, h);
+    nge_text_at(0, 6, h);
     nge_putu16(99, h);
-    nge_tm_clreol(h);
+    nge_text_clreol(h);
     test_tilemap_row(0, 0, 9, row);
     CHECK_STR(row, "XCORE 99  ");
 
@@ -75,14 +75,14 @@ static void test_message_window(void)
     nge_putc('z', m);
     test_tilemap_row(2, 20, 24, row);
     CHECK_STR(row, "ABCDz");
-    nge_tm_clreol(m);
+    nge_text_clreol(m);
     test_tilemap_row(2, 20, 24, row);
     CHECK_STR(row, "ABCDz");
 
     /* Ink sets attribute bits 7-4 and keeps the low bits */
-    nge_tm_attr(0x05, m);
-    nge_tm_ink(NGE_INK_CYAN, m);
-    nge_tm_at(0, 0, m);
+    nge_text_attr(0x05, m);
+    nge_text_ink(NGE_INK_CYAN, m);
+    nge_text_at(0, 0, m);
     nge_putc('Q', m);
     CHECK(test_tilemap[20].tile_id == 'Q');
     CHECK(test_tilemap[20].tile_attr == ((NGE_INK_CYAN << 4) | 0x05));
