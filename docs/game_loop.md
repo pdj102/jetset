@@ -178,7 +178,9 @@ section 7.
   map and can scroll freely (R19). The pages are already reserved (16 to
   31). **Fallback:** the Copper splits the tilemap's scroll at the edges of
   bands across the full width, which needs no memory but no side panel.
-  A prototype decides (section 7, step 5).
+  A prototype decides (section 7, step 5). **Decided (2026-10-20): Layer 2.**
+  The prototype (section 10) showed the layering and pixel scrolling right
+  on hardware, and a message drawn in 16.6 ms, within a frame.
 
 ## 6. Design
 
@@ -504,7 +506,7 @@ CSpect checks, each step:
 
 ## 10. Step 5: the Layer 2 UI prototype
 
-Built, not yet checked on CSpect. Shift+L on the title runs it
+Done: checked on CSpect and hardware, and D9 decided for Layer 2. Shift+L on the title runs it
 (`game/proto/proto_bank.c`, debug builds only); ENTER returns to the title.
 It uses a new nge module, `layer2/` (page 90): 320 x 256 Layer 2 as 8 x 8
 cells, with fills, text from the tilemap's font, and scrolling up by a row.
@@ -533,6 +535,10 @@ Results (to fill in after the CSpect check, and on hardware later):
 |---|---|
 | Panels opaque, map visible through the transparent area, sprites under the panels | |
 | Fill, glyph, line, scroll times (us) | CSpect, 2026-10-20, first version (CPU loops, the 4-bit font read per pixel): fill 4 rows 24,320; glyph 1,742; 40-character line 69,696; scroll 4 rows 26,816; a message (scroll and line) 89,472. Hardware, 2026-10-20, the same version: fill 19,712; glyph 1,606; line 64,256; scroll 22,016 (so a message about 86,000). Hardware times are about 0.81 of CSpect's throughout |
+| Second version: column-bitmask font, glyphs in assembly, DMA fills and scrolls (one transfer a pixel column, fully reprogrammed each time) | CSpect, 2026-10-20: glyph 363 (was 1,742; about 3,100 T of drawing and 3,800 of overhead: the banked call, the MMU calls, the timer read); 40-glyph line 14,528; fill CPU 25,408, DMA 23,360; scroll CPU 27,648, DMA 28,480; a message 41,664 (was 89,472). DMA gains nothing yet: each transfer is 32 bytes and its 16-write set-up costs about as much as the CPU copy. Hardware, 2026-10-20: glyph 297; line 11,904; fill CPU 20,608, DMA 18,304; scroll CPU 22,656, DMA 22,720; a message 33,472. About 0.8 of CSpect's, the DMA included, so CSpect times the DMA realistically |
+| Third version: fill and scroll in assembly (CPU) or by DMA set up once a call; calls timed in halves | CSpect, 2026-10-20: fill CPU 10,112, DMA 9,728; scroll CPU 14,400, DMA 20,672; glyph 259; line 10,368; a message (DMA scroll) 29,952. A first run timed each call whole and read the DMA scroll as 512: it ran past a frame, so the raster line wrapped. Decided: scrolls by the CPU (the DMA's set-up for each 24-byte column costs more than it saves), fills by DMA |
+| Fourth version: CPU scroll only, glyph rows unrolled (about 31 T a pixel), text maps a page once every 4 characters | CSpect, 2026-10-20: fill CPU 10,112, DMA 9,728; scroll 14,080; glyph 192 (was 1,742 in the first version); line 7,680; a message 20,928, so about 17,000 on hardware (0.8 of CSpect): within a frame. The scroll is now two-thirds of a message: when several messages come in one frame, step 6 can scroll once by that many rows and then draw each line. Hardware, 2026-10-20: fill CPU 7,680, DMA 7,936; scroll 11,008; glyph 155; line 6,208; a message 16,576, within a frame. On hardware the DMA fill is slower than the CPU's, so the DMA buys nothing for Layer 2 at this layout: step 6 drops it |
+| Conclusion | Layer 2 is fast enough for the UI (a message 16.6 ms on hardware), and layering, pixel scrolling and the text are right on hardware: D9 is decided for Layer 2, not the Copper split (2026-10-20) |
 | CPU speed (calibration loop) | CSpect: 18.9 T-states a microsecond at turbo setting 28MHz (register 7 reads `0x33`), about 2/3 of nominal. Hardware: 23.2, which is the 28MHz wait state (about one per memory access: the calibration loop's 26 T-state pass takes 31). Fill and scroll come to about 45 T a byte, the CPU's copying speed with the wait state; a glyph to about 580 T a pixel, which is the code. So the next steps are a column-bitmask font for glyphs (about 75% of a message's time), and DMA for fill and scroll |
 | Tilemap scrolls smoothly; sprites stay on their tiles | Hardware: yes. A sprite going off the left or top edge vanished whole: the prototype wrapped its position at 320 x 256 like the tilemap, which put it at the far right or bottom, outside the sprite clip window. Fixed: a position that would run off the right or bottom is placed off the left or top instead, wrapped to 9 bits (512 - k), so the visible part shows (checked on hardware). Step 6 needs the same in the render system once the camera moves by pixels: today a sprite can't be partly off the view's left or top, as the camera moves by whole tiles from the screen's edge |
 | Panels and layering | Hardware: correct |

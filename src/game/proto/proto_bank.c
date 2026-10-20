@@ -43,6 +43,7 @@
 #define MESSAGE_Y2  30
 #define HELP_Y      31
 #define LAST_COL    39
+#define HALF_COL    20   /* timed calls are made in two halves: 0-19, 20-39 (TIME_HALVES()) */
 
 /* The tiles the test sprites stand on, and their patterns */
 #define SPRITES  4
@@ -186,29 +187,12 @@ static void show_time(uint8_t row, const char *label, uint32_t us)
     nge_util_debugf("layer2: %s us\n", line);
 }
 
-/* The message rows scrolled up one row, a column at a time with the timer ticking */
-static void timed_scroll(void)
-{
-    uint8_t col;
-
-    for (col = 0; col <= LAST_COL; col++) {
-        nge_layer2_scroll_up(col, MESSAGE_Y1, col, MESSAGE_Y2, MESSAGE);
-        timer_tick();
-    }
-}
-
-/* A line of text on the bottom message row, a glyph at a time with the timer ticking */
-static void timed_line(const char *line)
-{
-    uint8_t col;
-
-    for (col = 0; col <= LAST_COL && line[col] != '\0'; col++) {
-        nge_layer2_glyph(col, MESSAGE_Y2, (uint8_t)line[col], INK, MESSAGE);
-        timer_tick();
-    }
-}
-
-/* A new message on the bottom line of the message panel, the others up one: the time it took */
+/*
+ * A new message on the bottom line of the message panel, the others up one,
+ * as the game would draw it (a scroll, a line): the time it took. The
+ * scroll is made in two halves, timed apart, so no part runs past a frame
+ * between line reads (TIME_HALVES())
+ */
 static uint32_t add_message(void)
 {
     char line[LINE_MAX];
@@ -217,9 +201,14 @@ static uint32_t add_message(void)
     add_str(line, sizeof(line), "Message ");
     add_u32(line, sizeof(line), ++message_count);
     add_str(line, sizeof(line), ": the quick brown fox jumps");
+    nge_frame_wait_vblank();
     timer_start();
-    timed_scroll();
-    timed_line(line);
+    nge_layer2_scroll_up(0, MESSAGE_Y1, HALF_COL - 1, MESSAGE_Y2, MESSAGE);
+    timer_tick();
+    nge_layer2_scroll_up(HALF_COL, MESSAGE_Y1, LAST_COL, MESSAGE_Y2, MESSAGE);
+    timer_tick();
+    nge_layer2_text(0, MESSAGE_Y2, line, INK, MESSAGE);   /* up to 40 characters: well under a frame */
+    timer_tick();
     return timer_us();
 }
 
@@ -293,49 +282,69 @@ static int8_t held(uint8_t less, uint8_t less_caps, uint8_t less_key, uint8_t mo
     return 0;
 }
 
-/* Time the Layer 2 drawing (timer_tick() between steps), and show the times */
+/*
+ * The time of a call made in two halves, columns 0 to HALF_COL - 1, then
+ * HALF_COL to LAST_COL, with the line read between: each half must end
+ * within a frame of the last read, so totals up to about two frames (40 ms)
+ * are exact. One call reaching past a frame read short: a 20.5 ms scroll
+ * read 0.5 ms (2026-10-20)
+ */
+#define TIME_HALVES(us, first, second) \
+    do {                               \
+        nge_frame_wait_vblank();       \
+        timer_start();                 \
+        first;                         \
+        timer_tick();                  \
+        second;                        \
+        timer_tick();                  \
+        (us) = timer_us();             \
+    } while (0)
+
+#define FILL(x1, x2)    nge_layer2_fill((x1), MESSAGE_Y1, (x2), MESSAGE_Y2, MESSAGE)
+#define SCROLL(x1, x2)  nge_layer2_scroll_up((x1), MESSAGE_Y1, (x2), MESSAGE_Y2, MESSAGE)
+
+/*
+ * Time the Layer 2 drawing and show the times: a fill of the 4 message
+ * rows by the CPU and by the DMA, a scroll of them (by the CPU: see
+ * nge_layer2_draw.c), a line of 40 characters, and a message (a scroll and
+ * a line)
+ */
 static void measure(void)
 {
     char line[LINE_MAX];
-    uint32_t fill_us;
-    uint32_t glyph_us;
-    uint32_t line_us;
+    uint32_t fill_cpu_us;
+    uint32_t fill_dma_us;
     uint32_t scroll_us;
+    uint32_t line_us;
+    uint32_t message_us;
     uint16_t speed;
-    uint8_t col;
 
     calibrate();
     speed = cpu_speed();
 
-    /* Fill the 4 message rows, a column at a time */
-    timer_start();
-    for (col = 0; col <= LAST_COL; col++) {
-        nge_layer2_fill(col, MESSAGE_Y1, col, MESSAGE_Y2, MESSAGE);
-        timer_tick();
-    }
-    fill_us = timer_us();
+    nge_layer2_set_dma(0);
+    TIME_HALVES(fill_cpu_us, FILL(0, HALF_COL - 1), FILL(HALF_COL, LAST_COL));
+    nge_layer2_set_dma(1);
+    TIME_HALVES(fill_dma_us, FILL(0, HALF_COL - 1), FILL(HALF_COL, LAST_COL));
+    TIME_HALVES(scroll_us, SCROLL(0, HALF_COL - 1), SCROLL(HALF_COL, LAST_COL));   /* always by the CPU */
 
-    /* 40 glyphs: a full line, and so the time of one */
+    /* A line of 40 characters: two calls of 20 */
     line[0] = '\0';
-    add_str(line, sizeof(line), "0123456789012345678901234567890123456789");
-    timer_start();
-    timed_line(line);
-    line_us = timer_us();
-    glyph_us = line_us / NGE_LAYER2_COLS;
+    add_str(line, sizeof(line), "01234567890123456789");
+    TIME_HALVES(line_us, nge_layer2_text(0, MESSAGE_Y2, line, INK, MESSAGE),
+                nge_layer2_text(HALF_COL, MESSAGE_Y2, line, INK, MESSAGE));
 
-    /* Scroll the 4 message rows up one row */
-    timer_start();
-    timed_scroll();
-    scroll_us = timer_us();
+    message_us = add_message();
 
     text(STATS_X1 + 1, 4, "Times, us:", TITLE, PANEL);
-    show_time(6, "fill  ", fill_us);
-    show_time(7, "glyph ", glyph_us);
-    show_time(8, "line  ", line_us);
-    show_time(9, "scroll", scroll_us);
-    text(STATS_X1 + 1, 11, "fill/scroll:", INK, PANEL);
-    text(STATS_X1 + 1, 12, " 4 rows", INK, PANEL);
-    text(STATS_X1 + 1, 13, "line: 40", INK, PANEL);
+    show_time(5, "fillC ", fill_cpu_us);
+    show_time(6, "fillD ", fill_dma_us);
+    show_time(7, "scroll", scroll_us);
+    show_time(8, "glyph ", line_us / NGE_LAYER2_COLS);
+    show_time(9, "line  ", line_us);
+    show_time(10, "msg   ", message_us);
+    text(STATS_X1 + 1, 13, "C cpu, D dma", INK, PANEL);
+    text(STATS_X1 + 1, 14, "4 rows, 40ch", INK, PANEL);
     nge_util_debugf("layer2: frame %u lines, turbo reg %u\n", frame_lines, ZXN_READ_REG(REG_TURBO_MODE));
     line[0] = '\0';
     add_str(line, sizeof(line), "CPU ");
@@ -343,7 +352,7 @@ static void measure(void)
     add_str(line, sizeof(line), ".");
     add_u32(line, sizeof(line), speed % 10);
     add_str(line, sizeof(line), " T/us");
-    nge_layer2_text(STATS_X1 + 1, 15, line, INK, PANEL);
+    nge_layer2_text(STATS_X1 + 1, 16, line, INK, PANEL);
     nge_util_debugf("layer2: cpu %s (%u calls of %u T)\n", line, SPIN_CALLS, (uint16_t)SPIN_T);
 }
 
