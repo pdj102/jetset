@@ -138,6 +138,11 @@ nge_key_event_t nge_key_get(void)
     return ev;
 }
 
+uint8_t nge_key_waiting(void)
+{
+    return nge_input_count;
+}
+
 void nge_key_flush(void)
 {
     nge_input_count = 0;

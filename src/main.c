@@ -14,6 +14,7 @@
 #include "sprite/nge_sprite.h"
 
 #include "game/actors.h"
+#include "game/anim/anim.h"
 #include "game/game.h"
 #include "game/level/level.h"
 #include "game/screen.h"
@@ -36,6 +37,7 @@ int main(void)
     nge_render_init();
     nge_timer_init();
     actors_load_graphics();
+    anim_init();        /* the creature kinds' sequences */
 
     nge_util_info("init done");
 

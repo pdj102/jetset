@@ -54,6 +54,13 @@ nge_entity_id_t gen_creature(uint8_t kind, nge_owner_t owner) NGE_BANKED
     return create(kind, owner);
 }
 
+void gen_creature_seqs(uint8_t kind, gen_seq_t *seq) NGE_BANKED
+{
+    nge_util_assert(kind < CR_COUNT);
+
+    memcpy(seq, gen_creatures[kind].seqs, sizeof(gen_creatures[kind].seqs));
+}
+
 nge_entity_id_t gen_creature_random(uint8_t depth, nge_owner_t owner) NGE_BANKED
 {
     gen_where_t where[CR_COUNT];   /* copies on the stack, for gen_pick() */

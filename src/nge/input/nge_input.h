@@ -150,6 +150,9 @@ uint8_t nge_key_released(uint8_t k);
  */
 nge_key_event_t nge_key_get(void);
 
+/** @brief The number of events waiting, without taking any (0 to NGE_KEY_QUEUE). */
+uint8_t nge_key_waiting(void);
+
 /** @brief Throw away waiting events (for example when a menu opens or closes). */
 void nge_key_flush(void);
 

@@ -9,7 +9,7 @@
  *
  * | Event             | Target              | Source   | Payloads |
  * |-------------------|---------------------|----------|----------|
- * | EV_MOVED          | the entity moved    | -        | -        |
+ * | EV_MOVED          | the entity moved    | -        | p1: dx, p2: dy (int8_t, -1 to 1) |
  * | EV_STOOD_ON       | what is stood on    | stander  | -        |
  * | EV_USED           | the item (dying)    | user     | -        |
  * | EV_EFFECT_STARTED | the entity affected | the effect; NGE_EVENT_NONE if instant | p1: EF_* |
@@ -32,7 +32,7 @@
 
 #include "event/nge_event.h"
 
-#define EV_MOVED          (NGE_EVENT_USER + 0)     /**< Moved one tile (act_move()). */
+#define EV_MOVED          (NGE_EVENT_USER + 0)     /**< Moved one tile by (p1, p2), as int8_t (act_move()). */
 #define EV_STOOD_ON       (NGE_EVENT_USER + 1)     /**< Stood on by the source (after a move onto its tile). */
 #define EV_USED           (NGE_EVENT_USER + 2)     /**< Used (drunk, eaten) by the source, and used up (act_use()). */
 #define EV_EFFECT_STARTED (NGE_EVENT_USER + 3)     /**< Effect p1 started on the target, or was refreshed (game/effects/effects.h). */

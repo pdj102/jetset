@@ -72,6 +72,7 @@ typedef struct gen_creature_base {
     gen_inventory_t inventory;
     uint8_t      flags;   /* CREATURE_* */
     uint8_t      hooks[GEN_HOOK_COUNT];   /* EF_* by GEN_HOOK_*: hit, innate */
+    gen_seq_t    seqs[GEN_SEQ_COUNT];     /* by GEN_SEQ_*: none yet, until there is art */
     gen_where_t  where;
 } gen_creature_base_t;
 

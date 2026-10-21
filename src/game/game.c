@@ -20,6 +20,7 @@
 #include "map/nge_map.h"
 
 #include "game/actors.h"
+#include "game/anim/anim.h"
 #include "game/dev.h"
 #include "game/effects/effects.h"
 #include "game/events.h"
@@ -58,6 +59,7 @@ static void death_on_event(const nge_event_t *e)
 /* The dispatch function: each system's reaction, in a fixed order. In common memory */
 static void game_on_event(const nge_event_t *e)
 {
+    anim_on_event(e);    /* first: the animations start in the frame the action happened */
     player_on_event(e);
     messages_on_event(e);
     death_on_event(e);   /* last: the death message comes before "Game over" */
@@ -131,12 +133,14 @@ nge_key_event_t game_wait_key(uint16_t frames_max)
 
 /*
  * The world may act: it isn't the player's turn, no change of level is
- * waiting (nothing more happens on the level being left), and the game
- * isn't over
+ * waiting (nothing more happens on the level being left), the game isn't
+ * over, and no animation in view is playing (the world waits for the
+ * screen to show what happened). The animations last: only asked when
+ * the rest would let the world act
  */
 static uint8_t world_can_act(void)
 {
-    return !player_turn && !level_pending() && !ended;
+    return !player_turn && !level_pending() && !ended && !anim_holding();
 }
 
 /*
@@ -158,7 +162,9 @@ static uint8_t world_can_act(void)
  *
  * The events of each advance are handled before the next, so consequences
  * happen in order: once the player dies, game over stops the clock and
- * nothing after that acts
+ * nothing after that acts. The animations those events start in view stop
+ * the next advance (world_can_act()), so everything that acted at the same
+ * tick animates together, and the world goes on when they end
  */
 static void pass_time(void)
 {
@@ -183,7 +189,8 @@ static void show_turn(void)
 
 /*
  * The turn engine: the world acts until it is the player's turn, then the
- * player acts, at most one command a frame from the key events. A command
+ * player acts, at most one command a frame from the key events, once the
+ * animations in view have ended. A command
  * that uses the turn clears player_turn (player_act()), and the world acts
  * again from the next frame. A command may call choosers, which run frames
  * until the player answers. The two ifs aren't an if/else: when the
@@ -198,11 +205,10 @@ static void play_turn(void)
         pass_time();
         show_turn();
     }
-    if (player_turn && !ended) {
+    /* A key waits, queued, until the animations end: only asked about when there is one */
+    if (player_turn && !ended && nge_key_waiting() != 0 && !anim_holding()) {
         ev = nge_key_get();
-        if (ev != NGE_KEY_NONE) {
-            player_command(ev);
-        }
+        player_command(ev);
     }
 }
 
@@ -280,6 +286,7 @@ static void play_start(void)
     level_clear_request();
     ended = 0;
     actors_create();
+    nge_render_follow(actor_player);   /* the camera slides with them (after nge_render_init()) */
     level_generate(1, actor_player, LEVEL_ARRIVE_ANY);   /* the first level; the camera on the player */
     shown_turn = 0;
     nge_key_flush();         /* keys typed at the title don't move the player */

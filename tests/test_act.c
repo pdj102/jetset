@@ -180,10 +180,12 @@ int main(void)
     CHECK(a.reason == ACT_R_NONE && a.used == 1 && a.target == NGE_ENTITY_INVALID);
     CHECK(at(player, 5, 5));
     CHECK(events() == 2 && is(0, player, EV_MOVED, NGE_EVENT_NONE) && is(1, potion, EV_STOOD_ON, player));
+    CHECK(seen[0].p1 == 1 && seen[0].p2 == 0);                 /* the direction: dx, dy */
     /* Diagonally, onto empty floor: EV_MOVED only */
     a = move(player, -1, 1);
     CHECK(act_move(&a, ACT_DO) == ACT_SUCCESS && at(player, 4, 6));
     CHECK(events() == 1 && is(0, player, EV_MOVED, NGE_EVENT_NONE));
+    CHECK((int8_t)seen[0].p1 == -1 && (int8_t)seen[0].p2 == 1);
     a = move(player, 1, -1);
     act_move(&a, ACT_DO);
     events();

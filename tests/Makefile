@@ -60,6 +60,9 @@ UI_GAME_SRCS := $(addprefix $(GAMEDIR)/,ui/ui_bank.c player/player.c player/play
                 messages/messages_bank.c target/target_bank.c)
 UI_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(UI_GAME_SRCS)) $(ACT_GAME_OBJS)
 
+ANIM_GAME_SRCS := $(addprefix $(GAMEDIR)/,anim/anim.c anim/anim_bank.c anim/anim_pdata.c)
+ANIM_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(ANIM_GAME_SRCS)) $(LEVEL_GAME_OBJS)
+
 TEST_SRCS := $(wildcard test_*.c)
 TESTS := $(patsubst %.c,$(BUILD)/%,$(TEST_SRCS))
 
@@ -113,6 +116,9 @@ $(BUILD)/test_ui: $(BUILD)/test_ui.o $(LIB_OBJS) $(SUPPORT_OBJS) $(UI_GAME_OBJS)
 	$(HOSTCC) $(CFLAGS) $^ -o $@
 
 $(BUILD)/test_target: $(BUILD)/test_target.o $(LIB_OBJS) $(SUPPORT_OBJS) $(UI_GAME_OBJS)
+	$(HOSTCC) $(CFLAGS) $^ -o $@
+
+$(BUILD)/test_anim: $(BUILD)/test_anim.o $(LIB_OBJS) $(SUPPORT_OBJS) $(ANIM_GAME_OBJS)
 	$(HOSTCC) $(CFLAGS) $^ -o $@
 
 $(BUILD)/test_health: $(BUILD)/test_health.o $(LIB_OBJS) $(SUPPORT_OBJS) $(GEN_GAME_OBJS)

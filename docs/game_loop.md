@@ -126,11 +126,11 @@ section 7.
 - **R17 (later): demo mode.** The title can run a game whose player's
   commands come from an AI, not the keyboard; any key ends it and returns
   to the title. It plays a new game with a fixed seed and leaves no trace.
-- **R18 (later): action animations.** An entity that acts plays the
+- **R18 (later; built in step 7, [animations.md](animations.md)): action animations.** An entity that acts plays the
   action's animation: a slide from the old tile to the new, a lunge at what
   it attacks. One that doesn't act is still or plays its idle animation.
   Actions themselves stay instant: the rules never wait for the screen.
-- **R19 (later): pixel scrolling.** The view scrolls a pixel at a time with
+- **R19 (later; built in step 7): pixel scrolling.** The view scrolls a pixel at a time with
   the player's slide, so the map doesn't jump a tile.
 - **R20 (later): a UI layer.** The stats, messages, help bar and screens
   don't scroll with the map (R19 needs this).
@@ -385,6 +385,11 @@ command. Both are well inside 512 bytes.
 
 ### 6.10 Later: animations (R18)
 
+Built in step 7: [animations.md](animations.md) has the design as agreed
+and built. Its D1 changes one point below: a finished sequence returns to
+the rest animation in the engine, and still is a rest animation of one
+pattern, not a second case.
+
 - **Actions stay instant.** The tile, the damage and the events happen at
   once. The rules, the AI and the tests never wait for the screen.
 - **Events start the animations.** An `anim` module's `on_event()` (in
@@ -458,7 +463,9 @@ Later, each with its own spec:
 6. **The UI on Layer 2, and pixel scrolling.** Specified and built in
    [ui_layer2.md](ui_layer2.md): the UI on Layer 2, and a pixel camera
    (the game still moves it a tile at a time until step 7).
-7. **Animations.**
+7. **Animations.** Specified and built in [animations.md](animations.md) (2026-10-21):
+   slides, lunges and one-shots in the render system, the world waiting
+   for them, and the camera following the player's slide.
 8. **Demo mode.**
 
 ## 8. Tests

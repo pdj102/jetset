@@ -16,7 +16,7 @@
 #include "sprite/nge_sprite.h"
 
 /* Sprite component (NGE_COMPONENT_SPRITE): one table per field, indexed by entity ID */
-extern uint8_t nge_render_sprite_first[NGE_ENTITY_MAX];       /* pattern, or first animation pattern */
+extern uint8_t nge_render_sprite_first[NGE_ENTITY_MAX];       /* playing: pattern, or first animation pattern */
 extern uint8_t nge_render_sprite_flags[NGE_ENTITY_MAX];       /* mirror, rotate, palette */
 extern uint8_t nge_render_sprite_mode[NGE_ENTITY_MAX];        /* scale, NGE_SPRITE_PATTERN4 */
 extern int8_t  nge_render_sprite_ox[NGE_ENTITY_MAX];          /* draw offset, pixels */
@@ -26,6 +26,15 @@ extern uint8_t nge_render_sprite_anim_count[NGE_ENTITY_MAX];  /* patterns in the
 extern uint8_t nge_render_sprite_anim_rate[NGE_ENTITY_MAX];   /* frames per pattern */
 extern uint8_t nge_render_sprite_anim_tick[NGE_ENTITY_MAX];   /* frames shown of the current pattern */
 extern uint8_t nge_render_sprite_anim_frame[NGE_ENTITY_MAX];  /* current pattern - first */
+extern uint8_t nge_render_sprite_rest_first[NGE_ENTITY_MAX];  /* the rest animation, shown when no one-shot plays */
+extern uint8_t nge_render_sprite_rest_count[NGE_ENTITY_MAX];
+extern uint8_t nge_render_sprite_rest_rate[NGE_ENTITY_MAX];
+extern uint8_t nge_render_sprite_oneshot[NGE_ENTITY_MAX];     /* 1: a one-shot is playing, not the rest animation */
+extern int8_t  nge_render_sprite_mox[NGE_ENTITY_MAX];         /* motion: offset now, added to the draw offset */
+extern int8_t  nge_render_sprite_moy[NGE_ENTITY_MAX];
+extern int8_t  nge_render_sprite_mtx[NGE_ENTITY_MAX];         /* a lunge's turning point; (0, 0) for a slide or on the way back */
+extern int8_t  nge_render_sprite_mty[NGE_ENTITY_MAX];
+extern uint8_t nge_render_sprite_mspeed[NGE_ENTITY_MAX];      /* pixels a frame; 0: no motion */
 
 /* System working data */
 extern nge_sprite_attr_t nge_render_attrs[NGE_RENDER_SPRITES];  /* records for sprites 0.. */
@@ -36,5 +45,9 @@ extern uint8_t           nge_render_used;      /* sprites drawn by the last upda
 extern uint8_t           nge_render_shown;     /* sprites visible on the hardware after the last upload */
 extern uint8_t           nge_render_dropped_count;
 extern nge_owner_t       nge_render_area;
+extern uint8_t           nge_render_busy_count;  /* busy entities at the last update, plus any started since */
+extern nge_entity_id_t   nge_render_follow_id;   /* the entity the camera follows, or NGE_ENTITY_INVALID */
+extern uint16_t          nge_render_follow_x;    /* its drawn position when the camera last centred on it */
+extern uint16_t          nge_render_follow_y;
 
 #endif

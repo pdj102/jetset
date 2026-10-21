@@ -346,6 +346,16 @@ int main(void)
     nge_map_set_camera_px(83, 45);
     CHECK(nge_map_to_screen(93, 49, &sx, &sy) && sx == 2 * 8 + 10 && sy == 22 * 8 + 4);
     CHECK(!nge_map_to_screen(82, 49, &sx, &sy) && sx == (uint16_t)(2 * 8 - 1));   /* a pixel left of the view */
+    /* Centring on a pixel: as centring on a tile (16 x 4 tiles to the view's top-left), between tiles too */
+    CHECK(nge_map_centre_camera_px(30 * 8, 20 * 8) == 1 && nge_map.cam_x == 30 - 16 && nge_map.fine_x == 0 &&
+          nge_map.cam_y == 20 - 4 && nge_map.fine_y == 0);
+    CHECK(nge_map_centre_camera_px(30 * 8 + 3, 20 * 8 - 2) == 1 && NGE_MAP_CAMERA_PX() == (30 - 16) * 8 + 3 &&
+          NGE_MAP_CAMERA_PY() == (20 - 4) * 8 - 2);
+    /* Clamped at each edge */
+    CHECK(nge_map_centre_camera_px(5, 7) == 1 && NGE_MAP_CAMERA_PX() == 0 && NGE_MAP_CAMERA_PY() == 0);
+    CHECK(nge_map_centre_camera_px(16 * 8 + 1, 4 * 8 + 1) == 1 && NGE_MAP_CAMERA_PX() == 1 && NGE_MAP_CAMERA_PY() == 1);
+    CHECK(nge_map_centre_camera_px(59 * 8 + 7, 39 * 8 + 7) == 1 && nge_map.cam_x == 28 && nge_map.fine_x == 0 &&
+          nge_map.cam_y == 31 && nge_map.fine_y == 0);
     /* A fine offset needs room past the window: none with the whole tilemap */
     nge_map_init(60, 40, &full);
     TEST_EXPECT_HALT(nge_map_set_camera_px(3, 0));

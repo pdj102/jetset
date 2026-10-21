@@ -84,6 +84,15 @@ uint8_t nge_map_centre_camera(uint8_t x, uint8_t y)
                               (y > half_h) ? y - half_h : 0);
 }
 
+uint8_t nge_map_centre_camera_px(uint16_t x, uint16_t y)
+{
+    uint16_t half_w = (uint16_t)(nge_map.view_w >> 1) * NGE_MAP_TILE_PIXELS;
+    uint16_t half_h = (uint16_t)(nge_map.view_h >> 1) * NGE_MAP_TILE_PIXELS;
+
+    return nge_map_set_camera_px((x > half_w) ? x - half_w : 0,
+                                 (y > half_h) ? y - half_h : 0);
+}
+
 uint8_t nge_map_within(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, uint8_t r)
 {
     uint8_t dx = (x1 > x0) ? (uint8_t)(x1 - x0) : (uint8_t)(x0 - x1);

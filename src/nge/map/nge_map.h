@@ -199,6 +199,15 @@ uint8_t nge_map_move_camera(int8_t dx, int8_t dy);
 uint8_t nge_map_centre_camera(uint8_t x, uint8_t y);
 
 /**
+ * @brief Move the camera so map pixel (x, y) is where nge_map_centre_camera()
+ *        puts a tile's top-left, as far as the map edges allow: for a sprite
+ *        between tiles (a slide), so the view follows it a pixel at a time.
+ *        A pixel on a tile's corner gives the same camera as its tile.
+ * @return 1 if the camera moved, 0 if not.
+ */
+uint8_t nge_map_centre_camera_px(uint16_t x, uint16_t y);
+
+/**
  * @brief Get the tile at map position (x, y).
  * @return Pointer to the tile in the map data. (A pointer, not a copy: SDCC
  *         cannot return structs by value.)

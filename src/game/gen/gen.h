@@ -101,6 +101,28 @@ void gen_feature_info(uint8_t kind, gen_feature_info_t *info) NGE_BANKED;
  */
 uint16_t gen_item_fits(uint8_t kind) NGE_BANKED;
 
+/**
+ * A sequence of sprite patterns that an action plays once over the rest
+ * animation (nge_render_play()): count 0 for none.
+ */
+typedef struct gen_seq {
+    uint8_t first;   /**< First pattern. */
+    uint8_t count;   /**< Patterns; 0: none. */
+    uint8_t rate;    /**< Frames per pattern. */
+} gen_seq_t;
+
+/* The actions a creature kind has a sequence for: the index into its sequences */
+#define GEN_SEQ_MOVE    0   /**< Moving a tile, with the slide. */
+#define GEN_SEQ_ATTACK  1   /**< Attacking in melee, with the lunge. */
+#define GEN_SEQ_COUNT   2
+
+/**
+ * @brief Copy a creature kind's (CR_*) sequences, by GEN_SEQ_*, into
+ *        seq[GEN_SEQ_COUNT] (in common memory: on the caller's stack).
+ *        Banked with the creature table (page 106).
+ */
+void gen_creature_seqs(uint8_t kind, gen_seq_t *seq) NGE_BANKED;
+
 /* Hooks: the effect (EF_*, game/effects/effects.h) a kind's base record names for each */
 #define GEN_HOOK_USE     0   /**< Items: applied to the user when used up (drunk, eaten: act_use()). */
 #define GEN_HOOK_HIT     1   /**< Weapons and creatures: applied to what a hit leaves alive (act_melee()). */

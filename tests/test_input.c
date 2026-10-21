@@ -93,13 +93,15 @@ int main(void)
     /* ---- nothing held ---- */
     nge_input_update();
     CHECK(!nge_key_down(NGE_KEY_A) && !nge_key_pressed(NGE_KEY_A) && !nge_key_released(NGE_KEY_A));
-    CHECK(nge_key_get() == NGE_KEY_NONE);
+    CHECK(nge_key_get() == NGE_KEY_NONE && nge_key_waiting() == 0);
 
     /* ---- held, pressed, released ---- */
     set_key(NGE_KEY_A, 1);
     nge_input_update();
     CHECK(nge_key_down(NGE_KEY_A) && nge_key_pressed(NGE_KEY_A) && !nge_key_released(NGE_KEY_A));
+    CHECK(nge_key_waiting() == 1 && nge_key_waiting() == 1);     /* counted, not taken */
     CHECK(nge_key_get() == EV(NGE_KEY_A, 0) && nge_key_get() == NGE_KEY_NONE);
+    CHECK(nge_key_waiting() == 0);
     nge_input_update();
     CHECK(nge_key_down(NGE_KEY_A) && !nge_key_pressed(NGE_KEY_A));
     CHECK(!nge_key_down(NGE_KEY_S));                         /* a neighbouring key */

@@ -45,9 +45,10 @@ void player_init(void);
 void player_on_turn(nge_entity_id_t id);
 
 /**
- * @brief React to events about the player: the camera follows them
- *        (EV_MOVED), the stats window shows their hit points (EV_DAMAGED,
- *        EV_HEALED) and all their stats (EV_ATTRS_CHANGED).
+ * @brief React to events about the player: the stats window shows their
+ *        hit points (EV_DAMAGED, EV_HEALED) and all their stats
+ *        (EV_ATTRS_CHANGED). The camera follows them through the render
+ *        system (nge_render_follow(), set by play_start()), with their slide.
  */
 void player_on_event(const nge_event_t *e);
 

@@ -74,10 +74,10 @@ The current CSpect build (`bin/main.map`) uses:
 
 | Address | Contents |
 |---|---|
-| `$6A00`-`$B93E` | Code and constant data (`CODE`) |
-| `$B93F`-`$B95B` | Initialised data (`DATA`) |
-| `$B95C`-`$BAC8` | Uninitialised data (`BSS`) |
-| `$BAC9`-`$BDFF` | Free, 823 bytes (about 7.3K in the hardware build, without asserts and their messages) |
+| `$6A00`-`$B9BC` | Code and constant data (`CODE`) |
+| `$B9BD`-`$B9D9` | Initialised data (`DATA`) |
+| `$B9DA`-`$BB46` | Uninitialised data (`BSS`) |
+| `$BB47`-`$BDFF` | Free, 697 bytes (about 7.2K in the hardware build, without asserts and their messages) |
 | `$BE00`-`$BFFF` | Stack, 512 bytes |
 
 The link step checks `__BSS_END_tail` in the map file and fails the build if
@@ -150,7 +150,7 @@ code pages.
 | 88-99 | Further nge modules (6 pairs): 88/89 `input` (setup, ASCII tables and waiting / unused); 90/91 `layer2` (Layer 2 drawing / unused) |
 | 100 | Game: free (assets) |
 | 101 | Game: sprite patterns and palette (slot 7, through the loaders) |
-| 102-131 | Game code pairs (15), allocated from 102 up: 102/103 `level` (setting up the map and generating levels / the room list); 104/105 `title` (the title state / unused); 106/107 `gen` creatures (generator / base creatures); 108/109 `gen` items (generator / base items); 110/111 `gen` shared (helpers and the game components' add functions / unused); 112/113 `actions` (the actions / unused); 114/115 `player` (commands and the firing screen / unused); 116/117 `ui` (the item screens / unused); 118/119 `messages` (what the player is told / unused); 120/121 `effects` (the effect system / the effect definitions and active effects' kinds); 122/123 `gen` features (generator / base features); 124/125 `target` (targeting / unused) |
+| 102-131 | Game code pairs (15), allocated from 102 up: 102/103 `level` (setting up the map and generating levels / the room list); 104/105 `title` (the title state / unused); 106/107 `gen` creatures (generator / base creatures); 108/109 `gen` items (generator / base items); 110/111 `gen` shared (helpers and the game components' add functions / unused); 112/113 `actions` (the actions / unused); 114/115 `player` (commands and the firing screen / unused); 116/117 `ui` (the item screens / unused); 118/119 `messages` (what the player is told / unused); 120/121 `effects` (the effect system / the effect definitions and active effects' kinds); 122/123 `gen` features (generator / base features); 124/125 `target` (targeting / unused); 126/127 `anim` (starting the action animations / the kinds' sequences) |
 | 132-223 | Game assets: maps, graphics, level data |
 
 - **Module code, string literals and constants:** the even page. A banked
@@ -189,7 +189,7 @@ Banked so far:
 | 42/43 | `sprite` | hardware set-up functions and loaders, with literals (`nge_sprite_setup.c`, about 1.1K) | none |
 | 44/45 | `map` | set-up: `nge_map_init()` (maps page 51 into slot 1), the block table functions, the sprite clip (`nge_map_setup.c`, about 0.7K) | none |
 | 48/49 | `ecs` entity, owner | lifecycle functions (`nge_entity_life.c`) and the ownership functions that change or search the owner table (`nge_owner_set.c`), with literals, about 0.6K | lifecycle bookkeeping: free and dying stacks, alive positions (`nge_entity_pdata.c`, 302 bytes) |
-| 52/53 | `ecs` render system | the system (`ecs/systems/nge_render.c`), with literals, about 2.4K | the sprite component (10 bytes per entity), the sprite records for hardware sprites 0 to `NGE_RENDER_SPRITES`-1, and its working data (`nge_render_pdata.c`, about 1.8K) |
+| 52/53 | `ecs` render system | the system (`ecs/systems/nge_render.c`), with literals, about 4.9K with asserts | the sprite component (19 bytes per entity: the pattern and animation, the rest animation, the one-shot and the motion), the sprite records for hardware sprites 0 to `NGE_RENDER_SPRITES`-1, and its working data (`nge_render_pdata.c`, about 2.7K) |
 | 54/55 | `ecs` timer system | the clock and firing timers (`ecs/systems/nge_timer.c`, about 1.2K with asserts) | none: its tables and the clock are in slot 0 |
 | 88/89 | `input` | setup, the key-to-ASCII tables and waiting (`input/nge_input_setup.c`, about 0.5K) | none |
 | 90/91 | `layer2` | Layer 2 drawing: set-up, fills, text, scrolling (`layer2/nge_layer2_draw.c`); it maps the layer's pages (16-25) into slot 7 while it writes | none |
@@ -203,6 +203,7 @@ Banked so far:
 | 120/121 | game `effects` | applying, ending and recomputing effects: the mechanism (`game/effects/effects_core.c`) and the game's side (`game/effects/effects_game.c`) | the effect definitions with their texts, and the kind of each active effect (`game/effects/effects_pdata.c`) |
 | 122/123 | game `gen` features | the feature generator and its name, hook and kind-data copies (`game/gen/gen_feature_bank.c`) | the base features (`game/gen/gen_feature_pdata.c`) |
 | 124/125 | game `target` | targeting: the cursor, its keys and the purposes' prompts (`game/target/target_bank.c`); the cursor is an overlay sprite (`game/screen.h`) | none |
+| 126/127 | game `anim` | starting the action animations from events, and copying the kinds' sequences (`game/anim/anim_bank.c`, about 0.6K); `anim_holding()` is common (`anim.c`) | the creature kinds' sequences (`game/anim/anim_pdata.c`, 6 bytes a kind) |
 | 116/117 | game `ui` | the item screens shown in the map window (inventory, drop, equip, take off) and their table of descriptions (`game/ui/ui_bank.c`) | none |
 | 104/105 | game `title` | the title state and the name prompt, with literals (`game/title/title_bank.c`, about 0.4K; no common part) | none |
 

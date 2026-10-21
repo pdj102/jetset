@@ -18,6 +18,15 @@ uint8_t nge_render_sprite_anim_count[NGE_ENTITY_MAX];
 uint8_t nge_render_sprite_anim_rate[NGE_ENTITY_MAX];
 uint8_t nge_render_sprite_anim_tick[NGE_ENTITY_MAX];
 uint8_t nge_render_sprite_anim_frame[NGE_ENTITY_MAX];
+uint8_t nge_render_sprite_rest_first[NGE_ENTITY_MAX];
+uint8_t nge_render_sprite_rest_count[NGE_ENTITY_MAX];
+uint8_t nge_render_sprite_rest_rate[NGE_ENTITY_MAX];
+uint8_t nge_render_sprite_oneshot[NGE_ENTITY_MAX];
+int8_t  nge_render_sprite_mox[NGE_ENTITY_MAX];
+int8_t  nge_render_sprite_moy[NGE_ENTITY_MAX];
+int8_t  nge_render_sprite_mtx[NGE_ENTITY_MAX];
+int8_t  nge_render_sprite_mty[NGE_ENTITY_MAX];
+uint8_t nge_render_sprite_mspeed[NGE_ENTITY_MAX];
 
 /* System working data */
 nge_sprite_attr_t nge_render_attrs[NGE_RENDER_SPRITES];
@@ -28,3 +37,7 @@ uint8_t           nge_render_used;
 uint8_t           nge_render_shown;
 uint8_t           nge_render_dropped_count;
 nge_owner_t       nge_render_area;
+uint8_t           nge_render_busy_count;
+nge_entity_id_t   nge_render_follow_id;
+uint16_t          nge_render_follow_x;
+uint16_t          nge_render_follow_y;

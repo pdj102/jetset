@@ -6,8 +6,6 @@
 #include "game/player/player.h"
 
 #include "core/nge_util.h"
-#include "ecs/components/nge_location.h"
-#include "map/nge_map.h"
 
 #include "game/actors.h"
 #include "game/components/health.h"
@@ -37,9 +35,6 @@ void player_on_event(const nge_event_t *e)
         return;
     }
     switch (e->id) {
-    case EV_MOVED:
-        nge_map_centre_camera(NGE_LOCATION_X(target), NGE_LOCATION_Y(target));
-        break;
     case EV_DAMAGED:
     case EV_HEALED:
         screen_show_hp(health_hp[target], health_hp_max[target]);

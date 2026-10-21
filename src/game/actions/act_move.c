@@ -53,7 +53,7 @@ uint8_t act_move(act_t *a, uint8_t mode) NGE_BANKED
 
     /* 4. Apply, then the events: what happened, for the systems to react to */
     nge_location_set(actor, x, y);
-    nge_event_post0(actor, EV_MOVED);
+    nge_event_post(actor, EV_MOVED, NGE_EVENT_NONE, (uint8_t)a->dx, (uint8_t)a->dy);
     NGE_LOCATION_FOR_EACH_AT(id, area, x, y, 0) {
         if (id != actor) {
             nge_event_post(id, EV_STOOD_ON, actor, 0, 0);

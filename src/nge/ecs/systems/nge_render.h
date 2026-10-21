@@ -18,8 +18,28 @@
  * If more entities are visible than it has sprites, the lowest layers are
  * left out (nge_render_dropped()).
  *
- * Animation is part of the system: an entity shows `count` patterns from
- * `first`, each for `rate` frames, advanced by nge_render_update().
+ * Animation is part of the system, advanced by nge_render_update():
+ * - the rest animation: an entity shows `count` patterns from `first`, each
+ *   for `rate` frames, over and over (nge_render_set_anim()); one pattern
+ *   is a still sprite (nge_render_set_pattern());
+ * - a one-shot (nge_render_play()) plays a sequence once over the rest
+ *   animation, which then shows again by itself: the game never restores it;
+ * - a motion moves the sprite away from its location and back, at a speed
+ *   in pixels a frame, added to the draw offset: a slide from where it was
+ *   (nge_render_slide(), after a move) or a lunge out and back
+ *   (nge_render_lunge(), an attack).
+ *
+ * One-shots and motions play only in view: started out of view (where it
+ * was and where it is, through the camera as it is then), they show their
+ * end at once, and one whose place leaves the view ends then. While one
+ * plays in view, the entity is busy, and nge_render_busy() says so: the
+ * game waits for it before the world acts again. Rest animations are never
+ * busy.
+ *
+ * The camera can follow an entity (nge_render_follow()): whenever its drawn
+ * position (location and motion) changes, the update centres the camera on
+ * it before placing the sprites, so the map scrolls with a slide a pixel at
+ * a time. When it doesn't move, the camera stays where the game puts it.
  *
  * Per frame, two banked calls:
  *
@@ -72,14 +92,55 @@ void nge_render_add(nge_entity_id_t id, uint8_t pattern, uint8_t flags, uint8_t 
 /** @brief Remove the sprite component. */
 void nge_render_remove(nge_entity_id_t id) NGE_BANKED;
 
-/** @brief Show a still pattern, stopping any animation. */
+/**
+ * @brief Make the rest animation a still pattern. A one-shot playing
+ *        carries on, then shows it.
+ */
 void nge_render_set_pattern(nge_entity_id_t id, uint8_t pattern) NGE_BANKED;
 
 /**
- * @brief Animate: show patterns first to first+count-1, each for rate
- *        frames, from the first. count 1 is a still pattern.
+ * @brief Make the rest animation patterns first to first+count-1, each for
+ *        rate frames, from the first. count 1 is a still pattern. A one-shot
+ *        playing carries on, then shows it.
  */
 void nge_render_set_anim(nge_entity_id_t id, uint8_t first, uint8_t count, uint8_t rate) NGE_BANKED;
+
+/**
+ * @brief Play patterns first to first+count-1 once, each for rate frames,
+ *        then the rest animation from its first pattern. Replaces a one-shot
+ *        playing. Out of view: the rest animation at once (not busy).
+ */
+void nge_render_play(nge_entity_id_t id, uint8_t first, uint8_t count, uint8_t rate) NGE_BANKED;
+
+/**
+ * @brief Slide from (ox, oy) pixels away to the location, speed pixels a
+ *        frame on each axis: after a move, (ox, oy) is where it came from.
+ *        From where it is drawn now if a motion is playing, which it
+ *        replaces. Neither end in view: no motion (not busy).
+ */
+void nge_render_slide(nge_entity_id_t id, int8_t ox, int8_t oy, uint8_t speed) NGE_BANKED;
+
+/**
+ * @brief Lunge: move out to (ox, oy) pixels from the location (not (0, 0)),
+ *        then back, speed pixels a frame on each axis. Replaces a motion
+ *        playing, from where it is. Out of view: no motion (not busy).
+ */
+void nge_render_lunge(nge_entity_id_t id, int8_t ox, int8_t oy, uint8_t speed) NGE_BANKED;
+
+/**
+ * @brief An entity in view is busy: a motion or one-shot is playing. As the
+ *        last update found, or started since. Cheap: ask it when deciding
+ *        whether something may act, not every frame.
+ */
+uint8_t nge_render_busy(void) NGE_BANKED;
+
+/**
+ * @brief Follow an entity with the camera (nge_map_centre_camera_px()):
+ *        each update in which its drawn position changed, starting with the
+ *        next. NGE_ENTITY_INVALID: follow nothing (the state after
+ *        nge_render_init()).
+ */
+void nge_render_follow(nge_entity_id_t id) NGE_BANKED;
 
 /** @brief Replace the mirror, rotate and palette flags (for example mirror when turning). */
 void nge_render_set_flags(nge_entity_id_t id, uint8_t flags) NGE_BANKED;
@@ -104,7 +165,10 @@ void nge_render_set_layer(nge_entity_id_t id, uint8_t layer) NGE_BANKED;
  */
 void nge_render_set_view(nge_owner_t area) NGE_BANKED;
 
-/** @brief Advance animations and build the sprites for the next nge_render_upload(). */
+/**
+ * @brief Advance animations and motions, move the camera with the followed
+ *        entity, and build the sprites for the next nge_render_upload().
+ */
 void nge_render_update(void) NGE_BANKED;
 
 /** @brief Send the sprites built by the last nge_render_update() to the hardware. */

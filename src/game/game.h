@@ -35,9 +35,16 @@
  * next, firing each entity's timer there (monsters' turns, effects'
  * ticks), at most CLOCK_ADVANCES_MAX (game.c) times a frame. It stops when
  * the player's timer fires (player_turn, game/player/player.h), when a
- * change of level is asked for, or when the game is over. Then the player
- * acts: no time passes, and one key event a frame goes to
- * player_command() until a command uses the turn.
+ * change of level is asked for, when the game is over, or while an
+ * animation plays in view. Then the player acts: no time passes, and one
+ * key event a frame goes to player_command() until a command uses the
+ * turn; keys wait, queued, while an animation plays.
+ *
+ * Animations (game/anim/anim.h). Actions are instant; the events they post
+ * start the animations (a slide after a move, a lunge after an attack),
+ * which play over the following frames while the turn engine waits
+ * (anim_holding()). The camera follows the player's slide a pixel at a
+ * time (nge_render_follow()).
  *
  * Choosers. A command that needs a choice (an item, a direction, a tile)
  * calls a chooser, which shows its screen or prompt, waits with
@@ -85,7 +92,10 @@ void game_over(uint8_t reason);
  */
 void game_frame_start(void);
 
-/** @brief End a frame: build the next frame's sprites (and advance their animations). */
+/**
+ * @brief End a frame: advance the animations and motions, move the camera
+ *        with the player's slide, and build the next frame's sprites.
+ */
 void game_frame_end(void);
 
 /**
