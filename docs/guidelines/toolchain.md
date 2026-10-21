@@ -37,6 +37,15 @@ If behaviour on CSpect differs from passing PC tests and the logic is right,
 compile the file with `zcc ... -S` and read the code for the failing path
 before changing the logic. Record a new miscompile as a T- rule.
 
+### T-ZSDCC-4 · must · No apostrophe anywhere in an __asm block
+Not even in a `;` comment: write the other register set as "the other set:
+hl", not `hl'`, and "the column bits", not "the column's bits".
+Why: the C preprocessor reads the `__asm ... __endasm` block as C tokens,
+so a lone `'` opens a character constant that never closes. The error
+comes later in the file and names something else (`syntax error: token ->
+'/'`), so the cause isn't obvious (z88dk git 9576e21668, Oct 2026).
+Check: `'` between `__asm` and `__endasm` in any `.c` file.
+
 ## Libraries
 
 ### T-INC-1 · must · Only newlib headers: never add the classic include path
