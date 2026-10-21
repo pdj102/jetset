@@ -192,7 +192,7 @@ Banked so far:
 | 52/53 | `ecs` render system | the system (`ecs/systems/nge_render.c`), with literals, about 4.9K with asserts | the sprite component (19 bytes per entity: the pattern and animation, the rest animation, the one-shot and the motion), the sprite records for hardware sprites 0 to `NGE_RENDER_SPRITES`-1, and its working data (`nge_render_pdata.c`, about 2.7K) |
 | 54/55 | `ecs` timer system | the clock and firing timers (`ecs/systems/nge_timer.c`, about 1.2K with asserts) | none: its tables and the clock are in slot 0 |
 | 88/89 | `input` | setup, the key-to-ASCII tables and waiting (`input/nge_input_setup.c`, about 0.5K) | none |
-| 90/91 | `layer2` | Layer 2 drawing: set-up, fills, text, scrolling (`layer2/nge_layer2_draw.c`); it maps the layer's pages (16-25) into slot 7 while it writes | none |
+| 90/91 | `layer2` | Layer 2 drawing: set-up, fills, text, scrolling (`layer2/nge_layer2_draw.c`), and the font as constants (`layer2/nge_layer2_font.c`), in the code page so it stays readable while the drawing maps the layer's pages (16-25) into slot 7 | none |
 | 102/103 | game `level` | setting up the map, the level generator, and leaving a level (`game/level/level_bank.c`, `level_gen.c`, `level_travel.c`, about 5.0K with asserts) | the room list, corridor links and stairs (`level_pdata.c`, 138 bytes) |
 | 106/107 | game `gen` creatures | the creature generator (`game/gen/gen_creature_bank.c`, about 0.6K) | the base creatures: a `const` table and its names (`gen_creature_pdata.c`, with `constseg PAGE_107`) |
 | 108/109 | game `gen` items | the item generator (`gen_item_bank.c`, about 0.4K) | the base items (`gen_item_pdata.c`) |

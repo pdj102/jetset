@@ -1,15 +1,11 @@
-/* nge-dataseg: PAGE_90 */
 /*
- * Layer 2 drawing: banked in page 90 with its literals, and with its one
- * table, the font as column bitmasks.
+ * Layer 2 drawing: banked in page 90 with its literals, and with the font
+ * it draws text from (nge_layer2_font.c).
  *
  * The fills, scrolls and glyphs are done by the CPU, in assembly. The DMA
  * was tried for fills and scrolls and taken out: at 320 x 256, a cell
  * column's rows are only 32 bytes, and the DMA's set-up for each was no
- * cheaper than the CPU's copy (docs/game_loop.md, section 10). The table is in the code page, not
- * the odd data page as page data usually is, because every function here
- * maps a Layer 2 page into slot 7, where page 91 would be: the font must
- * stay readable in slot 6 while that page is mapped.
+ * cheaper than the CPU's copy (docs/game_loop.md, section 10).
  *
  * Every function maps the Layer 2 page it writes into slot 7, calls no
  * banked function while it is there, and maps the old page back (N-BANK-4).
@@ -26,6 +22,7 @@
 
 #include "core/nge_util.h"
 #include "hw/nge_mmu.h"
+#include "layer2/nge_layer2_internal.h"
 
 /* Next registers without z88dk names */
 #define NGE_REG_DISPLAY_CONTROL   0x69
@@ -37,23 +34,12 @@
 
 #define SLOT        7
 #define SLOT_BASE   ((uint8_t *)0xE000)
-#define CELL        8                  /* pixels a cell */
+#define CELL        NGE_LAYER2_CELL    /* pixels a cell */
 #define COLUMN      256                /* bytes a pixel column */
 #define CELLS_PER_PAGE  4              /* 32 pixel columns an 8K page */
-#define TILE_FONT   ((const uint8_t *)0x4A00)   /* the tile definitions (data/tile_defs_data.asm) */
-#define TILE_BYTES  32                 /* 8 x 8 pixels, 4 bits each */
-#define FONT_FIRST  32                 /* the font's characters: space to DEL */
-#define FONT_COUNT  96
 
 /* A cell never crosses a page: the drawing maps one page a cell column */
 typedef char nge_layer2_cells_check[(8192 / (CELL * COLUMN) == CELLS_PER_PAGE) ? 1 : -1];
-
-/*
- * The font as column bitmasks: 8 bytes a character, one a pixel column,
- * bit 7 the top pixel. A column of Layer 2 is 8 contiguous bytes, so a
- * glyph's column is drawn from one byte. Built by nge_layer2_init()
- */
-static uint8_t font[FONT_COUNT][CELL];
 
 /* The fill and scroll of a cell column (assembly on the Next, below) */
 static void fill_cols(uint8_t *p, uint8_t cells, uint8_t colour);
@@ -73,31 +59,6 @@ static void set_priority(uint8_t priority)
 {
     ZXN_WRITE_REG(REG_SPRITE_LAYER_SYSTEM,
                   (uint8_t)((ZXN_READ_REG(REG_SPRITE_LAYER_SYSTEM) & ~NGE_RSLS_PRIORITY_MASK) | priority));
-}
-
-/* The font's column bitmasks, from the tile definitions (4 bits a pixel, 0 background) */
-static void make_font(void)
-{
-    const uint8_t *tile;
-    uint8_t c;
-    uint8_t x;
-    uint8_t y;
-    uint8_t b;
-    uint8_t mask;
-
-    for (c = 0; c < FONT_COUNT; c++) {
-        tile = TILE_FONT + (uint16_t)(FONT_FIRST + c) * TILE_BYTES;
-        for (x = 0; x < CELL; x++) {
-            mask = 0;
-            for (y = 0; y < CELL; y++) {
-                b = tile[y * 4 + x / 2];   /* 4 bytes a row, two pixels a byte */
-                if ((x & 1) ? (b & 0x0F) : (b >> 4)) {
-                    mask |= (uint8_t)(0x80 >> y);
-                }
-            }
-            font[c][x] = mask;
-        }
-    }
 }
 
 void nge_layer2_init(void) NGE_BANKED
@@ -126,7 +87,6 @@ void nge_layer2_init(void) NGE_BANKED
         ZXN_WRITE_REG(REG_PALETTE_VALUE_8, (uint8_t)i);
     }
 
-    make_font();
     nge_layer2_fill(0, 0, NGE_LAYER2_COLS - 1, NGE_LAYER2_ROWS - 1, NGE_LAYER2_TRANSPARENT);
     nge_layer2_show(1);
 }
@@ -442,10 +402,10 @@ static void glyph_cols(uint8_t *p, const uint8_t *mask, uint8_t ink, uint8_t pap
 /* Draw character c into the cell whose first pixel column is at p (its page mapped) */
 static void glyph(uint8_t *p, uint8_t c, uint8_t ink, uint8_t paper)
 {
-    if (c < FONT_FIRST || c >= FONT_FIRST + FONT_COUNT) {
+    if (c < NGE_LAYER2_FONT_FIRST || c >= NGE_LAYER2_FONT_FIRST + NGE_LAYER2_FONT_COUNT) {
         c = ' ';   /* not in the font */
     }
-    glyph_cols(p, font[c - FONT_FIRST], ink, paper);
+    glyph_cols(p, nge_layer2_font[c - NGE_LAYER2_FONT_FIRST], ink, paper);
 }
 
 void nge_layer2_glyph(uint8_t col, uint8_t row, uint8_t c, uint8_t ink, uint8_t paper) NGE_BANKED

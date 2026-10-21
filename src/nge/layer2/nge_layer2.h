@@ -18,10 +18,9 @@
  *
  * Colours are RRRGGGBB, through an identity palette (nge_layer2_init()).
  * NGE_LAYER2_TRANSPARENT (the global transparency colour) shows the layers
- * underneath. Text is drawn from the tilemap's font (the tile definitions
- * in bank 5: tile number = character code, 4 bits a pixel, 0 background),
- * converted by nge_layer2_init() into a bitmask a pixel column, for
- * characters 32 to 127 (others draw as a space).
+ * underneath. Text is drawn from the module's own 8 x 8 font, a bitmask a
+ * pixel column (nge_layer2_font.c, page 90), for characters 32 to 127
+ * (others draw as a space).
  *
  * Banking: banked (NGE_BANKED, page 90). Cells are passed by value, so no
  * caller passes a pointer into its own page. Strings passed in must be in
