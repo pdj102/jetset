@@ -28,9 +28,9 @@
 #include "core/nge_bank.h"
 #include "event/nge_event.h"
 
-#define ANIM_SLIDE_SPEED   2   /**< Pixels a frame of a slide: 4 frames a tile, the key repeat rate. */
-#define ANIM_LUNGE_PIXELS  4   /**< How far a lunge goes towards the target. */
-#define ANIM_LUNGE_SPEED   2   /**< Pixels a frame of a lunge: 4 frames out and back. */
+#define ANIM_SLIDE_SPEED   4   /**< Pixels a frame of a slide: 4 frames a tile, the key repeat rate. */
+#define ANIM_LUNGE_PIXELS  8   /**< How far a lunge goes towards the target: half a tile. */
+#define ANIM_LUNGE_SPEED   4   /**< Pixels a frame of a lunge: 4 frames out and back. */
 
 /** @brief Copy the creature kinds' sequences from their base records: once, at start-up. */
 void anim_init(void) NGE_BANKED;

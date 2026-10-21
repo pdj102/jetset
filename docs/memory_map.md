@@ -35,12 +35,14 @@ slots as permanently mapped rather than as general data slots.
 | Address | Page | Contents | Defined in |
 |---|---|---|---|
 | `$4000`-`$49FF` | 10 | Tilemap: 40x32 cells, 2 bytes each | `NGE_TILEMAP_BASE`, [nge_tilemap.h](../src/nge/tilemap/nge_tilemap.h) |
-| `$4A00`-`$5FFF` | 10 | Tile definitions, tiles 0-175 | [tile_defs_data.asm](../src/data/tile_defs_data.asm) (`SECTION BANK_5`, `org 0x4A00`) |
-| `$6000`-`$69FF` | 11 | Tile definitions, tiles 176-255 | |
+| `$4A00`-`$5FFF` | 10 | Tile definitions, tiles 0-175: metatiles 0-43 | [tile_defs_data.asm](../src/data/tile_defs_data.asm) (`SECTION BANK_5`, `org 0x4A00`) |
+| `$6000`-`$69FF` | 11 | Tile definitions, tiles 176-255: metatiles 44-63 | |
 | `$6A00`-`$7FFF` | 11 | Start of the program (see below) | `CODE_ORG` in the [Makefile](../Makefile) |
 
 The tile definitions cross from page 10 into page 11, so the tiles depend on
-both pages, not just page 10.
+both pages, not just page 10. They hold the map's graphics only: 64
+metatiles of 2 x 2 tiles, one a 16 x 16 map tile (`map/nge_map.h`). Layer 2's
+text has its own font (`layer2/nge_layer2_font.c`, page 90).
 
 The ULA screen is switched off (register `0x68` bit 7), so the ULA screen and
 attributes at `$4000`-`$5AFF` no longer matter, and neither do the ROM system

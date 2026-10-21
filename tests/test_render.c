@@ -14,10 +14,10 @@
 #define AREA0       NGE_OWNER_AREA(0)
 #define AREA1       NGE_OWNER_AREA(1)
 
-/* Window: the whole width, rows 22-30 (as the demo); its top-left pixel is (0, 176) */
-static const nge_rect_t window = { .x1 = 0, .x2 = 39, .y1 = 22, .y2 = 30 };
+/* Window: the whole width, rows 22-29: a view of 20 x 4 map tiles of 16 pixels; its top-left pixel is (0, 176) */
+static const nge_rect_t window = { .x1 = 0, .x2 = 39, .y1 = 22, .y2 = 29 };
 /* A narrower window, with room on the right for the column a fine offset shows: for following */
-static const nge_rect_t narrow = { .x1 = 0, .x2 = 31, .y1 = 22, .y2 = 30 };
+static const nge_rect_t narrow = { .x1 = 0, .x2 = 31, .y1 = 22, .y2 = 29 };
 
 /* Upload, returning the number of records sent (their bytes start at test_port_log_val[1]) */
 static int upload(void)
@@ -80,7 +80,7 @@ static void reset(void)
     nge_entity_init();
     nge_render_init();
     nge_map_init(80, 48, &window);
-    nge_map_set_camera(0, 20);                          /* view: columns 0-39, rows 20-28 */
+    nge_map_set_camera(0, 20);                          /* view: columns 0-19, rows 20-23 */
     nge_render_set_view(AREA0);
     nge_render_upload();                                /* init's upload: every sprite hidden */
 }
@@ -119,10 +119,10 @@ int main(void)
 
     /* ---- position: map pixels through the camera into the window ---- */
     reset();
-    a = make(AREA0, 5, 25, 7, 0);
+    a = make(AREA0, 5, 22, 7, 0);
     nge_location_set_fine(a, 3, 0);
     CHECK(frame() == 1);
-    CHECK(attr(0, 0) == 43 && attr(0, 1) == (uint8_t)(176 + 40));    /* (5*8+3, 176 + (25-20)*8) */
+    CHECK(attr(0, 0) == 83 && attr(0, 1) == (uint8_t)(176 + 32));    /* (5*16+3, 176 + (22-20)*16) */
     CHECK(attr(0, 2) == 0 && attr(0, 3) == (0xC0 | 7) && attr(0, 4) == 0);
 
     /* Draw offset, flags, scale, 4-bit pattern */
@@ -130,7 +130,7 @@ int main(void)
     nge_render_set_flags(a, NGE_SPRITE_MIRROR_X | NGE_SPRITE_PALETTE(1));
     nge_render_set_scale(a, NGE_SPRITE_SCALE_Y2);
     frame();
-    CHECK(attr(0, 0) == 40 && attr(0, 1) == 208);
+    CHECK(attr(0, 0) == 80 && attr(0, 1) == 200);
     CHECK(attr(0, 2) == (0x10 | 0x08) && attr(0, 4) == 0x02);
     b = nge_entity_create();
     nge_owner_set(b, AREA0);
@@ -145,16 +145,19 @@ int main(void)
 
     /* ---- the pixel camera: sprites move with the map's fine offset (room below the window) ---- */
     reset();
-    a = make(AREA0, 5, 25, 7, 0);
-    nge_map_set_camera_px(0, 20 * 8 + 3);
-    CHECK(frame() == 1 && attr(0, 0) == 40 && attr(0, 1) == (uint8_t)(176 + 40 - 3));
+    a = make(AREA0, 5, 22, 7, 0);
+    nge_map_set_camera_px(0, 20 * 16 + 3);
+    CHECK(frame() == 1 && attr(0, 0) == 80 && attr(0, 1) == (uint8_t)(176 + 32 - 3));
     /* Partly off the top of the window: still drawn, 3 pixels above it */
     reset();
     a = make(AREA0, 5, 20, 7, 0);
-    nge_map_set_camera_px(0, 20 * 8 + 3);
+    nge_map_set_camera_px(0, 20 * 16 + 3);
     CHECK(frame() == 1 && attr(0, 1) == (uint8_t)(176 - 3));
+    /* Partly, up to the last row: 15 pixels above it */
+    nge_map_set_camera_px(0, 20 * 16 + 15);
+    CHECK(frame() == 1 && visible(0) && attr(0, 1) == (uint8_t)(176 - 15));
     /* Wholly above it: not drawn (its record is sent hidden) */
-    nge_map_set_camera_px(0, 22 * 8 + 1);
+    nge_map_set_camera_px(0, 21 * 16 + 1);
     CHECK(frame() == 1 && !visible(0));
     nge_map_set_camera(0, 20);
 
@@ -178,19 +181,20 @@ int main(void)
 
     /* ---- culling, allowing for the sprite's size ---- */
     reset();
-    nge_map_set_camera(10, 20);                         /* view: pixels 80-399, 160-231 */
-    a = make(AREA0, 9, 21, 1, 0);                             /* x 72: 8 pixels left of the view */
-    b = make(AREA0, 8, 21, 2, 0);                             /* x 64: 16 left, entirely outside */
-    c = make(AREA0, 50, 21, 3, 0);                            /* x 400: right of the view */
-    id = make(AREA0, 30, 29, 4, 0);                           /* y 232: below the view */
+    nge_map_set_camera(10, 20);                         /* view: pixels 160-479, 320-383 */
+    a = make(AREA0, 9, 21, 1, 0);
+    nge_location_set_fine(a, 8, 0);                           /* x 152: 8 pixels left of the view */
+    b = make(AREA0, 9, 21, 2, 0);                             /* x 144: 16 left, entirely outside */
+    c = make(AREA0, 30, 21, 3, 0);                            /* x 480: right of the view */
+    id = make(AREA0, 15, 24, 4, 0);                           /* y 384: below the view */
     CHECK(frame() == 1 && attr(0, 3) == (0xC0 | 1));
     CHECK(attr(0, 0) == 0xF8 && (attr(0, 2) & 0x01));         /* x = -8: 0x1F8, partly in view */
     nge_render_set_scale(b, NGE_SPRITE_SCALE_X2);             /* 32 wide: now partly in view */
     CHECK(frame() == 2);
-    nge_location_set(c, 49, 21);                              /* x 392: last 8 pixels */
-    nge_location_set(id, 30, 28);                             /* y 224: last row */
+    nge_location_set(c, 29, 21);                              /* x 464: last tile */
+    nge_location_set(id, 15, 23);                             /* y 368: last row */
     CHECK(frame() == 4);
-    nge_render_set_offset(id, 0, 8);                          /* y 232 */
+    nge_render_set_offset(id, 0, 16);                         /* y 384 */
     CHECK(frame() == 4 && !visible(3));                       /* hidden: one fewer drawn */
     CHECK(frame() == 3);
 
@@ -266,7 +270,7 @@ int main(void)
     frame();
     CHECK(pattern(0) == 30);
     /* Out of view: not played, and one playing ends */
-    b = make(AREA0, 45, 21, 9, 0);                            /* column 45: right of the view */
+    b = make(AREA0, 45, 21, 9, 0);                            /* column 45: right of the view (0-19) */
     nge_render_play(b, 4, 2, 2);
     frame();                                                  /* a's one-shot ends */
     CHECK(!nge_render_busy());
@@ -275,45 +279,45 @@ int main(void)
 
     /* ---- slides: from the old tile to the location, speed pixels a frame ---- */
     reset();
-    a = make(AREA0, 5, 25, 1, 0);                             /* drawn at (40, 216) */
-    nge_render_slide(a, -8, 0, 2);                            /* came from the left */
+    a = make(AREA0, 5, 22, 1, 0);                             /* drawn at (80, 208) */
+    nge_render_slide(a, -16, 0, 4);                           /* came from the left: a tile in 4 frames */
     CHECK(nge_render_busy());
     {
-        static const int expect[] = { 34, 36, 38, 40, 40 };
+        static const int expect[] = { 68, 72, 76, 80, 80 };
         static const uint8_t busy[] = { 1, 1, 1, 0, 0 };
 
         ok = 1;
         for (n = 0; n < (int)sizeof(busy); n++) {
             frame();
-            ok = ok && sprite_x() == expect[n] && sprite_y() == 216 && nge_render_busy() == busy[n];
+            ok = ok && sprite_x() == expect[n] && sprite_y() == 208 && nge_render_busy() == busy[n];
         }
         CHECK(ok);
     }
     /* Diagonal: both axes finish together; the draw offset is kept */
     nge_render_set_offset(a, 0, -8);
-    nge_render_slide(a, 8, 8, 2);                             /* came from down-right */
+    nge_render_slide(a, 16, 16, 4);                           /* came from down-right */
     frame();
-    CHECK(sprite_x() == 46 && sprite_y() == 208 + 6);
+    CHECK(sprite_x() == 92 && sprite_y() == 200 + 12);
     frame();
     frame();
     CHECK(nge_render_busy());
     frame();
-    CHECK(sprite_x() == 40 && sprite_y() == 208 && !nge_render_busy());
+    CHECK(sprite_x() == 80 && sprite_y() == 200 && !nge_render_busy());
     /* A slide during a slide: from where it is drawn */
     nge_render_set_offset(a, 0, 0);
-    nge_render_slide(a, -8, 0, 2);
-    frame();                                                  /* at -6 */
-    nge_render_slide(a, -8, 0, 2);                            /* moved again: -14 from the new location */
+    nge_render_slide(a, -16, 0, 4);
+    frame();                                                  /* at -12 */
+    nge_render_slide(a, -16, 0, 4);                           /* moved again: -28 from the new location */
     frame();
-    CHECK(sprite_x() == 40 - 12);
+    CHECK(sprite_x() == 80 - 24);
 
     /* ---- lunges: out to the offset and back ---- */
     reset();
-    a = make(AREA0, 5, 25, 1, 0);
-    nge_render_lunge(a, 4, -4, 2);
+    a = make(AREA0, 5, 22, 1, 0);
+    nge_render_lunge(a, 8, -8, 4);
     {
-        static const int expect_x[] = { 42, 44, 42, 40 };
-        static const int expect_y[] = { 214, 212, 214, 216 };
+        static const int expect_x[] = { 84, 88, 84, 80 };
+        static const int expect_y[] = { 204, 200, 204, 208 };
         static const uint8_t busy[] = { 1, 1, 1, 0 };
 
         ok = 1;
@@ -326,27 +330,27 @@ int main(void)
 
     /* ---- busy: in view only, and never held by an entity that has gone ---- */
     reset();
-    a = make(AREA0, 5, 25, 1, 0);
-    nge_render_slide(a, -8, 0, 1);
+    a = make(AREA0, 5, 22, 1, 0);
+    nge_render_slide(a, -16, 0, 1);
     frame();
     CHECK(nge_render_busy());
     nge_entity_destroy(a);                                    /* released mid-slide */
     frame();
     CHECK(!nge_render_busy());
     /* Neither end in view: no slide */
-    b = make(AREA0, 50, 25, 1, 0);
-    nge_render_slide(b, -8, 0, 2);
+    b = make(AREA0, 50, 22, 1, 0);
+    nge_render_slide(b, -16, 0, 4);
     CHECK(!nge_render_busy());
     frame();
     CHECK(!nge_render_busy());
     /* Leaving the view: drawn while partly in it, then ends when its place is out of view */
-    c = make(AREA0, 41, 25, 1, 0);                            /* x 328: past the view's 320 */
-    nge_render_slide(c, -8, 0, 1);                            /* from x 320: just out too */
+    c = make(AREA0, 21, 22, 1, 0);                            /* x 336: past the view's 320 */
+    nge_render_slide(c, -16, 0, 1);                           /* from x 320: just out too */
     CHECK(!nge_render_busy());
-    nge_location_set(c, 40, 25);                              /* x 320 */
-    nge_render_slide(c, -8, 0, 1);                            /* from x 312: in view */
+    nge_location_set(c, 20, 22);                              /* x 320 */
+    nge_render_slide(c, -16, 0, 1);                           /* from x 304: in view */
     CHECK(nge_render_busy());
-    CHECK(frame() == 1 && visible(0) && sprite_x() == 313);
+    CHECK(frame() == 1 && visible(0) && sprite_x() == 305);
     nge_map_set_camera(10, 20);                               /* the camera moves away to the right: still in view */
     frame();
     CHECK(nge_render_busy());
@@ -354,36 +358,36 @@ int main(void)
     frame();
     CHECK(!nge_render_busy());
     nge_map_set_camera(0, 20);
-    nge_location_set(c, 39, 25);
-    CHECK(frame() == 1 && sprite_x() == 312);                 /* no motion left */
+    nge_location_set(c, 19, 22);
+    CHECK(frame() == 1 && sprite_x() == 304);                 /* no motion left */
     /* Another area's entity is never in view */
-    id = make(AREA1, 5, 25, 1, 0);
-    nge_render_slide(id, -8, 0, 2);
-    nge_render_lunge(id, 4, 0, 2);
+    id = make(AREA1, 5, 22, 1, 0);
+    nge_render_slide(id, -16, 0, 4);
+    nge_render_lunge(id, 8, 0, 4);
     nge_render_play(id, 4, 2, 2);
     CHECK(!nge_render_busy());
 
     /* ---- following: the camera centres on the drawn position when it changes ---- */
     nge_entity_init();
     nge_render_init();
-    nge_map_init(80, 48, &narrow);                            /* view 32 x 9: 16 x 4 tiles to the centre */
+    nge_map_init(80, 48, &narrow);                            /* view 16 x 4: 8 x 2 tiles to the centre */
     nge_render_set_view(AREA0);
     a = make(AREA0, 30, 30, 1, 0);
     frame();
     CHECK(nge_map.cam_x == 0 && nge_map.cam_y == 0);           /* nothing followed */
     nge_render_follow(a);
     frame();
-    CHECK(NGE_MAP_CAMERA_PX() == (30 - 16) * 8 && NGE_MAP_CAMERA_PY() == (30 - 4) * 8);
-    CHECK(sprite_x() == 16 * 8 && sprite_y() == 22 * 8 + 4 * 8);
+    CHECK(NGE_MAP_CAMERA_PX() == (30 - 8) * 16 && NGE_MAP_CAMERA_PY() == (30 - 2) * 16);
+    CHECK(sprite_x() == 8 * 16 && sprite_y() == 22 * 8 + 2 * 16);
     nge_location_set(a, 31, 30);
-    nge_render_slide(a, -8, 0, 2);
+    nge_render_slide(a, -16, 0, 4);
     frame();
-    CHECK(NGE_MAP_CAMERA_PX() == (30 - 16) * 8 + 2);          /* a pixel camera, in the same update */
-    CHECK(sprite_x() == 16 * 8);                              /* the player stays centred */
+    CHECK(NGE_MAP_CAMERA_PX() == (30 - 8) * 16 + 4);          /* a pixel camera, in the same update */
+    CHECK(sprite_x() == 8 * 16);                              /* the player stays centred */
     frame();
     frame();
     frame();
-    CHECK(NGE_MAP_CAMERA_PX() == (31 - 16) * 8 && nge_map.fine_x == 0 && sprite_x() == 16 * 8);
+    CHECK(NGE_MAP_CAMERA_PX() == (31 - 8) * 16 && nge_map.fine_x == 0 && sprite_x() == 8 * 16);
     /* Not moving: the camera stays where the game puts it (targeting) */
     nge_map_set_camera(2, 3);
     frame();
@@ -392,12 +396,12 @@ int main(void)
     /* A jump (a new level) centres it */
     nge_location_set(a, 40, 20);
     frame();
-    CHECK(nge_map.cam_x == 40 - 16 && nge_map.cam_y == 20 - 4);
+    CHECK(nge_map.cam_x == 40 - 8 && nge_map.cam_y == 20 - 2);
     /* Following nothing */
     nge_render_follow(NGE_ENTITY_INVALID);
     nge_location_set(a, 50, 20);
     frame();
-    CHECK(nge_map.cam_x == 40 - 16);
+    CHECK(nge_map.cam_x == 40 - 8);
     nge_map_init(80, 48, &window);
 
     /* ---- fewer sprites: the rest are sent hidden, then no longer sent ---- */
@@ -425,7 +429,7 @@ int main(void)
     /* ---- more visible entities than sprites: the lowest layers are left out ---- */
     reset();
     for (n = 0; n < NGE_RENDER_SPRITES + 5; n++) {
-        make(AREA0, (uint8_t)(n % 40), (uint8_t)(20 + n / 40), 1, 1);
+        make(AREA0, (uint8_t)(n % 20), (uint8_t)(20 + n / 20), 1, 1);   /* all in the 20 x 4 view */
     }
     a = make(AREA0, 1, 21, 9, 3);                             /* top layer: always drawn */
     b = make(AREA0, 1, 21, 8, 0);                             /* bottom layer: left out */

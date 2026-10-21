@@ -123,12 +123,12 @@ static int starts(const char *t, const char *s)
     return strncmp(t, s, strlen(s)) == 0;
 }
 
-/* The last message: the message window (rows 27-30) fills from the top, then scrolls */
+/* The last message: the message window (rows 26-30) fills from the top, then scrolls */
 static int said(const char *s)
 {
     int y;
 
-    for (y = 30; y >= 27; y--) {
+    for (y = 30; y >= 26; y--) {
         if (row((uint8_t)y)[0] != ' ') {
             return starts(text, s);
         }

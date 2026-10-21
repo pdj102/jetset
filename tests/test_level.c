@@ -34,7 +34,7 @@
 #define SEEDS  20   /* level_dev_seed values: SEEDS * LEVEL_DEPTH_BOTTOM levels checked */
 
 /* The screen's map view (screen.c isn't linked) */
-const nge_rect_t screen_map_view = { .x1 = 0, .x2 = 27, .y1 = 0, .y2 = 26 };
+const nge_rect_t screen_map_view = { .x1 = 0, .x2 = 27, .y1 = 0, .y2 = 25 };
 
 static nge_entity_id_t player;
 

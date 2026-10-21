@@ -18,10 +18,10 @@
 
 #define AREA  NGE_OWNER_AREA(0)
 
-static const nge_rect_t window = { .x1 = 0, .x2 = 9, .y1 = 0, .y2 = 9 };
+static const nge_rect_t window = { .x1 = 0, .x2 = 19, .y1 = 0, .y2 = 19 };   /* a view of 10 x 10 tiles */
 
 /* The screen's map view, for the level module (screen.c isn't linked) */
-const nge_rect_t screen_map_view = { .x1 = 0, .x2 = 27, .y1 = 0, .y2 = 26 };
+const nge_rect_t screen_map_view = { .x1 = 0, .x2 = 27, .y1 = 0, .y2 = 25 };
 
 static void dispatch(const nge_event_t *e)
 {
@@ -90,11 +90,11 @@ int main(void)
     CHECK(!anim_holding());
     post(player, EV_MOVED, NGE_EVENT_NONE, 1, 0);        /* moved right, onto (5, 5) */
     CHECK(anim_holding());
-    CHECK(nge_render_sprite_mox[player] == -8 && nge_render_sprite_moy[player] == 0);
+    CHECK(nge_render_sprite_mox[player] == -16 && nge_render_sprite_moy[player] == 0);   /* a tile: 16 pixels */
     CHECK(nge_render_sprite_oneshot[player] == 0);       /* no move sequence */
-    CHECK(settle() == 8 / ANIM_SLIDE_SPEED && !anim_holding());
+    CHECK(settle() == 4 && !anim_holding());             /* 4 frames a tile, the key repeat rate */
     post(player, EV_MOVED, NGE_EVENT_NONE, -1, 1);       /* moved down-left */
-    CHECK(nge_render_sprite_mox[player] == 8 && nge_render_sprite_moy[player] == -8);
+    CHECK(nge_render_sprite_mox[player] == 16 && nge_render_sprite_moy[player] == -16);
     settle();
 
     /* ---- an attack lunges the attacker towards the target, hit or missed, in each direction ---- */

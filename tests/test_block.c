@@ -22,7 +22,7 @@
 #define PASS_GHOST   (NGE_BLOCK_SOLID | NGE_BLOCK_NO_FLOOR)
 #define PASS_CURSOR  ((nge_block_t)~NGE_BLOCK_EDGE)
 
-static const nge_rect_t window = { .x1 = 0, .x2 = 9, .y1 = 0, .y2 = 9 };
+static const nge_rect_t window = { .x1 = 0, .x2 = 19, .y1 = 0, .y2 = 19 };   /* a view of 10 x 10 tiles */
 
 static void tile(uint8_t x, uint8_t y, uint8_t id)
 {

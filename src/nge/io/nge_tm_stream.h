@@ -8,7 +8,10 @@
  * Tilemap streams write the character code directly as the tile id, with
  * the attribute byte the stream holds, and interpret the text control codes
  * (io/nge_text.h): INK sets the attribute's palette offset (bits 7-4), ATTR
- * the whole attribute byte. Clearing writes tile 0x20.
+ * the whole attribute byte. Clearing writes tile 0x20. So the tile
+ * definitions must hold a font at its character codes: Jetset's hold the
+ * map's metatiles instead (src/data/tile_defs_data.asm), and it writes text
+ * on Layer 2 (io/nge_l2_stream.h).
  */
 
 #include <stdint.h>

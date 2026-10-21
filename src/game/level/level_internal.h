@@ -15,18 +15,19 @@
 #include "io/nge_text.h"
 
 /*
- * Map cells: an ASCII font tile and its text colour (palette bank, attribute
- * bits 7-4). Several patterns can share a kind of terrain: what each blocks
- * is set by tile ID in the map's block table (level_bank.c).
+ * Map tiles: a metatile number (its graphic, src/data/tile_defs_data.asm)
+ * and its colour (palette bank, attribute bits 7-4). Several graphics can
+ * share a kind of terrain: what each blocks is set by tile ID in the map's
+ * block table (level_bank.c). The features' tiles, 6-9, are in level.h.
  */
-#define LEVEL_ROCK      0      /* tile 0: transparent; solid */
-#define LEVEL_WALL_H    '-'    /* walls: solid */
-#define LEVEL_WALL_V    '|'
-#define LEVEL_CORNER    '-'    /* a room's corners: as its top and bottom walls ('+' is a closed door) */
-#define LEVEL_FLOOR     '.'    /* floors: open */
-#define LEVEL_FLOOR2    ','
+#define LEVEL_ROCK      0      /* transparent; solid */
+#define LEVEL_FLOOR     1      /* floors: open */
+#define LEVEL_FLOOR2    2
+#define LEVEL_CORRIDOR  3      /* open */
+#define LEVEL_WALL_H    4      /* walls: solid */
+#define LEVEL_WALL_V    5
+#define LEVEL_CORNER    LEVEL_WALL_H   /* a room's corners: as its top and bottom walls */
 #define LEVEL_FLOOR_INK NGE_INK_YELLOW
-#define LEVEL_CORRIDOR  '#'    /* open */
 
 /*
  * The generator's grid: the map is split into LEVEL_GRID_W x LEVEL_GRID_H

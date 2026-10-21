@@ -21,9 +21,10 @@
 #include "game/components/attrs.h"
 #include "game/components/stats.h"
 
-const nge_rect_t screen_map_view = { .x1 = 0, .x2 = 27, .y1 = 0, .y2 = 26 };
-static const nge_rect_t stats_area = { .x1 = 28, .x2 = 39, .y1 = 0, .y2 = 26 };
-static const nge_rect_t message_area = { .x1 = 0, .x2 = 39, .y1 = 27, .y2 = 30 };
+/* The map view is whole map tiles: 2 x 2 hardware tiles each (map/nge_map.h) */
+const nge_rect_t screen_map_view = { .x1 = 0, .x2 = 27, .y1 = 0, .y2 = 25 };
+static const nge_rect_t stats_area = { .x1 = 28, .x2 = 39, .y1 = 0, .y2 = 25 };
+static const nge_rect_t message_area = { .x1 = 0, .x2 = 39, .y1 = 26, .y2 = 30 };
 static const nge_rect_t help_area = { .x1 = 0, .x2 = 39, .y1 = 31, .y2 = 31 };
 
 NGE_FILE *screen_stats = NULL;

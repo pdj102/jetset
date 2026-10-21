@@ -8,12 +8,14 @@
  *
  *     col 0                    27 28       39
  *     row 0  +--------------------+----------+
- *            | map view  28 x 27  | stats    |
- *            | (nge_map, sprites  | 12 x 27  |
+ *            | map view  28 x 26  | stats    |
+ *            | (nge_map, 14 x 13  | 12 x 26  |
+ *            |  map tiles; sprites|          |
  *            |  clipped to it)    |          |
  *         26 +--------------------+----------+
- *         27 | messages  40 x 5               |
- *         31 +-------------------------------+
+ *            | messages  40 x 5              |
+ *         31 | help bar  40 x 1              |
+ *            +-------------------------------+
  *
  * The map is on the tilemap, drawn by the level's nge_map, and nothing else
  * is. The windows are on Layer 2 (layer2/nge_layer2.h), above the sprites
@@ -74,8 +76,8 @@ extern char screen_name[SCREEN_NAME_MAX + 1];
  * @brief Set up the tilemap for the map, Layer 2 for the windows
  *        (nge_layer2_init()), and the screen's areas:
  *
- *     rows 0-26   map view (28 wide) | stats (12 wide)
- *     rows 27-30  messages (4 lines)
+ *     rows 0-25   map view (28 wide) | stats (12 wide)
+ *     rows 26-30  messages (5 lines)
  *     row  31     help bar: what the keys do in the current state
  */
 void screen_init(void);

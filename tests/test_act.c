@@ -29,10 +29,10 @@
 #define FLOOR  '.'
 #define WALL   '#'
 
-static const nge_rect_t window = { .x1 = 0, .x2 = 9, .y1 = 0, .y2 = 9 };
+static const nge_rect_t window = { .x1 = 0, .x2 = 19, .y1 = 0, .y2 = 19 };   /* a view of 10 x 10 tiles */
 
 /* The screen's map view, for the level module (screen.c isn't linked) */
-const nge_rect_t screen_map_view = { .x1 = 0, .x2 = 27, .y1 = 0, .y2 = 26 };
+const nge_rect_t screen_map_view = { .x1 = 0, .x2 = 27, .y1 = 0, .y2 = 25 };
 
 /* The events posted since the last call */
 static nge_event_t seen[16];

@@ -7,16 +7,23 @@
  *
  * Terms:
  * - map: the game's grid of tiles (map tile coordinates, (0,0) top-left).
- * - window: the fixed rectangle of the hardware tilemap the map is shown in.
- * - view: the part of the map that is visible; the same size as the window.
+ *   A map tile is NGE_MAP_TILE_PIXELS square, drawn as 2 x 2 hardware
+ *   tiles (a metatile): map tile ID m is hardware tiles 4m to 4m+3, top
+ *   left, top right, bottom left, bottom right, all with the map tile's
+ *   attribute. IDs 0-127 reach hardware tiles 0-511 (512-tile mode: the
+ *   attribute's bit 0 is set from bit 6 of the ID when drawn).
+ * - window: the fixed rectangle of the hardware tilemap the map is shown
+ *   in, in hardware tiles: an even number of them each way.
+ * - view: the part of the map that is visible: the window's size in map
+ *   tiles (half its size in hardware tiles each way).
  * - camera: the top-left corner of the view, in map pixels: the tile
- *   (cam_x, cam_y) and the pixels into it (fine_x, fine_y, 0-7). The view
- *   is drawn from the camera's tile, one tile wider and taller than the
- *   window where the map has the tiles, with the tilemap's hardware scroll
- *   set to the fine offset; the extra column and row show only when the
- *   fine offset is not 0. A fine offset needs the tilemap to have room past
- *   the window for them (asserted), and that room to hold nothing else (it
- *   is drawn over).
+ *   (cam_x, cam_y) and the pixels into it (fine_x, fine_y, 0-15). The view
+ *   is drawn from the camera's tile, one map tile wider and taller than
+ *   the window where the map has the tiles, with the tilemap's hardware
+ *   scroll set to the fine offset; the extra column and row show only when
+ *   the fine offset is not 0. A fine offset needs the tilemap to have room
+ *   past the window for them (asserted), and that room to hold nothing
+ *   else (it is drawn over).
  *
  * There is one map. All its data (its state nge_map, its tiles
  * nge_map_tiles and its block table nge_map_blocks) is in page
@@ -91,20 +98,23 @@ typedef uint8_t nge_block_t;
 #define NGE_BLOCK_OCCUPIED  0x08   /**< A creature: other creatures can't share the tile. */
 #define NGE_BLOCK_USER      0x10   /**< First of the game's flags: 0x10 to 0x80. */
 
-/** Pixels per tile. */
-#define NGE_MAP_TILE_PIXELS  8
+/** Pixels per map tile, each way. */
+#define NGE_MAP_TILE_PIXELS  16
+
+/** Hardware tiles per map tile, each way: the window is this many times the view. */
+#define NGE_MAP_TILE_SPAN  (NGE_MAP_TILE_PIXELS / NGE_TILEMAP_TILE_PIXELS)
 
 /** @brief The map's state. Set up with nge_map_init(); read-only for the game. */
 typedef struct nge_map {
     uint8_t width;        /**< Map width in tiles. */
     uint8_t height;       /**< Map height in tiles. */
     nge_rect_t window;    /**< Window on the hardware tilemap, inclusive tile coordinates. */
-    uint8_t view_w;       /**< Window width in tiles. */
-    uint8_t view_h;       /**< Window height in tiles. */
+    uint8_t view_w;       /**< View width in map tiles. */
+    uint8_t view_h;       /**< View height in map tiles. */
     uint8_t cam_x;        /**< Left column of the view, map tiles. */
     uint8_t cam_y;        /**< Top row of the view, map tiles. */
-    uint8_t fine_x;       /**< Pixels into the camera's tile, rightwards (0-7). */
-    uint8_t fine_y;       /**< Pixels into the camera's tile, downwards (0-7). */
+    uint8_t fine_x;       /**< Pixels into the camera's tile, rightwards (0-15). */
+    uint8_t fine_y;       /**< Pixels into the camera's tile, downwards (0-15). */
     uint8_t dirty;        /**< The view's tiles need redrawing. */
     uint8_t scroll_dirty; /**< The tilemap's scroll needs setting to the fine offset. */
 } nge_map_t;
@@ -145,9 +155,10 @@ extern nge_tile_t  nge_map_tiles[NGE_MAP_STRIDE * NGE_MAP_HEIGHT_MAX];   /**< Ro
  * block table to NGE_BLOCK_NONE: fill them in (directly, with
  * NGE_MAP_TILE(), and with nge_map_clear_blocks() and nge_map_set_block()).
  *
- * @param width Map width in tiles, from the window width to NGE_MAP_STRIDE.
- * @param height Map height in tiles, from the window height to NGE_MAP_HEIGHT_MAX.
- * @param window Window on the hardware tilemap, inclusive tile coordinates.
+ * @param width Map width in tiles, from the view width to NGE_MAP_STRIDE.
+ * @param height Map height in tiles, from the view height to NGE_MAP_HEIGHT_MAX.
+ * @param window Window on the hardware tilemap, inclusive hardware tile
+ *        coordinates: an even number of tiles wide and high.
  */
 void nge_map_init(uint8_t width, uint8_t height, const nge_rect_t *window) NGE_BANKED;
 
@@ -252,7 +263,7 @@ uint8_t nge_map_within(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, uint8_t r
 
 /**
  * @brief Convert a map pixel position to screen (sprite) coordinates.
- * @param map_x X in map pixels (tile x * 8 + pixel within the tile).
+ * @param map_x X in map pixels (tile x * NGE_MAP_TILE_PIXELS + pixel within the tile).
  * @param map_y Y in map pixels.
  * @param screen_x Receives the sprite X coordinate.
  * @param screen_y Receives the sprite Y coordinate.

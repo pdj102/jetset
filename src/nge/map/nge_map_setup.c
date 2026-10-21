@@ -21,14 +21,17 @@ void nge_map_init(uint8_t width, uint8_t height, const nge_rect_t *window) NGE_B
     nge_util_assert(window != NULL);
     nge_util_assert(window->x1 <= window->x2 && window->x2 < NGE_TILEMAP_WIDTH);
     nge_util_assert(window->y1 <= window->y2 && window->y2 < NGE_TILEMAP_HEIGHT);
+    /* Whole map tiles */
+    nge_util_assert(((window->x2 - window->x1 + 1) & (NGE_MAP_TILE_SPAN - 1)) == 0);
+    nge_util_assert(((window->y2 - window->y1 + 1) & (NGE_MAP_TILE_SPAN - 1)) == 0);
 
     nge_mmu_map(NGE_MAP_SLOT, NGE_MAP_PAGE);
 
     nge_map.width = width;
     nge_map.height = height;
     nge_map.window = *window;
-    nge_map.view_w = window->x2 - window->x1 + 1;
-    nge_map.view_h = window->y2 - window->y1 + 1;
+    nge_map.view_w = (uint8_t)((window->x2 - window->x1 + 1) / NGE_MAP_TILE_SPAN);
+    nge_map.view_h = (uint8_t)((window->y2 - window->y1 + 1) / NGE_MAP_TILE_SPAN);
 
     /* The view must fit inside the map, and the map in its memory */
     nge_util_assert(width >= nge_map.view_w && width <= NGE_MAP_STRIDE);
@@ -61,9 +64,9 @@ void nge_map_clip_sprites(void) NGE_BANKED
     nge_rect_t clip;
 
     /* Sprite clip X is in 2-pixel units (see nge_sprite_set_clip) */
-    clip.x1 = nge_map.window.x1 * (NGE_MAP_TILE_PIXELS / 2);
-    clip.x2 = nge_map.window.x2 * (NGE_MAP_TILE_PIXELS / 2) + (NGE_MAP_TILE_PIXELS / 2 - 1);
-    clip.y1 = nge_map.window.y1 * NGE_MAP_TILE_PIXELS;
-    clip.y2 = nge_map.window.y2 * NGE_MAP_TILE_PIXELS + (NGE_MAP_TILE_PIXELS - 1);
+    clip.x1 = nge_map.window.x1 * (NGE_TILEMAP_TILE_PIXELS / 2);
+    clip.x2 = nge_map.window.x2 * (NGE_TILEMAP_TILE_PIXELS / 2) + (NGE_TILEMAP_TILE_PIXELS / 2 - 1);
+    clip.y1 = nge_map.window.y1 * NGE_TILEMAP_TILE_PIXELS;
+    clip.y2 = nge_map.window.y2 * NGE_TILEMAP_TILE_PIXELS + (NGE_TILEMAP_TILE_PIXELS - 1);
     nge_sprite_set_clip(&clip);
 }

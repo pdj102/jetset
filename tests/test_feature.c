@@ -19,7 +19,7 @@
 #define AREA   NGE_OWNER_AREA(0)
 #define FLOOR  '.'
 
-static const nge_rect_t window = { .x1 = 0, .x2 = 9, .y1 = 0, .y2 = 9 };
+static const nge_rect_t window = { .x1 = 0, .x2 = 19, .y1 = 0, .y2 = 19 };   /* a view of 10 x 10 tiles */
 
 /* The door at (x, y) looks closed or open, and blocks walkers only when closed */
 static int door_is(nge_entity_id_t id, uint8_t x, uint8_t y, int open)

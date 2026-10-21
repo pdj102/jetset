@@ -37,7 +37,7 @@ Includes are written from `src/nge`, with the folder:
 | `tilemap/` | Tilemap layer |
 | `layer2/` | Layer 2 at 320 x 256 as 8 x 8 cells: fills, text from its own 8 x 8 font (column bitmasks, `nge_layer2_font.c`), scrolling up, shown above the sprites (`nge_layer2`; banked in page 90, with assembly for the drawing; the layer in pages 16-25). It writes slot 7 by address, so the PC tests use a fake (`tests/support/test_layer2.c`) |
 | `sprite/` | Hardware sprites |
-| `map/` | The map: one tile map larger than the screen, shown through a tilemap window, with a block table by tile ID. Its data is in page 51, always in slot 1 (no map pointers); set-up banked in page 44 |
+| `map/` | The map: one tile map larger than the screen, shown through a tilemap window, with a block table by tile ID. A map tile is 16 x 16 pixels, drawn as a metatile of 2 x 2 hardware tiles (map tile ID m is hardware tiles 4m to 4m+3). Its data is in page 51, always in slot 1 (no map pointers); set-up banked in page 44 |
 | `input/` | Keyboard: a per-frame snapshot of the keys (held, pressed, released), key events with auto-repeat, ASCII (`nge_input`; setup and tables banked in page 88) |
 | `devices/` | Raw device drivers (CSpect DebugOut, UART), no streams |
 | `io/` | Streams (output and input), print and printf, the text control codes and colours for any text stream (`nge_text`), the stream devices for the tilemap, Layer 2 cells (`nge_l2_stream`), CSpect, UART and keyboard, and the line editor (`nge_line`) |

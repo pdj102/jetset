@@ -14,11 +14,12 @@
 
 #define NGE_TILEMAP_WIDTH   40  /**< Width of the tilemap in tiles (row stride). */
 #define NGE_TILEMAP_HEIGHT  32  /**< Height of the tilemap in tiles. */
+#define NGE_TILEMAP_TILE_PIXELS  8   /**< Pixels per tile, each way. */
 
 /**
  * Pixel value drawn as transparent in every tile, whatever the palette offset.
- * The font in tile_defs_data.asm uses 0 for its background and 2 for ink, so
- * text backgrounds are transparent and tile 0 is a fully transparent tile.
+ * The game's tiles (src/data/tile_defs_data.asm) use 0 for what shows
+ * through, so tile 0, all 0, is a fully transparent tile.
  */
 #define NGE_TILEMAP_TRANSPARENT  0
 

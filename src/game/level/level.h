@@ -13,10 +13,11 @@
  * kept: each visit generates a new one (docs/level_transitions.md).
  *
  * Its map is the map (map/nge_map.h: nge_map, nge_map_tiles), in slot 1, so
- * collision checks and drawing read it directly. Map cells are
- * single tiles, drawn with the font's ASCII tiles in the classic roguelike
- * style: '|', '-' and '+' walls, '.' and ',' floor, ' doors, '#' corridors,
- * '<' and '>' stairs. What each tile ID blocks is in the map's block table.
+ * collision checks and drawing read it directly. Each map tile is a
+ * 16 x 16 metatile (src/data/tile_defs_data.asm): for now the classic
+ * roguelike glyphs, pixel-doubled: '|' and '-' walls, '.' and ',' floor,
+ * '+' and ' doors, '#' corridors, '<' and '>' stairs. What each tile ID
+ * blocks is in the map's block table.
  *
  * Kept entities: persistent ones (NGE_ENTITY_PERSISTENT: the player, a
  * quest object, a boss), and what persistent ones own, directly or through
@@ -69,11 +70,15 @@ extern uint8_t level_depth;
  */
 extern uint16_t level_dev_seed;
 
-/* Map tiles features are drawn with (game/components/feature.h): they block nothing, the feature does */
-#define LEVEL_TILE_DOOR_SHUT  '+'    /**< A closed door. */
-#define LEVEL_TILE_DOOR_OPEN  '\''  /**< An open door. */
-#define LEVEL_TILE_STAIRS_UP   '<'  /**< Stairs up. */
-#define LEVEL_TILE_STAIRS_DOWN '>'  /**< Stairs down. */
+/*
+ * Map tiles features are drawn with (game/components/feature.h): they block
+ * nothing, the feature does. Metatile numbers, after the terrain's
+ * (game/level/level_internal.h)
+ */
+#define LEVEL_TILE_DOOR_SHUT   6   /**< A closed door. */
+#define LEVEL_TILE_DOOR_OPEN   7   /**< An open door. */
+#define LEVEL_TILE_STAIRS_UP   8   /**< Stairs up. */
+#define LEVEL_TILE_STAIRS_DOWN 9   /**< Stairs down. */
 
 /**
  * @brief Set up the map in the map view (nge_map_init(), which maps its

@@ -190,23 +190,23 @@ int main(void)
     a = nge_entity_create();
     nge_location_set(a, 10, 20);
     CHECK(NGE_LOCATION_FX(a) == 0 && NGE_LOCATION_FY(a) == 0);
-    CHECK(NGE_LOCATION_PX(a) == 80 && NGE_LOCATION_PY(a) == 160);
-    nge_location_set_fine(a, 7, 3);
-    CHECK(NGE_LOCATION_PX(a) == 87 && NGE_LOCATION_PY(a) == 163);
+    CHECK(NGE_LOCATION_PX(a) == 160 && NGE_LOCATION_PY(a) == 320);    /* 16 pixels a tile */
+    nge_location_set_fine(a, 15, 3);
+    CHECK(NGE_LOCATION_PX(a) == 175 && NGE_LOCATION_PY(a) == 323);
     nge_location_move(a, 1, -4);                            /* carry right, borrow up */
     CHECK(NGE_LOCATION_X(a) == 11 && NGE_LOCATION_FX(a) == 0);
-    CHECK(NGE_LOCATION_Y(a) == 19 && NGE_LOCATION_FY(a) == 7);
-    nge_location_move(a, -9, 17);
-    CHECK(NGE_LOCATION_PX(a) == 79 && NGE_LOCATION_PY(a) == 176);
-    CHECK(NGE_LOCATION_X(a) == 9 && NGE_LOCATION_FX(a) == 7 && NGE_LOCATION_Y(a) == 22 && NGE_LOCATION_FY(a) == 0);
+    CHECK(NGE_LOCATION_Y(a) == 19 && NGE_LOCATION_FY(a) == 15);
+    nge_location_move(a, -17, 33);
+    CHECK(NGE_LOCATION_PX(a) == 159 && NGE_LOCATION_PY(a) == 352);
+    CHECK(NGE_LOCATION_X(a) == 9 && NGE_LOCATION_FX(a) == 15 && NGE_LOCATION_Y(a) == 22 && NGE_LOCATION_FY(a) == 0);
     nge_location_move(a, 0, 0);
-    CHECK(NGE_LOCATION_PX(a) == 79 && NGE_LOCATION_PY(a) == 176);
+    CHECK(NGE_LOCATION_PX(a) == 159 && NGE_LOCATION_PY(a) == 352);
     nge_location_set(a, 1, 1);                              /* set clears the fine position */
     CHECK(NGE_LOCATION_FX(a) == 0 && NGE_LOCATION_FY(a) == 0);
 
-    TEST_EXPECT_HALT(nge_location_set_fine(a, 8, 0));
+    TEST_EXPECT_HALT(nge_location_set_fine(a, 16, 0));
     CHECK(test_halt_count == 1);
-    TEST_EXPECT_HALT(nge_location_set_fine(a, 0, 8));
+    TEST_EXPECT_HALT(nge_location_set_fine(a, 0, 16));
     CHECK(test_halt_count == 1);
     nge_location_remove(a);
     TEST_EXPECT_HALT(nge_location_move(a, 1, 0));           /* no location */

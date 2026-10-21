@@ -7,8 +7,8 @@
  *
  * The player is an ECS entity with a sprite drawn by the render system,
  * placed in each level by level_generate() (owned by the level's area, with
- * a location on the map). The sprites are 8x8 figures in the top-left of
- * 16x16 patterns, so each covers exactly one map tile.
+ * a location on the map). The sprites are 16x16 patterns, so each covers
+ * exactly one map tile.
  */
 
 #include <stdint.h>

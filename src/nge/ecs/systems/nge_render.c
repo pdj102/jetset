@@ -396,8 +396,8 @@ static void follow(void)
  */
 static uint8_t collect(void)
 {
-    uint16_t base_x = (uint16_t)nge_map.window.x1 * NGE_MAP_TILE_PIXELS;
-    uint16_t base_y = (uint16_t)nge_map.window.y1 * NGE_MAP_TILE_PIXELS;
+    uint16_t base_x = (uint16_t)nge_map.window.x1 * NGE_TILEMAP_TILE_PIXELS;
+    uint16_t base_y = (uint16_t)nge_map.window.y1 * NGE_TILEMAP_TILE_PIXELS;
     nge_entity_id_t followed = nge_render_follow_id;
     uint8_t i;
     uint8_t v = 0;

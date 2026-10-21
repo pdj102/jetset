@@ -135,7 +135,7 @@ int main(void)
     nge_event_init();
     nge_input_init();
     screen_init();
-    nge_map_init(LEVEL_WIDTH, LEVEL_HEIGHT, &screen_map_view);   /* 60 x 40, the view 28 x 27 */
+    nge_map_init(LEVEL_WIDTH, LEVEL_HEIGHT, &screen_map_view);   /* 60 x 40, the view 14 x 13 */
     actor_player = gen_creature(CR_PLAYER, LEVEL_AREA);
     nge_location_set(actor_player, 30, 20);
     nge_map_centre_camera(30, 20);
@@ -158,7 +158,7 @@ int main(void)
     CHECK(target_in_range(&t));
 
     /* ---- moving: every movement key, never off the map ---- */
-    nge_map_set_camera(16, 7);   /* the cursor well inside the view: no scrolling */
+    nge_map_set_camera(24, 14);   /* the cursor well inside the view (columns 24-37, rows 14-26): no scrolling */
     context(&t, 30, 20, TARGET_RANGE_ANY);
     CHECK(target_key(&t, EV(NGE_KEY_RIGHT)) == TARGET_STEP_MOVING && t.x == 31 && t.y == 20);
     CHECK(target_key(&t, EV(NGE_KEY_H)) == TARGET_STEP_MOVING && t.x == 30);
@@ -166,7 +166,7 @@ int main(void)
     CHECK(target_key(&t, EV(NGE_KEY_K)) == TARGET_STEP_MOVING && t.y == 20);
     CHECK(target_key(&t, EV(NGE_KEY_L)) == TARGET_STEP_MOVING && t.x == 31);
     CHECK(target_key(&t, EV(NGE_KEY_J)) == TARGET_STEP_MOVING && t.y == 21);
-    CHECK(nge_map.cam_x == 16 && nge_map.cam_y == 7);
+    CHECK(nge_map.cam_x == 24 && nge_map.cam_y == 14);
     nge_map_set_camera(0, 0);
     context(&t, 0, 0, TARGET_RANGE_ANY);   /* the top-left corner */
     CHECK(target_key(&t, EV(NGE_KEY_LEFT)) == TARGET_STEP_MOVING && t.x == 0 && t.y == 0);
@@ -177,22 +177,22 @@ int main(void)
     CHECK(target_key(&t, EV(NGE_KEY_DOWN)) == TARGET_STEP_MOVING && t.y == LEVEL_HEIGHT - 1);
 
     /* ---- scrolling: one tile when the cursor comes into the margin ---- */
-    nge_map_set_camera(20, 10);   /* view columns 20-47, rows 10-36 */
-    context(&t, 20 + TARGET_SCROLL_MARGIN, 20, TARGET_RANGE_ANY);
+    nge_map_set_camera(20, 10);   /* view columns 20-33, rows 10-22 */
+    context(&t, 20 + TARGET_SCROLL_MARGIN, 16, TARGET_RANGE_ANY);   /* row 16: clear of the top and bottom margins */
     target_key(&t, EV(NGE_KEY_LEFT));   /* 23: into the left margin */
     CHECK(t.x == 23 && nge_map.cam_x == 19 && t.x - nge_map.cam_x == TARGET_SCROLL_MARGIN);
-    context(&t, 47 - TARGET_SCROLL_MARGIN - 1, 20, TARGET_RANGE_ANY);   /* 42: just outside the right margin */
+    context(&t, 33 - TARGET_SCROLL_MARGIN - 1, 16, TARGET_RANGE_ANY);   /* 28: just outside the right margin */
     nge_map_set_camera(20, 10);
     target_key(&t, EV(NGE_KEY_RIGHT));
-    CHECK(t.x == 43 && nge_map.cam_x == 20);   /* 43 + 4 < 48: no scroll */
+    CHECK(t.x == 29 && nge_map.cam_x == 20);   /* 29 + 4 < 34: no scroll */
     target_key(&t, EV(NGE_KEY_RIGHT));
-    CHECK(t.x == 44 && nge_map.cam_x == 21);
+    CHECK(t.x == 30 && nge_map.cam_x == 21);
     context(&t, 30, 10 + TARGET_SCROLL_MARGIN, TARGET_RANGE_ANY);
     target_key(&t, EV(NGE_KEY_UP));
     CHECK(t.y == 13 && nge_map.cam_y == 9);
-    context(&t, 30, 9 + 27 - TARGET_SCROLL_MARGIN, TARGET_RANGE_ANY);   /* 32: the bottom margin's edge */
+    context(&t, 30, 9 + 13 - TARGET_SCROLL_MARGIN, TARGET_RANGE_ANY);   /* 18: the bottom margin's edge */
     target_key(&t, EV(NGE_KEY_DOWN));
-    CHECK(t.y == 33 && nge_map.cam_y == 10);
+    CHECK(t.y == 19 && nge_map.cam_y == 10);
     /* At the map's edge the view can't scroll: the cursor walks on to the view's edge */
     nge_map_set_camera(0, 0);
     context(&t, 2, 2, TARGET_RANGE_ANY);
