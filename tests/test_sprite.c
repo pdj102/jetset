@@ -184,20 +184,6 @@ int main(void)
     nge_sprite_load_patterns4(43, 4, patterns, 1);
     CHECK(test_reg_log_count == 2 && test_reg_log_val[0] == 43 && test_reg_log_val[1] == 1);
 
-    /* ---- sprite palette ---- */
-    {
-        static const nge_palette_entry_9_t pal[] = { {0x11, 1}, {0x22, 0} };
-
-        test_reg_log_count = 0;
-        nge_sprite_load_palette(41, 16, pal, 2);
-        CHECK(test_reg_log_reg[0] == REG_MMU7 && test_reg_log_val[0] == 41);
-        CHECK(test_reg_log_reg[1] == 0x43 && (test_reg_log_val[1] & 0x70) == RPC_SELECT_SPRITES_PALETTE_0);
-        CHECK(test_reg_log_reg[2] == 0x40 && test_reg_log_val[2] == 16);
-        CHECK(test_reg_log_val[3] == 0x11 && test_reg_log_val[6] == 0);
-        CHECK(test_reg_log_reg[7] == REG_MMU7 && test_reg_log_val[7] == 1);
-        CHECK(test_reg_log_count == 8);
-    }
-
     /* ---- clip window ---- */
     test_reg_log_count = 0;
     nge_sprite_set_clip(&clip);

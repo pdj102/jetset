@@ -17,8 +17,6 @@
 
 #include "hw/nge_mmu.h"
 
-#define DATA_SLOT  7   /* $E000: odd pages are assembled for it */
-
 /* Map the loader's data page into slot 7; returns the page to map back */
 static uint8_t data_map(uint8_t page)
 {
@@ -26,13 +24,13 @@ static uint8_t data_map(uint8_t page)
         return 0;
     }
     nge_util_assert(page & 1);
-    return nge_mmu_map(DATA_SLOT, page);
+    return nge_mmu_map(NGE_MMU_DATA_SLOT, page);
 }
 
 static void data_unmap(uint8_t page, uint8_t old)
 {
     if (page != NGE_SPRITE_DATA_COMMON) {
-        nge_mmu_map(DATA_SLOT, old);
+        nge_mmu_map(NGE_MMU_DATA_SLOT, old);
     }
 }
 
@@ -68,15 +66,6 @@ void nge_sprite_load_patterns4(uint8_t page, uint8_t first, const uint8_t *data,
     /* Bit 7 starts the upload half way into the 256-byte slot */
     IO_SPRITE_SLOT = (first >> 1) | (uint8_t)((first & 1) << 7);
     pattern_out(data, (uint16_t)n * NGE_SPRITE_PATTERN4_SIZE);
-    data_unmap(page, old);
-}
-
-void nge_sprite_load_palette(uint8_t page, uint8_t first, const nge_palette_entry_9_t *entries,
-                             uint16_t n) NGE_BANKED
-{
-    uint8_t old = data_map(page);
-
-    nge_write_palette9(RPC_SELECT_SPRITES_PALETTE_0, first, entries, n);
     data_unmap(page, old);
 }
 

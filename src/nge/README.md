@@ -33,7 +33,7 @@ Includes are written from `src/nge`, with the folder:
 | Folder | Contents |
 |---|---|
 | `core/` | Basic types (`nge_types.h`), banked-function marker (`nge_bank.h`), asserts and debug output (`nge_util`) |
-| `hw/` | Hardware setup, frame sync, MMU paging, palettes |
+| `hw/` | Hardware setup, frame sync, MMU paging, palettes (writing them, and loading them from a page: `nge_palette_load9()`, for any palette) |
 | `tilemap/` | Tilemap layer |
 | `layer2/` | Layer 2 at 320 x 256 as 8 x 8 cells: fills, text from its own 8 x 8 font (column bitmasks, `nge_layer2_font.c`), scrolling up, shown above the sprites (`nge_layer2`; banked in page 90, with assembly for the drawing; the layer in pages 16-25). It writes slot 7 by address, so the PC tests use a fake (`tests/support/test_layer2.c`) |
 | `sprite/` | Hardware sprites |

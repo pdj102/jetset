@@ -15,6 +15,13 @@
 #define NGE_MMU_PAGE_ROM       0xFF  /**< Page number that maps the ROM into slot 0 or 1. */
 
 /**
+ * The slot loaders map a data page into for a copy ($E000): z88dk assembles
+ * odd pages (SECTION PAGE_n, n odd) for it. Banked code runs in slot 6, so
+ * it stays in place while the loader maps this slot.
+ */
+#define NGE_MMU_DATA_SLOT      7
+
+/**
  * @brief Map a page into a slot.
  * @param slot Slot 0-7
  * @param page 8K page number, or NGE_MMU_PAGE_ROM for slot 0 or 1.

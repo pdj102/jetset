@@ -4,6 +4,7 @@
 #include <stddef.h>
 
 #include "core/nge_util.h"
+#include "hw/nge_mmu.h"
 
 #define NGE_REG_PALETTE_VALUE_9  0x44 /* Use to set 9-bit (2-byte) colours of the Enhanced ULA palette, or to read second byte of colour. */
 
@@ -34,5 +35,20 @@ void nge_write_palette9(uint8_t palette_select, uint8_t first_index,
         ZXN_WRITE_REG(NGE_REG_PALETTE_VALUE_9, palette_entries->value);
         ZXN_WRITE_REG(NGE_REG_PALETTE_VALUE_9, palette_entries->extra);
         palette_entries++;
+    }
+}
+
+void nge_palette_load9(uint8_t page, uint8_t palette_select, uint8_t first_index,
+                       const nge_palette_entry_9_t *palette_entries, uint16_t num_entries)
+{
+    uint8_t old = 0;
+
+    if (page != NGE_PALETTE_DATA_COMMON) {
+        nge_util_assert(page & 1);
+        old = nge_mmu_map(NGE_MMU_DATA_SLOT, page);
+    }
+    nge_write_palette9(palette_select, first_index, palette_entries, num_entries);
+    if (page != NGE_PALETTE_DATA_COMMON) {
+        nge_mmu_map(NGE_MMU_DATA_SLOT, old);
     }
 }

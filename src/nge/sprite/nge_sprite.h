@@ -48,7 +48,6 @@
 
 #include "core/nge_bank.h"
 #include "core/nge_util.h"
-#include "hw/nge_palette.h"
 
 #define NGE_SPRITE_MAX          128  /**< Number of hardware sprites. */
 #define NGE_SPRITE_PATTERNS     64   /**< Number of 8-bit patterns. */
@@ -176,7 +175,9 @@ void nge_sprite_set_transparency(uint8_t index) NGE_BANKED;
 #define NGE_SPRITE_DATA_COMMON  0
 
 /*
- * Loaders: copy pattern or palette data into the sprite hardware.
+ * Loaders: copy pattern data into the sprite hardware. The sprite palette
+ * is loaded with nge_palette_load9() (hw/nge_palette.h), which maps a page
+ * the same way.
  *
  * Data in a banked page (page = an odd page number): the loader maps that
  * page into slot 7, copies the data from it into the hardware, then maps the
@@ -186,7 +187,7 @@ void nge_sprite_set_transparency(uint8_t index) NGE_BANKED;
  *
  * Data in common memory (page = NGE_SPRITE_DATA_COMMON): nothing is mapped.
  *
- * The data argument is the address of the first pattern (or palette entry)
+ * The data argument is the address of the first pattern
  * to load, as the Z80 sees it while the data is mapped: for data in a page,
  * an address in $E000-$FFFF, not an offset into the page. A label in a
  * SECTION PAGE_n with n odd already has this address, so pass the label (or
@@ -222,17 +223,6 @@ void nge_sprite_load_patterns(uint8_t page, uint8_t first, const uint8_t *data, 
  * @param count Number of patterns.
  */
 void nge_sprite_load_patterns4(uint8_t page, uint8_t first, const uint8_t *data, uint8_t count) NGE_BANKED;
-
-/**
- * @brief Load entries of the first sprite palette.
- * @param page Odd page holding the entries, or NGE_SPRITE_DATA_COMMON.
- * @param first First palette index to write (0-255).
- * @param entries Address of the first 9-bit palette entry to load
- *                ($E000-$FFFF for entries in a page).
- * @param count Number of entries.
- */
-void nge_sprite_load_palette(uint8_t page, uint8_t first, const nge_palette_entry_9_t *entries,
-                             uint16_t count) NGE_BANKED;
 
 /**
  * @brief Clip sprites to a window.

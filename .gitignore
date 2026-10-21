@@ -15,6 +15,9 @@
 /*.tap
 /*.tmp
 
+# Python's compiled modules, from the scripts and their tests
+__pycache__/
+
 # Local settings, not shared
 .claude/settings.local.json
 .vscode/*.log

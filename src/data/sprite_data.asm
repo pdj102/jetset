@@ -6,7 +6,8 @@
 ;   0-1  a figure walking (16x16)
 ;   2-3  the player, two frames; 4, 5 and 7 objects (a potion, a sword, a
 ;        ring); 6 a creature (a rat): 16x16, covering one map tile.
-;        Placeholders: the 8x8 originals pixel-doubled (scripts/double_art.py)
+;        Placeholders: the 8x8 originals pixel-doubled (scripts/double_art.py,
+;        removed: see commit 2d2d2fc)
 ;   8-9  the targeting cursor, green (in range) and red (out of range): the
 ;        corners of a map tile, so what is on the tile still shows
 ; Pixel values: 0 transparent, 1 white, 2 yellow, 3 cyan, 4 red, 5 green.

@@ -24,7 +24,6 @@
 #include "game/components/feature.h"
 #include "game/dev.h"
 #include "game/gen/gen.h"
-#include "io/nge_text.h"
 
 #define PLACE_ATTEMPTS  20   /* tries to find a free floor tile */
 
@@ -44,19 +43,20 @@ static uint8_t roll_between(uint8_t lo, uint8_t hi)
     return (uint8_t)(lo + roll((uint8_t)(hi - lo + 1)));
 }
 
-static void put(uint8_t x, uint8_t y, uint8_t id, uint8_t ink)
+/* A tile with its palette bank: TILE_BANK() of the same metatile */
+static void put(uint8_t x, uint8_t y, uint8_t id, uint8_t bank)
 {
     nge_tile_t *t = &NGE_MAP_TILE(x, y);
 
     t->tile_id = id;
-    t->tile_attr = (uint8_t)(ink << 4);
+    t->tile_attr = (uint8_t)(bank << 4);
 }
 
 /* A corridor tile, only over rock: doors, walls and floors stay */
 static void put_corridor(uint8_t x, uint8_t y)
 {
     if (NGE_MAP_TILE(x, y).tile_id == LEVEL_ROCK) {
-        put(x, y, LEVEL_CORRIDOR, NGE_INK_CYAN);
+        put(x, y, LEVEL_CORRIDOR, TILE_BANK(LEVEL_CORRIDOR));
     }
 }
 
@@ -70,7 +70,7 @@ static void clear(void)
 
     for (y = 0; y < LEVEL_HEIGHT; y++) {
         for (x = 0; x < LEVEL_WIDTH; x++) {
-            put(x, y, LEVEL_ROCK, 0);
+            put(x, y, LEVEL_ROCK, TILE_BANK(LEVEL_ROCK));
         }
     }
     level_doorway_count = 0;
@@ -87,14 +87,18 @@ static void draw_room(const level_room_t *r)
     for (y = r->y1; y <= r->y2; y++) {
         for (x = r->x1; x <= r->x2; x++) {
             if ((y == r->y1 || y == r->y2) && (x == r->x1 || x == r->x2)) {
-                put(x, y, LEVEL_CORNER, NGE_INK_WHITE);
+                put(x, y, LEVEL_CORNER, TILE_BANK(LEVEL_CORNER));
             } else if (y == r->y1 || y == r->y2) {
-                put(x, y, LEVEL_WALL_H, NGE_INK_WHITE);
+                put(x, y, LEVEL_WALL_H, TILE_BANK(LEVEL_WALL_H));
             } else if (x == r->x1 || x == r->x2) {
-                put(x, y, LEVEL_WALL_V, NGE_INK_WHITE);
+                put(x, y, LEVEL_WALL_V, TILE_BANK(LEVEL_WALL_V));
             } else {
-                /* Floor, with a variant pattern here and there */
-                put(x, y, (rand() & 7) == 0 ? LEVEL_FLOOR2 : LEVEL_FLOOR, LEVEL_FLOOR_INK);
+                /* Floor, with a variant pattern here and there: each in its own bank */
+                if ((rand() & 7) == 0) {
+                    put(x, y, LEVEL_FLOOR2, TILE_BANK(LEVEL_FLOOR2));
+                } else {
+                    put(x, y, LEVEL_FLOOR, TILE_BANK(LEVEL_FLOOR));
+                }
             }
         }
     }
@@ -247,7 +251,7 @@ static void door(uint8_t x, uint8_t y)
 {
     nge_util_assert(level_doorway_count < LEVEL_DOORWAYS_MAX);
 
-    put(x, y, LEVEL_FLOOR, LEVEL_FLOOR_INK);
+    put(x, y, LEVEL_FLOOR, TILE_BANK(LEVEL_FLOOR));
     level_doorway_x[level_doorway_count] = x;
     level_doorway_y[level_doorway_count] = y;
     level_doorway_count++;

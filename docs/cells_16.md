@@ -364,3 +364,7 @@ CSpect and hardware checks:
   is within `TARGET_SCROLL_MARGIN` (4) tiles of an edge. In a 13-row view
   that leaves 5 rows in the middle; a margin of 3 may suit the smaller view
   better.
+- **Later (docs/tileset_import.md):** R13's placeholder metatiles were
+  replaced by art drawn in Aseprite and imported by a script, and
+  `double_art.py` was removed (it is in commit 2d2d2fc). The placeholder
+  sprites and Layer 2's font, which it also wrote, stay.

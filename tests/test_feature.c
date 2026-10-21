@@ -8,9 +8,9 @@
 #include "ecs/nge_entity.h"
 #include "ecs/nge_owner.h"
 #include "ecs/systems/nge_render.h"
-#include "io/nge_text.h"
 #include "map/nge_map.h"
 
+#include "data/tile_data.h"
 #include "game/components/feature.h"
 #include "game/components/kind.h"
 #include "game/gen/gen_internal.h"
@@ -29,7 +29,8 @@ static int door_is(nge_entity_id_t id, uint8_t x, uint8_t y, int open)
 
     return NGE_LOCATION_X(id) == x && NGE_LOCATION_Y(id) == y && FEATURE_IS_OPEN(id) == open &&
            NGE_MAP_TILE(x, y).tile_id == (open ? LEVEL_TILE_DOOR_OPEN : LEVEL_TILE_DOOR_SHUT) &&
-           NGE_MAP_TILE(x, y).tile_attr == (uint8_t)(NGE_INK_RED << 4) &&
+           NGE_MAP_TILE(x, y).tile_attr ==
+               (uint8_t)((open ? TILE_BANK(LEVEL_TILE_DOOR_OPEN) : TILE_BANK(LEVEL_TILE_DOOR_SHUT)) << 4) &&
            NGE_BLOCK_OF(id) == (open ? NGE_BLOCK_NONE : NGE_BLOCK_SOLID) &&
            (open ? enter == 1 : (enter == 0 && blocker == id));
 }

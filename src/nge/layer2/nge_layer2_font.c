@@ -1,7 +1,8 @@
 /*
  * Layer 2's font: banked constants in page 90, with the drawing that reads
  * them (nge_layer2_draw.c). Generated from the tilemap's 8 x 8 ASCII font
- * by scripts/double_art.py, when the tile definitions became metatiles.
+ * by scripts/double_art.py (removed: see commit 2d2d2fc), when the tile
+ * definitions became metatiles.
  */
 #ifdef __SDCC
 #pragma codeseg PAGE_90

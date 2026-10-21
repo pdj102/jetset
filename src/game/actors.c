@@ -1,10 +1,12 @@
 #include "game/actors.h"
 
 #include <stddef.h>
+#include <arch/zxn.h>
 
 #include "core/nge_util.h"
 #include "data/sprite_data.h"
 #include "ecs/nge_owner.h"
+#include "hw/nge_palette.h"
 #include "game/dev.h"
 #include "game/components/attrs.h"
 #include "game/components/health.h"
@@ -42,7 +44,7 @@ void actors_load_graphics(void)
 {
     /* The loaders map the graphics' page into slot 7 while they copy */
     nge_sprite_load_patterns(DEMO_SPRITE_PAGE, 0, demo_sprite_patterns, DEMO_SPRITE_PATTERNS);
-    nge_sprite_load_palette(DEMO_SPRITE_PAGE, 0, demo_sprite_palette, DEMO_SPRITE_COLOURS);
+    nge_palette_load9(DEMO_SPRITE_PAGE, RPC_SELECT_SPRITES_PALETTE_0, 0, demo_sprite_palette, DEMO_SPRITE_COLOURS);
 }
 
 void actors_create(void)

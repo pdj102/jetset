@@ -55,7 +55,9 @@
 //                        124/125  target: targeting and its cursor / (unused)
 //                        126/127  anim: starting the action animations / the
 //                                 creature kinds' sequences
-//             132-223  game assets (maps, graphics, level data)
+//             132-223  game assets (maps, graphics, level data):
+//                        133  the map tiles' palette (slot 7, via nge_palette_load9();
+//                             src/data/tile_palette_data.asm, generated)
 
 // nge sprite: setup functions and loaders
 #pragma define CRT_ORG_PAGE_42 = 0x2AC000

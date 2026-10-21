@@ -35,7 +35,7 @@ void level_put_floor(uint8_t x, uint8_t y) NGE_BANKED
     nge_tile_t tile;
 
     tile.tile_id = LEVEL_FLOOR;
-    tile.tile_attr = (uint8_t)(LEVEL_FLOOR_INK << 4);
+    tile.tile_attr = (uint8_t)(TILE_BANK(LEVEL_FLOOR) << 4);
     nge_map_set(x, y, &tile);
 }
 

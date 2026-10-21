@@ -3,7 +3,7 @@ set -eu
 
 missing=0
 
-for tool in zcc z88dk-zsdcc m4 bison flex; do
+for tool in zcc z88dk-zsdcc m4 bison flex python3; do
     if command -v "$tool" >/dev/null 2>&1; then
         printf '%s: %s\n' "$tool" "$(command -v "$tool")"
     else

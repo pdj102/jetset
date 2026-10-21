@@ -104,6 +104,9 @@ typedef uint8_t nge_block_t;
 /** Hardware tiles per map tile, each way: the window is this many times the view. */
 #define NGE_MAP_TILE_SPAN  (NGE_MAP_TILE_PIXELS / NGE_TILEMAP_TILE_PIXELS)
 
+/** Entries in a palette bank: a map tile's attribute (bits 7-4) chooses its bank. */
+#define NGE_MAP_BANK_ENTRIES  16
+
 /** @brief The map's state. Set up with nge_map_init(); read-only for the game. */
 typedef struct nge_map {
     uint8_t width;        /**< Map width in tiles. */

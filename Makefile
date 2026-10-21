@@ -53,18 +53,33 @@ DEPFLAGS = -MM -MG -MP -MT $@ -MF $(@:.o=.d) -D__SDCC
 export PATH := $(Z88DK_ROOT)/bin:$(PATH)
 export ZCCCFG
 
-.PHONY: all build check clean test
+.PHONY: all build check clean test tiles
 
 all: build
 
 build: $(BIN_TARGET).nex
+
+# The map's metatiles and their palette, generated from the Aseprite tileset
+# (docs/tileset_import.md) whenever it or the scripts change. The output is
+# committed, so it is a source like any other: src/data/*.asm are found by
+# the wildcard above, and tile_data.h is included from src/. C files are
+# compiled after it is up to date (order-only: their .d files rebuild those
+# that include it)
+TILESET := assets/Tilesheet.aseprite
+TILE_SCRIPTS := scripts/ase2tiles.py scripts/aseprite.py scripts/next_colour.py
+TILE_DATA := src/data/tile_defs_data.asm src/data/tile_palette_data.asm src/data/tile_data.h
+
+$(TILE_DATA) &: $(TILESET) $(TILE_SCRIPTS)
+	python3 -I scripts/ase2tiles.py $(TILESET) src/data
+
+tiles: $(TILE_DATA)
 
 # A module's page data file (<module>/nge_<module>_pdata.c) starts with the
 # marker /* nge-dataseg: PAGE_n */: its uninitialised variables go in page n
 # (--dataseg) instead of common memory. See "Page data" in docs/memory_map.md.
 dataseg = $(shell sed -n '1,5s|^/\* *nge-dataseg: *\(PAGE_[0-9]*\) *\*/.*|-Cs--dataseg\1|p' $(1))
 
-$(OBJDIR)/%.o: src/%.c
+$(OBJDIR)/%.o: src/%.c | $(TILE_DATA)
 	@mkdir -p $(dir $@)
 	$(ZCC) -c +zxn -clib=sdcc_iy $(INCLUDES) $(CFLAGS) $(call dataseg,$<) $< -o $@
 	@$(HOSTCC) $(DEPFLAGS) $(INCLUDES) $(CFLAGS) $<
@@ -118,7 +133,7 @@ check:
 	./scripts/check-toolchain.sh
 
 # PC tests for the nge library; see tests/Makefile
-test:
+test: $(TILE_DATA)
 	$(MAKE) -C tests Z88DK_ROOT=$(Z88DK_ROOT)
 
 clean:

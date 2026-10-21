@@ -17,7 +17,8 @@
 #   test_inventory, UI_GAME_SRCS and the action ones for test_ui and test_target).
 #   Library files that only work on the Next (inline asm traps, Layer 2
 #   drawing by address) are listed in LIB_EXCLUDE and replaced by fakes in
-#   support/ (test.c, test_layer2.c).
+#   support/ (test.c, test_layer2.c); the map's palette, assembly in
+#   src/data/, by support/test_tile_data.c.
 
 Z88DK_ROOT ?= /home/paul/src/z88dk
 HOSTCC ?= gcc
@@ -34,7 +35,8 @@ LIB_EXCLUDE := devices/nge_cspect_trap.c layer2/nge_layer2_draw.c
 
 LIB_SRCS := $(filter-out $(addprefix $(SRCDIR)/,$(LIB_EXCLUDE)),$(wildcard $(SRCDIR)/*/*.c $(SRCDIR)/*/*/*.c))
 LIB_OBJS := $(patsubst $(SRCDIR)/%.c,$(BUILD)/lib/%.o,$(LIB_SRCS))
-SUPPORT_OBJS := $(BUILD)/support/test.o $(BUILD)/support/test_layer2.o $(BUILD)/support/zxn_io.o
+SUPPORT_OBJS := $(BUILD)/support/test.o $(BUILD)/support/test_layer2.o $(BUILD)/support/test_tile_data.o \
+                $(BUILD)/support/zxn_io.o
 
 # Game code tested on the PC, linked only into the tests that need it
 GAMEDIR := ../src/game
@@ -90,10 +92,12 @@ check-effects-core:
 	@if grep -nE '$(EFFECTS_CORE_BANNED)' $(EFFECTS_CORE); then \
 	  echo "effects core includes game content: use the seam (effects_core.h)"; exit 1; fi
 
-# Build everything, run every test, and fail if any test fails
+# Build everything, run every test, and fail if any test fails. The
+# scripts' tests (tests/scripts/test_*.py, Python's unittest) run too
 run: check-effects-core $(TESTS)
 	@failed=0; \
 	for t in $(TESTS); do ./$$t || failed=1; done; \
+	python3 -I -m unittest discover -s scripts || failed=1; \
 	if [ $$failed -ne 0 ]; then echo "TESTS FAILED"; exit 1; fi; \
 	echo "all tests passed"
 

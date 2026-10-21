@@ -75,10 +75,10 @@ nge_entity_id_t gen_item_random(uint8_t depth, nge_owner_t owner) NGE_BANKED;
  */
 nge_entity_id_t gen_feature(uint8_t kind, nge_owner_t owner) NGE_BANKED;
 
-/** A feature's look: a map tile and its ink (NGE_INK_*). */
+/** A feature's look: a map tile and its metatile's palette bank (TILE_BANK(), data/tile_data.h). */
 typedef struct gen_feature_look {
     uint8_t tile_id;
-    uint8_t ink;
+    uint8_t bank;
 } gen_feature_look_t;
 
 /** What a feature kind can do and how it looks: the part of its base record the feature component uses. */

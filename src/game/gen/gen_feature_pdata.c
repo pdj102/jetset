@@ -10,14 +10,15 @@
 
 #include "game/gen/gen_internal.h"
 
+#include "data/tile_data.h"
 #include "game/level/level.h"
-#include "io/nge_text.h"
 
 const gen_feature_base_t gen_features[FT_COUNT] = {
     [FT_DOOR] = {
         .name = "door",
         .info = {
-            .look = { { LEVEL_TILE_DOOR_SHUT, NGE_INK_RED }, { LEVEL_TILE_DOOR_OPEN, NGE_INK_RED } },
+            .look = { { LEVEL_TILE_DOOR_SHUT, TILE_BANK(LEVEL_TILE_DOOR_SHUT) },
+                      { LEVEL_TILE_DOOR_OPEN, TILE_BANK(LEVEL_TILE_DOOR_OPEN) } },
             .can = FCAN_OPEN,
             .block_shut = NGE_BLOCK_SOLID,   /* walkers and creatures; not ghosts */
         },
@@ -27,7 +28,8 @@ const gen_feature_base_t gen_features[FT_COUNT] = {
     [FT_STAIRS_UP] = {
         .name = "staircase up",
         .info = {
-            .look = { { LEVEL_TILE_STAIRS_UP, NGE_INK_WHITE }, { LEVEL_TILE_STAIRS_UP, NGE_INK_WHITE } },
+            .look = { { LEVEL_TILE_STAIRS_UP, TILE_BANK(LEVEL_TILE_STAIRS_UP) },
+                      { LEVEL_TILE_STAIRS_UP, TILE_BANK(LEVEL_TILE_STAIRS_UP) } },
             .can = FCAN_ASCEND,
             .block_shut = NGE_BLOCK_NONE,    /* stood on to climb: never in the way */
         },
@@ -37,7 +39,8 @@ const gen_feature_base_t gen_features[FT_COUNT] = {
     [FT_STAIRS_DOWN] = {
         .name = "staircase down",
         .info = {
-            .look = { { LEVEL_TILE_STAIRS_DOWN, NGE_INK_WHITE }, { LEVEL_TILE_STAIRS_DOWN, NGE_INK_WHITE } },
+            .look = { { LEVEL_TILE_STAIRS_DOWN, TILE_BANK(LEVEL_TILE_STAIRS_DOWN) },
+                      { LEVEL_TILE_STAIRS_DOWN, TILE_BANK(LEVEL_TILE_STAIRS_DOWN) } },
             .can = FCAN_DESCEND,
             .block_shut = NGE_BLOCK_NONE,
         },

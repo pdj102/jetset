@@ -13,11 +13,11 @@
 #include "io/nge_l2_stream.h"
 #include "io/nge_print.h"
 #include "io/nge_text.h"
-#include "io/nge_tm_stream.h"
 #include "layer2/nge_layer2.h"
 #include "sprite/nge_sprite.h"
 #include "tilemap/nge_tilemap.h"
 
+#include "data/tile_data.h"
 #include "game/components/attrs.h"
 #include "game/components/stats.h"
 
@@ -51,14 +51,6 @@ static uint8_t message_line_used;
 /* The overlay sprites' records: common memory, so the upload can read them from any caller */
 static nge_sprite_attr_t overlay[SCREEN_OVERLAY_COUNT];
 
-/* Game graphics palette (bank 0); the map's text colours are banks 12-15 (nge_tm_load_ink_palette) */
-static const nge_palette_entry_9_t tile_palette[] = {
-    { 0x00, 0x00 },
-    { 0xE0, 0x00 },
-    { 0x1F, 0x00 },
-    { 0xFF, 0x00 },
-};
-
 /* Tile 0 is all pixel value 0, so it is fully transparent */
 static const nge_tile_t empty_tile = {
     .tile_id = 0,
@@ -68,8 +60,8 @@ static const nge_tile_t empty_tile = {
 void screen_init(void)
 {
     /* The tilemap: the map's layer */
-    nge_write_palette9(RPC_SELECT_TILEMAP_PALETTE_0, 0, tile_palette, 4);
-    nge_tm_load_ink_palette();
+    /* The map's colours: its metatiles' banks, from the tileset (data/tile_data.h) */
+    nge_palette_load9(TILE_PALETTE_PAGE, RPC_SELECT_TILEMAP_PALETTE_0, 0, tile_palette, TILE_PALETTE_ENTRIES);
     nge_tilemap_init();
     nge_tilemap_clear(&empty_tile);
     nge_tilemap_set_scroll(0, 0);

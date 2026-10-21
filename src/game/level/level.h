@@ -14,10 +14,9 @@
  *
  * Its map is the map (map/nge_map.h: nge_map, nge_map_tiles), in slot 1, so
  * collision checks and drawing read it directly. Each map tile is a
- * 16 x 16 metatile (src/data/tile_defs_data.asm): for now the classic
- * roguelike glyphs, pixel-doubled: '|' and '-' walls, '.' and ',' floor,
- * '+' and ' doors, '#' corridors, '<' and '>' stairs. What each tile ID
- * blocks is in the map's block table.
+ * 16 x 16 metatile, drawn in Aseprite (assets/Tilesheet.aseprite,
+ * imported into src/data/tile_defs_data.asm; docs/tileset_import.md). What
+ * each tile ID blocks is in the map's block table.
  *
  * Kept entities: persistent ones (NGE_ENTITY_PERSISTENT: the player, a
  * quest object, a boss), and what persistent ones own, directly or through
@@ -72,13 +71,13 @@ extern uint16_t level_dev_seed;
 
 /*
  * Map tiles features are drawn with (game/components/feature.h): they block
- * nothing, the feature does. Metatile numbers, after the terrain's
- * (game/level/level_internal.h)
+ * nothing, the feature does. Metatile numbers in the tileset, as the
+ * terrain's (game/level/level_internal.h)
  */
-#define LEVEL_TILE_DOOR_SHUT   6   /**< A closed door. */
-#define LEVEL_TILE_DOOR_OPEN   7   /**< An open door. */
-#define LEVEL_TILE_STAIRS_UP   8   /**< Stairs up. */
-#define LEVEL_TILE_STAIRS_DOWN 9   /**< Stairs down. */
+#define LEVEL_TILE_DOOR_SHUT   8    /**< A closed door. */
+#define LEVEL_TILE_DOOR_OPEN   10   /**< An open door. */
+#define LEVEL_TILE_STAIRS_UP   13   /**< Stairs up. */
+#define LEVEL_TILE_STAIRS_DOWN 14   /**< Stairs down. */
 
 /**
  * @brief Set up the map in the map view (nge_map_init(), which maps its

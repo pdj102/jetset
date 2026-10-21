@@ -12,22 +12,34 @@
  */
 
 #include "game/level/level.h"
-#include "io/nge_text.h"
+#include "data/tile_data.h"
 
 /*
- * Map tiles: a metatile number (its graphic, src/data/tile_defs_data.asm)
- * and its colour (palette bank, attribute bits 7-4). Several graphics can
- * share a kind of terrain: what each blocks is set by tile ID in the map's
- * block table (level_bank.c). The features' tiles, 6-9, are in level.h.
+ * Map tiles: a metatile number, its place in the Aseprite tileset
+ * (assets/Tilesheet.aseprite, imported into src/data/tile_defs_data.asm),
+ * and its colour, the metatile's palette bank in attribute bits 7-4
+ * (TILE_BANK(), src/data/tile_data.h). Reordering the tileset changes the
+ * numbers: change them here and in level.h with it. Several kinds of
+ * terrain can share a graphic, and several graphics a kind of terrain:
+ * what each blocks is set by tile ID in the map's block table
+ * (level_bank.c). The features' tiles are in level.h.
  */
 #define LEVEL_ROCK      0      /* transparent; solid */
-#define LEVEL_FLOOR     1      /* floors: open */
+#define LEVEL_FLOOR     2      /* floors: open */
 #define LEVEL_FLOOR2    2
-#define LEVEL_CORRIDOR  3      /* open */
-#define LEVEL_WALL_H    4      /* walls: solid */
-#define LEVEL_WALL_V    5
+#define LEVEL_CORRIDOR  2      /* open */
+#define LEVEL_WALL_H    1      /* walls: solid */
+#define LEVEL_WALL_V    4
 #define LEVEL_CORNER    LEVEL_WALL_H   /* a room's corners: as its top and bottom walls */
-#define LEVEL_FLOOR_INK NGE_INK_YELLOW
+
+/* Every metatile the level names is in the tileset: one past it would draw as nothing */
+typedef char level_tile_check[(LEVEL_ROCK < TILE_METATILES && LEVEL_FLOOR < TILE_METATILES &&
+                               LEVEL_FLOOR2 < TILE_METATILES && LEVEL_CORRIDOR < TILE_METATILES &&
+                               LEVEL_WALL_H < TILE_METATILES && LEVEL_WALL_V < TILE_METATILES &&
+                               LEVEL_TILE_DOOR_SHUT < TILE_METATILES &&
+                               LEVEL_TILE_DOOR_OPEN < TILE_METATILES &&
+                               LEVEL_TILE_STAIRS_UP < TILE_METATILES &&
+                               LEVEL_TILE_STAIRS_DOWN < TILE_METATILES) ? 1 : -1];
 
 /*
  * The generator's grid: the map is split into LEVEL_GRID_W x LEVEL_GRID_H

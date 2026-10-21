@@ -42,7 +42,9 @@ slots as permanently mapped rather than as general data slots.
 The tile definitions cross from page 10 into page 11, so the tiles depend on
 both pages, not just page 10. They hold the map's graphics only: 64
 metatiles of 2 x 2 tiles, one a 16 x 16 map tile (`map/nge_map.h`). Layer 2's
-text has its own font (`layer2/nge_layer2_font.c`, page 90).
+text has its own font (`layer2/nge_layer2_font.c`, page 90). The tile
+definitions are generated from the Aseprite tileset, with their palette in
+page 133 ([tileset_import.md](tileset_import.md)): don't edit them.
 
 The ULA screen is switched off (register `0x68` bit 7), so the ULA screen and
 attributes at `$4000`-`$5AFF` no longer matter, and neither do the ROM system
@@ -153,7 +155,7 @@ code pages.
 | 100 | Game: free (assets) |
 | 101 | Game: sprite patterns and palette (slot 7, through the loaders) |
 | 102-131 | Game code pairs (15), allocated from 102 up: 102/103 `level` (setting up the map and generating levels / the room list); 104/105 `title` (the title state / unused); 106/107 `gen` creatures (generator / base creatures); 108/109 `gen` items (generator / base items); 110/111 `gen` shared (helpers and the game components' add functions / unused); 112/113 `actions` (the actions / unused); 114/115 `player` (commands and the firing screen / unused); 116/117 `ui` (the item screens / unused); 118/119 `messages` (what the player is told / unused); 120/121 `effects` (the effect system / the effect definitions and active effects' kinds); 122/123 `gen` features (generator / base features); 124/125 `target` (targeting / unused); 126/127 `anim` (starting the action animations / the kinds' sequences) |
-| 132-223 | Game assets: maps, graphics, level data |
+| 132-223 | Game assets: maps, graphics, level data. 133: the map tiles' palette (slot 7, through `nge_palette_load9()`), generated from the tileset |
 
 - **Module code, string literals and constants:** the even page. A banked
   `.c` file sets both `#pragma codeseg PAGE_n` and `#pragma constseg
@@ -404,13 +406,17 @@ slot 7 (`$E000`), and pass that page to the loaders:
 
 ```c
 nge_sprite_load_patterns(DEMO_SPRITE_PAGE, 0, demo_sprite_patterns, DEMO_SPRITE_PATTERNS);
-nge_sprite_load_palette(DEMO_SPRITE_PAGE, 0, demo_sprite_palette, DEMO_SPRITE_COLOURS);
+nge_palette_load9(DEMO_SPRITE_PAGE, RPC_SELECT_SPRITES_PALETTE_0, 0, demo_sprite_palette, DEMO_SPRITE_COLOURS);
 ```
 
-The loaders (`nge_sprite_load_patterns()`, `nge_sprite_load_patterns4()`,
-`nge_sprite_load_palette()`) are banked in page 42. Each maps the data page
-into slot 7, uploads, and maps the previous page back; nothing is mapped by
-the caller. Pass `NGE_SPRITE_DATA_COMMON` for data in common memory.
+The pattern loaders (`nge_sprite_load_patterns()`,
+`nge_sprite_load_patterns4()`) are banked in page 42. The palette loader,
+`nge_palette_load9()`, is in common memory (`hw/nge_palette`), for any
+palette (tilemap, sprites, Layer 2, ULA), so fades and palette cycling can
+call it often and from anywhere. Each maps the data page into slot 7
+(`NGE_MMU_DATA_SLOT`), uploads, and maps the previous page back; nothing is
+mapped by the caller. Pass `NGE_SPRITE_DATA_COMMON` or
+`NGE_PALETTE_DATA_COMMON` for data in common memory.
 
 - One call reads at most 8K from one page: 32 8-bit patterns. The pattern
   memory is 16K (64 patterns of 16x16 at 8 bits per pixel, or 128 at 4
@@ -418,6 +424,8 @@ the caller. Pass `NGE_SPRITE_DATA_COMMON` for data in common memory.
 - The game's sprite graphics are in page 101, in the game range
   ([sprite_data.asm](../src/data/sprite_data.asm), `SECTION PAGE_101`). A
   game with several sprite sets puts each in its own odd page.
+- The map tiles' palette is in page 133
+  ([tile_palette_data.asm](../src/data/tile_palette_data.asm), generated).
 - Hide sprites, or load during vblank, so patterns don't change while they
   are being drawn.
 - Tile definitions can be copied into `$4A00` the same way: slots 2 and 3

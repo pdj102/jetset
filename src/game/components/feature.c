@@ -36,7 +36,7 @@ static void update(nge_entity_id_t id)
     gen_feature_info(kind_index[id], &info);
     nge_block_add(id, open ? NGE_BLOCK_NONE : info.block_shut, NGE_BLOCK_NONE);
     tile.tile_id = info.look[open].tile_id;
-    tile.tile_attr = (uint8_t)(info.look[open].ink << 4);
+    tile.tile_attr = (uint8_t)(info.look[open].bank << 4);
     nge_map_set(NGE_LOCATION_X(id), NGE_LOCATION_Y(id), &tile);
 }
 
