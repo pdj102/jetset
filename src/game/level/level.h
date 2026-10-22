@@ -74,10 +74,10 @@ extern uint16_t level_dev_seed;
  * nothing, the feature does. Metatile numbers in the tileset, as the
  * terrain's (game/level/level_internal.h)
  */
-#define LEVEL_TILE_DOOR_SHUT   8    /**< A closed door. */
-#define LEVEL_TILE_DOOR_OPEN   10   /**< An open door. */
-#define LEVEL_TILE_STAIRS_UP   13   /**< Stairs up. */
-#define LEVEL_TILE_STAIRS_DOWN 14   /**< Stairs down. */
+#define LEVEL_TILE_DOOR_SHUT   13    /**< A closed door. */
+#define LEVEL_TILE_DOOR_OPEN   12   /**< An open door. */
+#define LEVEL_TILE_STAIRS_UP   8   /**< Stairs up. */
+#define LEVEL_TILE_STAIRS_DOWN 9   /**< Stairs down. */
 
 /**
  * @brief Set up the map in the map view (nge_map_init(), which maps its

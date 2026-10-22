@@ -25,11 +25,11 @@
  * (level_bank.c). The features' tiles are in level.h.
  */
 #define LEVEL_ROCK      0      /* transparent; solid */
-#define LEVEL_FLOOR     2      /* floors: open */
-#define LEVEL_FLOOR2    2
-#define LEVEL_CORRIDOR  2      /* open */
-#define LEVEL_WALL_H    1      /* walls: solid */
-#define LEVEL_WALL_V    4
+#define LEVEL_FLOOR     5      /* floors: open */
+#define LEVEL_FLOOR2    6
+#define LEVEL_CORRIDOR  5      /* open */
+#define LEVEL_WALL_H    3      /* walls: solid */
+#define LEVEL_WALL_V    3
 #define LEVEL_CORNER    LEVEL_WALL_H   /* a room's corners: as its top and bottom walls */
 
 /* Every metatile the level names is in the tileset: one past it would draw as nothing */
