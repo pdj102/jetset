@@ -228,6 +228,7 @@ class TestOutput(TempDir, unittest.TestCase):
         with open(os.path.join(out, 'sprite_data.h')) as f:
             text = f.read()
         self.assertIn('#define SPRITE_PATTERNS_COUNT_1      1', text)
+        self.assertIn('#define SPRITE_PATTERN_PAGES         2', text)
         self.assertIn('extern const uint8_t sprite_patterns_1[];', text)
 
     def test_the_palette_banks(self):

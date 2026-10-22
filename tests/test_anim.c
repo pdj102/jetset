@@ -1,6 +1,9 @@
 /* game/anim: the animations events start (slides, lunges, sequences), and holding the world. */
 #include "test.h"
 
+#include <string.h>
+
+#include "data/sprite_data.h"
 #include "ecs/components/nge_location.h"
 #include "ecs/nge_entity.h"
 #include "ecs/nge_owner.h"
@@ -77,14 +80,24 @@ int main(void)
     rat = creature(CR_RAT, 6, 5);
     nge_event_flush();                                   /* the player's innate effect */
 
-    /* ---- the kinds' sequences: copied from the base records, none yet ---- */
+    /* ---- the kinds' sequences: copied from the base records; the player's from the art ---- */
+    CHECK(anim_seqs[CR_PLAYER][GEN_SEQ_MOVE].first == SPRITE_PLAYER_MOVE &&
+          anim_seqs[CR_PLAYER][GEN_SEQ_MOVE].count == SPRITE_PLAYER_MOVE_COUNT &&
+          anim_seqs[CR_PLAYER][GEN_SEQ_MOVE].rate == SPRITE_PLAYER_MOVE_RATE);
+    CHECK(anim_seqs[CR_PLAYER][GEN_SEQ_ATTACK].first == SPRITE_PLAYER_ATTACK &&
+          anim_seqs[CR_PLAYER][GEN_SEQ_ATTACK].count == SPRITE_PLAYER_ATTACK_COUNT);
     ok = 1;
-    for (dx = 0; dx < CR_COUNT; dx++) {
+    for (dx = CR_PLAYER + 1; dx < CR_COUNT; dx++) {
         for (dy = 0; dy < GEN_SEQ_COUNT; dy++) {
             ok = ok && anim_seqs[dx][dy].count == 0;
         }
     }
     CHECK(ok);
+    /* The move sequence ends with the slide, so it doesn't slow walking (the world waits for it) */
+    CHECK(SPRITE_PLAYER_MOVE_COUNT * SPRITE_PLAYER_MOVE_RATE <= NGE_MAP_TILE_PIXELS / ANIM_SLIDE_SPEED);
+
+    /* The motions alone first: the player without its sequences */
+    memset(anim_seqs[CR_PLAYER], 0, sizeof(anim_seqs[CR_PLAYER]));
 
     /* ---- a move slides from the old tile: (dx, dy) tiles back ---- */
     CHECK(!anim_holding());

@@ -14,12 +14,11 @@
 #include "game/actors.h"
 #include "sprite/nge_sprite.h"
 
-#define PLAYER_FRAME_RATE  25   /* frames per animation step: two steps a second */
-
 const gen_creature_base_t gen_creatures[CR_COUNT] = {
     [CR_PLAYER] = {
         .name = "you",
-        .render = { DEMO_SPRITE_PLAYER, 2, PLAYER_FRAME_RATE, 0, LAYER_PLAYER },
+        .render = { SPRITE_PLAYER_IDLE, SPRITE_PLAYER_IDLE_COUNT, SPRITE_PLAYER_IDLE_RATE,
+                    NGE_SPRITE_PALETTE(BANK_PLAYER), LAYER_PLAYER },
         .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
         .stats = { .speed = 10, .ability = { 16, 14, 14, 10, 10, 10 } },   /* Str Dex Con Int Wis Cha */
         .health = { .hp = 12, .ac = 10 },
@@ -27,11 +26,16 @@ const gen_creature_base_t gen_creatures[CR_COUNT] = {
         .inventory = { .capacity = 20, .slots = SLOTS_HUMANOID },
         .flags = CREATURE_PLAYER,
         .hooks = { [GEN_HOOK_INNATE] = EF_REGEN },
+        .seqs = {
+            [GEN_SEQ_MOVE] = { SPRITE_PLAYER_MOVE, SPRITE_PLAYER_MOVE_COUNT, SPRITE_PLAYER_MOVE_RATE },
+            [GEN_SEQ_ATTACK] = { SPRITE_PLAYER_ATTACK, SPRITE_PLAYER_ATTACK_COUNT, SPRITE_PLAYER_ATTACK_RATE },
+        },
         .where = { .depth = 0, .rarity = 0 },          /* never at random */
     },
     [CR_RAT] = {
         .name = "rat",
-        .render = { DEMO_SPRITE_RAT, 1, 0, 0, LAYER_MONSTERS },
+        .render = { SPRITE_RAT_IDLE, SPRITE_RAT_IDLE_COUNT, SPRITE_RAT_IDLE_RATE,
+                    NGE_SPRITE_PALETTE(BANK_EARTH), LAYER_MONSTERS },
         .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
         .stats = { .speed = 10, .ability = { 2, 11, 9, 2, 10, 4 } },
         .health = { .hp = 3, .immune = DMG_BIT(DMG_POISON), .ac = 12 },
@@ -43,8 +47,8 @@ const gen_creature_base_t gen_creatures[CR_COUNT] = {
     },
     [CR_GOBLIN] = {
         .name = "goblin",
-        /* The player's figure in the recoloured palette */
-        .render = { DEMO_SPRITE_PLAYER, 2, PLAYER_FRAME_RATE, NGE_SPRITE_PALETTE(1), LAYER_MONSTERS },
+        .render = { SPRITE_GOBLIN_IDLE, SPRITE_GOBLIN_IDLE_COUNT, SPRITE_GOBLIN_IDLE_RATE,
+                    NGE_SPRITE_PALETTE(BANK_GREEN), LAYER_MONSTERS },
         .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
         .stats = { .speed = 10, .ability = { 8, 14, 10, 10, 8, 8 } },
         .health = { .hp = 6, .resist = DMG_BIT(DMG_BLUNT), .vuln = DMG_BIT(DMG_FIRE), .ac = 13 },

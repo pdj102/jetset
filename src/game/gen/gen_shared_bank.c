@@ -30,7 +30,8 @@ nge_entity_id_t gen_begin(uint8_t c, uint8_t kind, nge_owner_t owner) NGE_BANKED
 
 void gen_render(nge_entity_id_t id, const gen_render_t *r) NGE_BANKED
 {
-    nge_render_add(id, r->pattern, r->flags, NGE_SPRITE_SCALE_1, r->layer);
+    /* Every sprite is a 4-bit pattern, its bank in its flags (data/sprite_data.h) */
+    nge_render_add(id, r->pattern, r->flags, NGE_SPRITE_PATTERN4 | NGE_SPRITE_SCALE_1, r->layer);
     if (r->anim_count > 1) {
         nge_render_set_anim(id, r->pattern, r->anim_count, r->anim_rate);
     }

@@ -37,7 +37,7 @@ typedef struct gen_render {
     uint8_t pattern;      /* first pattern */
     uint8_t anim_count;   /* patterns in the animation, 1: still */
     uint8_t anim_rate;    /* frames per pattern */
-    uint8_t flags;        /* NGE_SPRITE_MIRROR_*, NGE_SPRITE_PALETTE(n)... */
+    uint8_t flags;        /* NGE_SPRITE_PALETTE(BANK_*), NGE_SPRITE_MIRROR_*... */
     uint8_t layer;        /* LAYER_* (game/actors.h) */
 } gen_render_t;
 
@@ -72,7 +72,7 @@ typedef struct gen_creature_base {
     gen_inventory_t inventory;
     uint8_t      flags;   /* CREATURE_* */
     uint8_t      hooks[GEN_HOOK_COUNT];   /* EF_* by GEN_HOOK_*: hit, innate */
-    gen_seq_t    seqs[GEN_SEQ_COUNT];     /* by GEN_SEQ_*: none yet, until there is art */
+    gen_seq_t    seqs[GEN_SEQ_COUNT];     /* by GEN_SEQ_*: count 0 for none */
     gen_where_t  where;
 } gen_creature_base_t;
 

@@ -44,7 +44,7 @@ PALETTE_FILE = 'sprite_palette_data.asm'
 HEADER_FILE = 'sprite_data.h'
 
 # Names the header defines itself, which no tag's may repeat
-FIXED_NAMES = {'SPRITE_PALETTE_PAGE', 'SPRITE_PALETTE_ENTRIES', 'SPRITE_PATTERNS'} | {
+FIXED_NAMES = {'SPRITE_PALETTE_PAGE', 'SPRITE_PALETTE_ENTRIES', 'SPRITE_PATTERNS', 'SPRITE_PATTERN_PAGES'} | {
     f'SPRITE_PATTERNS_{kind}_{n}' for kind in ('PAGE', 'COUNT') for n in range(len(PATTERN_PAGES))}
 
 
@@ -308,6 +308,7 @@ def header(source, patterns, runs, banks):
         define('SPRITE_PALETTE_ENTRIES', len(banks) * next_colour.BANK_SIZE,
                'Entries in sprite_palette: load them from entry 0.'),
         define('SPRITE_PATTERNS', len(patterns), '4-bit patterns, from pattern 0.'),
+        define('SPRITE_PATTERN_PAGES', len(used), 'Pages of patterns: SPRITE_PATTERNS_PAGE_0 on.'),
         '',
     ]
     for p, (page, first, count) in enumerate(used):

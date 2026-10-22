@@ -183,11 +183,11 @@ void screen_message_line(void)
     message_line_used = 1;
 }
 
-void screen_overlay_set(uint8_t n, uint16_t x, uint16_t y, uint8_t pattern)
+void screen_overlay_set(uint8_t n, uint16_t x, uint16_t y, uint8_t pattern, uint8_t flags)
 {
     nge_util_assert(n < SCREEN_OVERLAY_COUNT);
 
-    nge_sprite_set(&overlay[n], x, y, pattern, 0, NGE_SPRITE_SCALE_1);
+    nge_sprite_set(&overlay[n], x, y, pattern, flags, NGE_SPRITE_PATTERN4 | NGE_SPRITE_SCALE_1);
 }
 
 void screen_overlay_hide(uint8_t n)

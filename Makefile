@@ -66,7 +66,7 @@ build: $(BIN_TARGET).nex
 # compiled after it is up to date (order-only: their .d files rebuild those
 # that include it)
 TILESET := assets/Tilesheet.aseprite
-TILE_SCRIPTS := scripts/ase2tiles.py scripts/aseprite.py scripts/next_colour.py
+TILE_SCRIPTS := scripts/ase2tiles.py scripts/aseprite.py scripts/next_colour.py scripts/asm_out.py
 TILE_DATA := src/data/tile_defs_data.asm src/data/tile_palette_data.asm src/data/tile_data.h
 
 $(TILE_DATA) &: $(TILESET) $(TILE_SCRIPTS)
@@ -74,20 +74,23 @@ $(TILE_DATA) &: $(TILESET) $(TILE_SCRIPTS)
 
 tiles: $(TILE_DATA)
 
-# The game's sprites from the Aseprite sprite file (docs/sprite_import.md).
-# Step 1: written into obj/sprites/ for trying on the art; the build doesn't
-# use them yet
+# The game's sprites and their palette, generated from the Aseprite sprite
+# file (docs/sprite_import.md) in the same way
 SPRITESET := assets/Sprites.aseprite
+SPRITE_SCRIPTS := scripts/ase2sprites.py scripts/aseprite.py scripts/next_colour.py scripts/asm_out.py
+SPRITE_DATA := src/data/sprite_patterns_data.asm src/data/sprite_palette_data.asm src/data/sprite_data.h
 
-sprites:
-	python3 -I scripts/ase2sprites.py $(SPRITESET) $(OBJDIR)/sprites
+$(SPRITE_DATA) &: $(SPRITESET) $(SPRITE_SCRIPTS)
+	python3 -I scripts/ase2sprites.py $(SPRITESET) src/data
+
+sprites: $(SPRITE_DATA)
 
 # A module's page data file (<module>/nge_<module>_pdata.c) starts with the
 # marker /* nge-dataseg: PAGE_n */: its uninitialised variables go in page n
 # (--dataseg) instead of common memory. See "Page data" in docs/memory_map.md.
 dataseg = $(shell sed -n '1,5s|^/\* *nge-dataseg: *\(PAGE_[0-9]*\) *\*/.*|-Cs--dataseg\1|p' $(1))
 
-$(OBJDIR)/%.o: src/%.c | $(TILE_DATA)
+$(OBJDIR)/%.o: src/%.c | $(TILE_DATA) $(SPRITE_DATA)
 	@mkdir -p $(dir $@)
 	$(ZCC) -c +zxn -clib=sdcc_iy $(INCLUDES) $(CFLAGS) $(call dataseg,$<) $< -o $@
 	@$(HOSTCC) $(DEPFLAGS) $(INCLUDES) $(CFLAGS) $<
@@ -141,7 +144,7 @@ check:
 	./scripts/check-toolchain.sh
 
 # PC tests for the nge library; see tests/Makefile
-test: $(TILE_DATA)
+test: $(TILE_DATA) $(SPRITE_DATA)
 	$(MAKE) -C tests Z88DK_ROOT=$(Z88DK_ROOT)
 
 clean:

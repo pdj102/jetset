@@ -114,9 +114,10 @@ void screen_message(const char *text);
 
 /**
  * @brief Show overlay sprite n (SCREEN_OVERLAY_*) at screen position (x, y)
- *        with an 8-bit pattern, from the next frame.
+ *        with a 4-bit pattern (data/sprite_data.h) and its flags
+ *        (NGE_SPRITE_PALETTE(BANK_*)...), from the next frame.
  */
-void screen_overlay_set(uint8_t n, uint16_t x, uint16_t y, uint8_t pattern);
+void screen_overlay_set(uint8_t n, uint16_t x, uint16_t y, uint8_t pattern, uint8_t flags);
 
 /** @brief Hide overlay sprite n, from the next frame. */
 void screen_overlay_hide(uint8_t n);

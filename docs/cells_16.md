@@ -368,3 +368,6 @@ CSpect and hardware checks:
   replaced by art drawn in Aseprite and imported by a script, and
   `double_art.py` was removed (it is in commit 2d2d2fc). The placeholder
   sprites and Layer 2's font, which it also wrote, stay.
+- **Later (docs/sprite_import.md):** R17 decided: 4-bit patterns, imported
+  from Aseprite, each shown through a palette bank. The placeholder sprites
+  (`sprite_data.asm`) are gone.

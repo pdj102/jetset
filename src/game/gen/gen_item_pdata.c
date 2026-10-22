@@ -17,7 +17,7 @@
 const gen_item_base_t gen_items[IT_COUNT] = {
     [IT_POTION] = {
         .name = "healing potion",
-        .render = { DEMO_SPRITE_POTION, 1, 0, 0, LAYER_OBJECTS },
+        .render = { SPRITE_POTION, 1, 0, NGE_SPRITE_PALETTE(BANK_RED), LAYER_OBJECTS },
         .subclass = ITEM_POTION,
         .fits = 0,
         .hooks = { [GEN_HOOK_USE] = EF_HEALING },
@@ -25,7 +25,7 @@ const gen_item_base_t gen_items[IT_COUNT] = {
     },
     [IT_SWORD] = {
         .name = "sword",
-        .render = { DEMO_SPRITE_SWORD, 1, 0, 0, LAYER_OBJECTS },
+        .render = { SPRITE_SWORD, 1, 0, NGE_SPRITE_PALETTE(BANK_IRON), LAYER_OBJECTS },
         .subclass = ITEM_WEAPON,
         .fits = SLOT_BIT(SLOT_WEAPON),
         .melee = { .to_hit = 1, .dice = 1, .sides = 8, .bonus = 0, .type = DMG_SLASH, .range = 1 },
@@ -33,7 +33,7 @@ const gen_item_base_t gen_items[IT_COUNT] = {
     },
     [IT_RING] = {
         .name = "ring of health",
-        .render = { DEMO_SPRITE_RING, 1, 0, 0, LAYER_OBJECTS },
+        .render = { SPRITE_RING, 1, 0, NGE_SPRITE_PALETTE(BANK_GOLD), LAYER_OBJECTS },
         .subclass = ITEM_RING,
         .fits = SLOT_BIT(SLOT_RING_L) | SLOT_BIT(SLOT_RING_R),
         .hooks = { [GEN_HOOK_WORN] = EF_RING_HEALTH },
@@ -42,7 +42,7 @@ const gen_item_base_t gen_items[IT_COUNT] = {
     /* Until they have sprites of their own: the potion recoloured, the rat upside down, the potion on its side or mirrored */
     [IT_ANTIDOTE] = {
         .name = "antidote",
-        .render = { DEMO_SPRITE_POTION, 1, 0, NGE_SPRITE_PALETTE(1), LAYER_OBJECTS },
+        .render = { SPRITE_POTION, 1, 0, NGE_SPRITE_PALETTE(BANK_GREEN), LAYER_OBJECTS },
         .subclass = ITEM_POTION,
         .fits = 0,
         .hooks = { [GEN_HOOK_USE] = EF_CURE },
@@ -50,7 +50,7 @@ const gen_item_base_t gen_items[IT_COUNT] = {
     },
     [IT_FOOD] = {
         .name = "dead rat",
-        .render = { DEMO_SPRITE_RAT, 1, 0, NGE_SPRITE_MIRROR_Y, LAYER_OBJECTS },
+        .render = { SPRITE_RAT_DEAD, 1, 0, NGE_SPRITE_PALETTE(BANK_EARTH), LAYER_OBJECTS },
         .subclass = ITEM_FOOD,
         .fits = 0,
         .hooks = { [GEN_HOOK_USE] = EF_POISON },
@@ -58,7 +58,7 @@ const gen_item_base_t gen_items[IT_COUNT] = {
     },
     [IT_ELIXIR] = {
         .name = "elixir",
-        .render = { DEMO_SPRITE_POTION, 1, 0, NGE_SPRITE_ROTATE | NGE_SPRITE_PALETTE(1), LAYER_OBJECTS },
+        .render = { SPRITE_POTION, 1, 0, NGE_SPRITE_PALETTE(BANK_GOLD), LAYER_OBJECTS },
         .subclass = ITEM_POTION,
         .fits = 0,
         .hooks = { [GEN_HOOK_USE] = EF_VITALITY },
@@ -66,7 +66,7 @@ const gen_item_base_t gen_items[IT_COUNT] = {
     },
     [IT_STRENGTH] = {
         .name = "potion of strength",
-        .render = { DEMO_SPRITE_POTION, 1, 0, NGE_SPRITE_MIRROR_X | NGE_SPRITE_PALETTE(1), LAYER_OBJECTS },
+        .render = { SPRITE_POTION, 1, 0, NGE_SPRITE_PALETTE(BANK_ORANGE), LAYER_OBJECTS },
         .subclass = ITEM_POTION,
         .fits = 0,
         .hooks = { [GEN_HOOK_USE] = EF_STRENGTH },

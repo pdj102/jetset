@@ -35,8 +35,7 @@
 //             90/91  layer2: Layer 2 drawing / (unused); the layer itself is
 //                    in pages 16-25
 //   100-223 game
-//             100      free (game assets)
-//             101      sprite patterns and palette (slot 7, via the loaders)
+//             100-101  free (game assets)
 //             102-131  game code pairs (15), from 102 up:
 //                        102/103  level: setting up the map and generating levels /
 //                                 the room list
@@ -59,7 +58,8 @@
 //                        133  the map tiles' palette (slot 7, via nge_palette_load9();
 //                             src/data/tile_palette_data.asm, generated)
 //                        135  the sprite palette, and 137, 139 the sprite patterns
-//                             (slot 7; reserved for docs/sprite_import.md step 2)
+//                             (slot 7, via the loaders; src/data/sprite_*_data.asm,
+//                             generated)
 
 // nge sprite: setup functions and loaders
 #pragma define CRT_ORG_PAGE_42 = 0x2AC000

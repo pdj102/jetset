@@ -1,9 +1,11 @@
 # Sprite import: requirements and design
 
-Status: step 1 done (D10): the scripts, their tests, the starter palette
-and `make sprites` (2026-10-22). Step 2 waits for `assets/Sprites.aseprite`
-to have the game's sprites. The decisions in section 4 and the palette spec
-in section 5.2 were agreed as proposed on 2026-10-22.
+Status: implemented, both steps of D10; CSpect checks 1-6 passed
+(2026-10-22). Hardware checks are still to do. The decisions in section 4
+and the palette spec in section 5.2 were agreed as proposed on 2026-10-22.
+Section 8 lists where
+the build differs from the design, and section 9 says how to change the
+art.
 
 Imports the game's sprites from an Aseprite file, so sprite art and its
 animations go from Aseprite into the game with a save and a `make`. Each
@@ -284,6 +286,7 @@ source (R15), and are the artist's to change.
   #define SPRITE_PALETTE_PAGE     135  /**< SECTION PAGE_135 in sprite_palette_data.asm. */
   #define SPRITE_PALETTE_ENTRIES  256  /**< Entries in sprite_palette: load them from index 0. */
   #define SPRITE_PATTERNS         70   /**< 4-bit patterns, from pattern 0. */
+  #define SPRITE_PATTERN_PAGES    2    /**< Pages of patterns: SPRITE_PATTERNS_PAGE_0 on. */
 
   #define SPRITE_PATTERNS_PAGE_0   137  /**< Patterns 0-63: sprite_patterns_0. */
   #define SPRITE_PATTERNS_COUNT_0  64
@@ -373,3 +376,67 @@ durations, cels (raw, linked, compressed) and tags:
 Checks by hand in step 1: the generated `.asm` assembles (`zcc -c +zxn`)
 and `sprite_data.h` compiles, as was done for the tiles. There are no
 CSpect checks until step 2.
+
+CSpect and hardware checks (step 2):
+
+1. The player, rats and goblins show in their colours: the player in its
+   own bank, rats in earth, goblins in green. The player blinks slowly at
+   rest (its idle run).
+2. Walking: the player's move sequence plays with each slide, and holding
+   a key walks as fast as before.
+3. Attacking: the player's attack frame shows with the lunge.
+4. Items on the floor and in use: the four potions in their colours
+   (healing red, antidote green, elixir gold, strength orange), the sword
+   in iron, the ring in gold, a dead rat (its own frame) in earth.
+5. Targeting (F, L): the cursor is green in range and red out of range.
+6. Nothing shows a black square or a wrong colour: transparent pixels are
+   transparent.
+
+## 8. As built: differences from the design
+
+- **`gen_render_t` keeps its fields (5.5).** Its flags carry
+  `NGE_SPRITE_PALETTE(BANK_*)` already, and every sprite is now 4-bit, so
+  `gen_render()` adds `NGE_SPRITE_PATTERN4` itself: no field for the mode.
+- **The header also gives `SPRITE_PATTERN_PAGES`**, so the loading can
+  test for a second page with `#if` (C-PRE-3).
+- **The bank names** are in `game/actors.h`, next to the render layers:
+  `BANK_PLAYER` to `BANK_DARK`, and `BANK_COUNT`. A check typedef in
+  `actors.c` stops the build if the art's palette doesn't have all 16
+  banks.
+- **The colourways chosen:** the player in `BANK_PLAYER`, rats in earth,
+  goblins in green; the healing potion red, the antidote green, the elixir
+  gold, the potion of strength orange (one `potion` pattern for all four:
+  they were told apart by mirroring and rotating before); the sword iron,
+  the ring gold; the dead rat its own frame (`rat.dead`), in earth.
+- **The player's sequences** come from the art (`player.move`,
+  `player.attack`); the other kinds have none yet. `test_anim` checks
+  they are copied, and that the move sequence is no longer than the slide
+  (4 frames), so walking isn't slowed.
+- **`screen_overlay_set()`** takes the sprite's flags, for the cursor's
+  bank, and shows a 4-bit pattern.
+- **The flash and shadow banks** are named but not used yet.
+- **Page 101** is free: the demo sprites are gone. `make tiles` now also
+  depends on `asm_out.py`, which it imports.
+- **Common memory:** 546 bytes free in the debug build, 3 fewer.
+
+## 9. Changing the art
+
+1. Draw in `assets/Sprites.aseprite` (5.1): one palette row a frame, and
+   every frame in a tag.
+2. A new sprite or animation: add its frames and a tag. Frames are
+   patterns in timeline order, so frames added in the middle renumber
+   those after them; the names (`SPRITE_<TAG>`) follow, so the game
+   doesn't change.
+3. Using it in the game: the base record (`gen_*_pdata.c`) names the tag:
+   `{ SPRITE_<TAG>, SPRITE_<TAG>_COUNT, SPRITE_<TAG>_RATE,
+   NGE_SPRITE_PALETTE(BANK_*), LAYER_* }`, or a creature's sequence
+   `{ SPRITE_<TAG>, SPRITE_<TAG>_COUNT, SPRITE_<TAG>_RATE }`. A renamed or
+   removed tag is a compile error where it is used.
+4. A move sequence should last no longer than the slide (4 frames, 80
+   ms), and an attack sequence no longer than the lunge (4 frames): the
+   world waits for them.
+5. `make`. The script prints the patterns, tags and banks, or an error
+   naming the frame, tag or pixel.
+6. Commit the `.aseprite` file and the three generated files in
+   `src/data/` together.
+

@@ -15,6 +15,7 @@
 #include "data/sprite_data.h"
 #include "ecs/components/nge_location.h"
 #include "map/nge_map.h"
+#include "sprite/nge_sprite.h"
 
 #include "game/actors.h"
 #include "game/game.h"
@@ -97,15 +98,16 @@ uint8_t target_key(target_t *t, nge_key_event_t ev) NGE_BANKED
     return TARGET_STEP_CANCELLED;
 }
 
-/* The cursor (an overlay sprite) on the cursor's tile, through the camera: green in range, red out of it */
+/* The cursor (an overlay sprite) on the cursor's tile, through the camera: one pattern, green in
+   range, red out of it */
 static void place(const target_t *t)
 {
     uint16_t sx;
     uint16_t sy;
 
     nge_map_to_screen((uint16_t)t->x * NGE_MAP_TILE_PIXELS, (uint16_t)t->y * NGE_MAP_TILE_PIXELS, &sx, &sy);
-    screen_overlay_set(SCREEN_OVERLAY_CURSOR, sx, sy,
-                       target_in_range(t) ? DEMO_SPRITE_CURSOR_IN : DEMO_SPRITE_CURSOR_OUT);
+    screen_overlay_set(SCREEN_OVERLAY_CURSOR, sx, sy, SPRITE_CURSOR,
+                       NGE_SPRITE_PALETTE(target_in_range(t) ? BANK_GREEN : BANK_RED));
 }
 
 uint8_t target_choose(target_t *t) NGE_BANKED

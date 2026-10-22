@@ -40,11 +40,18 @@ static const actor_persistent_t persistents[] = {
 
 nge_entity_id_t actor_player;
 
+/* The art's palette has every bank the game names: a missing one would show sprites in black */
+typedef char actors_bank_check[(SPRITE_PALETTE_ENTRIES == BANK_COUNT * 16) ? 1 : -1];
+
 void actors_load_graphics(void)
 {
-    /* The loaders map the graphics' page into slot 7 while they copy */
-    nge_sprite_load_patterns(DEMO_SPRITE_PAGE, 0, demo_sprite_patterns, DEMO_SPRITE_PATTERNS);
-    nge_palette_load9(DEMO_SPRITE_PAGE, RPC_SELECT_SPRITES_PALETTE_0, 0, demo_sprite_palette, DEMO_SPRITE_COLOURS);
+    /* The loaders map the graphics' pages into slot 7 while they copy */
+    nge_sprite_load_patterns4(SPRITE_PATTERNS_PAGE_0, 0, sprite_patterns_0, SPRITE_PATTERNS_COUNT_0);
+#if SPRITE_PATTERN_PAGES > 1
+    nge_sprite_load_patterns4(SPRITE_PATTERNS_PAGE_1, SPRITE_PATTERNS_COUNT_0, sprite_patterns_1,
+                              SPRITE_PATTERNS_COUNT_1);
+#endif
+    nge_palette_load9(SPRITE_PALETTE_PAGE, RPC_SELECT_SPRITES_PALETTE_0, 0, sprite_palette, SPRITE_PALETTE_ENTRIES);
 }
 
 void actors_create(void)

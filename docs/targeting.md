@@ -305,7 +305,9 @@ scrolling.
   (`DEMO_SPRITE_CURSOR_OUT`, red), in `sprite_data.asm`: the corners of an
   8 x 8 tile in the top-left of a 16 x 16 pattern, like the other
   entities' patterns. Corners rather than a whole frame, so what is on the
-  tile still shows. `DEMO_SPRITE_PATTERNS` went from 8 to 10.
+  tile still shows. `DEMO_SPRITE_PATTERNS` went from 8 to 10. Later
+  (docs/sprite_import.md): one pattern, `SPRITE_CURSOR`, shown through the
+  green bank in range and the red one out of range.
 - **The help bar:** "Arrows: move  ENTER: look  Other: back" (SPACE also
   chooses, but there is no room to say so).
 

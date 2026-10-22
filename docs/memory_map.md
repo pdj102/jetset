@@ -152,10 +152,9 @@ code pages.
 | 46/47 | nge `event` (reserved; the event queue and its processing run every turn and are in common memory) |
 | 48-87 | nge `ecs` (20 pairs): 48/49 `entity` and `owner` (lifecycle and ownership code / lifecycle bookkeeping); 50 ECS data, mapped permanently into slot 0 (see [ECS data in slot 0](#ecs-data-in-slot-0)); 51 map data, mapped permanently into slot 1 (see [Always-mapped data pages](#always-mapped-data-pages)); 52/53 `render` system; 54/55 `timer` system |
 | 88-99 | Further nge modules (6 pairs): 88/89 `input` (setup, ASCII tables and waiting / unused); 90/91 `layer2` (Layer 2 drawing / unused) |
-| 100 | Game: free (assets) |
-| 101 | Game: sprite patterns and palette (slot 7, through the loaders) |
+| 100-101 | Game: free (assets) |
 | 102-131 | Game code pairs (15), allocated from 102 up: 102/103 `level` (setting up the map and generating levels / the room list); 104/105 `title` (the title state / unused); 106/107 `gen` creatures (generator / base creatures); 108/109 `gen` items (generator / base items); 110/111 `gen` shared (helpers and the game components' add functions / unused); 112/113 `actions` (the actions / unused); 114/115 `player` (commands and the firing screen / unused); 116/117 `ui` (the item screens / unused); 118/119 `messages` (what the player is told / unused); 120/121 `effects` (the effect system / the effect definitions and active effects' kinds); 122/123 `gen` features (generator / base features); 124/125 `target` (targeting / unused); 126/127 `anim` (starting the action animations / the kinds' sequences) |
-| 132-223 | Game assets: maps, graphics, level data. 133: the map tiles' palette (slot 7, through `nge_palette_load9()`), generated from the tileset. 135, 137, 139: reserved for the sprite palette and patterns ([sprite_import.md](sprite_import.md) step 2) |
+| 132-223 | Game assets: maps, graphics, level data. 133: the map tiles' palette (slot 7, through `nge_palette_load9()`), generated from the tileset. 135: the sprite palette, 137 and 139: the sprite patterns (slot 7, through the loaders), generated from the sprite file ([sprite_import.md](sprite_import.md)) |
 
 - **Module code, string literals and constants:** the even page. A banked
   `.c` file sets both `#pragma codeseg PAGE_n` and `#pragma constseg
@@ -405,8 +404,8 @@ Put them in an odd page (`SECTION PAGE_n`, n odd), which z88dk assembles for
 slot 7 (`$E000`), and pass that page to the loaders:
 
 ```c
-nge_sprite_load_patterns(DEMO_SPRITE_PAGE, 0, demo_sprite_patterns, DEMO_SPRITE_PATTERNS);
-nge_palette_load9(DEMO_SPRITE_PAGE, RPC_SELECT_SPRITES_PALETTE_0, 0, demo_sprite_palette, DEMO_SPRITE_COLOURS);
+nge_sprite_load_patterns4(SPRITE_PATTERNS_PAGE_0, 0, sprite_patterns_0, SPRITE_PATTERNS_COUNT_0);
+nge_palette_load9(SPRITE_PALETTE_PAGE, RPC_SELECT_SPRITES_PALETTE_0, 0, sprite_palette, SPRITE_PALETTE_ENTRIES);
 ```
 
 The pattern loaders (`nge_sprite_load_patterns()`,
@@ -418,12 +417,15 @@ call it often and from anywhere. Each maps the data page into slot 7
 mapped by the caller. Pass `NGE_SPRITE_DATA_COMMON` or
 `NGE_PALETTE_DATA_COMMON` for data in common memory.
 
-- One call reads at most 8K from one page: 32 8-bit patterns. The pattern
+- One call reads at most 8K from one page: 32 8-bit or 64 4-bit patterns. The pattern
   memory is 16K (64 patterns of 16x16 at 8 bits per pixel, or 128 at 4
   bits), so a full set takes two pages and two calls.
-- The game's sprite graphics are in page 101, in the game range
-  ([sprite_data.asm](../src/data/sprite_data.asm), `SECTION PAGE_101`). A
-  game with several sprite sets puts each in its own odd page.
+- The game's sprites are 4-bit patterns in pages 137 and 139, their
+  palette in page 135, in the game range
+  ([sprite_patterns_data.asm](../src/data/sprite_patterns_data.asm),
+  [sprite_palette_data.asm](../src/data/sprite_palette_data.asm),
+  generated). A game with several sprite sets puts each in its own odd
+  pages.
 - The map tiles' palette is in page 133
   ([tile_palette_data.asm](../src/data/tile_palette_data.asm), generated).
 - Hide sprites, or load during vblank, so patterns don't change while they
