@@ -53,7 +53,7 @@ DEPFLAGS = -MM -MG -MP -MT $@ -MF $(@:.o=.d) -D__SDCC
 export PATH := $(Z88DK_ROOT)/bin:$(PATH)
 export ZCCCFG
 
-.PHONY: all build check clean test tiles
+.PHONY: all build check clean sprites test tiles
 
 all: build
 
@@ -73,6 +73,14 @@ $(TILE_DATA) &: $(TILESET) $(TILE_SCRIPTS)
 	python3 -I scripts/ase2tiles.py $(TILESET) src/data
 
 tiles: $(TILE_DATA)
+
+# The game's sprites from the Aseprite sprite file (docs/sprite_import.md).
+# Step 1: written into obj/sprites/ for trying on the art; the build doesn't
+# use them yet
+SPRITESET := assets/Sprites.aseprite
+
+sprites:
+	python3 -I scripts/ase2sprites.py $(SPRITESET) $(OBJDIR)/sprites
 
 # A module's page data file (<module>/nge_<module>_pdata.c) starts with the
 # marker /* nge-dataseg: PAGE_n */: its uninitialised variables go in page n

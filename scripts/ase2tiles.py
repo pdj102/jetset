@@ -26,6 +26,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import aseprite      # noqa: E402
+import asm_out       # noqa: E402
 import next_colour   # noqa: E402
 
 METATILE_PIXELS = 16
@@ -97,10 +98,6 @@ def hardware_tiles(metatile):
     return tiles
 
 
-def _db(values):
-    return '\tdb ' + ', '.join(f'${v:02X}' for v in values)
-
-
 def defs_asm(source, assigned, pixels):
     lines = [
         "; The map's graphics: metatiles of 2 x 2 hardware tiles, 4 bits a pixel",
@@ -131,8 +128,8 @@ def defs_asm(source, assigned, pixels):
             metatile = blank
         for i, data in enumerate(hardware_tiles(metatile)):
             lines.append(f'sprite{4 * m + i}:')
-            lines.append(_db(data[:16]))
-            lines.append(_db(data[16:]))
+            lines.append(asm_out.db(data[:16]))
+            lines.append(asm_out.db(data[16:]))
     return '\n'.join(lines) + '\n'
 
 
@@ -156,8 +153,8 @@ def palette_asm(source, banks, assigned):
         lines.append(f'; bank {b}: metatiles {users}')
         entries = [0] + bank + [0] * (next_colour.BANK_COLOURS - len(bank))
         data = [byte for colour in entries for byte in next_colour.entry_bytes(colour)]
-        lines.append(_db(data[:16]))
-        lines.append(_db(data[16:]))
+        lines.append(asm_out.db(data[:16]))
+        lines.append(asm_out.db(data[16:]))
     return '\n'.join(lines) + '\n'
 
 
@@ -200,29 +197,11 @@ def header(source, banks, assigned):
     return '\n'.join(lines) + '\n'
 
 
-def write_all(out_dir, files):
-    """Write every file to a temporary name, then rename them all: nothing is half written."""
-    os.makedirs(out_dir, exist_ok=True)
-    temps = []
-    try:
-        for name, text in files.items():
-            temp = os.path.join(out_dir, name + '.tmp')
-            temps.append(temp)
-            with open(temp, 'w') as f:
-                f.write(text)
-        for name in files:
-            os.replace(os.path.join(out_dir, name + '.tmp'), os.path.join(out_dir, name))
-    finally:
-        for temp in temps:
-            if os.path.exists(temp):
-                os.remove(temp)
-
-
 def run(source, out_dir, layer=None):
     """Import source into out_dir; returns the summary lines. Raises on an error, writing nothing."""
     tileset = aseprite.read(source).tilemap_tileset(layer)
     banks, assigned, pixels = convert(tileset)
-    write_all(out_dir, {
+    asm_out.write_all(out_dir, {
         DEFS_FILE: defs_asm(source, assigned, pixels),
         PALETTE_FILE: palette_asm(source, banks, assigned),
         HEADER_FILE: header(source, banks, assigned),

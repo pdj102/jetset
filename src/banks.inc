@@ -58,6 +58,8 @@
 //             132-223  game assets (maps, graphics, level data):
 //                        133  the map tiles' palette (slot 7, via nge_palette_load9();
 //                             src/data/tile_palette_data.asm, generated)
+//                        135  the sprite palette, and 137, 139 the sprite patterns
+//                             (slot 7; reserved for docs/sprite_import.md step 2)
 
 // nge sprite: setup functions and loaders
 #pragma define CRT_ORG_PAGE_42 = 0x2AC000
