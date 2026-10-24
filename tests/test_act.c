@@ -12,6 +12,8 @@
 #include "event/nge_event.h"
 #include "map/nge_map.h"
 
+#include "data/tile_data.h"
+
 #include "game/actions/act.h"
 #include "game/components/attack.h"
 #include "game/components/attrs.h"
@@ -153,10 +155,10 @@ int main(void)
     nge_map_init(10, 10, &window);
     nge_map_clear_blocks(NGE_BLOCK_SOLID);
     nge_map_set_block(FLOOR, NGE_BLOCK_NONE);
-    nge_map_set_block(LEVEL_TILE_DOOR_SHUT, NGE_BLOCK_NONE);   /* as the level sets them: the door blocks */
-    nge_map_set_block(LEVEL_TILE_DOOR_OPEN, NGE_BLOCK_NONE);
-    nge_map_set_block(LEVEL_TILE_STAIRS_UP, NGE_BLOCK_NONE);
-    nge_map_set_block(LEVEL_TILE_STAIRS_DOWN, NGE_BLOCK_NONE);
+    nge_map_set_block(LOOK_DOOR_SHUT, NGE_BLOCK_NONE);   /* as the level sets them: the door blocks */
+    nge_map_set_block(LOOK_DOOR_OPEN, NGE_BLOCK_NONE);
+    nge_map_set_block(LOOK_STAIRS_UP, NGE_BLOCK_NONE);
+    nge_map_set_block(LOOK_STAIRS_DOWN, NGE_BLOCK_NONE);
     for (y = 0; y < 10; y++) {
         for (x = 0; x < 10; x++) {
             NGE_MAP_TILE(x, y).tile_id = FLOOR;
@@ -611,7 +613,7 @@ int main(void)
     CHECK(!FEATURE_IS_OPEN(door) && events() == 0);
     /* Open, by direction: the door opens, the turn used, the event */
     CHECK(act_open(&a, ACT_DO) == ACT_SUCCESS && a.reason == ACT_R_NONE && a.used == 1);
-    CHECK(FEATURE_IS_OPEN(door) && NGE_MAP_TILE(8, 1).tile_id == LEVEL_TILE_DOOR_OPEN);
+    CHECK(FEATURE_IS_OPEN(door) && NGE_MAP_TILE(8, 1).tile_id == LOOK_DOOR_OPEN);
     CHECK(events() == 1 && is(0, door, EV_OPENED, opener));
     CHECK(act_open(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_ALREADY_OPEN && a.used == 0);
     /* Open, it can be walked through */
@@ -632,7 +634,7 @@ int main(void)
     /* Close, by target: closed, blocking again, the event */
     CHECK(act_close(&a, ACT_CHECK) == ACT_SUCCESS && a.used == 0 && FEATURE_IS_OPEN(door));
     CHECK(act_do(ACT_CLOSE, &a, ACT_DO) == ACT_SUCCESS && a.used == 1 && !FEATURE_IS_OPEN(door));
-    CHECK(NGE_MAP_TILE(8, 1).tile_id == LEVEL_TILE_DOOR_SHUT && events() == 1 && is(0, door, EV_CLOSED, opener));
+    CHECK(NGE_MAP_TILE(8, 1).tile_id == LOOK_DOOR_SHUT && events() == 1 && is(0, door, EV_CLOSED, opener));
     a = move(opener, 1, 0);
     CHECK(act_move(&a, ACT_CHECK) == ACT_FAIL && a.target == door);
     a = ctx(opener);
@@ -686,7 +688,7 @@ int main(void)
     CHECK(!level_pending() && events() == 0);
     stairs = gen_feature(FT_STAIRS_DOWN, AREA);
     feature_place(stairs, 2, 8);
-    CHECK(NGE_MAP_TILE(2, 8).tile_id == LEVEL_TILE_STAIRS_DOWN && NGE_BLOCK_OF(stairs) == NGE_BLOCK_NONE);
+    CHECK(NGE_MAP_TILE(2, 8).tile_id == LOOK_STAIRS_DOWN && NGE_BLOCK_OF(stairs) == NGE_BLOCK_NONE);
     a = ctx(player);
     CHECK(act_ascend(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_NO_STAIRS);   /* the wrong way */
     a = ctx(player);

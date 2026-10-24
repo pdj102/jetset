@@ -43,20 +43,17 @@ static uint8_t roll_between(uint8_t lo, uint8_t hi)
     return (uint8_t)(lo + roll((uint8_t)(hi - lo + 1)));
 }
 
-/* A tile with its palette bank: TILE_BANK() of the same metatile */
-static void put(uint8_t x, uint8_t y, uint8_t id, uint8_t bank)
+/* A cell's terrain (TERRAIN_*): the decorator draws it once the level is built */
+static void set_terrain(uint8_t x, uint8_t y, uint8_t terrain)
 {
-    nge_tile_t *t = &NGE_MAP_TILE(x, y);
-
-    t->tile_id = id;
-    t->tile_attr = (uint8_t)(bank << 4);
+    level_terrain[y][x] = terrain;
 }
 
 /* A corridor tile, only over rock: doors, walls and floors stay */
 static void put_corridor(uint8_t x, uint8_t y)
 {
-    if (NGE_MAP_TILE(x, y).tile_id == LEVEL_ROCK) {
-        put(x, y, LEVEL_CORRIDOR, TILE_BANK(LEVEL_CORRIDOR));
+    if (level_terrain[y][x] == TERRAIN_ROCK) {
+        set_terrain(x, y, TERRAIN_CORRIDOR);
     }
 }
 
@@ -70,7 +67,7 @@ static void clear(void)
 
     for (y = 0; y < LEVEL_HEIGHT; y++) {
         for (x = 0; x < LEVEL_WIDTH; x++) {
-            put(x, y, LEVEL_ROCK, TILE_BANK(LEVEL_ROCK));
+            set_terrain(x, y, TERRAIN_ROCK);
         }
     }
     level_doorway_count = 0;
@@ -78,7 +75,7 @@ static void clear(void)
 
 /* ---- Rooms and junctions ---- */
 
-/* Draw a room: walls on the edges, floor inside */
+/* A room: walls on the edges, floor inside */
 static void draw_room(const level_room_t *r)
 {
     uint8_t x;
@@ -86,19 +83,10 @@ static void draw_room(const level_room_t *r)
 
     for (y = r->y1; y <= r->y2; y++) {
         for (x = r->x1; x <= r->x2; x++) {
-            if ((y == r->y1 || y == r->y2) && (x == r->x1 || x == r->x2)) {
-                put(x, y, LEVEL_CORNER, TILE_BANK(LEVEL_CORNER));
-            } else if (y == r->y1 || y == r->y2) {
-                put(x, y, LEVEL_WALL_H, TILE_BANK(LEVEL_WALL_H));
-            } else if (x == r->x1 || x == r->x2) {
-                put(x, y, LEVEL_WALL_V, TILE_BANK(LEVEL_WALL_V));
+            if (y == r->y1 || y == r->y2 || x == r->x1 || x == r->x2) {
+                set_terrain(x, y, TERRAIN_WALL);   /* which wall piece is the decorator's */
             } else {
-                /* Floor, with a variant pattern here and there: each in its own bank */
-                if ((rand() & 7) == 0) {
-                    put(x, y, LEVEL_FLOOR2, TILE_BANK(LEVEL_FLOOR2));
-                } else {
-                    put(x, y, LEVEL_FLOOR, TILE_BANK(LEVEL_FLOOR));
-                }
+                set_terrain(x, y, TERRAIN_FLOOR);
             }
         }
     }
@@ -246,12 +234,12 @@ static void make_loops(void)
 
 /* ---- Corridors ---- */
 
-/* A doorway: floor for now (so no corridor covers it), remembered for place_doors() */
+/* A doorway: its own terrain (so no corridor covers it), remembered for place_doors() */
 static void door(uint8_t x, uint8_t y)
 {
     nge_util_assert(level_doorway_count < LEVEL_DOORWAYS_MAX);
 
-    put(x, y, LEVEL_FLOOR, TILE_BANK(LEVEL_FLOOR));
+    set_terrain(x, y, TERRAIN_DOORWAY);
     level_doorway_x[level_doorway_count] = x;
     level_doorway_y[level_doorway_count] = y;
     level_doorway_count++;
@@ -540,6 +528,8 @@ void level_generate(uint8_t depth, nge_entity_id_t player, uint8_t arrival) NGE_
 #if GAME_DEV_KIT
     srand(level_dev_seed + depth);   /* for development: each depth's level is always the same */
 #endif
+    /* First, so the generator's numbers after it don't depend on the decoration */
+    level_deco_seed = (uint8_t)rand();
 
     /* What depends only on the depth first... */
     clear();
@@ -547,6 +537,7 @@ void level_generate(uint8_t depth, nge_entity_id_t player, uint8_t arrival) NGE_
     make_tree();
     make_loops();
     make_corridors();
+    level_decorate_all();   /* the terrain is complete: draw it, before features draw over it */
     place_stairs(depth);
     place_doors();
     place_random(roll_between(LEVEL_ITEMS_MIN, LEVEL_ITEMS_MAX), depth, 0);

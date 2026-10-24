@@ -4,7 +4,8 @@ Imports the map's metatiles from an Aseprite tileset (docs/tileset_import.md).
 
 From the repository root:
 
-    python3 -I scripts/ase2tiles.py assets/Tilesheet.aseprite <out dir> [--layer NAME]
+    python3 -I scripts/ase2tiles.py assets/Tilesheet.aseprite <out dir> \
+        [--names assets/tile_names.txt] [--layer NAME]
 
 Reads the tileset of the file's tilemap layer (the only one, or the one
 named): tile n is metatile n, 16 x 16 pixels, tile 0 fully transparent
@@ -14,10 +15,16 @@ bank (next_colour.fit_banks()), and writes into the out dir:
 - tile_defs_data.asm: the tile definitions at $4A00, metatile m as hardware
   tiles 4m to 4m+3, padded to 64 metatiles with transparent ones;
 - tile_palette_data.asm: the banks, 16 entries each, in page 133;
-- tile_data.h: the palette's page and size, the number of metatiles, and
-  each metatile's bank (TILE_BANK(m)).
+- tile_data.h: the palette's page and size, the number of metatiles,
+  each metatile's bank (TILE_BANK(m)), and the looks named by the
+  tileset's slices (LOOK_<NAME>, LOOK_<NAME>_BANK; tile_names.py);
+- tile_rules_data.c: the decorator's tables, made from the names
+  (docs/dungeon_decoration.md).
 
-On an error it writes nothing, prints the error and exits with status 1.
+The names file lists the names the game uses: with it, names are checked
+against it (unknown ones are warnings, ignored; missing required ones are
+errors). On an error it writes nothing, prints every problem found, errors
+first, and exits with status 1; warnings are printed and the import goes on.
 """
 import argparse
 import os
@@ -28,6 +35,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import aseprite      # noqa: E402
 import asm_out       # noqa: E402
 import next_colour   # noqa: E402
+import tile_names    # noqa: E402
 
 METATILE_PIXELS = 16
 HW_TILE_PIXELS = 8
@@ -37,6 +45,8 @@ PALETTE_PAGE = 133
 DEFS_FILE = 'tile_defs_data.asm'
 PALETTE_FILE = 'tile_palette_data.asm'
 HEADER_FILE = 'tile_data.h'
+RULES_FILE = 'tile_rules_data.c'
+RULES_PAGE = 103                 # with the level's data, which the decorator's page maps in
 
 
 class TileError(Exception):
@@ -158,7 +168,97 @@ def palette_asm(source, banks, assigned):
     return '\n'.join(lines) + '\n'
 
 
-def header(source, banks, assigned):
+def _define(name, value, doc=None):
+    line = f'#define {name:<32} {value}'
+    return f'{line:<42} /**< {doc} */' if doc else line
+
+
+def looks_lines(looks, bases, rules, entries, banks_of):
+    """The header's names: every look, every base, the tables' sizes and types."""
+    lines = [
+        '',
+        '/*',
+        " * Looks, by the names of the tileset's slices (docs/dungeon_decoration.md",
+        ' * 5.2): LOOK_<NAME> is its first variant, LOOK_<NAME>_BANK its bank.',
+        ' */',
+    ]
+    for key in sorted(looks, key=lambda k: looks[k].name):
+        look = looks[key]
+        tile = look.ordered()[0][0]
+        name = 'LOOK_' + look.name.upper()
+        lines.append(_define(name, tile))
+        lines.append(_define(name + '_BANK', banks_of[tile]))
+    lines += ['', "/* The decorator's tables (tile_rules_data.c): bases by LOOK_BASE_* */"]
+    lines += [_define('LOOK_BASE_' + base.upper(), n) for n, (base, *_rest) in enumerate(bases)]
+    lines += [
+        _define('TILE_BASES', len(bases)),
+        _define('TILE_RULES', len(rules)),
+        _define('TILE_LOOKS', len(entries)),
+        '',
+        '/** A look a rule or fallback can choose: a variant, with its chances. */',
+        'typedef struct tile_look {',
+        '    uint8_t tile_id;',
+        '    uint8_t attr;      /**< Its bank, attribute bits 7-4. */',
+        '    uint8_t weight;    /**< Chances among its name\'s variants, 1-255. */',
+        '} tile_look_t;',
+        '',
+        "/** A rule: a look with a code, on the 8 neighbours' signature (N bit 0, NE, E... NW bit 7). */",
+        'typedef struct tile_rule {',
+        '    uint8_t care;      /**< Signature bits it looks at. */',
+        '    uint8_t want;      /**< Their values: 1, the neighbour joins. */',
+        '    uint8_t first;     /**< Its variants: tile_looks[first] on. */',
+        '    uint8_t count;',
+        '} tile_rule_t;',
+        '',
+        '/** A base: its rules in order (diagonals first), and its fallback (count 0: none). */',
+        'typedef struct tile_base {',
+        '    uint8_t first;           /**< tile_rules[first] on. */',
+        '    uint8_t count;',
+        '    uint8_t fallback;        /**< tile_looks[fallback] on. */',
+        '    uint8_t fallback_count;',
+        '} tile_base_t;',
+        '',
+        'extern const tile_look_t tile_looks[];',
+        'extern const tile_rule_t tile_rules[];',
+        'extern const tile_base_t tile_bases[];',
+    ]
+    return lines
+
+
+def rules_c(source, bases, rules, entries):
+    """tile_rules_data.c: the tables, constants in the level's data page."""
+    def body(items):
+        return items if items else ['    { 0 },   /* none: C has no empty arrays */']
+
+    lines = [
+        '/*',
+        " * The decorator's tables, made from the tileset's look names",
+        ' * (docs/dungeon_decoration.md 5.4): constants in page 103, with the',
+        " * level's data, mapped in slot 7 while the level's code in page 102 runs.",
+        ' *',
+        f' * Generated by scripts/ase2tiles.py from {source}: do not edit.',
+        ' */',
+        '#ifdef __SDCC',
+        f'#pragma constseg PAGE_{RULES_PAGE}',
+        '#endif',
+        '',
+        '#include "data/tile_data.h"',
+        '',
+        f'const tile_look_t tile_looks[{max(1, len(entries))}] = {{',
+    ]
+    lines += body([f'    {{ {tile}, 0x{bank << 4:02X}, {weight} }},   /* {name} */'
+                   for tile, bank, weight, name in entries])
+    lines += ['};', '', f'const tile_rule_t tile_rules[{max(1, len(rules))}] = {{']
+    lines += body([f'    {{ 0x{care:02X}, 0x{want:02X}, {first}, {count} }},   /* {name} */'
+                   for care, want, first, count, name in rules])
+    lines += ['};', '', f'const tile_base_t tile_bases[{max(1, len(bases))}] = {{']
+    lines += body([f'    {{ {first}, {count}, {fb}, {fb_count} }},   /* {base} */'
+                   for base, first, count, fb, fb_count in bases])
+    lines.append('};')
+    return '\n'.join(lines) + '\n'
+
+
+def header(source, banks, assigned, names_lines=()):
     lines = [
         '#ifndef TILE_DATA_H',
         '#define TILE_DATA_H',
@@ -175,6 +275,8 @@ def header(source, banks, assigned):
         ' * constant (a literal, or a macro naming one).',
         ' */',
         '',
+        '#include <stdint.h>',
+        '',
         '#include "hw/nge_palette.h"',
         '',
         f'#define TILE_PALETTE_PAGE   {PALETTE_PAGE:<4} /**< SECTION PAGE_{PALETTE_PAGE} in tile_palette_data.asm. */',
@@ -189,6 +291,9 @@ def header(source, banks, assigned):
         "/** A metatile's bank, from a metatile number that is a constant. */",
         '#define TILE_BANK(m)    TILE_BANK_X(m)',
         '#define TILE_BANK_X(m)  TILE_BANK_##m',
+    ]
+    lines += list(names_lines)
+    lines += [
         '',
         'extern const nge_palette_entry_9_t tile_palette[];',
         '',
@@ -197,20 +302,41 @@ def header(source, banks, assigned):
     return '\n'.join(lines) + '\n'
 
 
-def run(source, out_dir, layer=None):
-    """Import source into out_dir; returns the summary lines. Raises on an error, writing nothing."""
-    tileset = aseprite.read(source).tilemap_tileset(layer)
+def run(source, out_dir, layer=None, names=None):
+    """
+    Import source into out_dir. names: the names file's {name: required}, or
+    None (every base accepted, none required). Returns (summary lines,
+    warnings). Raises TileError with every problem on an error, writing
+    nothing.
+    """
+    sprite = aseprite.read(source)
+    tileset = sprite.tilemap_tileset(layer)
     banks, assigned, pixels = convert(tileset)
+    looks, problems = tile_names.collect(sprite, names, layer)
+    errors = [p for p in problems if p.error]
+    warnings = [p for p in problems if not p.error]
+    if errors:
+        raise TileError('\n'.join(str(p) for p in errors + warnings))
+    try:
+        bases, rules, entries = tile_names.tables(looks, names, assigned)
+    except ValueError as e:
+        raise TileError(str(e)) from e
     asm_out.write_all(out_dir, {
         DEFS_FILE: defs_asm(source, assigned, pixels),
         PALETTE_FILE: palette_asm(source, banks, assigned),
-        HEADER_FILE: header(source, banks, assigned),
+        HEADER_FILE: header(source, banks, assigned, looks_lines(looks, bases, rules, entries, assigned)),
+        RULES_FILE: rules_c(source, bases, rules, entries),
     })
-    summary = [f'{source}: {len(assigned)} metatiles, {len(banks)} of {next_colour.BANKS_MAX} banks']
+    summary = [f'{source}: {len(assigned)} metatiles, {len(banks)} of {next_colour.BANKS_MAX} banks, '
+               f'{len(looks)} names, {len(rules)} rules']
     for b, bank in enumerate(banks):
         users = ', '.join(str(m) for m, a in enumerate(assigned) if a == b)
         summary.append(f'  bank {b}: {len(bank)} colours, metatiles {users}')
-    return summary
+    named = {tile for look in looks.values() for tile, _, _ in look.ordered()}
+    unnamed = [str(m) for m in range(1, len(assigned)) if m not in named]
+    if looks and unnamed:
+        summary.append(f'  tiles with no name: {", ".join(unnamed)}')
+    return summary, warnings
 
 
 def main(argv=None):
@@ -218,12 +344,21 @@ def main(argv=None):
     parser.add_argument('source', help='the .aseprite file')
     parser.add_argument('out_dir', help='where to write the generated files')
     parser.add_argument('--layer', help='the tilemap layer, if the file has several')
+    parser.add_argument('--names', help="the game's names (assets/tile_names.txt)")
     args = parser.parse_args(argv)
     try:
-        summary = run(args.source, args.out_dir, args.layer)
-    except (OSError, aseprite.AsepriteError, next_colour.ColourError, TileError) as e:
+        names = tile_names.read_names(args.names) if args.names else None
+        summary, warnings = run(args.source, args.out_dir, args.layer, names)
+    except TileError as e:
+        for line in str(e).splitlines():
+            print(f'ase2tiles: {line if line.startswith(("error:", "warning:")) else "error: " + line}',
+                  file=sys.stderr)
+        return 1
+    except (OSError, aseprite.AsepriteError, next_colour.ColourError, tile_names.NamesFileError) as e:
         print(f'ase2tiles: error: {e}', file=sys.stderr)
         return 1
+    for warning in warnings:
+        print(f'ase2tiles: {warning}', file=sys.stderr)
     print('\n'.join(summary))
     return 0
 

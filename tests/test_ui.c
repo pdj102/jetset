@@ -13,6 +13,8 @@
 #include "layer2/nge_layer2.h"
 #include "map/nge_map.h"
 
+#include "data/tile_data.h"
+
 #include "game/components/attrs.h"
 #include "game/components/health.h"
 #include "game/components/feature.h"
@@ -161,8 +163,8 @@ int main(void)
     nge_map_init(LEVEL_WIDTH, LEVEL_HEIGHT, &screen_map_view);    /* floor everywhere */
     nge_map_clear_blocks(NGE_BLOCK_SOLID);
     nge_map_set_block('.', NGE_BLOCK_NONE);
-    nge_map_set_block(LEVEL_TILE_DOOR_SHUT, NGE_BLOCK_NONE);
-    nge_map_set_block(LEVEL_TILE_DOOR_OPEN, NGE_BLOCK_NONE);
+    nge_map_set_block(LOOK_DOOR_SHUT, NGE_BLOCK_NONE);
+    nge_map_set_block(LOOK_DOOR_OPEN, NGE_BLOCK_NONE);
     for (y = 0; y < LEVEL_HEIGHT; y++) {
         for (x = 0; x < LEVEL_WIDTH; x++) {
             NGE_MAP_TILE(x, y).tile_id = '.';

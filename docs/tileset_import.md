@@ -125,6 +125,9 @@ are generated, so tilemaps (Aseprite's tilemap cels) are not imported.
   the batch CLI): an extra manual step, and a second file that can be out
   of date.
 - **D3 Banks are constants, and metatile names stay in the game.**
+  *Replaced by docs/dungeon_decoration.md D10:* the tiles are named with
+  slices in Aseprite, and the importer writes `LOOK_<NAME>` and
+  `LOOK_<NAME>_BANK`; no tile numbers are kept in the game.
   Aseprite 1.3 has no clear way in its UI to give a tile a name or user
   data, so the metatiles' names stay where they are (`LEVEL_*` in
   `level_internal.h`, `level.h`), by number. `tile_data.h` defines
@@ -374,14 +377,17 @@ CSpect and hardware checks (step 2):
 
 1. Draw in `assets/Tilesheet.aseprite`, on the tilemap layer "Tilemap 1",
    in Next colours (the 512-colour palette), at most 15 colours a tile.
-2. A new metatile: add it at the end of the tileset, so no other tile's
-   number moves, and name its number in `game/level/level_internal.h`
-   (terrain) or `level.h` (features' looks).
-3. Reordering or removing tiles changes the numbers after them: change
-   the names with them.
-4. `make`. The script prints the metatiles and the banks they use, or an
-   error naming the tile and pixel (a colour that isn't a Next colour, too
-   many colours, more than 64 tiles).
-5. Commit the `.aseprite` file and the three generated files in
+2. A new metatile: place it on the canvas and name it with a slice
+   (docs/dungeon_decoration.md 5.2 and 5.8): the name says what it is and
+   where it goes (`wall_xxox`, `floor_3`), and the decorator uses it. Tiles
+   may be added, removed or reordered: the names follow the tiles.
+3. A name the game uses for something new (a new base, or a feature's
+   look) is a line in `assets/tile_names.txt` and its use in the code.
+4. `make`. The script prints the metatiles, their banks and the names, or
+   every problem it found, errors first: a colour that isn't a Next
+   colour, too many colours, more than 64 tiles; a slice the wrong size or
+   in the wrong place, a malformed name, a required name missing. Warnings
+   (a name the game doesn't use, a repeated slice) don't stop it.
+5. Commit the `.aseprite` file and the four generated files in
    `src/data/` together.
 

@@ -37,8 +37,9 @@
 //   100-223 game
 //             100-101  free (game assets)
 //             102-131  game code pairs (15), from 102 up:
-//                        102/103  level: setting up the map and generating levels /
-//                                 the room list
+//                        102/103  level: setting up the map, generating levels and
+//                                 decorating them / the room list, the terrain and
+//                                 the decorator's tables
 //                        104/105  title: the title state / (unused)
 //                        106/107  gen creature: creature generator / base creatures
 //                        108/109  gen item: item generator / base items

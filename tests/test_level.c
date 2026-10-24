@@ -1,7 +1,9 @@
 /*
  * game/level: the level generator (level_gen.c), for many depths and
  * seeds, and going from level to level (level_travel.c): what is kept,
- * parked and released, arrivals, requests, entities sent away.
+ * parked and released, arrivals, requests, entities sent away. The layout
+ * is checked in terrain, whatever the art; the map's looks and blocking
+ * against it (the decorator, level_deco.c, has its own test: test_deco).
  */
 #include "test.h"
 
@@ -18,6 +20,8 @@
 #include "map/nge_map.h"
 
 #include "event/nge_event.h"
+
+#include "data/tile_data.h"
 
 #include "game/components/attrs.h"
 #include "game/components/feature.h"
@@ -38,20 +42,33 @@ const nge_rect_t screen_map_view = { .x1 = 0, .x2 = 27, .y1 = 0, .y2 = 25 };
 
 static nge_entity_id_t player;
 
+/* The look drawn at (x, y) */
 static uint8_t tile(uint8_t x, uint8_t y)
 {
     return NGE_MAP_TILE(x, y).tile_id;
 }
 
-static int is_floor(uint8_t x, uint8_t y)
+static uint8_t terrain(uint8_t x, uint8_t y)
 {
-    return tile(x, y) == LEVEL_FLOOR || tile(x, y) == LEVEL_FLOOR2;
+    return level_terrain[y][x];
 }
 
-/* A doorway in a wall: plain floor, or a door's tile */
-static int is_doorway(uint8_t x, uint8_t y)
+/* A room's floor: where entities are placed */
+static int is_floor(uint8_t x, uint8_t y)
 {
-    return tile(x, y) == LEVEL_FLOOR || tile(x, y) == LEVEL_TILE_DOOR_SHUT || tile(x, y) == LEVEL_TILE_DOOR_OPEN;
+    return terrain(x, y) == TERRAIN_FLOOR;
+}
+
+/* What each terrain blocks (docs/dungeon_decoration.md R4): the map's block table must agree */
+static nge_block_t terrain_block(uint8_t t)
+{
+    static const nge_block_t blocks[TERRAIN_COUNT] = {
+        [TERRAIN_ROCK] = NGE_BLOCK_SOLID, [TERRAIN_WALL] = NGE_BLOCK_SOLID,
+        [TERRAIN_FLOOR] = NGE_BLOCK_NONE, [TERRAIN_CORRIDOR] = NGE_BLOCK_NONE,
+        [TERRAIN_DOORWAY] = NGE_BLOCK_NONE, [TERRAIN_HOLE] = NGE_BLOCK_NO_FLOOR,
+    };
+
+    return blocks[t];
 }
 
 /* Totals over every depth checked */
@@ -129,8 +146,7 @@ static nge_entity_id_t placed_creature(uint8_t kind)
 
     for (y = 1; y < LEVEL_HEIGHT; y++) {
         for (x = 1; x < LEVEL_WIDTH; x++) {
-            if ((NGE_MAP_TILE(x, y).tile_id == LEVEL_FLOOR || NGE_MAP_TILE(x, y).tile_id == LEVEL_FLOOR2) &&
-                nge_location_find(LEVEL_AREA, x, y, 0, 0) == NGE_ENTITY_INVALID) {
+            if (is_floor(x, y) && nge_location_find(LEVEL_AREA, x, y, 0, 0) == NGE_ENTITY_INVALID) {
                 nge_location_set(id, x, y);
                 return id;
             }
@@ -217,7 +233,7 @@ static int check_level(int depth)
     uint8_t i;
     nge_entity_id_t id;
 
-    /* Rooms: 5-10, each in its cell with a tile to spare, walls and floor drawn */
+    /* Rooms: 5-10, each in its cell with a tile to spare, walled, with floor inside */
     for (cell = 0; cell < LEVEL_CELLS; cell++) {
         const level_room_t *r = &level_rooms[cell];
         int cx = (cell % LEVEL_GRID_W) * LEVEL_CELL_W;
@@ -236,7 +252,7 @@ static int check_level(int depth)
             return fail(depth, "a link off the bottom of the grid");
         }
         if (r->junction) {
-            if (r->x1 != r->x2 || r->y1 != r->y2 || tile(r->x1, r->y1) != LEVEL_CORRIDOR) {
+            if (r->x1 != r->x2 || r->y1 != r->y2 || terrain(r->x1, r->y1) != TERRAIN_CORRIDOR) {
                 return fail(depth, "a junction isn't a corridor tile");
             }
             continue;
@@ -249,23 +265,18 @@ static int check_level(int depth)
             for (x = r->x1; x <= r->x2; x++) {
                 int edge_x = x == r->x1 || x == r->x2;
                 int edge_y = y == r->y1 || y == r->y2;
-                uint8_t t = tile((uint8_t)x, (uint8_t)y);
+                uint8_t t = terrain((uint8_t)x, (uint8_t)y);
 
                 if (edge_x && edge_y) {
-                    if (t != LEVEL_CORNER) {
-                        return fail(depth, "a corner isn't a corner");
+                    if (t != TERRAIN_WALL) {
+                        return fail(depth, "a corner isn't wall");
                     }
-                } else if (edge_y) {
-                    if (t != LEVEL_WALL_H && !is_doorway((uint8_t)x, (uint8_t)y)) {
-                        return fail(depth, "a top or bottom wall broken");
+                } else if (edge_x || edge_y) {
+                    if (t != TERRAIN_WALL && t != TERRAIN_DOORWAY) {
+                        return fail(depth, "a wall broken by something not a doorway");
                     }
-                } else if (edge_x) {
-                    if (t != LEVEL_WALL_V && !is_doorway((uint8_t)x, (uint8_t)y)) {
-                        return fail(depth, "a side wall broken");
-                    }
-                } else if (!is_floor((uint8_t)x, (uint8_t)y) && tile((uint8_t)x, (uint8_t)y) != LEVEL_TILE_STAIRS_UP &&
-                           tile((uint8_t)x, (uint8_t)y) != LEVEL_TILE_STAIRS_DOWN) {
-                    return fail(depth, "a room's floor overwritten");
+                } else if (t != TERRAIN_FLOOR) {
+                    return fail(depth, "a room's floor isn't floor");
                 }
             }
         }
@@ -285,13 +296,35 @@ static int check_level(int depth)
 
     /* The map's edges are rock */
     for (x = 0; x < LEVEL_WIDTH; x++) {
-        if (tile((uint8_t)x, 0) != LEVEL_ROCK || tile((uint8_t)x, LEVEL_HEIGHT - 1) != LEVEL_ROCK) {
+        if (terrain((uint8_t)x, 0) != TERRAIN_ROCK || terrain((uint8_t)x, LEVEL_HEIGHT - 1) != TERRAIN_ROCK) {
             return fail(depth, "the top or bottom edge isn't rock");
         }
     }
     for (y = 0; y < LEVEL_HEIGHT; y++) {
-        if (tile(0, (uint8_t)y) != LEVEL_ROCK || tile(LEVEL_WIDTH - 1, (uint8_t)y) != LEVEL_ROCK) {
+        if (terrain(0, (uint8_t)y) != TERRAIN_ROCK || terrain(LEVEL_WIDTH - 1, (uint8_t)y) != TERRAIN_ROCK) {
             return fail(depth, "the left or right edge isn't rock");
+        }
+    }
+
+    /*
+     * The map against the terrain: every cell blocks what its terrain blocks
+     * (a feature's look blocks nothing, and stands on open terrain), and
+     * every cell without a feature is decorated: drawing it again gives the
+     * same look
+     */
+    for (y = 0; y < LEVEL_HEIGHT; y++) {
+        for (x = 0; x < LEVEL_WIDTH; x++) {
+            nge_tile_t before = NGE_MAP_TILE(x, y);
+
+            if (nge_map_block((uint8_t)x, (uint8_t)y) != terrain_block(terrain((uint8_t)x, (uint8_t)y))) {
+                return fail(depth, "a cell's look doesn't block what its terrain blocks");
+            }
+            if (nge_location_find(LEVEL_AREA, (uint8_t)x, (uint8_t)y, COMPONENT_FEATURE, 0) == NGE_ENTITY_INVALID) {
+                level_decorate((uint8_t)x, (uint8_t)y);
+                if (memcmp(&before, &NGE_MAP_TILE(x, y), sizeof(before)) != 0) {
+                    return fail(depth, "a cell isn't drawn as the decorator draws it");
+                }
+            }
         }
     }
 
@@ -306,7 +339,7 @@ static int check_level(int depth)
     x = NGE_LOCATION_X(player);
     y = NGE_LOCATION_Y(player);
     if (!(is_floor((uint8_t)x, (uint8_t)y) && entities_at((uint8_t)x, (uint8_t)y) == 1) &&
-        !((tile((uint8_t)x, (uint8_t)y) == LEVEL_TILE_STAIRS_UP || tile((uint8_t)x, (uint8_t)y) == LEVEL_TILE_STAIRS_DOWN) &&
+        !((tile((uint8_t)x, (uint8_t)y) == LOOK_STAIRS_UP || tile((uint8_t)x, (uint8_t)y) == LOOK_STAIRS_DOWN) &&
           entities_at((uint8_t)x, (uint8_t)y) == 2)) {
         return fail(depth, "the player isn't alone on floor or on stairs");
     }
@@ -336,7 +369,7 @@ static int check_level(int depth)
             int up = kind_index[id] == FT_STAIRS_UP;
 
             if (!NGE_ENTITY_HAS_COMPONENTS(id, NGE_COMPONENT_LOCATION) ||
-                tile(sx, sy) != (up ? LEVEL_TILE_STAIRS_UP : LEVEL_TILE_STAIRS_DOWN) ||
+                tile(sx, sy) != (up ? LOOK_STAIRS_UP : LOOK_STAIRS_DOWN) ||
                 NGE_BLOCK_OF(id) != NGE_BLOCK_NONE || nge_map_block(sx, sy) != NGE_BLOCK_NONE ||
                 room_of(sx, sy) < 0) {
                 return fail(depth, "stairs aren't drawn on a room's floor, open");
@@ -380,8 +413,8 @@ static int check_level(int depth)
             if (d == level_doorway_count || entities_at(fx, fy) != 1) {
                 return fail(depth, "a door isn't alone in a doorway");
             }
-            if (FEATURE_IS_OPEN(id) ? (tile(fx, fy) != LEVEL_TILE_DOOR_OPEN || NGE_BLOCK_OF(id) != NGE_BLOCK_NONE)
-                                    : (tile(fx, fy) != LEVEL_TILE_DOOR_SHUT || NGE_BLOCK_OF(id) != NGE_BLOCK_SOLID)) {
+            if (FEATURE_IS_OPEN(id) ? (tile(fx, fy) != LOOK_DOOR_OPEN || NGE_BLOCK_OF(id) != NGE_BLOCK_NONE)
+                                    : (tile(fx, fy) != LOOK_DOOR_SHUT || NGE_BLOCK_OF(id) != NGE_BLOCK_SOLID)) {
                 return fail(depth, "a door's tile or blocking doesn't match its state");
             }
             if (nge_map_block(fx, fy) != NGE_BLOCK_NONE) {
@@ -428,7 +461,7 @@ static int check_level(int depth)
     if (monsters < LEVEL_MONSTERS_MIN || monsters > LEVEL_MONSTERS_MAX) {
         return fail(depth, "monster count");
     }
-    /* Doors: at most the maximum; every doorway without one is floor, two per link to a room */
+    /* Doors: at most the maximum; every doorway is doorway terrain, drawn as one if it has no door; two per link */
     if (doors > LEVEL_DOORS_MAX) {
         return fail(depth, "door count");
     }
@@ -436,9 +469,12 @@ static int check_level(int depth)
         uint8_t dx = level_doorway_x[i];
         uint8_t dy = level_doorway_y[i];
 
+        if (terrain(dx, dy) != TERRAIN_DOORWAY) {
+            return fail(depth, "a doorway isn't doorway terrain");
+        }
         if (nge_location_find(LEVEL_AREA, dx, dy, COMPONENT_FEATURE, 0) == NGE_ENTITY_INVALID &&
-            tile(dx, dy) != LEVEL_FLOOR) {
-            return fail(depth, "a doorway without a door isn't floor");
+            tile(dx, dy) != LOOK_DOORWAY) {
+            return fail(depth, "a doorway without a door isn't drawn as a doorway");
         }
     }
     if (level_doorway_count > links * 2) {

@@ -28,9 +28,9 @@ static int door_is(nge_entity_id_t id, uint8_t x, uint8_t y, int open)
     uint8_t enter = nge_block_can_enter(AREA, x, y, NGE_BLOCK_NONE, NGE_ENTITY_INVALID, &blocker);
 
     return NGE_LOCATION_X(id) == x && NGE_LOCATION_Y(id) == y && FEATURE_IS_OPEN(id) == open &&
-           NGE_MAP_TILE(x, y).tile_id == (open ? LEVEL_TILE_DOOR_OPEN : LEVEL_TILE_DOOR_SHUT) &&
+           NGE_MAP_TILE(x, y).tile_id == (open ? LOOK_DOOR_OPEN : LOOK_DOOR_SHUT) &&
            NGE_MAP_TILE(x, y).tile_attr ==
-               (uint8_t)((open ? TILE_BANK(LEVEL_TILE_DOOR_OPEN) : TILE_BANK(LEVEL_TILE_DOOR_SHUT)) << 4) &&
+               (uint8_t)((open ? LOOK_DOOR_OPEN_BANK : LOOK_DOOR_SHUT_BANK) << 4) &&
            NGE_BLOCK_OF(id) == (open ? NGE_BLOCK_NONE : NGE_BLOCK_SOLID) &&
            (open ? enter == 1 : (enter == 0 && blocker == id));
 }
@@ -49,8 +49,8 @@ int main(void)
     nge_map_init(10, 10, &window);
     nge_map_clear_blocks(NGE_BLOCK_SOLID);
     nge_map_set_block(FLOOR, NGE_BLOCK_NONE);
-    nge_map_set_block(LEVEL_TILE_DOOR_SHUT, NGE_BLOCK_NONE);   /* as the level sets them */
-    nge_map_set_block(LEVEL_TILE_DOOR_OPEN, NGE_BLOCK_NONE);
+    nge_map_set_block(LOOK_DOOR_SHUT, NGE_BLOCK_NONE);   /* as the level sets them */
+    nge_map_set_block(LOOK_DOOR_OPEN, NGE_BLOCK_NONE);
     for (y = 0; y < 10; y++) {
         for (x = 0; x < 10; x++) {
             NGE_MAP_TILE(x, y).tile_id = FLOOR;
@@ -62,7 +62,7 @@ int main(void)
     gen_feature_info(FT_DOOR, &info);
     CHECK(memcmp(&info, &gen_features[FT_DOOR].info, sizeof(info)) == 0);
     CHECK(info.can == FCAN_OPEN && info.block_shut == NGE_BLOCK_SOLID &&
-          info.look[0].tile_id == LEVEL_TILE_DOOR_SHUT && info.look[1].tile_id == LEVEL_TILE_DOOR_OPEN);
+          info.look[0].tile_id == LOOK_DOOR_SHUT && info.look[1].tile_id == LOOK_DOOR_OPEN);
 
     /* ---- generated: a feature of its kind, closed, owned, not placed or drawn ---- */
     door = gen_feature(FT_DOOR, AREA);

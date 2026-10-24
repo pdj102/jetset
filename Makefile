@@ -11,14 +11,15 @@ BINDIR := bin
 #   src/nge/*/        the nge game engine library (see src/nge/README.md),
 #                     and one level of subfolders (ecs/components, ecs/systems)
 #   src/game/         game code, and one level of subfolders (banked game modules)
-#   src/data/         graphics and other data (.asm)
+#   src/data/         graphics and other data (.asm, and generated .c tables)
 NGE_SRCS := \
 	$(sort $(wildcard src/nge/*/*.c src/nge/*/*/*.c)) \
 	$(sort $(wildcard src/nge/*/*.asm src/nge/*/*/*.asm))
 GAME_SRCS := \
 	src/main.c \
 	$(sort $(wildcard src/game/*.c src/game/*/*.c)) \
-	$(sort $(wildcard src/data/*.asm))
+	$(sort $(wildcard src/data/*.asm)) \
+	$(sort $(wildcard src/data/*.c) src/data/tile_rules_data.c)
 SRCS := $(NGE_SRCS) $(GAME_SRCS)
 
 NGE_OBJS := $(patsubst src/%,$(OBJDIR)/%.o,$(basename $(NGE_SRCS)))
@@ -60,17 +61,22 @@ all: build
 build: $(BIN_TARGET).nex
 
 # The map's metatiles and their palette, generated from the Aseprite tileset
-# (docs/tileset_import.md) whenever it or the scripts change. The output is
-# committed, so it is a source like any other: src/data/*.asm are found by
-# the wildcard above, and tile_data.h is included from src/. C files are
+# (docs/tileset_import.md) whenever it, the game's look names or the scripts
+# change; with the looks' names and the decorator's rules, from the
+# tileset's slices (docs/dungeon_decoration.md). The output is committed, so
+# it is a source like any other: src/data/*.asm and *.c are found by the
+# wildcards above, and tile_data.h is included from src/. C files are
 # compiled after it is up to date (order-only: their .d files rebuild those
 # that include it)
 TILESET := assets/Tilesheet.aseprite
-TILE_SCRIPTS := scripts/ase2tiles.py scripts/aseprite.py scripts/next_colour.py scripts/asm_out.py
-TILE_DATA := src/data/tile_defs_data.asm src/data/tile_palette_data.asm src/data/tile_data.h
+TILE_NAMES := assets/tile_names.txt
+TILE_SCRIPTS := scripts/ase2tiles.py scripts/aseprite.py scripts/next_colour.py scripts/asm_out.py \
+                scripts/tile_names.py
+TILE_DATA := src/data/tile_defs_data.asm src/data/tile_palette_data.asm src/data/tile_data.h \
+             src/data/tile_rules_data.c
 
-$(TILE_DATA) &: $(TILESET) $(TILE_SCRIPTS)
-	python3 -I scripts/ase2tiles.py $(TILESET) src/data
+$(TILE_DATA) &: $(TILESET) $(TILE_NAMES) $(TILE_SCRIPTS)
+	python3 -I scripts/ase2tiles.py $(TILESET) src/data --names $(TILE_NAMES)
 
 tiles: $(TILE_DATA)
 

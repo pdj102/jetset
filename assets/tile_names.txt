@@ -1,0 +1,18 @@
+# The names the game uses for the tileset's looks (docs/dungeon_decoration.md
+# R20): read by scripts/ase2tiles.py, which checks the tileset's slices
+# against them. "required": a slice with exactly this name must exist.
+#
+# Bases the game decorates with (game/level/level_deco.c): a base's looks
+# are its name alone (the fallback) and its name with codes (wall_xxox)
+base rock       required
+base wall       required
+base floor      required
+base corridor   required
+base doorway    required
+base hole       required
+
+# Other looks the game names: the features' (game/gen/gen_feature_pdata.c)
+look door_shut    required
+look door_open    required
+look stairs_up    required
+look stairs_down  required

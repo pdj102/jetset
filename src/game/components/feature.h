@@ -17,7 +17,7 @@
  * sprites; the map's own tiles under a feature block nothing, and the
  * feature blocks through the block component (a closed door blocks
  * walking, so a move into it finds the door as the blocker). When a placed
- * feature is destroyed, the game puts back floor (level_put_floor()).
+ * feature is destroyed, the game draws its cell's look again (level_redraw()).
  * Features never move or change owner (they aren't items).
  *
  * feature_open() and feature_close() change the state without checking

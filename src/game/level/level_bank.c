@@ -15,28 +15,23 @@
 
 /*
  * What each tile ID blocks. Everything is solid unless set otherwise, so a
- * tile that isn't listed (rock, a new wall pattern) can't be walked on.
+ * tile that isn't a look of any terrain can't be walked on. The terrains'
+ * looks take their terrain's block value (level_deco.c).
  */
 static void set_up_blocks(void)
 {
     nge_map_clear_blocks(NGE_BLOCK_SOLID);
-    nge_map_set_block(LEVEL_FLOOR, NGE_BLOCK_NONE);
-    nge_map_set_block(LEVEL_FLOOR2, NGE_BLOCK_NONE);
-    nge_map_set_block(LEVEL_CORRIDOR, NGE_BLOCK_NONE);
-    /* Features' tiles: the feature blocks (a closed door), not its tile */
-    nge_map_set_block(LEVEL_TILE_DOOR_SHUT, NGE_BLOCK_NONE);
-    nge_map_set_block(LEVEL_TILE_DOOR_OPEN, NGE_BLOCK_NONE);
-    nge_map_set_block(LEVEL_TILE_STAIRS_UP, NGE_BLOCK_NONE);
-    nge_map_set_block(LEVEL_TILE_STAIRS_DOWN, NGE_BLOCK_NONE);
+    level_deco_blocks();
+    /* Features' looks: the feature blocks (a closed door), not its tile */
+    nge_map_set_block(LOOK_DOOR_SHUT, NGE_BLOCK_NONE);
+    nge_map_set_block(LOOK_DOOR_OPEN, NGE_BLOCK_NONE);
+    nge_map_set_block(LOOK_STAIRS_UP, NGE_BLOCK_NONE);
+    nge_map_set_block(LOOK_STAIRS_DOWN, NGE_BLOCK_NONE);
 }
 
-void level_put_floor(uint8_t x, uint8_t y) NGE_BANKED
+void level_redraw(uint8_t x, uint8_t y) NGE_BANKED
 {
-    nge_tile_t tile;
-
-    tile.tile_id = LEVEL_FLOOR;
-    tile.tile_attr = (uint8_t)(TILE_BANK(LEVEL_FLOOR) << 4);
-    nge_map_set(x, y, &tile);
+    level_decorate_around(x, y);
 }
 
 void level_init(void) NGE_BANKED

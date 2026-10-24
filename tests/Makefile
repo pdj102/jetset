@@ -51,9 +51,12 @@ GEN_GAME_SRCS := $(addprefix $(GAMEDIR)/,gen/gen.c gen/gen_shared_bank.c \
                  gen/gen_feature_bank.c gen/gen_feature_pdata.c \
                  effects/effects_core.c effects/effects_game.c effects/effects_pdata.c)
 GEN_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(GEN_GAME_SRCS))
-LEVEL_GAME_SRCS := $(addprefix $(GAMEDIR)/,level/level.c level/level_bank.c level/level_gen.c \
+LEVEL_GAME_SRCS := $(addprefix $(GAMEDIR)/,level/level.c level/level_bank.c level/level_gen.c level/level_deco.c \
                    level/level_travel.c level/level_pdata.c)
-LEVEL_ONLY_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(LEVEL_GAME_SRCS))
+# The decorator's tables, generated into src/data (docs/dungeon_decoration.md)
+DATADIR := ../src/data
+LEVEL_ONLY_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(LEVEL_GAME_SRCS)) \
+                   $(BUILD)/data/tile_rules_data.o
 LEVEL_GAME_OBJS := $(LEVEL_ONLY_OBJS) $(GEN_GAME_OBJS)
 # The stairs actions send entities between levels: the actions need the level module
 ACT_GAME_SRCS := $(wildcard $(GAMEDIR)/actions/*.c)
@@ -107,6 +110,9 @@ $(BUILD)/test_%: $(BUILD)/test_%.o $(LIB_OBJS) $(SUPPORT_OBJS)
 $(BUILD)/test_level: $(BUILD)/test_level.o $(LIB_OBJS) $(SUPPORT_OBJS) $(LEVEL_GAME_OBJS)
 	$(HOSTCC) $(CFLAGS) $^ -o $@
 
+$(BUILD)/test_deco: $(BUILD)/test_deco.o $(LIB_OBJS) $(SUPPORT_OBJS) $(LEVEL_GAME_OBJS)
+	$(HOSTCC) $(CFLAGS) $^ -o $@
+
 $(BUILD)/test_gen: $(BUILD)/test_gen.o $(LIB_OBJS) $(SUPPORT_OBJS) $(GEN_GAME_OBJS)
 	$(HOSTCC) $(CFLAGS) $^ -o $@
 
@@ -139,6 +145,10 @@ $(BUILD)/test_feature: $(BUILD)/test_feature.o $(LIB_OBJS) $(SUPPORT_OBJS) $(GEN
 
 $(BUILD)/test_effects: $(BUILD)/test_effects.o $(LIB_OBJS) $(SUPPORT_OBJS) $(GEN_GAME_OBJS)
 	$(HOSTCC) $(CFLAGS) $^ -o $@
+
+$(BUILD)/data/%.o: $(DATADIR)/%.c $(GEN)/zxn_names.h $(GEN)/zxn_io.h
+	@mkdir -p $(dir $@)
+	$(HOSTCC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 $(BUILD)/game/%.o: $(GAMEDIR)/%.c $(GEN)/zxn_names.h $(GEN)/zxn_io.h
 	@mkdir -p $(dir $@)
@@ -184,4 +194,4 @@ clean:
 	rm -rf $(BUILD)
 
 -include $(wildcard $(BUILD)/*.d $(BUILD)/lib/*/*.d $(BUILD)/lib/*/*/*.d $(BUILD)/support/*.d \
-                    $(BUILD)/game/*/*.d)
+                    $(BUILD)/game/*/*.d $(BUILD)/data/*.d)

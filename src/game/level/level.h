@@ -15,8 +15,10 @@
  * Its map is the map (map/nge_map.h: nge_map, nge_map_tiles), in slot 1, so
  * collision checks and drawing read it directly. Each map tile is a
  * 16 x 16 metatile, drawn in Aseprite (assets/Tilesheet.aseprite,
- * imported into src/data/tile_defs_data.asm; docs/tileset_import.md). What
- * each tile ID blocks is in the map's block table.
+ * imported into src/data/tile_defs_data.asm; docs/tileset_import.md),
+ * chosen for its cell by the level's decorator from the cell's terrain and
+ * its neighbours' (docs/dungeon_decoration.md). What each tile ID blocks is
+ * in the map's block table, from its terrain.
  *
  * Kept entities: persistent ones (NGE_ENTITY_PERSISTENT: the player, a
  * quest object, a boss), and what persistent ones own, directly or through
@@ -32,7 +34,7 @@
  * with level_generate(): never inside the action, timer or event handler
  * that asks for it.
  *
- * Banking: level_init(), level_generate(), level_put_floor(),
+ * Banking: level_init(), level_generate(), level_redraw(),
  * level_send() and level_park() are banked (NGE_BANKED, page 102, with
  * their data in page 103): don't call them while game code has its own
  * page mapped in slot 6 or 7. level_can_enter(), level_holds(), the
@@ -68,16 +70,6 @@ extern uint8_t level_depth;
  * keeps it): change it to see other dungeons, each the same every run.
  */
 extern uint16_t level_dev_seed;
-
-/*
- * Map tiles features are drawn with (game/components/feature.h): they block
- * nothing, the feature does. Metatile numbers in the tileset, as the
- * terrain's (game/level/level_internal.h)
- */
-#define LEVEL_TILE_DOOR_SHUT   13    /**< A closed door. */
-#define LEVEL_TILE_DOOR_OPEN   12   /**< An open door. */
-#define LEVEL_TILE_STAIRS_UP   8   /**< Stairs up. */
-#define LEVEL_TILE_STAIRS_DOWN 9   /**< Stairs down. */
 
 /**
  * @brief Set up the map in the map view (nge_map_init(), which maps its
@@ -119,10 +111,11 @@ void level_init(void) NGE_BANKED;
 void level_generate(uint8_t depth, nge_entity_id_t player, uint8_t arrival) NGE_BANKED;
 
 /**
- * @brief Put the level's plain floor at (x, y): where a destroyed feature
- *        was (game.c's clean-up).
+ * @brief Draw (x, y) by its terrain again, and its neighbours: where a
+ *        destroyed feature was (game.c's clean-up), its look under the
+ *        feature comes back.
  */
-void level_put_floor(uint8_t x, uint8_t y) NGE_BANKED;
+void level_redraw(uint8_t x, uint8_t y) NGE_BANKED;
 
 /**
  * @brief Can entity id enter tile (x, y) of the level: neither the map nor
@@ -187,7 +180,7 @@ void level_park(nge_entity_id_t id, nge_owner_t area) NGE_BANKED;
  * @brief Release every dying entity (the game's clean-up, at the end of
  *        each frame, after its events are handled).
  *
- * A placed feature leaves floor (level_put_floor()). What a dying entity
+ * A placed feature leaves its cell's look (level_redraw()). What a dying entity
  * owns: items drop on the floor where it was (if it was on the map), other
  * entities (effects) are destroyed, and the rest (items it held off the
  * map, dying entities) pass to its owner. A persistent entity owned by

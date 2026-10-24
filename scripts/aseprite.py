@@ -2,8 +2,8 @@
 Reads an Aseprite file (.aseprite, .ase): the parts an importer needs.
 
 The format is Aseprite's docs/ase-file-specs.md. Read are the header, the
-palette, the layers, the tilesets, the tags, and every frame's duration and
-cels; every other chunk (user data, slices) is skipped by its size.
+palette, the layers, the tilesets, the tags, the slices, and every frame's
+duration and cels; every other chunk (user data) is skipped by its size.
 
 Tiles are given as rows of (r, g, b, a) pixels, whatever the sprite's colour
 mode, with alpha 0 (a transparent pixel, given as (0, 0, 0, 0)) or 255, so
@@ -21,6 +21,12 @@ rows of palette indices, None where transparent:
     sprite.frames[n].duration          -> ms
     sprite.frame_indices(n)[y][x]      -> palette index, or None
     sprite.tags                        -> Tag(name, first, last, direction)
+
+Slices name rectangles of the canvas; with a tilemap layer, the tile under
+a point of the canvas:
+
+    sprite.slices                      -> Slice(name, x, y, width, height)
+    sprite.tile_at(px, py)             -> tile number on the tilemap layer, 0 if none
 """
 import struct
 import zlib
@@ -40,6 +46,7 @@ CHUNK_LAYER = 0x2004
 CHUNK_CEL = 0x2005
 CHUNK_TAGS = 0x2018
 CHUNK_PALETTE = 0x2019
+CHUNK_SLICE = 0x2022
 CHUNK_TILESET = 0x2023
 
 LAYER_IMAGE = 0
@@ -53,6 +60,9 @@ CEL_RAW = 0
 CEL_LINKED = 1
 CEL_COMPRESSED = 2
 CEL_TILEMAP = 3
+
+SLICE_NINE_PATCH = 1     # slice flags: what each key has after its rectangle
+SLICE_PIVOT = 2
 
 TAG_FORWARD = 0          # tag directions
 TAG_DIRECTIONS = ('forward', 'reverse', 'ping-pong', 'ping-pong reverse')
@@ -79,7 +89,7 @@ class Layer:
 
 
 class Cel:
-    def __init__(self, layer, x, y, opacity, kind, width=0, height=0, pixels=b'', link=None):
+    def __init__(self, layer, x, y, opacity, kind, width=0, height=0, pixels=b'', link=None, tiles=None):
         self.layer = layer                  # index into Sprite.layers
         self.x = x
         self.y = y
@@ -89,6 +99,16 @@ class Cel:
         self.height = height
         self.pixels = pixels                # uncompressed, a byte or 4 a pixel
         self.link = link                    # a linked cel's frame
+        self.tiles = tiles                  # a tilemap cel's tile numbers, width x height of them
+
+
+class Slice:
+    def __init__(self, name, x, y, width, height):
+        self.name = name
+        self.x = x                          # its first key's rectangle, in canvas pixels
+        self.y = y
+        self.width = width
+        self.height = height
 
 
 class Frame:
@@ -125,9 +145,14 @@ class Sprite:
         self.tilesets = {}                           # by tileset index
         self.frames = []
         self.tags = []
+        self.slices = []
 
     def tilemap_tileset(self, layer_name=None):
         """The tileset of the tilemap layer named, or of the only tilemap layer."""
+        return self.tilesets[self.layers[self.tilemap_layer(layer_name)].tileset_index]
+
+    def tilemap_layer(self, layer_name=None):
+        """The index of the tilemap layer named, or of the only tilemap layer, with its tileset."""
         tilemaps = [layer for layer in self.layers if layer.kind == LAYER_TILEMAP]
         if layer_name is not None:
             tilemaps = [layer for layer in tilemaps if layer.name == layer_name]
@@ -141,7 +166,23 @@ class Sprite:
         index = tilemaps[0].tileset_index
         if index not in self.tilesets:
             raise AsepriteError(f'layer "{tilemaps[0].name}": tileset {index} not found')
-        return self.tilesets[index]
+        return self.layers.index(tilemaps[0])
+
+    def tile_at(self, px, py, layer_name=None):
+        """
+        The tile number at canvas pixel (px, py) on the tilemap layer's cel in
+        the first frame: 0 (the empty tile) where the cel has none.
+        """
+        layer = self.tilemap_layer(layer_name)
+        tileset = self.tilesets[self.layers[layer].tileset_index]
+        cel = self.cel(0, layer) if self.frames else None
+        if cel is None or cel.tiles is None:
+            return 0
+        col = (px - cel.x) // tileset.width
+        row = (py - cel.y) // tileset.height
+        if px < cel.x or py < cel.y or col >= cel.width or row >= cel.height:
+            return 0
+        return cel.tiles[row * cel.width + col]
 
     def cel(self, frame, layer):
         """The cel of layer in frame, a linked cel followed to its frame's; None if there is none."""
@@ -256,6 +297,8 @@ def _parse(data):
                 frame.cels[cel.layer] = cel
             elif kind == CHUNK_TAGS:
                 sprite.tags = _tags(body)
+            elif kind == CHUNK_SLICE:
+                sprite.slices.append(_slice(body))
             at += size
         pos = frame_end
 
@@ -296,6 +339,15 @@ def _cel(r, step, frame):
         raise AsepriteError(f'frame {frame}, layer {layer}: a cel with a z-index is not supported')
     if kind == CEL_LINKED:
         return Cel(layer, x, y, opacity, kind, link=r.one('H'))
+    if kind == CEL_TILEMAP:
+        width, height, bits, id_mask, _x_flip, _y_flip, _d_flip, _ = r.take('HHHIIII10s')
+        if bits != 32:
+            raise AsepriteError(f'frame {frame}, layer {layer}: tilemap of {bits}-bit tiles, only 32 is supported')
+        raw = zlib.decompress(r.data[r.pos:])
+        if len(raw) < width * height * 4:
+            raise AsepriteError(f'frame {frame}, layer {layer}: tilemap too short')
+        tiles = [v & id_mask for v in struct.unpack_from(f'<{width * height}I', raw)]
+        return Cel(layer, x, y, opacity, kind, width, height, tiles=tiles)
     if kind in (CEL_RAW, CEL_COMPRESSED):
         width, height = r.take('HH')
         pixels = r.data[r.pos:]
@@ -307,6 +359,23 @@ def _cel(r, step, frame):
             pixels = pixels[:width * height * step]
         return Cel(layer, x, y, opacity, kind, width, height, pixels)
     return Cel(layer, x, y, opacity, kind)
+
+
+def _slice(r):
+    count, flags, _ = r.take('III')
+    name = r.string()
+    first = None
+    for _ in range(count):
+        frame, x, y, width, height = r.take('IiiII')
+        if flags & SLICE_NINE_PATCH:
+            r.take('iiII')
+        if flags & SLICE_PIVOT:
+            r.take('ii')
+        if first is None or frame == 0:
+            first = Slice(name, x, y, width, height)
+    if first is None:
+        raise AsepriteError(f'slice "{name}" has no keys')
+    return first
 
 
 def _tags(r):

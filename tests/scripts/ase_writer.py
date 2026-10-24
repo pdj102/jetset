@@ -96,6 +96,28 @@ def tags_chunk(tags):
     return _chunk(0x2018, body)
 
 
+def tilemap_cel_chunk(layer, rows, x=0, y=0, flips=0):
+    """A tilemap cel (0x2005, kind 3): rows of tile numbers, 32 bits each; flips sets the high bits."""
+    body = struct.pack('<HhhBHh5s', layer, x, y, 255, 3, 0, b'')
+    body += struct.pack('<HHHIIII10s', len(rows[0]), len(rows), 32, 0x1FFFFFFF, 0x80000000, 0x40000000,
+                        0x20000000, b'')
+    tiles = b''.join(struct.pack('<I', t | flips) for row in rows for t in row)
+    return _chunk(0x2005, body + zlib.compress(tiles))
+
+
+def slice_chunk(name, x, y, width=16, height=16, keys=None, flags=0):
+    """A slice (0x2022): one key on frame 0 with the rectangle, or keys as (frame, x, y, w, h)."""
+    keys = keys or [(0, x, y, width, height)]
+    body = struct.pack('<III', len(keys), flags, 0) + _string(name)
+    for key in keys:
+        body += struct.pack('<IiiII', *key)
+        if flags & 1:
+            body += struct.pack('<iiII', 0, 0, 1, 1)
+        if flags & 2:
+            body += struct.pack('<ii', 0, 0)
+    return _chunk(0x2022, body)
+
+
 def other_chunk(kind=0x2020, size=10):
     """A chunk the readers don't use (user data by default), to be skipped."""
     return _chunk(kind, bytes(size))
@@ -129,6 +151,25 @@ def tileset_file(tiles, depth=RGBA, palette=None, transparent_index=0, extra=())
     chunks += list(extra)
     chunks.append(tileset_chunk(tiles, depth))
     return aseprite_file(chunks, depth, transparent_index)
+
+
+def named_tileset_file(tiles, canvas, slices, width=None, height=None, cel_at=(0, 0)):
+    """
+    A tileset file with its tiles placed on the canvas (canvas: rows of tile
+    numbers, the tilemap layer's cel at cel_at) and slices naming them:
+    (name, column, row) for a tile-sized slice on a cell, or (name, x, y, w, h).
+    """
+    width = width or 16 * len(canvas[0])
+    height = height or 16 * len(canvas)
+    chunks = [layer_chunk('Tilemap 1', kind=2), tileset_chunk(tiles, RGBA),
+              tilemap_cel_chunk(0, canvas, *cel_at)]
+    for s in slices:
+        if len(s) == 3:
+            name, col, row = s
+            chunks.append(slice_chunk(name, 16 * col, 16 * row))
+        else:
+            chunks.append(slice_chunk(*s))
+    return aseprite_file(chunks, RGBA, 0, width, height)
 
 
 def sprite_file(frames, tags, palette=None, durations=None, layers=None, width=16, height=16):

@@ -7,39 +7,35 @@
  * - level_bank.c (page 102): setting up the map;
  * - level_gen.c (page 102): generating a level;
  * - level_travel.c (page 102): leaving a level, parking and sending entities;
- * - level_pdata.c (page 103): the room list and the generator's work data,
- *   mapped into slot 7 while the page 102 code runs.
+ * - level_deco.c (page 102): drawing the terrain with the tileset's looks;
+ * - level_pdata.c (page 103): the room list, the terrain and the generator's
+ *   work data, mapped into slot 7 while the page 102 code runs (as are the
+ *   decorator's tables, data/tile_rules_data.c).
  */
 
 #include "game/level/level.h"
 #include "data/tile_data.h"
 
 /*
- * Map tiles: a metatile number, its place in the Aseprite tileset
- * (assets/Tilesheet.aseprite, imported into src/data/tile_defs_data.asm),
- * and its colour, the metatile's palette bank in attribute bits 7-4
- * (TILE_BANK(), src/data/tile_data.h). Reordering the tileset changes the
- * numbers: change them here and in level.h with it. Several kinds of
- * terrain can share a graphic, and several graphics a kind of terrain:
- * what each blocks is set by tile ID in the map's block table
- * (level_bank.c). The features' tiles are in level.h.
+ * Terrain: what a cell is, for the game's rules (docs/dungeon_decoration.md).
+ * The generator builds the level in terrain only (level_terrain); the
+ * decorator (level_deco.c) then draws each cell with a look chosen by its
+ * terrain and its neighbours' (data/tile_data.h, made from the tileset's
+ * look names), and gives each look its terrain's block value.
  */
-#define LEVEL_ROCK      0      /* transparent; solid */
-#define LEVEL_FLOOR     5      /* floors: open */
-#define LEVEL_FLOOR2    6
-#define LEVEL_CORRIDOR  5      /* open */
-#define LEVEL_WALL_H    3      /* walls: solid */
-#define LEVEL_WALL_V    3
-#define LEVEL_CORNER    LEVEL_WALL_H   /* a room's corners: as its top and bottom walls */
+#define TERRAIN_ROCK      0
+#define TERRAIN_WALL      1
+#define TERRAIN_FLOOR     2   /* a room's floor */
+#define TERRAIN_CORRIDOR  3
+#define TERRAIN_DOORWAY   4   /* where a corridor meets a room: a door may stand on it */
+#define TERRAIN_HOLE      5   /* no floor: a pit, a chasm (none placed yet) */
+#define TERRAIN_COUNT     6
 
-/* Every metatile the level names is in the tileset: one past it would draw as nothing */
-typedef char level_tile_check[(LEVEL_ROCK < TILE_METATILES && LEVEL_FLOOR < TILE_METATILES &&
-                               LEVEL_FLOOR2 < TILE_METATILES && LEVEL_CORRIDOR < TILE_METATILES &&
-                               LEVEL_WALL_H < TILE_METATILES && LEVEL_WALL_V < TILE_METATILES &&
-                               LEVEL_TILE_DOOR_SHUT < TILE_METATILES &&
-                               LEVEL_TILE_DOOR_OPEN < TILE_METATILES &&
-                               LEVEL_TILE_STAIRS_UP < TILE_METATILES &&
-                               LEVEL_TILE_STAIRS_DOWN < TILE_METATILES) ? 1 : -1];
+/* A set of terrains, a bit each: up to 16 */
+typedef uint16_t terrain_set_t;
+#define TERRAIN_BIT(t)    ((terrain_set_t)(1u << (t)))
+
+typedef char level_terrain_check[(TERRAIN_COUNT <= 16) ? 1 : -1];
 
 /*
  * The generator's grid: the map is split into LEVEL_GRID_W x LEVEL_GRID_H
@@ -95,6 +91,26 @@ extern uint8_t level_doorway_count;
 
 /* The stairs, by LEVEL_ARRIVE_UP_STAIRS / _DOWN_STAIRS - 1: NGE_ENTITY_INVALID if none (page 103) */
 extern nge_entity_id_t level_stairs[2];
+
+/* Each cell's terrain (TERRAIN_*), kept for as long as the level lasts (page 103) */
+extern uint8_t level_terrain[LEVEL_HEIGHT][LEVEL_WIDTH];
+
+/* The decoration's seed: drawn first by level_generate(), so the generator's numbers don't depend on it */
+extern uint8_t level_deco_seed;
+
+/* ---- The decorator (level_deco.c, page 102) ---- */
+
+/* Draw cell (x, y) with the look its terrain and its neighbours' choose */
+void level_decorate(uint8_t x, uint8_t y);
+
+/* Draw every cell: once the terrain is complete, before features are placed */
+void level_decorate_all(void);
+
+/* A cell's terrain or feature changed: draw it and its 8 neighbours again */
+void level_decorate_around(uint8_t x, uint8_t y);
+
+/* Each look of each terrain into the map's block table, with its terrain's block value */
+void level_deco_blocks(void);
 
 /* Leave the current level: the player taken out of its area, its unkept entities released, the rest parked */
 void level_leave(nge_entity_id_t player) NGE_BANKED;

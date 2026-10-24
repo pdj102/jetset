@@ -83,7 +83,7 @@ void level_release_dying(void)
 
     while ((id = nge_entity_next_dying()) != NGE_ENTITY_INVALID) {
         if (FEATURE_IS(id) && NGE_ENTITY_HAS_COMPONENTS(id, NGE_COMPONENT_LOCATION)) {
-            level_put_floor(NGE_LOCATION_X(id), NGE_LOCATION_Y(id));   /* a feature gone: floor */
+            level_redraw(NGE_LOCATION_X(id), NGE_LOCATION_Y(id));   /* a feature gone: its cell's look */
         }
         inv_drop_all(id);
         NGE_OWNER_FOR_EACH_OWNED(i, owned, id) {

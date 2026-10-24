@@ -249,8 +249,10 @@ class TestOutput(TempDir, unittest.TestCase):
     def test_files_written(self):
         source = self.write(ase_writer.tileset_file([tile(), tile(RED)]))
         out = os.path.join(self.path, 'out')
-        summary = ase2tiles.run(source, out)
-        self.assertEqual(sorted(os.listdir(out)), ['tile_data.h', 'tile_defs_data.asm', 'tile_palette_data.asm'])
+        summary, warnings = ase2tiles.run(source, out)
+        self.assertEqual(sorted(os.listdir(out)), ['tile_data.h', 'tile_defs_data.asm', 'tile_palette_data.asm',
+                                                   'tile_rules_data.c'])
+        self.assertEqual(warnings, [])
         self.assertIn('2 metatiles, 1 of 16 banks', summary[0])
 
     def test_nothing_written_on_an_error(self):

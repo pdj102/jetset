@@ -13,12 +13,14 @@
  * constant (a literal, or a macro naming one).
  */
 
+#include <stdint.h>
+
 #include "hw/nge_palette.h"
 
 #define TILE_PALETTE_PAGE   133  /**< SECTION PAGE_133 in tile_palette_data.asm. */
 #define TILE_PALETTE_BANKS  1    /**< Banks in tile_palette, 16 entries each. */
 #define TILE_PALETTE_ENTRIES 16  /**< Entries in tile_palette: load them from index 0. */
-#define TILE_METATILES      14   /**< Metatiles in the tileset, tile 0 included. */
+#define TILE_METATILES      24   /**< Metatiles in the tileset, tile 0 included. */
 
 #define TILE_BANK_0  0
 #define TILE_BANK_1  0
@@ -34,10 +36,117 @@
 #define TILE_BANK_11  0
 #define TILE_BANK_12  0
 #define TILE_BANK_13  0
+#define TILE_BANK_14  0
+#define TILE_BANK_15  0
+#define TILE_BANK_16  0
+#define TILE_BANK_17  0
+#define TILE_BANK_18  0
+#define TILE_BANK_19  0
+#define TILE_BANK_20  0
+#define TILE_BANK_21  0
+#define TILE_BANK_22  0
+#define TILE_BANK_23  0
 
 /** A metatile's bank, from a metatile number that is a constant. */
 #define TILE_BANK(m)    TILE_BANK_X(m)
 #define TILE_BANK_X(m)  TILE_BANK_##m
+
+/*
+ * Looks, by the names of the tileset's slices (docs/dungeon_decoration.md
+ * 5.2): LOOK_<NAME> is its first variant, LOOK_<NAME>_BANK its bank.
+ */
+#define LOOK_CORRIDOR                    8
+#define LOOK_CORRIDOR_BANK               0
+#define LOOK_DOOR_OPEN                   22
+#define LOOK_DOOR_OPEN_BANK              0
+#define LOOK_DOOR_SHUT                   21
+#define LOOK_DOOR_SHUT_BANK              0
+#define LOOK_DOORWAY                     23
+#define LOOK_DOORWAY_BANK                0
+#define LOOK_FLOOR                       8
+#define LOOK_FLOOR_BANK                  0
+#define LOOK_HOLE                        1
+#define LOOK_HOLE_BANK                   0
+#define LOOK_ROCK                        0
+#define LOOK_ROCK_BANK                   0
+#define LOOK_STAIRS_DOWN                 3
+#define LOOK_STAIRS_DOWN_BANK            0
+#define LOOK_STAIRS_UP                   2
+#define LOOK_STAIRS_UP_BANK              0
+#define LOOK_WALL                        5
+#define LOOK_WALL_BANK                   0
+#define LOOK_WALL_OOOO                   19
+#define LOOK_WALL_OOOO_BANK              0
+#define LOOK_WALL_OOXX                   16
+#define LOOK_WALL_OOXX_BANK              0
+#define LOOK_WALL_OXOX                   5
+#define LOOK_WALL_OXOX_BANK              0
+#define LOOK_WALL_OXXO                   16
+#define LOOK_WALL_OXXO_BANK              0
+#define LOOK_WALL_OXXX                   23
+#define LOOK_WALL_OXXX_BANK              0
+#define LOOK_WALL_XOOX                   5
+#define LOOK_WALL_XOOX_BANK              0
+#define LOOK_WALL_XOXO                   17
+#define LOOK_WALL_XOXO_BANK              0
+#define LOOK_WALL_XOXX                   14
+#define LOOK_WALL_XOXX_BANK              0
+#define LOOK_WALL_XXOO                   5
+#define LOOK_WALL_XXOO_BANK              0
+#define LOOK_WALL_XXOX                   5
+#define LOOK_WALL_XXOX_BANK              0
+#define LOOK_WALL_XXXO                   15
+#define LOOK_WALL_XXXO_BANK              0
+#define LOOK_WALL_XXXX_NE                9
+#define LOOK_WALL_XXXX_NE_BANK           0
+#define LOOK_WALL_XXXX_NW                10
+#define LOOK_WALL_XXXX_NW_BANK           0
+#define LOOK_WALL_XXXX_SE                4
+#define LOOK_WALL_XXXX_SE_BANK           0
+#define LOOK_WALL_XXXX_SW                7
+#define LOOK_WALL_XXXX_SW_BANK           0
+
+/* The decorator's tables (tile_rules_data.c): bases by LOOK_BASE_* */
+#define LOOK_BASE_ROCK                   0
+#define LOOK_BASE_WALL                   1
+#define LOOK_BASE_FLOOR                  2
+#define LOOK_BASE_CORRIDOR               3
+#define LOOK_BASE_DOORWAY                4
+#define LOOK_BASE_HOLE                   5
+#define LOOK_BASE_DOOR_SHUT              6
+#define LOOK_BASE_DOOR_OPEN              7
+#define LOOK_BASE_STAIRS_UP              8
+#define LOOK_BASE_STAIRS_DOWN            9
+#define TILE_BASES                       10
+#define TILE_RULES                       15
+#define TILE_LOOKS                       27
+
+/** A look a rule or fallback can choose: a variant, with its chances. */
+typedef struct tile_look {
+    uint8_t tile_id;
+    uint8_t attr;      /**< Its bank, attribute bits 7-4. */
+    uint8_t weight;    /**< Chances among its name's variants, 1-255. */
+} tile_look_t;
+
+/** A rule: a look with a code, on the 8 neighbours' signature (N bit 0, NE, E... NW bit 7). */
+typedef struct tile_rule {
+    uint8_t care;      /**< Signature bits it looks at. */
+    uint8_t want;      /**< Their values: 1, the neighbour joins. */
+    uint8_t first;     /**< Its variants: tile_looks[first] on. */
+    uint8_t count;
+} tile_rule_t;
+
+/** A base: its rules in order (diagonals first), and its fallback (count 0: none). */
+typedef struct tile_base {
+    uint8_t first;           /**< tile_rules[first] on. */
+    uint8_t count;
+    uint8_t fallback;        /**< tile_looks[fallback] on. */
+    uint8_t fallback_count;
+} tile_base_t;
+
+extern const tile_look_t tile_looks[];
+extern const tile_rule_t tile_rules[];
+extern const tile_base_t tile_bases[];
 
 extern const nge_palette_entry_9_t tile_palette[];
 
