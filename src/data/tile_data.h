@@ -20,7 +20,7 @@
 #define TILE_PALETTE_PAGE   133  /**< SECTION PAGE_133 in tile_palette_data.asm. */
 #define TILE_PALETTE_BANKS  1    /**< Banks in tile_palette, 16 entries each. */
 #define TILE_PALETTE_ENTRIES 16  /**< Entries in tile_palette: load them from index 0. */
-#define TILE_METATILES      24   /**< Metatiles in the tileset, tile 0 included. */
+#define TILE_METATILES      25   /**< Metatiles in the tileset, tile 0 included. */
 
 #define TILE_BANK_0  0
 #define TILE_BANK_1  0
@@ -46,6 +46,7 @@
 #define TILE_BANK_21  0
 #define TILE_BANK_22  0
 #define TILE_BANK_23  0
+#define TILE_BANK_24  0
 
 /** A metatile's bank, from a metatile number that is a constant. */
 #define TILE_BANK(m)    TILE_BANK_X(m)
@@ -53,7 +54,7 @@
 
 /*
  * Looks, by the names of the tileset's slices (docs/dungeon_decoration.md
- * 5.2): LOOK_<NAME> is its first variant, LOOK_<NAME>_BANK its bank.
+ * 5.2): LOOK_<NAME> is its variant 1, LOOK_<NAME>_BANK its bank.
  */
 #define LOOK_CORRIDOR                    8
 #define LOOK_CORRIDOR_BANK               0
@@ -73,75 +74,87 @@
 #define LOOK_STAIRS_DOWN_BANK            0
 #define LOOK_STAIRS_UP                   2
 #define LOOK_STAIRS_UP_BANK              0
-#define LOOK_WALL                        5
+#define LOOK_WALL                        24
 #define LOOK_WALL_BANK                   0
-#define LOOK_WALL_OOOO                   19
-#define LOOK_WALL_OOOO_BANK              0
-#define LOOK_WALL_OOXX                   16
-#define LOOK_WALL_OOXX_BANK              0
-#define LOOK_WALL_OXOX                   5
-#define LOOK_WALL_OXOX_BANK              0
-#define LOOK_WALL_OXXO                   16
-#define LOOK_WALL_OXXO_BANK              0
-#define LOOK_WALL_OXXX                   23
-#define LOOK_WALL_OXXX_BANK              0
-#define LOOK_WALL_XOOX                   5
-#define LOOK_WALL_XOOX_BANK              0
-#define LOOK_WALL_XOXO                   17
-#define LOOK_WALL_XOXO_BANK              0
-#define LOOK_WALL_XOXX                   14
-#define LOOK_WALL_XOXX_BANK              0
-#define LOOK_WALL_XXOO                   5
-#define LOOK_WALL_XXOO_BANK              0
-#define LOOK_WALL_XXOX                   5
-#define LOOK_WALL_XXOX_BANK              0
-#define LOOK_WALL_XXXO                   15
-#define LOOK_WALL_XXXO_BANK              0
-#define LOOK_WALL_XXXX_NE                9
-#define LOOK_WALL_XXXX_NE_BANK           0
-#define LOOK_WALL_XXXX_NW                10
-#define LOOK_WALL_XXXX_NW_BANK           0
-#define LOOK_WALL_XXXX_SE                4
-#define LOOK_WALL_XXXX_SE_BANK           0
-#define LOOK_WALL_XXXX_SW                7
-#define LOOK_WALL_XXXX_SW_BANK           0
+#define LOOK_WALL_DFWX                   14
+#define LOOK_WALL_DFWX_BANK              0
+#define LOOK_WALL_DXWF                   15
+#define LOOK_WALL_DXWF_BANK              0
+#define LOOK_WALL_FDXW                   16
+#define LOOK_WALL_FDXW_BANK              0
+#define LOOK_WALL_FFFF                   19
+#define LOOK_WALL_FFFF_BANK              0
+#define LOOK_WALL_FWFW                   5
+#define LOOK_WALL_FWFW_BANK              0
+#define LOOK_WALL_FWXD                   16
+#define LOOK_WALL_FWXD_BANK              0
+#define LOOK_WALL_FWXW                   16
+#define LOOK_WALL_FWXW_BANK              0
+#define LOOK_WALL_WFDX                   14
+#define LOOK_WALL_WFDX_BANK              0
+#define LOOK_WALL_WFWF                   17
+#define LOOK_WALL_WFWF_BANK              0
+#define LOOK_WALL_WFWX                   14
+#define LOOK_WALL_WFWX_BANK              0
+#define LOOK_WALL_WWWW                   11
+#define LOOK_WALL_WWWW_BANK              0
+#define LOOK_WALL_WWWX                   12
+#define LOOK_WALL_WWWX_BANK              0
+#define LOOK_WALL_WWXW                   18
+#define LOOK_WALL_WWXW_BANK              0
+#define LOOK_WALL_WWXX                   9
+#define LOOK_WALL_WWXX_BANK              0
+#define LOOK_WALL_WXDF                   15
+#define LOOK_WALL_WXDF_BANK              0
+#define LOOK_WALL_WXWF                   15
+#define LOOK_WALL_WXWF_BANK              0
+#define LOOK_WALL_WXWW                   13
+#define LOOK_WALL_WXWW_BANK              0
+#define LOOK_WALL_WXXW                   10
+#define LOOK_WALL_WXXW_BANK              0
+#define LOOK_WALL_XDFW                   5
+#define LOOK_WALL_XDFW_BANK              0
+#define LOOK_WALL_XWFD                   5
+#define LOOK_WALL_XWFD_BANK              0
+#define LOOK_WALL_XWFW                   5
+#define LOOK_WALL_XWFW_BANK              0
+#define LOOK_WALL_XWWW                   6
+#define LOOK_WALL_XWWW_BANK              0
+#define LOOK_WALL_XWWX                   4
+#define LOOK_WALL_XWWX_BANK              0
+#define LOOK_WALL_XXWW                   7
+#define LOOK_WALL_XXWW_BANK              0
 
-/* The decorator's tables (tile_rules_data.c): bases by LOOK_BASE_* */
-#define LOOK_BASE_ROCK                   0
-#define LOOK_BASE_WALL                   1
-#define LOOK_BASE_FLOOR                  2
-#define LOOK_BASE_CORRIDOR               3
-#define LOOK_BASE_DOORWAY                4
-#define LOOK_BASE_HOLE                   5
-#define LOOK_BASE_DOOR_SHUT              6
-#define LOOK_BASE_DOOR_OPEN              7
-#define LOOK_BASE_STAIRS_UP              8
-#define LOOK_BASE_STAIRS_DOWN            9
-#define TILE_BASES                       10
-#define TILE_RULES                       15
-#define TILE_LOOKS                       27
+/* The decorator's tables (tile_rules_data.c): a base a terrain, in TERRAIN_* order */
+#define TILE_TERRAIN_ROCK                0
+#define TILE_TERRAIN_WALL                1
+#define TILE_TERRAIN_FLOOR               2
+#define TILE_TERRAIN_CORRIDOR            3
+#define TILE_TERRAIN_DOORWAY             4
+#define TILE_TERRAIN_HOLE                5
+#define TILE_TERRAINS                    6
+#define TILE_RULES                       30
+#define TILE_LOOKS                       31
+#define TILE_ANY                         0xFF /**< A rule's neighbour of any terrain. */
 
-/** A look a rule or fallback can choose: a variant, with its chances. */
+/** A look a rule can choose: a variant, with its share of the picks. */
 typedef struct tile_look {
     uint8_t tile_id;
     uint8_t attr;      /**< Its bank, attribute bits 7-4. */
-    uint8_t weight;    /**< Chances among its name's variants, 1-255. */
+    uint8_t weight;    /**< Its share among its name's variants, 1-255. */
 } tile_look_t;
 
-/** A rule: a look with a code, on the 8 neighbours' signature (N bit 0, NE, E... NW bit 7). */
+/** A rule: a look with a code, on the 8 neighbours' terrains. */
 typedef struct tile_rule {
-    uint8_t care;      /**< Signature bits it looks at. */
-    uint8_t want;      /**< Their values: 1, the neighbour joins. */
+    uint8_t want[8];   /**< N, NE, E, SE, S, SW, W, NW: a terrain, or TILE_ANY. */
     uint8_t first;     /**< Its variants: tile_looks[first] on. */
     uint8_t count;
 } tile_rule_t;
 
-/** A base: its rules in order (diagonals first), and its fallback (count 0: none). */
+/** A terrain's base: its rules in the order tried, its default (all TILE_ANY) last. */
 typedef struct tile_base {
-    uint8_t first;           /**< tile_rules[first] on. */
+    uint8_t first;     /**< tile_rules[first] on. */
     uint8_t count;
-    uint8_t fallback;        /**< tile_looks[fallback] on. */
-    uint8_t fallback_count;
 } tile_base_t;
 
 extern const tile_look_t tile_looks[];

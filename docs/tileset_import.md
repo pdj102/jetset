@@ -379,15 +379,18 @@ CSpect and hardware checks (step 2):
    in Next colours (the 512-colour palette), at most 15 colours a tile.
 2. A new metatile: place it on the canvas and name it with a slice
    (docs/dungeon_decoration.md 5.2 and 5.8): the name says what it is and
-   where it goes (`wall_xxox`, `floor_3`), and the decorator uses it. Tiles
+   where it goes (`wall_xwfw`, `floor_3`), and the decorator uses it. Tiles
    may be added, removed or reordered: the names follow the tiles.
-3. A name the game uses for something new (a new base, or a feature's
-   look) is a line in `assets/tile_names.txt` and its use in the code.
+3. A name the game uses for something new (a new terrain, with its
+   letter, or a feature's look) is a line in `assets/tile_names.txt` and
+   its use in the code.
 4. `make`. The script prints the metatiles, their banks and the names, or
    every problem it found, errors first: a colour that isn't a Next
    colour, too many colours, more than 64 tiles; a slice the wrong size or
-   in the wrong place, a malformed name, a required name missing. Warnings
-   (a name the game doesn't use, a repeated slice) don't stop it.
+   in the wrong place, a malformed name, a name the game needs missing, a
+   name's weights adding up to more than 256. Warnings (a name the game
+   doesn't use, a repeated slice, two rules that match the same cells)
+   don't stop it.
 5. Commit the `.aseprite` file and the four generated files in
    `src/data/` together.
 

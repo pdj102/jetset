@@ -21,21 +21,16 @@
  * The generator builds the level in terrain only (level_terrain); the
  * decorator (level_deco.c) then draws each cell with a look chosen by its
  * terrain and its neighbours' (data/tile_data.h, made from the tileset's
- * look names), and gives each look its terrain's block value.
+ * look names), and gives each look its terrain's block value. In the order
+ * of assets/tile_names.txt, which gives each its letter in the looks' codes.
  */
-#define TERRAIN_ROCK      0
-#define TERRAIN_WALL      1
-#define TERRAIN_FLOOR     2   /* a room's floor */
-#define TERRAIN_CORRIDOR  3
-#define TERRAIN_DOORWAY   4   /* where a corridor meets a room: a door may stand on it */
-#define TERRAIN_HOLE      5   /* no floor: a pit, a chasm (none placed yet) */
+#define TERRAIN_ROCK      0   /* r */
+#define TERRAIN_WALL      1   /* w */
+#define TERRAIN_FLOOR     2   /* f: a room's floor */
+#define TERRAIN_CORRIDOR  3   /* c */
+#define TERRAIN_DOORWAY   4   /* d: where a corridor meets a room: a door may stand on it */
+#define TERRAIN_HOLE      5   /* h: no floor: a pit, a chasm (none placed yet) */
 #define TERRAIN_COUNT     6
-
-/* A set of terrains, a bit each: up to 16 */
-typedef uint16_t terrain_set_t;
-#define TERRAIN_BIT(t)    ((terrain_set_t)(1u << (t)))
-
-typedef char level_terrain_check[(TERRAIN_COUNT <= 16) ? 1 : -1];
 
 /*
  * The generator's grid: the map is split into LEVEL_GRID_W x LEVEL_GRID_H

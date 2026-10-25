@@ -4,12 +4,12 @@
  * the level's code; its rule tables (data/tile_rules_data.c, made from the
  * tileset's look names) are in page 103, mapped in slot 7 while it runs.
  *
- * A terrain tries its bases in order. A base's rules are its looks with a
- * code: a pattern on the 8 neighbours' signature, a bit set for each
- * neighbour that joins (by the base's join set). The first rule that
- * matches gives the look; if none in any base, the last base's fallback.
- * Then one of the look's variants, by weight, from a hash of the cell and
- * the level's decoration seed: the same every time the cell is drawn.
+ * A terrain has one base: its rules, most specific first, each a pattern on
+ * the 8 neighbours' terrains (a terrain, or any, for each). The first rule
+ * that matches gives the look; the last is the terrain's default, which
+ * matches any neighbours. Then one of the look's variants, by weight, from a
+ * hash of the cell and the level's decoration seed: the same every time the
+ * cell is drawn.
  */
 #ifdef __SDCC
 #pragma codeseg PAGE_102
@@ -20,38 +20,35 @@
 
 #include "core/nge_util.h"
 
-#define DECO_BASES_MAX  2   /* bases a terrain tries */
-
-typedef struct deco_base {
-    uint8_t       base;    /* LOOK_BASE_* */
-    terrain_set_t joins;   /* the neighbours that join, for its codes */
-} deco_base_t;
-
-typedef struct deco_terrain {
-    nge_block_t block;                  /* what its looks block */
-    uint8_t     count;                  /* bases, tried in order */
-    deco_base_t bases[DECO_BASES_MAX];  /* the last one has the fallback */
-} deco_terrain_t;
-
-/* For walls, the neighbours that are solid: a wall's code says where its open sides are */
-#define SOLID_TERRAIN  (TERRAIN_BIT(TERRAIN_WALL) | TERRAIN_BIT(TERRAIN_ROCK))
+#define DECO_AROUND  8   /* a cell's neighbours */
 
 /*
- * Each terrain's block value and bases. The game's half of the rules: the
- * tileset's names give the looks and their codes. A base named here must be
- * in assets/tile_names.txt, the last of each terrain "required".
+ * Each terrain's block value: what its looks block. The game's half of the
+ * rules: the tileset's names give the looks and their codes.
  */
-static const deco_terrain_t terrains[TERRAIN_COUNT] = {
-    [TERRAIN_ROCK]     = { NGE_BLOCK_SOLID, 1, { { LOOK_BASE_ROCK, 0 } } },
-    [TERRAIN_WALL]     = { NGE_BLOCK_SOLID, 1, { { LOOK_BASE_WALL, SOLID_TERRAIN } } },
-    [TERRAIN_FLOOR]    = { NGE_BLOCK_NONE, 1, { { LOOK_BASE_FLOOR, 0 } } },
-    [TERRAIN_CORRIDOR] = { NGE_BLOCK_NONE, 1, { { LOOK_BASE_CORRIDOR, 0 } } },
-    [TERRAIN_DOORWAY]  = { NGE_BLOCK_NONE, 1, { { LOOK_BASE_DOORWAY, 0 } } },
-    [TERRAIN_HOLE]     = { NGE_BLOCK_NO_FLOOR, 1, { { LOOK_BASE_HOLE, TERRAIN_BIT(TERRAIN_HOLE) } } },
+static const nge_block_t terrain_blocks[TERRAIN_COUNT] = {
+    [TERRAIN_ROCK]     = NGE_BLOCK_SOLID,
+    [TERRAIN_WALL]     = NGE_BLOCK_SOLID,
+    [TERRAIN_FLOOR]    = NGE_BLOCK_NONE,
+    [TERRAIN_CORRIDOR] = NGE_BLOCK_NONE,
+    [TERRAIN_DOORWAY]  = NGE_BLOCK_NONE,
+    [TERRAIN_HOLE]     = NGE_BLOCK_NO_FLOOR,
 };
 
+/*
+ * The tables have a base a terrain, in assets/tile_names.txt's order, and
+ * the codes' letters name terrains by that order: it must be TERRAIN_*'s.
+ */
+typedef char deco_terrains_check[(TILE_TERRAINS == TERRAIN_COUNT &&
+                                  TILE_TERRAIN_ROCK == TERRAIN_ROCK &&
+                                  TILE_TERRAIN_WALL == TERRAIN_WALL &&
+                                  TILE_TERRAIN_FLOOR == TERRAIN_FLOOR &&
+                                  TILE_TERRAIN_CORRIDOR == TERRAIN_CORRIDOR &&
+                                  TILE_TERRAIN_DOORWAY == TERRAIN_DOORWAY &&
+                                  TILE_TERRAIN_HOLE == TERRAIN_HOLE) ? 1 : -1];
+
 /* The 8 neighbours, (dx, dy), in the signature's bit order: N, NE, E, SE, S, SW, W, NW */
-static const int8_t around_offsets[16] = { 0, -1, 1, -1, 1, 0, 1, 1, 0, 1, -1, 1, -1, 0, -1, -1 };
+static const int8_t around_offsets[2 * DECO_AROUND] = { 0, -1, 1, -1, 1, 0, 1, 1, 0, 1, -1, 1, -1, 0, -1, -1 };
 
 /*
  * The tables are walked by pointer, not indexed: an index into a table in a
@@ -99,57 +96,42 @@ static void pick(uint8_t first, uint8_t count, uint8_t h, nge_tile_t *tile)
 
 void level_decorate(uint8_t x, uint8_t y)
 {
-    uint8_t around[8];
+    uint8_t around[DECO_AROUND];
     const int8_t *offset = around_offsets;
-    const deco_terrain_t *t = terrains;
-    const tile_base_t *base;
-    const tile_rule_t *rule;
-    terrain_set_t joins;
+    const tile_base_t *base = tile_bases;
+    const tile_rule_t *rule = tile_rules;
+    const uint8_t *want;
     nge_tile_t tile;
-    uint8_t signature;
-    uint8_t bit;
-    uint8_t b;
-    uint8_t r;
-    uint8_t i;
     uint8_t first;
     uint8_t rules;
-    uint8_t care;
-    uint8_t want;
+    uint8_t r;
+    uint8_t i;
+    uint8_t w;
 
     nge_util_assert(x < LEVEL_WIDTH && y < LEVEL_HEIGHT);
-    for (i = 0; i < 8; i++, offset += 2) {
+    for (i = 0; i < DECO_AROUND; i++, offset += 2) {
         around[i] = terrain_at((uint8_t)(x + offset[0]), (uint8_t)(y + offset[1]));
     }
-    t += level_terrain[y][x];
-    for (b = 0; b < t->count; b++) {
-        joins = t->bases[b].joins;
-        base = tile_bases;
-        base += t->bases[b].base;
-        signature = 0;
-        for (i = 0, bit = 1; i < 8; i++, bit = (uint8_t)(bit << 1)) {
-            if (joins & TERRAIN_BIT(around[i])) {
-                signature |= bit;
+    base += level_terrain[y][x];
+    /* The fields in locals before the comparisons (T-ZSDCC-1) */
+    first = base->first;
+    rules = base->count;
+    rule += first;
+    for (r = 0; r < rules; r++, rule++) {
+        want = rule->want;
+        for (i = 0; i < DECO_AROUND; i++) {
+            w = want[i];
+            if (w != TILE_ANY && w != around[i]) {
+                break;
             }
         }
-        /* The fields in locals before the comparisons (T-ZSDCC-1) */
-        first = base->first;
-        rules = base->count;
-        rule = tile_rules;
-        rule += first;
-        for (r = 0; r < rules; r++, rule++) {
-            care = rule->care;
-            want = rule->want;
-            if ((uint8_t)(signature & care) == want) {
-                pick(rule->first, rule->count, hash(x, y), &tile);
-                nge_map_set(x, y, &tile);
-                return;
-            }
+        if (i == DECO_AROUND) {
+            pick(rule->first, rule->count, hash(x, y), &tile);
+            nge_map_set(x, y, &tile);
+            return;
         }
     }
-    base = tile_bases;
-    base += t->bases[t->count - 1].base;
-    pick(base->fallback, base->fallback_count, hash(x, y), &tile);
-    nge_map_set(x, y, &tile);
+    nge_util_assert(0);   /* every terrain's base ends with its default, which matches */
 }
 
 void level_decorate_all(void)
@@ -198,35 +180,21 @@ static void block_looks(uint8_t first, uint8_t count, nge_block_t block)
 
 void level_deco_blocks(void)
 {
-    const deco_terrain_t *t = terrains;
-    const tile_base_t *base;
+    const tile_base_t *base = tile_bases;
+    const nge_block_t *blocks = terrain_blocks;
     const tile_rule_t *rule;
     nge_block_t block;
     uint8_t terrain;
-    uint8_t bases;
-    uint8_t b;
     uint8_t r;
-    uint8_t first;
     uint8_t rules;
-    uint8_t look_first;
-    uint8_t look_count;
 
-    for (terrain = 0; terrain < TERRAIN_COUNT; terrain++, t++) {
-        block = t->block;
-        bases = t->count;
-        for (b = 0; b < bases; b++) {
-            base = tile_bases;
-            base += t->bases[b].base;
-            first = base->first;
-            rules = base->count;
-            look_first = base->fallback;
-            look_count = base->fallback_count;
-            rule = tile_rules;
-            rule += first;
-            for (r = 0; r < rules; r++, rule++) {
-                block_looks(rule->first, rule->count, block);
-            }
-            block_looks(look_first, look_count, block);
+    for (terrain = 0; terrain < TERRAIN_COUNT; terrain++, base++, blocks++) {
+        block = *blocks;
+        rule = tile_rules;
+        rule += base->first;
+        rules = base->count;
+        for (r = 0; r < rules; r++, rule++) {
+            block_looks(rule->first, rule->count, block);
         }
     }
 }

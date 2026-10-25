@@ -21,9 +21,9 @@ bank (next_colour.fit_banks()), and writes into the out dir:
 - tile_rules_data.c: the decorator's tables, made from the names
   (docs/dungeon_decoration.md).
 
-The names file lists the names the game uses: with it, names are checked
-against it (unknown ones are warnings, ignored; missing required ones are
-errors). On an error it writes nothing, prints every problem found, errors
+The names file lists the terrains, with their letters for codes, and the
+other looks the game uses: with it, names are checked against it (unknown
+ones are warnings, ignored; missing ones are errors). On an error it writes nothing, prints every problem found, errors
 first, and exits with status 1; warnings are printed and the import goes on.
 """
 import argparse
@@ -173,49 +173,48 @@ def _define(name, value, doc=None):
     return f'{line:<42} /**< {doc} */' if doc else line
 
 
-def looks_lines(looks, bases, rules, entries, banks_of):
-    """The header's names: every look, every base, the tables' sizes and types."""
+def looks_lines(looks, names, bases, rules, entries, banks_of):
+    """The header's names: every look, every terrain, the tables' sizes and types."""
     lines = [
         '',
         '/*',
         " * Looks, by the names of the tileset's slices (docs/dungeon_decoration.md",
-        ' * 5.2): LOOK_<NAME> is its first variant, LOOK_<NAME>_BANK its bank.',
+        ' * 5.2): LOOK_<NAME> is its variant 1, LOOK_<NAME>_BANK its bank.',
         ' */',
     ]
     for key in sorted(looks, key=lambda k: looks[k].name):
         look = looks[key]
-        tile = look.ordered()[0][0]
+        tile = look.variants[1][0]
         name = 'LOOK_' + look.name.upper()
         lines.append(_define(name, tile))
         lines.append(_define(name + '_BANK', banks_of[tile]))
-    lines += ['', "/* The decorator's tables (tile_rules_data.c): bases by LOOK_BASE_* */"]
-    lines += [_define('LOOK_BASE_' + base.upper(), n) for n, (base, *_rest) in enumerate(bases)]
+    lines += ['', "/* The decorator's tables (tile_rules_data.c): a base a terrain, in TERRAIN_* order */"]
+    lines += [_define('TILE_TERRAIN_' + name.upper(), n)
+              for n, (_, name) in enumerate(names.terrains if names is not None else [])]
     lines += [
-        _define('TILE_BASES', len(bases)),
+        _define('TILE_TERRAINS', len(bases)),
         _define('TILE_RULES', len(rules)),
         _define('TILE_LOOKS', len(entries)),
+        _define('TILE_ANY', f'0x{tile_names.ANY_VALUE:02X}', "A rule's neighbour of any terrain."),
         '',
-        '/** A look a rule or fallback can choose: a variant, with its chances. */',
+        '/** A look a rule can choose: a variant, with its share of the picks. */',
         'typedef struct tile_look {',
         '    uint8_t tile_id;',
         '    uint8_t attr;      /**< Its bank, attribute bits 7-4. */',
-        '    uint8_t weight;    /**< Chances among its name\'s variants, 1-255. */',
+        '    uint8_t weight;    /**< Its share among its name\'s variants, 1-255. */',
         '} tile_look_t;',
         '',
-        "/** A rule: a look with a code, on the 8 neighbours' signature (N bit 0, NE, E... NW bit 7). */",
+        "/** A rule: a look with a code, on the 8 neighbours' terrains. */",
         'typedef struct tile_rule {',
-        '    uint8_t care;      /**< Signature bits it looks at. */',
-        '    uint8_t want;      /**< Their values: 1, the neighbour joins. */',
+        '    uint8_t want[8];   /**< N, NE, E, SE, S, SW, W, NW: a terrain, or TILE_ANY. */',
         '    uint8_t first;     /**< Its variants: tile_looks[first] on. */',
         '    uint8_t count;',
         '} tile_rule_t;',
         '',
-        '/** A base: its rules in order (diagonals first), and its fallback (count 0: none). */',
+        "/** A terrain's base: its rules in the order tried, its default (all TILE_ANY) last. */",
         'typedef struct tile_base {',
-        '    uint8_t first;           /**< tile_rules[first] on. */',
+        '    uint8_t first;     /**< tile_rules[first] on. */',
         '    uint8_t count;',
-        '    uint8_t fallback;        /**< tile_looks[fallback] on. */',
-        '    uint8_t fallback_count;',
         '} tile_base_t;',
         '',
         'extern const tile_look_t tile_looks[];',
@@ -229,6 +228,9 @@ def rules_c(source, bases, rules, entries):
     """tile_rules_data.c: the tables, constants in the level's data page."""
     def body(items):
         return items if items else ['    { 0 },   /* none: C has no empty arrays */']
+
+    def want_text(want):
+        return ', '.join('TILE_ANY' if w == tile_names.ANY_VALUE else str(w) for w in want)
 
     lines = [
         '/*',
@@ -249,11 +251,10 @@ def rules_c(source, bases, rules, entries):
     lines += body([f'    {{ {tile}, 0x{bank << 4:02X}, {weight} }},   /* {name} */'
                    for tile, bank, weight, name in entries])
     lines += ['};', '', f'const tile_rule_t tile_rules[{max(1, len(rules))}] = {{']
-    lines += body([f'    {{ 0x{care:02X}, 0x{want:02X}, {first}, {count} }},   /* {name} */'
-                   for care, want, first, count, name in rules])
+    lines += body([f'    {{ {{ {want_text(want)} }}, {first}, {count} }},   /* {name} */'
+                   for want, first, count, name in rules])
     lines += ['};', '', f'const tile_base_t tile_bases[{max(1, len(bases))}] = {{']
-    lines += body([f'    {{ {first}, {count}, {fb}, {fb_count} }},   /* {base} */'
-                   for base, first, count, fb, fb_count in bases])
+    lines += body([f'    {{ {first}, {count} }},   /* {terrain} */' for terrain, first, count in bases])
     lines.append('};')
     return '\n'.join(lines) + '\n'
 
@@ -304,8 +305,8 @@ def header(source, banks, assigned, names_lines=()):
 
 def run(source, out_dir, layer=None, names=None):
     """
-    Import source into out_dir. names: the names file's {name: required}, or
-    None (every base accepted, none required). Returns (summary lines,
+    Import source into out_dir. names: the names file (tile_names.Names),
+    or None (every base accepted, none required, no terrains). Returns (summary lines,
     warnings). Raises TileError with every problem on an error, writing
     nothing.
     """
@@ -324,7 +325,7 @@ def run(source, out_dir, layer=None, names=None):
     asm_out.write_all(out_dir, {
         DEFS_FILE: defs_asm(source, assigned, pixels),
         PALETTE_FILE: palette_asm(source, banks, assigned),
-        HEADER_FILE: header(source, banks, assigned, looks_lines(looks, bases, rules, entries, assigned)),
+        HEADER_FILE: header(source, banks, assigned, looks_lines(looks, names, bases, rules, entries, assigned)),
         RULES_FILE: rules_c(source, bases, rules, entries),
     })
     summary = [f'{source}: {len(assigned)} metatiles, {len(banks)} of {next_colour.BANKS_MAX} banks, '

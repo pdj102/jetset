@@ -11,63 +11,78 @@
 
 #include "data/tile_data.h"
 
-const tile_look_t tile_looks[27] = {
+const tile_look_t tile_looks[31] = {
     { 0, 0x00, 1 },   /* rock */
-    { 9, 0x00, 1 },   /* wall_xxxx_ne */
-    { 10, 0x00, 1 },   /* wall_xxxx_nw */
-    { 4, 0x00, 1 },   /* wall_xxxx_se */
-    { 7, 0x00, 1 },   /* wall_xxxx_sw */
-    { 19, 0x00, 1 },   /* wall_oooo */
-    { 16, 0x00, 1 },   /* wall_ooxx */
-    { 5, 0x00, 1 },   /* wall_oxox */
-    { 16, 0x00, 1 },   /* wall_oxxo */
-    { 23, 0x00, 1 },   /* wall_oxxx */
-    { 5, 0x00, 1 },   /* wall_xoox */
-    { 17, 0x00, 1 },   /* wall_xoxo */
-    { 14, 0x00, 1 },   /* wall_xoxx */
-    { 5, 0x00, 1 },   /* wall_xxoo */
-    { 5, 0x00, 1 },   /* wall_xxox */
-    { 15, 0x00, 1 },   /* wall_xxxo */
-    { 5, 0x00, 1 },   /* wall */
-    { 8, 0x00, 1 },   /* floor */
+    { 19, 0x00, 1 },   /* wall_ffff */
+    { 5, 0x00, 1 },   /* wall_fwfw */
+    { 17, 0x00, 1 },   /* wall_wfwf */
+    { 11, 0x00, 1 },   /* wall_wwww */
+    { 14, 0x00, 1 },   /* wall_dfwx */
+    { 15, 0x00, 1 },   /* wall_dxwf */
+    { 16, 0x00, 1 },   /* wall_fdxw */
+    { 16, 0x00, 1 },   /* wall_fwxd */
+    { 16, 0x00, 1 },   /* wall_fwxw */
+    { 14, 0x00, 1 },   /* wall_wfdx */
+    { 14, 0x00, 1 },   /* wall_wfwx */
+    { 12, 0x00, 1 },   /* wall_wwwx */
+    { 18, 0x00, 1 },   /* wall_wwxw */
+    { 15, 0x00, 1 },   /* wall_wxdf */
+    { 15, 0x00, 1 },   /* wall_wxwf */
+    { 13, 0x00, 1 },   /* wall_wxww */
+    { 5, 0x00, 1 },   /* wall_xdfw */
+    { 5, 0x00, 1 },   /* wall_xwfd */
+    { 5, 0x00, 1 },   /* wall_xwfw */
+    { 6, 0x00, 1 },   /* wall_xwww */
+    { 9, 0x00, 1 },   /* wall_wwxx */
+    { 10, 0x00, 1 },   /* wall_wxxw */
+    { 4, 0x00, 1 },   /* wall_xwwx */
+    { 7, 0x00, 1 },   /* wall_xxww */
+    { 24, 0x00, 1 },   /* wall */
     { 8, 0x00, 7 },   /* floor */
     { 20, 0x00, 1 },   /* floor */
     { 8, 0x00, 1 },   /* corridor */
     { 23, 0x00, 1 },   /* doorway */
     { 1, 0x00, 1 },   /* hole */
-    { 21, 0x00, 1 },   /* door_shut */
-    { 22, 0x00, 1 },   /* door_open */
-    { 2, 0x00, 1 },   /* stairs_up */
-    { 3, 0x00, 1 },   /* stairs_down */
 };
 
-const tile_rule_t tile_rules[15] = {
-    { 0x57, 0x55, 1, 1 },   /* wall_xxxx_ne */
-    { 0xD5, 0x55, 2, 1 },   /* wall_xxxx_nw */
-    { 0x5D, 0x55, 3, 1 },   /* wall_xxxx_se */
-    { 0x75, 0x55, 4, 1 },   /* wall_xxxx_sw */
-    { 0x55, 0x00, 5, 1 },   /* wall_oooo */
-    { 0x55, 0x50, 6, 1 },   /* wall_ooxx */
-    { 0x55, 0x44, 7, 1 },   /* wall_oxox */
-    { 0x55, 0x14, 8, 1 },   /* wall_oxxo */
-    { 0x55, 0x54, 9, 1 },   /* wall_oxxx */
-    { 0x55, 0x41, 10, 1 },   /* wall_xoox */
-    { 0x55, 0x11, 11, 1 },   /* wall_xoxo */
-    { 0x55, 0x51, 12, 1 },   /* wall_xoxx */
-    { 0x55, 0x05, 13, 1 },   /* wall_xxoo */
-    { 0x55, 0x45, 14, 1 },   /* wall_xxox */
-    { 0x55, 0x15, 15, 1 },   /* wall_xxxo */
+const tile_rule_t tile_rules[30] = {
+    { { TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY }, 0, 1 },   /* rock */
+    { { 2, TILE_ANY, 2, TILE_ANY, 2, TILE_ANY, 2, TILE_ANY }, 1, 1 },   /* wall_ffff */
+    { { 2, TILE_ANY, 1, TILE_ANY, 2, TILE_ANY, 1, TILE_ANY }, 2, 1 },   /* wall_fwfw */
+    { { 1, TILE_ANY, 2, TILE_ANY, 1, TILE_ANY, 2, TILE_ANY }, 3, 1 },   /* wall_wfwf */
+    { { 1, TILE_ANY, 1, TILE_ANY, 1, TILE_ANY, 1, TILE_ANY }, 4, 1 },   /* wall_wwww */
+    { { 4, TILE_ANY, 2, TILE_ANY, 1, TILE_ANY, TILE_ANY, TILE_ANY }, 5, 1 },   /* wall_dfwx */
+    { { 4, TILE_ANY, TILE_ANY, TILE_ANY, 1, TILE_ANY, 2, TILE_ANY }, 6, 1 },   /* wall_dxwf */
+    { { 2, TILE_ANY, 4, TILE_ANY, TILE_ANY, TILE_ANY, 1, TILE_ANY }, 7, 1 },   /* wall_fdxw */
+    { { 2, TILE_ANY, 1, TILE_ANY, TILE_ANY, TILE_ANY, 4, TILE_ANY }, 8, 1 },   /* wall_fwxd */
+    { { 2, TILE_ANY, 1, TILE_ANY, TILE_ANY, TILE_ANY, 1, TILE_ANY }, 9, 1 },   /* wall_fwxw */
+    { { 1, TILE_ANY, 2, TILE_ANY, 4, TILE_ANY, TILE_ANY, TILE_ANY }, 10, 1 },   /* wall_wfdx */
+    { { 1, TILE_ANY, 2, TILE_ANY, 1, TILE_ANY, TILE_ANY, TILE_ANY }, 11, 1 },   /* wall_wfwx */
+    { { 1, TILE_ANY, 1, TILE_ANY, 1, TILE_ANY, TILE_ANY, TILE_ANY }, 12, 1 },   /* wall_wwwx */
+    { { 1, TILE_ANY, 1, TILE_ANY, TILE_ANY, TILE_ANY, 1, TILE_ANY }, 13, 1 },   /* wall_wwxw */
+    { { 1, TILE_ANY, TILE_ANY, TILE_ANY, 4, TILE_ANY, 2, TILE_ANY }, 14, 1 },   /* wall_wxdf */
+    { { 1, TILE_ANY, TILE_ANY, TILE_ANY, 1, TILE_ANY, 2, TILE_ANY }, 15, 1 },   /* wall_wxwf */
+    { { 1, TILE_ANY, TILE_ANY, TILE_ANY, 1, TILE_ANY, 1, TILE_ANY }, 16, 1 },   /* wall_wxww */
+    { { TILE_ANY, TILE_ANY, 4, TILE_ANY, 2, TILE_ANY, 1, TILE_ANY }, 17, 1 },   /* wall_xdfw */
+    { { TILE_ANY, TILE_ANY, 1, TILE_ANY, 2, TILE_ANY, 4, TILE_ANY }, 18, 1 },   /* wall_xwfd */
+    { { TILE_ANY, TILE_ANY, 1, TILE_ANY, 2, TILE_ANY, 1, TILE_ANY }, 19, 1 },   /* wall_xwfw */
+    { { TILE_ANY, TILE_ANY, 1, TILE_ANY, 1, TILE_ANY, 1, TILE_ANY }, 20, 1 },   /* wall_xwww */
+    { { 1, TILE_ANY, 1, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY }, 21, 1 },   /* wall_wwxx */
+    { { 1, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, 1, TILE_ANY }, 22, 1 },   /* wall_wxxw */
+    { { TILE_ANY, TILE_ANY, 1, TILE_ANY, 1, TILE_ANY, TILE_ANY, TILE_ANY }, 23, 1 },   /* wall_xwwx */
+    { { TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, 1, TILE_ANY, 1, TILE_ANY }, 24, 1 },   /* wall_xxww */
+    { { TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY }, 25, 1 },   /* wall */
+    { { TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY }, 26, 2 },   /* floor */
+    { { TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY }, 28, 1 },   /* corridor */
+    { { TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY }, 29, 1 },   /* doorway */
+    { { TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY }, 30, 1 },   /* hole */
 };
 
-const tile_base_t tile_bases[10] = {
-    { 0, 0, 0, 1 },   /* rock */
-    { 0, 15, 16, 1 },   /* wall */
-    { 15, 0, 17, 3 },   /* floor */
-    { 15, 0, 20, 1 },   /* corridor */
-    { 15, 0, 21, 1 },   /* doorway */
-    { 15, 0, 22, 1 },   /* hole */
-    { 15, 0, 23, 1 },   /* door_shut */
-    { 15, 0, 24, 1 },   /* door_open */
-    { 15, 0, 25, 1 },   /* stairs_up */
-    { 15, 0, 26, 1 },   /* stairs_down */
+const tile_base_t tile_bases[6] = {
+    { 0, 1 },   /* rock */
+    { 1, 25 },   /* wall */
+    { 26, 1 },   /* floor */
+    { 27, 1 },   /* corridor */
+    { 28, 1 },   /* doorway */
+    { 29, 1 },   /* hole */
 };

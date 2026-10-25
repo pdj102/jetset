@@ -1,18 +1,20 @@
 # The names the game uses for the tileset's looks (docs/dungeon_decoration.md
 # R20): read by scripts/ase2tiles.py, which checks the tileset's slices
-# against them. "required": a slice with exactly this name must exist.
+# against them. Every name here must have a slice with exactly that name.
 #
-# Bases the game decorates with (game/level/level_deco.c): a base's looks
-# are its name alone (the fallback) and its name with codes (wall_xxox)
-base rock       required
-base wall       required
-base floor      required
-base corridor   required
-base doorway    required
-base hole       required
+# Terrains, in TERRAIN_* order (game/level/level_internal.h): the letter
+# that names them in the looks' codes, and their name, which is their base.
+# A terrain's looks are its name alone (its default) and its name with codes
+# (wall_xwfw)
+terrain r rock
+terrain w wall
+terrain f floor
+terrain c corridor
+terrain d doorway
+terrain h hole
 
 # Other looks the game names: the features' (game/gen/gen_feature_pdata.c)
-look door_shut    required
-look door_open    required
-look stairs_up    required
-look stairs_down  required
+look door_shut
+look door_open
+look stairs_up
+look stairs_down

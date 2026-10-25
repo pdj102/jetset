@@ -1,8 +1,9 @@
 /*
  * game/level: the decorator (level_deco.c), with the tables made from the
  * real tileset's names (data/tile_rules_data.c): wall pieces by their place,
- * every terrain drawn and blocking what it should, variants by weight, the
- * same look every time, and redrawing around a cell.
+ * the more specific rule first, every terrain drawn and blocking what it
+ * should, variants by weight, the same look every time, and redrawing around
+ * a cell.
  */
 #include "test.h"
 
@@ -57,6 +58,8 @@ int main(void)
     int ok;
     int variant;
     int floors;
+    uint8_t r;
+    uint8_t i;
 
     test_init();
     level_init();   /* the map, and the block table from the terrains' looks */
@@ -67,26 +70,31 @@ int main(void)
     room(2, 2, 8, 6);
     level_terrain[2][5] = TERRAIN_DOORWAY;   /* a doorway in the top wall */
     level_decorate_all();
-    CHECK(look(2, 2) == LOOK_WALL_XXXX_SE && look(8, 2) == LOOK_WALL_XXXX_SW);   /* top corners */
-    CHECK(look(2, 6) == LOOK_WALL_XXXX_NE && look(8, 6) == LOOK_WALL_XXXX_NW);   /* bottom corners */
-    CHECK(look(3, 2) == LOOK_WALL_XXOX && look(4, 6) == LOOK_WALL_OXXX);         /* top, bottom */
-    CHECK(look(2, 4) == LOOK_WALL_XOXX && look(8, 4) == LOOK_WALL_XXXO);         /* left, right */
-    CHECK(look(4, 2) == LOOK_WALL && look(6, 2) == LOOK_WALL);   /* beside the doorway: no piece drawn yet */
+    CHECK(look(2, 2) == LOOK_WALL_XWWX && look(8, 2) == LOOK_WALL_XXWW);   /* top corners */
+    CHECK(look(2, 6) == LOOK_WALL_WWXX && look(8, 6) == LOOK_WALL_WXXW);   /* bottom corners */
+    CHECK(look(3, 2) == LOOK_WALL_XWFW && look(4, 6) == LOOK_WALL_FWXW);   /* top, bottom */
+    CHECK(look(2, 4) == LOOK_WALL_WFWX && look(8, 4) == LOOK_WALL_WXWF);   /* left, right */
+    CHECK(look(4, 2) == LOOK_WALL_XDFW && look(6, 2) == LOOK_WALL_XWFD);   /* beside the doorway: its ends */
     CHECK(look(5, 2) == LOOK_DOORWAY && look(0, 0) == LOOK_ROCK && look(5, 4) != LOOK_ROCK);
 
     /* Off the map is rock: a room in the top-left corner has the same corner */
     fill(TERRAIN_ROCK);
     room(0, 0, 6, 5);
     level_decorate(0, 0);
-    CHECK(look(0, 0) == LOOK_WALL_XXXX_SE);
+    CHECK(look(0, 0) == LOOK_WALL_XWWX);
 
     /* A wall alone in the open: a pillar */
     fill(TERRAIN_FLOOR);
     level_terrain[10][10] = TERRAIN_WALL;
     level_decorate(10, 10);
-    CHECK(look(10, 10) == LOOK_WALL_OOOO);
+    CHECK(look(10, 10) == LOOK_WALL_FFFF);
 
-    /* ---- every terrain gets a look, among every neighbour, and blocks what it should (R4, R5, R8) ---- */
+    /* Walls all round: wall_wwww, though wall_wwwx and the corners match too (D12) */
+    fill(TERRAIN_WALL);
+    level_decorate(10, 10);
+    CHECK(look(10, 10) == LOOK_WALL_WWWW);
+
+    /* ---- every terrain gets a look, among every neighbour, and blocks what it should (R4, R8) ---- */
     ok = 1;
     for (t = 0; t < TERRAIN_COUNT; t++) {
         for (u = 0; u < TERRAIN_COUNT; u++) {
@@ -97,9 +105,29 @@ int main(void)
         }
     }
     CHECK(ok);
-    CHECK(test_halt_count == 0);   /* every look found: no rule set without its fallback */
+    CHECK(test_halt_count == 0);   /* every cell matched a rule: every terrain has its default */
 
-    /* ---- variants by weight: floor_2 (weight 1) among weights 9 in all, over a level of floor ---- */
+    /* ---- every terrain's base ends with its default, and every look blocks its terrain's value (R5, R21) ---- */
+    ok = 1;
+    for (t = 0; t < TERRAIN_COUNT; t++) {
+        const tile_base_t *base = &tile_bases[t];
+        const tile_rule_t *rule;
+
+        ok = ok && base->count > 0;
+        for (r = 0; r < base->count; r++) {
+            rule = &tile_rules[base->first + r];
+            for (i = 0; i < rule->count; i++) {
+                ok = ok && nge_map_blocks[tile_looks[rule->first + i].tile_id] == terrain_blocks[t];
+            }
+        }
+        rule = &tile_rules[base->first + base->count - 1];
+        for (i = 0; i < 8; i++) {
+            ok = ok && rule->want[i] == TILE_ANY;
+        }
+    }
+    CHECK(ok);
+
+    /* ---- variants by weight: floor_2 (weight 1) among weights 8 in all, over a level of floor ---- */
     fill(TERRAIN_FLOOR);
     level_decorate_all();
     floors = 0;
@@ -107,10 +135,10 @@ int main(void)
     for (y = 1; y < LEVEL_HEIGHT - 1; y++) {
         for (x = 1; x < LEVEL_WIDTH - 1; x++) {
             floors++;
-            variant += look(x, y) != LOOK_FLOOR;   /* floor_2: variants have no names of their own */
+            variant += look(x, y) != LOOK_FLOOR;   /* floor_2: LOOK_FLOOR is variant 1 */
         }
     }
-    CHECK(variant * 100 > floors * 5 && variant * 100 < floors * 20);   /* about 11% */
+    CHECK(variant * 100 > floors * 5 && variant * 100 < floors * 20);   /* about 12% */
 
     /* ---- the same look every time; another seed, another pattern (R10, D4) ---- */
     t = look(17, 9);
