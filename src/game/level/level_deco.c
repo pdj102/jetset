@@ -4,10 +4,12 @@
  * the level's code; its rule tables (data/tile_rules_data.c, made from the
  * tileset's look names) are in page 103, mapped in slot 7 while it runs.
  *
- * A terrain has one base: its rules, most specific first, each a pattern on
- * the 8 neighbours' terrains (a terrain, or any, for each). The first rule
- * that matches gives the look; the last is the terrain's default, which
- * matches any neighbours. Then one of the look's variants, by weight, from a
+ * A terrain has a base e.g. wall_, floor_,.
+ * Each terrain has a set of rules, most specific first, that selects the look  
+ * Each rule is a pattern based on the terrain and its 8 neighbours' terrains.
+ * The first rule that matches gives the look; the last is the terrain's default look, which
+ * matches any neighbours.
+ * Then one of the look's variants is selected, by weight, from a 
  * hash of the cell and the level's decoration seed: the same every time the
  * cell is drawn.
  */
@@ -23,8 +25,7 @@
 #define DECO_AROUND  8   /* a cell's neighbours */
 
 /*
- * Each terrain's block value: what its looks block. The game's half of the
- * rules: the tileset's names give the looks and their codes.
+ * Each terrain's block value: what its looks block. 
  */
 static const nge_block_t terrain_blocks[TERRAIN_COUNT] = {
     [TERRAIN_ROCK]     = NGE_BLOCK_SOLID,
@@ -109,6 +110,8 @@ void level_decorate(uint8_t x, uint8_t y)
     uint8_t w;
 
     nge_util_assert(x < LEVEL_WIDTH && y < LEVEL_HEIGHT);
+    typedef int check1[sizeof(((tile_rule_t *)0)->want) == DECO_AROUND ? 1 : -1];
+
     for (i = 0; i < DECO_AROUND; i++, offset += 2) {
         around[i] = terrain_at((uint8_t)(x + offset[0]), (uint8_t)(y + offset[1]));
     }
@@ -173,7 +176,7 @@ static void block_looks(uint8_t first, uint8_t count, nge_block_t block)
 
     look += first;
     for (i = 0; i < count; i++, look++) {
-        tile_id = look->tile_id;   /* read before the banked call maps page 44 over it */
+        tile_id = look->tile_id;   /* read before the banked call maps page 45 over it */
         nge_map_set_block(tile_id, block);
     }
 }
