@@ -41,8 +41,8 @@
 
 /**
  * @brief Create a creature of kind (CR_*), owned by owner: sprite, block,
- *        stats, health, timer (the player's or a monster's turn) and, if it
- *        can carry things, inventory; then its innate effect, if any
+ *        stats, health, mana if its kind has some, timer (the player's or a
+ *        monster's turn) and, if it can carry things, inventory; then its innate effect, if any
  *        (GEN_HOOK_INNATE). The player is persistent: at 0 hp it isn't
  *        destroyed (game over instead).
  * @return The entity, or NGE_ENTITY_INVALID if no entity is free.

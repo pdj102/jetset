@@ -90,6 +90,9 @@ void screen_draw_stats(void) NGE_BANKED;
 /** @brief Show the hit points in the stats window: "HP   12/ 12". */
 void screen_show_hp(uint8_t hp, uint8_t hp_max) NGE_BANKED;
 
+/** @brief Show the mana points in the stats window: "MP    5/  5". */
+void screen_show_mp(uint8_t mp, uint8_t mp_max) NGE_BANKED;
+
 /** @brief Show the armour class in the stats window: "AC        10". */
 void screen_show_ac(uint8_t ac) NGE_BANKED;
 

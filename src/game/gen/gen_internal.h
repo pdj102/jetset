@@ -29,6 +29,7 @@
 #include "game/components/inventory.h"
 #include "game/components/item.h"
 #include "game/components/kind.h"
+#include "game/components/mana.h"
 #include "game/components/stats.h"
 #include "game/effects/effects.h"
 
@@ -68,6 +69,7 @@ typedef struct gen_creature_base {
     gen_block_t  block;
     stats_base_t stats;
     health_base_t health;
+    mana_base_t  mana;        /* mp 0 for none */
     attack_base_t melee;      /* its natural melee attack (fists, a bite); dice 0 for none */
     gen_inventory_t inventory;
     uint8_t      flags;   /* CREATURE_* */

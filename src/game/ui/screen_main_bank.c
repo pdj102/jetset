@@ -41,7 +41,8 @@ static const nge_panel_t panels[PANEL_COUNT] = {
 };
 
 #define STATS_ROW_HP         2    /* stats window row of the hit points */
-#define STATS_ROW_AC         3    /* ...of the armour class */
+#define STATS_ROW_MP         3    /* ...of the mana points */
+#define STATS_ROW_AC         4    /* ...of the armour class */
 #define STATS_ROW_ABILITIES  5    /* ...of the first ability: one row each */
 #define STATS_ROW_GOLD       12   /* ...of the gold and, under it, the depth */
 #define STATS_ROW_TURN       14   /* ...of the turn count */
@@ -120,6 +121,16 @@ void screen_show_hp(uint8_t hp, uint8_t hp_max) NGE_BANKED
     nge_putu16w(hp, 4, ' ', screen_stats);
     nge_putc('/', screen_stats);
     nge_putu16w(hp_max, 3, ' ', screen_stats);
+}
+
+void screen_show_mp(uint8_t mp, uint8_t mp_max) NGE_BANKED
+{
+    nge_text_at(STATS_ROW_MP, 0, screen_stats);
+    nge_text_ink(NGE_INK_WHITE, screen_stats);
+    nge_puts("MP ", screen_stats);
+    nge_putu16w(mp, 4, ' ', screen_stats);
+    nge_putc('/', screen_stats);
+    nge_putu16w(mp_max, 3, ' ', screen_stats);
 }
 
 void screen_show_ac(uint8_t ac) NGE_BANKED

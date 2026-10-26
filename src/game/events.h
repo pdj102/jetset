@@ -28,6 +28,8 @@
  * | EV_CLOSED         | the feature         | closer   | -        |
  * | EV_ARRIVED        | the player          | -        | p1: depth, p2: LEVEL_ARRIVE_* |
  * | EV_LEFT_LEVEL     | the entity (maybe dying) | -   | p1: the depth it went to |
+ * | EV_MANA_SPENT     | the entity          | -        | p1: MP spent |
+ * | EV_MANA_RESTORED  | the entity          | -        | p1: MP restored |
  */
 
 #include "event/nge_event.h"
@@ -51,5 +53,7 @@
 #define EV_CLOSED         (NGE_EVENT_USER + 16)    /**< Closed by the source (act_close()). */
 #define EV_ARRIVED        (NGE_EVENT_USER + 17)    /**< Arrived on a new level, at depth p1, as p2 says (game/level/level.h). */
 #define EV_LEFT_LEVEL     (NGE_EVENT_USER + 18)    /**< Left the current level for depth p1 (level_send()). */
+#define EV_MANA_SPENT     (NGE_EVENT_USER + 19)    /**< Spent p1 MP (game/components/mana.h). */
+#define EV_MANA_RESTORED  (NGE_EVENT_USER + 20)    /**< Got p1 MP back. */
 
 #endif

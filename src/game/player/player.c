@@ -9,6 +9,7 @@
 
 #include "game/actors.h"
 #include "game/components/health.h"
+#include "game/components/mana.h"
 #include "game/effects/effects.h"
 #include "game/events.h"
 #include "game/ui/screen_main.h"
@@ -38,6 +39,10 @@ void player_on_event(const nge_event_t *e)
     case EV_DAMAGED:
     case EV_HEALED:
         screen_show_hp(health_hp[target], health_hp_max[target]);
+        break;
+    case EV_MANA_SPENT:
+    case EV_MANA_RESTORED:
+        screen_show_mp(mana_mp[target], mana_mp_max[target]);
         break;
     case EV_ATTRS_CHANGED:
         player_show_stats();

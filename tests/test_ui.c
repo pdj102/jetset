@@ -24,6 +24,7 @@
 #include "game/components/feature.h"
 #include "game/components/inventory.h"
 #include "game/components/item.h"
+#include "game/components/mana.h"
 #include "game/game.h"
 #include "game/effects/effects.h"
 #include "game/gen/gen.h"
@@ -234,6 +235,8 @@ int main(void)
     test_layer2_row(2, 28, 39, text);
     CHECK(strcmp(text, "HP   12/ 12 ") == 0);
     test_layer2_row(3, 28, 39, text);
+    CHECK(strcmp(text, "MP    5/  5 ") == 0);
+    test_layer2_row(4, 28, 39, text);
     CHECK(strcmp(text, "AC       10 ") == 0);
     test_layer2_row(5, 28, 39, text);
     CHECK(strcmp(text, "Str      16 ") == 0);
@@ -246,6 +249,15 @@ int main(void)
     test_layer2_row(5, 28, 39, text);
     CHECK(strcmp(text, "Str      17 ") == 0);
     nge_event_flush();
+    /* MP follow their events */
+    mana_spend(actor_player, 2);
+    nge_event_process(player_on_event);
+    test_layer2_row(3, 28, 39, text);
+    CHECK(strcmp(text, "MP    3/  5 ") == 0);
+    mana_restore(actor_player, 9);
+    nge_event_process(player_on_event);
+    test_layer2_row(3, 28, 39, text);
+    CHECK(strcmp(text, "MP    5/  5 ") == 0);
 
     /* ---- the inventory, empty: titled, says so, SPACE goes back; the main screen untouched ---- */
     memcpy(main_before, test_layer2_buf[0], sizeof(main_before));

@@ -44,7 +44,8 @@
 #define COMPONENT_RANGED     NGE_COMPONENT(NGE_COMPONENT_USER + 6)   /**< A ranged attack (attack.h). Reserved. */
 #define COMPONENT_EFFECT     NGE_COMPONENT(NGE_COMPONENT_USER + 7)   /**< An active effect (game/effects/effects.h). */
 #define COMPONENT_FEATURE    NGE_COMPONENT(NGE_COMPONENT_USER + 8)   /**< A fixed, interactive part of a level (feature.h). */
-#define COMPONENT_COUNT      9   /**< The game's components: the next is NGE_COMPONENT_USER + COMPONENT_COUNT. */
+#define COMPONENT_MANA       NGE_COMPONENT(NGE_COMPONENT_USER + 9)   /**< Mana points, spent on spells (mana.h). */
+#define COMPONENT_COUNT      10  /**< The game's components: the next is NGE_COMPONENT_USER + COMPONENT_COUNT. */
 
 /* Every game component has a number below NGE_COMPONENT_MAX */
 typedef char components_count_check[(NGE_COMPONENT_USER + COMPONENT_COUNT <= NGE_COMPONENT_MAX) ? 1 : -1];

@@ -30,6 +30,9 @@ static nge_entity_id_t create(uint8_t kind, nge_owner_t owner)
     nge_block_add(id, b.block.block, b.block.pass);
     stats_add(id, &b.stats);
     health_add(id, &b.health);
+    if (MANA_BASE_HAS(&b.mana)) {
+        mana_add(id, &b.mana);
+    }
     if (ATTACK_BASE_HAS(&b.melee)) {
         attack_add(id, ATTACK_MELEE, &b.melee);
     }

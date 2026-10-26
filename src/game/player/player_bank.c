@@ -25,6 +25,7 @@
 #include "game/dev.h"
 #include "game/components/inventory.h"
 #include "game/components/item.h"
+#include "game/components/mana.h"
 #include "game/game.h"
 #include "game/level/level.h"
 #include "game/messages/messages.h"
@@ -293,6 +294,16 @@ void player_command(nge_key_event_t ev) NGE_BANKED
     case 'V':
         pan_view();   /* development: pan the view a pixel at a time */
         break;
+    case 'M':
+        /* Development: spend 1 MP, or restore them all at 0, to see the stats follow (no turn used) */
+        if (MANA_IS(actor_player)) {
+            if (MANA_HAS(actor_player, 1)) {
+                mana_spend(actor_player, 1);
+            } else {
+                mana_restore(actor_player, mana_mp_max[actor_player]);
+            }
+        }
+        break;
 #endif
     default:
         break;   /* other keys: no command, no turn */
@@ -308,6 +319,9 @@ void player_show_stats(void) NGE_BANKED
         scores[a] = stats_ability[a][actor_player];
     }
     screen_show_hp(health_hp[actor_player], health_hp_max[actor_player]);
+    if (MANA_IS(actor_player)) {   /* none: no row (a class without magic, later) */
+        screen_show_mp(mana_mp[actor_player], mana_mp_max[actor_player]);
+    }
     screen_show_ac(health_ac[actor_player]);
     screen_show_abilities(scores);
     screen_show_status(status_mask[actor_player]);

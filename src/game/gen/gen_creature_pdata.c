@@ -22,6 +22,7 @@ const gen_creature_base_t gen_creatures[CR_COUNT] = {
         .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
         .stats = { .speed = 10, .ability = { 16, 14, 14, 10, 10, 10 } },   /* Str Dex Con Int Wis Cha */
         .health = { .hp = 12, .ac = 10 },
+        .mana = { .mp = 5 },
         .melee = { .to_hit = 0, .dice = 1, .sides = 2, .bonus = 0, .type = DMG_BLUNT, .range = 1 },   /* fists */
         .inventory = { .capacity = 20, .slots = SLOTS_HUMANOID },
         .flags = CREATURE_PLAYER,

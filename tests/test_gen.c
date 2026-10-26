@@ -67,6 +67,11 @@ static int creature_ok(nge_entity_id_t id, nge_owner_t owner, uint8_t kind)
         stats_speed[id] != b->stats.speed || !melee_is(id, &b->melee)) {
         return 0;
     }
+    /* Mana if its kind has some, full */
+    if (MANA_IS(id) != MANA_BASE_HAS(&b->mana) ||
+        (MANA_IS(id) && (mana_mp[id] != b->mana.mp || mana_mp_max[id] != b->mana.mp))) {
+        return 0;
+    }
     /* Its abilities: the record's scores, as values and bases */
     for (a = 0; a < ABIL_COUNT; a++) {
         if (stats_ability[a][id] != b->stats.ability[a] || attr_base[ATTR_ABILITY(a)][id] != b->stats.ability[a] ||
@@ -126,7 +131,7 @@ int main(void)
         static const nge_component_mask_t masks[] = {
             NGE_COMPONENT_LOCATION, NGE_COMPONENT_SPRITE, NGE_COMPONENT_BLOCK, NGE_COMPONENT_TIMER,
             COMPONENT_KIND, COMPONENT_STATS, COMPONENT_ITEM, COMPONENT_INVENTORY, COMPONENT_HEALTH,
-            COMPONENT_MELEE, COMPONENT_RANGED, COMPONENT_EFFECT, COMPONENT_FEATURE,
+            COMPONENT_MELEE, COMPONENT_RANGED, COMPONENT_EFFECT, COMPONENT_FEATURE, COMPONENT_MANA,
         };
         nge_component_mask_t seen = 0;
         unsigned int m;
@@ -218,9 +223,11 @@ int main(void)
     CHECK(gen_item_subclass(IT_FOOD) == ITEM_FOOD && gen_item_subclass(IT_ELIXIR) == ITEM_POTION);
     id = gen_creature(CR_RAT, AREA);
     CHECK(gen_hook(id, GEN_HOOK_HIT) == EF_POISON && gen_hook(id, GEN_HOOK_INNATE) == EF_NONE);
+    CHECK(!MANA_IS(id));                                       /* monsters have no mana yet */
     CHECK(nge_owner_count(id) == 0);                           /* no innate effect */
     id = gen_creature(CR_PLAYER, AREA);
     CHECK(gen_hook(id, GEN_HOOK_INNATE) == EF_REGEN && nge_owner_count(id) == 1);   /* its innate effect */
+    CHECK(MANA_IS(id) && mana_mp[id] == 5 && mana_mp_max[id] == 5);                 /* full */
     chest = nge_entity_create();                               /* no kind: no hooks */
     CHECK(gen_hook(chest, GEN_HOOK_USE) == EF_NONE);
     TEST_EXPECT_HALT(gen_hook(id, GEN_HOOK_COUNT));
