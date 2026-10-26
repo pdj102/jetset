@@ -20,7 +20,7 @@
 #include "game/game.h"
 #include "game/ui/screen_internal.h"
 
-const nge_rect_t screen_help_area = { .x1 = 0, .x2 = 39, .y1 = SCREEN_HELP_ROW, .y2 = SCREEN_HELP_ROW };
+static const nge_rect_t screen_help_area = { .x1 = 0, .x2 = 39, .y1 = SCREEN_HELP_ROW, .y2 = SCREEN_HELP_ROW };
 
 void screen_open(void) NGE_BANKED
 {

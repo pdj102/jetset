@@ -27,10 +27,10 @@
 #include "game/level/level.h"
 #include "game/messages/messages.h"
 #include "game/player/player.h"
+#include "game/timers.h"
 #include "game/ui/screen.h"
 #include "game/ui/screen_main.h"
 #include "game/ui/screen_title.h"
-#include "game/timers.h"
 
 /*
  * Advances of the clock (nge_timer_advance()) per frame at most, so a long

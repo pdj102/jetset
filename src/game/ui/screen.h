@@ -35,14 +35,13 @@
  * while game code has its own page mapped in slot 6 or 7.
  */
 
-#include <stdint.h>
-
 #include "core/nge_bank.h"
 #include "input/nge_input.h"
 
 /* Layer 2 buffers (layer2/nge_layer2.h) */
 #define SCREEN_BUFFER_MAIN     0   /**< The main screen's. */
 #define SCREEN_BUFFER_OVERLAY  1   /**< The overlay screens'. */
+#define SCREEN_BUFFER_COUNT    2   /**< The number of buffers used by the screens. */
 
 #define SCREEN_DEPTH_MAX  2       /**< Overlay screens open at once, at most: one, and one over it. */
 #define SCREEN_PAPER      0x00    /**< The panels' background (RRRGGGBB): black. */

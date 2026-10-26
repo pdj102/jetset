@@ -28,7 +28,7 @@
 #include "game/messages/messages.h"
 #include "game/ui/screen_internal.h"
 
-static const nge_panel_t panels[SCREEN_INV_PANELS] = {
+static const nge_panel_t panels[SCREEN_INV_COUNT] = {
     [SCREEN_INV_TITLE]   = { { .x1 = 0, .x2 = 39, .y1 = 0, .y2 = 1 }, SCREEN_PAPER, NGE_PANEL_CLIP },
     [SCREEN_INV_LIST]    = { { .x1 = 0, .x2 = 27, .y1 = 2, .y2 = 28 }, SCREEN_PAPER, NGE_PANEL_CLIP },
     [SCREEN_INV_DETAILS] = { { .x1 = 28, .x2 = 39, .y1 = 2, .y2 = 28 }, SCREEN_PAPER, NGE_PANEL_SCROLL },
@@ -51,6 +51,7 @@ static const nge_panel_t panels[SCREEN_INV_PANELS] = {
 #define LIST_EQUIPPED    2   /* in use, in slot order */
 #define LIST_ALL         3   /* what is in use, then the pack */
 #define LIST_USABLE      4   /* in the pack, doing something when used */
+#define LIST_COUNT       5   /* the number of lists */
 
 /* A key's answer, besides an action (ACT_*) and SCREEN_INV_BACK: stay open */
 #define KEY_STAY  (ACT_COUNT + 1)
@@ -251,11 +252,11 @@ static void show_help(uint8_t mode)
     if (screen_inv_list.count != 0) {
         for (i = 0; i < sizeof(help_actions); i++) {
             if (allowed(help_actions[i], 0)) {
-                strcat(help, help_words[i]);
+                strncat(help, help_words[i], sizeof(help) - 1 - strlen(help));
             }
         }
     }
-    strcat(help, " SPACE:back");
+    strncat(help, " SPACE:back", sizeof(help) - 1 - strlen(help));
     screen_help(help);   /* on the stack: common memory */
 }
 
@@ -392,7 +393,7 @@ uint8_t screen_inv_run(uint8_t mode, nge_entity_id_t *item) NGE_BANKED
     }
 
     screen_open();
-    ok = nge_panel_open_all(SCREEN_BUFFER_OVERLAY, panels, SCREEN_INV_PANELS, screen_inv_streams);
+    ok = nge_panel_open_all(SCREEN_BUFFER_OVERLAY, panels, SCREEN_INV_COUNT, screen_inv_streams);
     nge_util_assert(ok);
     draw(mode);
     do {
@@ -401,7 +402,7 @@ uint8_t screen_inv_run(uint8_t mode, nge_entity_id_t *item) NGE_BANKED
     if (answer != SCREEN_INV_BACK) {
         *item = selected();
     }
-    nge_panel_close_all(screen_inv_streams, SCREEN_INV_PANELS);
+    nge_panel_close_all(screen_inv_streams, SCREEN_INV_COUNT);
     screen_close();
     return answer;
 }

@@ -8,4 +8,4 @@
 
 nge_entity_id_t screen_inv_ids[SCREEN_INV_MAX];
 nge_list_t screen_inv_list;
-NGE_FILE *screen_inv_streams[SCREEN_INV_PANELS];
+NGE_FILE *screen_inv_streams[SCREEN_INV_COUNT];

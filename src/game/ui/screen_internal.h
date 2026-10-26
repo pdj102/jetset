@@ -29,9 +29,6 @@ extern NGE_FILE *screen_help_lines[2];
 /* Overlay screens open, 0 to SCREEN_DEPTH_MAX: 0 while the main screen is shown */
 extern uint8_t screen_depth;
 
-/* The help line's cells (screen_bank.c: in page 116, for the module's banked code only) */
-extern const nge_rect_t screen_help_area;
-
 /* ---- The main screen (screen_main.c) ---- */
 
 /* The message window's bottom line has text: the next message goes on a new line */
@@ -52,10 +49,10 @@ extern nge_sprite_attr_t screen_overlay[SCREEN_OVERLAY_COUNT];
 #define SCREEN_INV_LIST     1
 #define SCREEN_INV_DETAILS  2
 #define SCREEN_INV_STATUS   3
-#define SCREEN_INV_PANELS   4
+#define SCREEN_INV_COUNT   4
 
 extern nge_entity_id_t screen_inv_ids[SCREEN_INV_MAX];       /* the items listed, in order */
 extern nge_list_t screen_inv_list;                           /* their cursor and rows */
-extern NGE_FILE *screen_inv_streams[SCREEN_INV_PANELS];      /* the panels' streams, by SCREEN_INV_* */
+extern NGE_FILE *screen_inv_streams[SCREEN_INV_COUNT];      /* the panels' streams, by SCREEN_INV_* */
 
 #endif

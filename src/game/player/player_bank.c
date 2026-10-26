@@ -28,9 +28,9 @@
 #include "game/game.h"
 #include "game/level/level.h"
 #include "game/messages/messages.h"
+#include "game/target/target.h"
 #include "game/ui/screen.h"
 #include "game/ui/screen_main.h"
-#include "game/target/target.h"
 #include "game/ui/screen_inv.h"
 
 /* Characters of the movement keys (nge_key_ascii): cursor keys */

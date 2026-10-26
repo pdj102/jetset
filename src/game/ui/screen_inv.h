@@ -42,7 +42,6 @@
 
 #include "core/nge_bank.h"
 #include "ecs/nge_entity.h"
-#include "input/nge_input.h"
 
 #include "game/actions/act.h"
 
