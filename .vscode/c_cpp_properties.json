@@ -20,8 +20,15 @@
                 "__Z80N",
                 "__ZXNEXT",
                 "__Z88DK_NEWLIB",
-                "__SDCC",
-                "__SDCC_IY"
+                "__SDCC_IY",
+                "__banked=",
+                "__naked=",
+                "__critical=",
+                "__z88dk_fastcall=",
+                "__z88dk_callee=",
+                "__LIB__=",
+                "__SMALLC=",
+                "__preserves_regs(...)="
             ]
         }
     ],

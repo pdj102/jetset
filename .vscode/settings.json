@@ -1,5 +1,6 @@
 {
     "chat.tools.terminal.autoApprove": {
         "zcc": true
-    }
+    },
+    "C_Cpp.default.compilerPath": "/home/paul/src/z88dk/bin/zcc"
 }
