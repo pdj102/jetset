@@ -1,6 +1,6 @@
 /*
  * The main loop, the play loop and the frames: common memory. The title
- * (game/title/title_bank.c) and the choosers are banked and called
+ * (game/ui/screen_title_bank.c) and the choosers are banked and called
  * directly, never through function pointers: a pointer to a banked
  * function doesn't switch banks (N-BANK-6). The dispatch functions
  * game_on_event() and game_on_timer() are here too: nge calls them through
@@ -27,9 +27,10 @@
 #include "game/level/level.h"
 #include "game/messages/messages.h"
 #include "game/player/player.h"
-#include "game/screen.h"
+#include "game/ui/screen.h"
+#include "game/ui/screen_main.h"
+#include "game/ui/screen_title.h"
 #include "game/timers.h"
-#include "game/title/title.h"
 
 /*
  * Advances of the clock (nge_timer_advance()) per frame at most, so a long
@@ -113,6 +114,16 @@ void game_frame_end(void)
 {
     nge_render_update();    /* build the sprites for the next frame */
     frame_open = 0;
+}
+
+void game_pause_frame(void)
+{
+    if (frame_open) {
+        game_frame_end();   /* a frame a screen left open: its sprites built first, for when play resumes */
+    }
+    nge_frame_wait_vblank();
+    frames++;
+    nge_input_update();
 }
 
 nge_key_event_t game_wait_key(uint16_t frames_max)
@@ -222,7 +233,6 @@ void game_play_help(void)
 void game_play_redraw(void)
 {
     nge_render_set_view(LEVEL_AREA);
-    screen_show_map();   /* the title's panel, or a screen's, gone */
     nge_map_invalidate();
     screen_draw_stats();
     player_show_stats();
@@ -331,7 +341,7 @@ void game_run(void)
 {
     nge_event_init();
     for (;;) {
-        title_run();
+        screen_title_run();
         over_run(play_run());
     }
 }

@@ -20,7 +20,8 @@
 #include "game/actors.h"
 #include "game/game.h"
 #include "game/player/player.h"
-#include "game/screen.h"
+#include "game/ui/screen.h"
+#include "game/ui/screen_main.h"
 
 /* Characters of the keys that choose (nge_key_ascii) */
 #define CHAR_ENTER  13

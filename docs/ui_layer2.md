@@ -4,7 +4,9 @@ Status: implemented; all the CSpect checks in section 7 passed (2026-10-21).
 D1, D2, D3, D5 and D6 were agreed on 2026-10-20, and R2's panels stay
 black. Section 8 lists where the build differs from the design.
 Later, [cells_16.md](cells_16.md) changed the layout (the map view 28 x 26,
-stats 12 x 26, messages 40 x 5) and gave Layer 2 its own font.
+stats 12 x 26, messages 40 x 5) and gave Layer 2 its own font, and
+[ui_screens.md](ui_screens.md) replaced the item screens' panel over the
+map with full-screen screens on a second Layer 2 buffer.
 
 Step 6 of [game_loop.md](game_loop.md). Moves the stats, the messages,
 the help bar, the item screens and the title from the tilemap to Layer 2,

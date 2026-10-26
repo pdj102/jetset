@@ -1,6 +1,6 @@
 /*
  * Entry point: the basis of a classic roguelike. Sets up the hardware, the
- * screen (src/game/screen.h), the map (src/game/level/level.h) and the
+ * screen (src/game/ui/screen_main.h), the map (src/game/level/level.h) and the
  * graphics once, then runs the game loop (src/game/game.h): the title,
  * then a game (play_run(): the player and the first level).
  */
@@ -17,7 +17,7 @@
 #include "game/anim/anim.h"
 #include "game/game.h"
 #include "game/level/level.h"
-#include "game/screen.h"
+#include "game/ui/screen_main.h"
 
 int main(void)
 {

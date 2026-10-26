@@ -140,6 +140,6 @@ row of `src/game/README.md`.
 ## Tests
 
 ### G-TEST-1 · should · Game logic has PC tests
-Components, actions, generators, effects, the level and the item screens
+Components, actions, generators, effects, the level and the screens
 have tests in `tests/`, linked through their lists in `tests/Makefile`.
 New game code with rules goes in the matching test, or a new one.

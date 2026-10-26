@@ -33,7 +33,7 @@
 #include "game/events.h"
 #include "game/gen/gen.h"
 #include "game/level/level_internal.h"
-#include "game/screen.h"
+#include "game/ui/screen_main.h"
 
 #define SEEDS  20   /* level_dev_seed values: SEEDS * LEVEL_DEPTH_BOTTOM levels checked */
 

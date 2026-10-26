@@ -11,7 +11,7 @@
 #include "game/components/health.h"
 #include "game/effects/effects.h"
 #include "game/events.h"
-#include "game/screen.h"
+#include "game/ui/screen_main.h"
 
 uint8_t player_turn;
 

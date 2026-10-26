@@ -23,7 +23,7 @@
 #include "game/events.h"
 #include "game/gen/gen.h"
 #include "game/level/level.h"
-#include "game/screen.h"
+#include "game/ui/screen_main.h"
 
 #define MESSAGE_MAX  41   /* a message window line, and its NUL */
 #define NAME_MAX     20   /* a kind's name, and its NUL */

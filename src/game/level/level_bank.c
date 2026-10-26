@@ -11,7 +11,7 @@
 
 #include "game/level/level_internal.h"
 
-#include "game/screen.h"
+#include "game/ui/screen_main.h"
 
 /*
  * What each tile ID blocks. Everything is solid unless set otherwise, so a

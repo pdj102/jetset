@@ -28,9 +28,10 @@
 #include "game/game.h"
 #include "game/level/level.h"
 #include "game/messages/messages.h"
-#include "game/screen.h"
+#include "game/ui/screen.h"
+#include "game/ui/screen_main.h"
 #include "game/target/target.h"
-#include "game/ui/ui.h"
+#include "game/ui/screen_inv.h"
 
 /* Characters of the movement keys (nge_key_ascii): cursor keys */
 #define CHAR_LEFT   8
@@ -127,13 +128,16 @@ static void look(void)
     }
 }
 
-/* Choose an item on a screen (UI_*), then do the action (ACT_*) with it */
-static void item_command(uint8_t screen, uint8_t action)
+/*
+ * Choose an item and an action on the inventory screen: browsing
+ * (SCREEN_INV_BROWSE), or for an action (ACT_*). Then do the action with it
+ */
+static void item_command(uint8_t mode)
 {
     act_t a = { 0 };
+    uint8_t action = screen_inv_run(mode, &a.item);
 
-    a.item = ui_choose_item(screen);
-    if (a.item != NGE_ENTITY_INVALID) {
+    if (action != SCREEN_INV_BACK) {
         a.kind = SLOT_NONE;   /* equip: the first free slot it fits */
         player_act(action, &a);
     }
@@ -240,19 +244,19 @@ void player_command(nge_key_event_t ev) NGE_BANKED
         pick_up();
         break;
     case 'i':
-        ui_show_inventory();
+        item_command(SCREEN_INV_BROWSE);
         break;
     case 'd':
-        item_command(UI_DROP, ACT_DROP);
+        item_command(ACT_DROP);
         break;
     case 'w':
-        item_command(UI_EQUIP, ACT_EQUIP);
+        item_command(ACT_EQUIP);
         break;
     case 'r':
-        item_command(UI_UNEQUIP, ACT_UNEQUIP);
+        item_command(ACT_UNEQUIP);
         break;
     case 'u':
-        item_command(UI_USE, ACT_USE);
+        item_command(ACT_USE);
         break;
     case 'f':
         fire_command();

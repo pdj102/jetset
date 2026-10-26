@@ -4,7 +4,7 @@
 /**
  * @file player.h
  * @brief The player: what their keys do, the direction prompt, their turn,
- *        and the view following them. The item screens are in game/ui.
+ *        and the view following them. The screens are in game/ui.
  *
  * The player entity is actor_player (game/actors.h). Their timer
  * (TIMER_PLAYER) fires every `speed` ticks: player_on_turn() sets
@@ -15,8 +15,8 @@
  * The rest of the tick the player's timer fired in still runs first, so
  * everything due at the same time acts.
  *
- * A command that needs a choice calls a chooser (game/game.h): an item
- * screen (game/ui/ui.h), the direction prompt (player_ask_direction()) or
+ * A command that needs a choice calls a chooser (game/game.h): the
+ * inventory screen (game/ui/screen_inv.h), the direction prompt (player_ask_direction()) or
  * targeting (game/target/target.h). It then does the action with the
  * answer, through player_act().
  *

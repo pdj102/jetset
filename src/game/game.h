@@ -9,7 +9,7 @@
  *
  * game_run() is plain code, for ever:
  *
- *     title_run();                 the title, then the player's name (game/title/title.h)
+ *     screen_title_run();          the title, then the player's name (game/ui/screen_title.h)
  *     reason = play_run();         one game, from the first level to game over
  *     over_run(reason);            why it ended, until a key
  *
@@ -18,7 +18,8 @@
  * overlay sprites, redraw the map if it changed, read the keyboard) and
  * game_frame_end() last (build the next frame's sprites). Waiting for the
  * player goes through game_wait_key(), which runs such frames until a key
- * event arrives: the screen stays live, and nothing else happens.
+ * event arrives: the screen stays live, and nothing else happens. The one
+ * other kind of frame is the paused frame of an overlay screen (below).
  *
  * The play loop is the only place the world is stepped. Each of its frames:
  *
@@ -46,12 +47,19 @@
  * (anim_holding()). The camera follows the player's slide a pixel at a
  * time (nge_render_follow()).
  *
+ * Paused frames. An overlay screen (game/ui/screen.h) pauses the game: its
+ * frames are game_pause_frame(), which only waits for the blanking period
+ * and reads the keyboard, so nothing on the level moves, not even the
+ * animations, until play's frames start again.
+ *
  * Choosers. A command that needs a choice (an item, a direction, a tile)
- * calls a chooser, which shows its screen or prompt, waits with
- * game_wait_key() until the player answers, puts back what it covered and
- * returns the answer; the command then does the action. No time passes
- * while a chooser waits. The choosers are ui_choose_item() and
- * ui_show_inventory() (game/ui/ui.h), player_ask_direction()
+ * calls a chooser, which shows its prompt or screen and waits until the
+ * player answers: a prompt over the map with game_wait_key(), puts back
+ * the help line (game_play_help()); a screen with screen_wait_key(),
+ * paused, and screen_close() shows the main screen again. It returns the
+ * answer, and the command then does the action. No time passes while a
+ * chooser waits. The choosers are screen_inv_run()
+ * (game/ui/screen_inv.h), player_ask_direction()
  * (game/player/player.h) and target_choose() (game/target/target.h).
  *
  * Events are handled in three places, each for a reason: after each
@@ -85,7 +93,7 @@ void game_over(uint8_t reason);
 
 /**
  * @brief Start a frame: wait for the blanking period, upload the sprites
- *        and the overlay sprites (game/screen.h), redraw the map if it
+ *        and the overlay sprites (game/ui/screen_main.h), redraw the map if it
  *        changed, and read the keyboard. If the last frame wasn't ended
  *        (game_frame_end()), it is ended first, so the sprites uploaded are
  *        always built through the camera as it is now.
@@ -99,6 +107,14 @@ void game_frame_start(void);
 void game_frame_end(void);
 
 /**
+ * @brief Run a paused frame, for an overlay screen (game/ui/screen.h):
+ *        wait for the blanking period and read the keyboard. Nothing is
+ *        uploaded or advanced: the sprites, the map and the animations stay
+ *        as they were. If the last frame wasn't ended, it is ended first.
+ */
+void game_pause_frame(void);
+
+/**
  * @brief Wait for a key, running frames that only draw.
  * @param frames The most frames to wait, or 0 to wait for ever.
  * @return The next key event: at once if one is waiting; or NGE_KEY_NONE
@@ -108,7 +124,7 @@ nge_key_event_t game_wait_key(uint16_t frames);
 
 /**
  * @brief Draw the level's screen afresh, for a new game or a new level:
- *        the map view uncovered (screen_show_map()), the level's sprites,
+ *        the level's sprites,
  *        the map, the stats, the turn, the depth, and play's help.
  */
 void game_play_redraw(void);

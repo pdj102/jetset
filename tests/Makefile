@@ -61,8 +61,9 @@ LEVEL_GAME_OBJS := $(LEVEL_ONLY_OBJS) $(GEN_GAME_OBJS)
 # The stairs actions send entities between levels: the actions need the level module
 ACT_GAME_SRCS := $(wildcard $(GAMEDIR)/actions/*.c)
 ACT_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(ACT_GAME_SRCS)) $(LEVEL_GAME_OBJS)
-UI_GAME_SRCS := $(addprefix $(GAMEDIR)/,ui/ui_bank.c player/player.c player/player_bank.c screen.c \
-                messages/messages_bank.c target/target_bank.c)
+UI_GAME_SRCS := $(wildcard $(GAMEDIR)/ui/*.c) \
+                $(addprefix $(GAMEDIR)/,player/player.c player/player_bank.c messages/messages_bank.c \
+                target/target_bank.c)
 UI_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(UI_GAME_SRCS)) $(ACT_GAME_OBJS)
 
 ANIM_GAME_SRCS := $(addprefix $(GAMEDIR)/,anim/anim.c anim/anim_bank.c anim/anim_pdata.c)
@@ -72,8 +73,8 @@ TEST_SRCS := $(wildcard test_*.c)
 TESTS := $(patsubst %.c,$(BUILD)/%,$(TEST_SRCS))
 
 # NGE_CSPECT: build the DebugOut stream (its trap is faked).
-# NGE_FILE_MAX: room for the stdout debug stream that test_init() opens.
-CPPFLAGS := -DNGE_CSPECT -DNGE_FILE_MAX=8 \
+# NGE_FILE_MAX: the game's 10 (Makefile), and room for the stdout debug stream that test_init() opens.
+CPPFLAGS := -DNGE_CSPECT -DNGE_FILE_MAX=12 \
             -include support/test_config.h \
             -Isupport -I$(GEN) -I$(SRCDIR) -I$(SRCDIR)/.. -I$(Z88DK_CONFIG_DIR)
 CFLAGS := -std=gnu11 -O1 -g -Wall -MMD -MP

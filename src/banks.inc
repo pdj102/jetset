@@ -15,8 +15,9 @@
 // /* nge-dataseg: PAGE_n */), which is mapped into slot 7 whenever its code
 // runs.
 //
-//   0-31    system: program (4-5), video (10-11), bank 7 (14-15), Layer 2 (16-31)
-//   32-39   spare
+//   0-35    system: program (4-5), video (10-11), bank 7 (14-15), Layer 2
+//           (16-35: buffer 0 in 16-25, buffer 1 in 26-35)
+//   36-39   spare
 //   40/41   nge output (reserved: the output path stays in common memory)
 //   42/43   nge sprite
 //   44/45   nge map: set-up code / (unused); its data is in page 51
@@ -33,21 +34,23 @@
 //   88-99   further nge modules (6 pairs)
 //             88/89  input: setup, ASCII tables and waiting / (unused)
 //             90/91  layer2: Layer 2 drawing / (unused); the layer itself is
-//                    in pages 16-25
+//                    in pages 16-35
 //   100-223 game
 //             100-101  free (game assets)
 //             102-131  game code pairs (15), from 102 up:
 //                        102/103  level: setting up the map, generating levels and
 //                                 decorating them / the room list, the terrain and
 //                                 the decorator's tables
-//                        104/105  title: the title state / (unused)
+//                        104/105  free (was the title, now in ui)
 //                        106/107  gen creature: creature generator / base creatures
 //                        108/109  gen item: item generator / base items
 //                        110/111  gen shared: generator helpers and game components'
 //                                 add functions / (unused)
 //                        112/113  actions: the actions / (unused)
 //                        114/115  player: commands and the firing screen / (unused)
-//                        116/117  ui: the item screens / (unused)
+//                        116/117  ui: the screens (the framework, the main
+//                                 screen's set-up and stats, the inventory, the
+//                                 title) / the inventory's list
 //                        118/119  messages: what the player is told / (unused)
 //                        120/121  effects: the effect system / the effect
 //                                 definitions and the active effects' kinds
@@ -87,9 +90,6 @@
 // game level: setting up and building a level
 #pragma define CRT_ORG_PAGE_102 = 0x66C000
 
-// game title: the title state
-#pragma define CRT_ORG_PAGE_104 = 0x68C000
-
 // game gen: the creature generator
 #pragma define CRT_ORG_PAGE_106 = 0x6AC000
 
@@ -105,7 +105,7 @@
 // game player: the player's commands and the firing screen (game/player)
 #pragma define CRT_ORG_PAGE_114 = 0x72C000
 
-// game ui: the item screens (game/ui)
+// game ui: the screens (game/ui)
 #pragma define CRT_ORG_PAGE_116 = 0x74C000
 
 // game messages: what the player is told (game/messages)

@@ -144,8 +144,8 @@ code pages.
 
 | Pages | Owner |
 |---|---|
-| 0-31 | System: program (4-5), video (10-11), bank 7 (14-15), Layer 2 (16-31) |
-| 32-39 | Spare |
+| 0-35 | System: program (4-5), video (10-11), bank 7 (14-15), Layer 2 (16-35: buffer 0 in 16-25, buffer 1 in 26-35, [ui_screens.md](ui_screens.md)) |
+| 36-39 | Spare |
 | 40/41 | nge `io` (reserved; the output path stays in common memory) |
 | 42/43 | nge `sprite` (setup functions and loaders) |
 | 44/45 | nge `map`: set-up code (init, block table, sprite clip) / unused. Its per-frame code is in common memory, its data in page 51 |
@@ -153,7 +153,7 @@ code pages.
 | 48-87 | nge `ecs` (20 pairs): 48/49 `entity` and `owner` (lifecycle and ownership code / lifecycle bookkeeping); 50 ECS data, mapped permanently into slot 0 (see [ECS data in slot 0](#ecs-data-in-slot-0)); 51 map data, mapped permanently into slot 1 (see [Always-mapped data pages](#always-mapped-data-pages)); 52/53 `render` system; 54/55 `timer` system |
 | 88-99 | Further nge modules (6 pairs): 88/89 `input` (setup, ASCII tables and waiting / unused); 90/91 `layer2` (Layer 2 drawing / unused) |
 | 100-101 | Game: free (assets) |
-| 102-131 | Game code pairs (15), allocated from 102 up: 102/103 `level` (setting up the map, generating and decorating levels / the room list, the terrain and the decorator's tables); 104/105 `title` (the title state / unused); 106/107 `gen` creatures (generator / base creatures); 108/109 `gen` items (generator / base items); 110/111 `gen` shared (helpers and the game components' add functions / unused); 112/113 `actions` (the actions / unused); 114/115 `player` (commands and the firing screen / unused); 116/117 `ui` (the item screens / unused); 118/119 `messages` (what the player is told / unused); 120/121 `effects` (the effect system / the effect definitions and active effects' kinds); 122/123 `gen` features (generator / base features); 124/125 `target` (targeting / unused); 126/127 `anim` (starting the action animations / the kinds' sequences) |
+| 102-131 | Game code pairs (15), allocated from 102 up: 102/103 `level` (setting up the map, generating and decorating levels / the room list, the terrain and the decorator's tables); 104/105 free (was the title, now a screen in `ui`); 106/107 `gen` creatures (generator / base creatures); 108/109 `gen` items (generator / base items); 110/111 `gen` shared (helpers and the game components' add functions / unused); 112/113 `actions` (the actions / unused); 114/115 `player` (commands and the firing screen / unused); 116/117 `ui` (the screens / the inventory's list); 118/119 `messages` (what the player is told / unused); 120/121 `effects` (the effect system / the effect definitions and active effects' kinds); 122/123 `gen` features (generator / base features); 124/125 `target` (targeting / unused); 126/127 `anim` (starting the action animations / the kinds' sequences) |
 | 132-223 | Game assets: maps, graphics, level data. 133: the map tiles' palette (slot 7, through `nge_palette_load9()`), generated from the tileset. 135: the sprite palette, 137 and 139: the sprite patterns (slot 7, through the loaders), generated from the sprite file ([sprite_import.md](sprite_import.md)) |
 
 - **Module code, string literals and constants:** the even page. A banked
@@ -205,10 +205,9 @@ Banked so far:
 | 118/119 | game `messages` | the message window's reactions to events and to refused commands, with their texts (`game/messages/messages_bank.c`) | none |
 | 120/121 | game `effects` | applying, ending and recomputing effects: the mechanism (`game/effects/effects_core.c`) and the game's side (`game/effects/effects_game.c`) | the effect definitions with their texts, and the kind of each active effect (`game/effects/effects_pdata.c`) |
 | 122/123 | game `gen` features | the feature generator and its name, hook and kind-data copies (`game/gen/gen_feature_bank.c`) | the base features (`game/gen/gen_feature_pdata.c`) |
-| 124/125 | game `target` | targeting: the cursor, its keys and the purposes' prompts (`game/target/target_bank.c`); the cursor is an overlay sprite (`game/screen.h`) | none |
+| 124/125 | game `target` | targeting: the cursor, its keys and the purposes' prompts (`game/target/target_bank.c`); the cursor is an overlay sprite (`game/ui/screen_main.h`) | none |
 | 126/127 | game `anim` | starting the action animations from events, and copying the kinds' sequences (`game/anim/anim_bank.c`, about 0.6K); `anim_holding()` is common (`anim.c`) | the creature kinds' sequences (`game/anim/anim_pdata.c`, 6 bytes a kind) |
-| 116/117 | game `ui` | the item screens shown in the map window (inventory, drop, equip, take off) and their table of descriptions (`game/ui/ui_bank.c`) | none |
-| 104/105 | game `title` | the title state and the name prompt, with literals (`game/title/title_bank.c`, about 0.4K; no common part) | none |
+| 116/117 | game `ui` | the screens (`docs/ui_screens.md`): opening and closing overlay screens (`game/ui/screen_bank.c`), the main screen's set-up and stats (`screen_main_bank.c`), the inventory (`screen_inv_bank.c`) and the title (`screen_title_bank.c`), with literals, about 4.7K with asserts; the help line, the messages, the overlay sprites and the map view's cells are common (`screen.c`, `screen_main.c`) | the inventory's list: its items and cursor, and its panels' streams (`screen_pdata.c`, 42 bytes) |
 
 How a module is banked:
 
@@ -331,7 +330,7 @@ src/game/level/
   monster move), and data read by common code every frame.
 - **A game function that receives literals or data from a banked module
   stays common,** or is in the same page. `screen_message()` is common, so
-  `level_bank.c` can pass it its own literals; a banked `screen` module
+  `level_bank.c` can pass it its own literals; a banked `screen_message()`
   would map its own page over them.
 - **Base names stay unique across the project** (`level.c`,
   `level_bank.c`): z88dk object and symbol names are global.
@@ -444,10 +443,10 @@ caller can see them:
   when it calls the record functions and the upload;
 - a game's own records for the other sprites (a HUD, for example) are an
   array in common memory, or in its own page if its code is banked. The
-  game keeps the ranges apart, in `game/screen.h`: the overlay sprites
-  (the targeting cursor, later projectiles and effects) are hardware
-  sprites `NGE_RENDER_SPRITES` (64) onwards, their records in common
-  memory (`screen.c`), uploaded by `game_frame_start()`.
+  game keeps the ranges apart, in `game/ui/screen_main.h`: the overlay
+  sprites (the targeting cursor, later projectiles and effects) are
+  hardware sprites `NGE_RENDER_SPRITES` (64) onwards, their records in
+  common memory (`screen_main.c`), uploaded by `game_frame_start()`.
 
 Keep in non-banked memory anything used after the upload:
 

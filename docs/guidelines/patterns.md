@@ -107,25 +107,42 @@ targeting (`target_choose()`, game/target/target.h), whose frames do only
 ### P-LOOP-1 · must · Loops that run frames follow game/game.h
 - Every loop that runs frames calls `game_frame_start()` first and
   `game_frame_end()` last in each frame, or waits through
-  `game_wait_key()`, which does both. There is no other frame loop.
+  `game_wait_key()`, which does both. The one other frame is an overlay
+  screen's paused frame, `game_pause_frame()`, run only through
+  `screen_frame()` and `screen_wait_key()` (game/ui/screen.h). There is no
+  other frame loop.
 - Only the play loop (`play_run()`) steps the world: the turn engine, the
   frame's events, a change of level, the clean-up and the guard check.
 - The design and its requirements are in `docs/game_loop.md`.
 
 ### P-CHOOSE-1 · must · Choosers follow game/game.h
-- A chooser (`ui_choose_item()`, `ui_show_inventory()`,
-  `player_ask_direction()`, `target_choose()`) is called by a command,
-  during the player's turn. It throws away waiting key events, shows its
-  screen or prompt, waits with `game_wait_key()`, puts back what it
-  covered (`game_play_redraw()` after a screen over the map window,
-  `game_play_help()` after a prompt), throws away waiting key events
-  again, and returns the answer.
+- A chooser (`screen_inv_run()`, `player_ask_direction()`,
+  `target_choose()`) is called by a command, during the player's turn. It
+  throws away waiting key events and shows its prompt or screen. A prompt
+  waits with `game_wait_key()` and puts back play's help
+  (`game_play_help()`); a screen is an overlay screen (P-SCREEN-1). It
+  throws away waiting key events again, and returns the answer.
 - It only chooses: it does no action and posts no events. The command does
   the action with the answer, through `player_act()`.
-- Its answer to a key is a step function on one key event (`ui_item_key()`,
-  `player_direction_key()`, `target_key()`), with PC tests.
-- A new item screen is a row in the description table (`ui_bank.c`) and a
-  `UI_*` number.
+- Its answer to a key is a step function on one key event
+  (`player_direction_key()`, `target_key()`, the inventory's `key()`), with
+  PC tests: a screen's through its run function, the keys given one a
+  paused frame by the test's `game_pause_frame()`.
+- An action the screen offers is first asked in check mode (`ACT_CHECK`),
+  and a refusal's reason shows on the screen (`screen_message_to()`).
+
+### P-SCREEN-1 · must · Overlay screens follow game/ui/screen.h
+- An overlay screen is a run function in its own file in `game/ui/`
+  (`screen_<name>_bank.c`, page 116 while it fits). It calls
+  `screen_open()`, opens its panels from a table (`ui/nge_panel.h`) on
+  `SCREEN_BUFFER_OVERLAY`, covering rows 0-30, and draws them; waits with
+  `screen_wait_key()` or `screen_frame()`; and closes its streams, then
+  calls `screen_close()`, on every path.
+- It draws only on `SCREEN_BUFFER_OVERLAY`, never on the main screen, and
+  sets the help line (`screen_help()`) when it opens and when its context
+  changes.
+- What it tells the player comes from `messages/` (G-FLOW-3): sent to its
+  own panel with `screen_message_to()` while it must show there.
 
 ### P-LEVEL-1 · must · Level changes follow game/level/level.h
 - Leaving the player's level is a request (`level_request()`), carried out

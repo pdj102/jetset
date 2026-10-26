@@ -16,7 +16,8 @@
 #include "game/gen/gen.h"
 #include "game/level/level.h"
 #include "game/messages/messages.h"
-#include "game/screen.h"
+#include "game/ui/screen.h"
+#include "game/ui/screen_main.h"
 #include "game/target/target.h"
 
 #define EV(k)  ((nge_key_event_t)(k))
@@ -47,6 +48,12 @@ void game_play_help(void)
 
 void game_play_redraw(void)
 {
+}
+
+/* Frames of an overlay screen: none is opened here */
+void game_pause_frame(void)
+{
+    CHECK(0);
 }
 
 /*
