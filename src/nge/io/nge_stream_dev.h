@@ -43,6 +43,7 @@ typedef struct nge_tm_state {
  */
 typedef struct nge_l2_state {
     nge_rect_t area; /**< Cells, inclusive. */
+    uint8_t buffer;  /**< The Layer 2 buffer it draws on. */
     uint8_t cx;      /**< Cursor column (absolute); x2 + 1 means a wrap is pending. */
     uint8_t cy;      /**< Cursor row (absolute). */
     uint8_t ink;     /**< Text colour, RRRGGGBB. */

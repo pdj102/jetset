@@ -29,7 +29,7 @@ static void test_colours(void)
     NGE_FILE *s;
 
     nge_layer2_init();
-    s = nge_open_layer2(&box, BLUE);
+    s = nge_open_layer2(0, &box, BLUE);
     CHECK(s != NULL);
     CHECK(test_layer2[3][2].paper == NGE_LAYER2_TRANSPARENT);   /* opening doesn't clear */
 
@@ -82,14 +82,68 @@ static void test_colours(void)
     nge_close(s);
 }
 
+/* ---- PAPER: the paper of following characters and of clearing ---- */
+
+static void test_paper(void)
+{
+    static const nge_rect_t line = { 0, 7, 1, 1 };   /* 8 wide, 1 row */
+    NGE_FILE *s;
+
+    nge_layer2_init();
+    s = nge_open_layer2(0, &line, BLACK);
+    nge_text_cls(s);
+    nge_putc('a', s);
+    nge_text_paper(BLUE, s);
+    nge_putc('b', s);
+    CHECK(test_layer2[1][0].paper == BLACK && test_layer2[1][1].paper == BLUE && test_layer2[1][1].c == 'b');
+    nge_text_clreol(s);                                   /* a highlighted bar to the edge */
+    CHECK(test_layer2[1][7].paper == BLUE && test_layer2[1][1].c == 'b');
+    nge_text_paper(BLACK, s);
+    nge_putc('c', s);
+    CHECK(test_layer2[1][2].paper == BLACK);
+    nge_text_paper(BLUE, s);
+    nge_text_cls(s);
+    CHECK(test_layer2[1][0].paper == BLUE && test_layer2[1][0].c == ' ');
+    nge_close(s);
+}
+
+/* ---- Buffers: a stream draws on its own buffer only, whichever is shown ---- */
+
+static void test_buffers(void)
+{
+    static const nge_rect_t line = { 0, 7, 1, 1 };
+    NGE_FILE *s0;
+    NGE_FILE *s1;
+
+    nge_layer2_init();
+    CHECK(test_layer2_buffer == 0);
+    CHECK(test_layer2_buf[1][0][0].paper == NGE_LAYER2_TRANSPARENT);   /* every buffer cleared */
+    s0 = nge_open_layer2(0, &line, BLACK);
+    s1 = nge_open_layer2(1, &line, BLUE);
+    nge_text_cls(s1);
+    nge_puts("one", s1);
+    nge_layer2_show_buffer(1);
+    nge_puts("zero", s0);
+    test_layer2_buf_row(1, 1, 0, 7, row);
+    CHECK_STR(row, "one     ");
+    test_layer2_buf_row(0, 1, 0, 7, row);
+    CHECK_STR(row, "zero    ");
+    CHECK(test_layer2_buf[0][1][5].paper == NGE_LAYER2_TRANSPARENT && test_layer2_buf[1][1][5].paper == BLUE);
+    CHECK(test_layer2_buffer == 1);
+    nge_close(s0);
+    nge_close(s1);
+    TEST_EXPECT_HALT(nge_open_layer2(NGE_LAYER2_BUFFERS, &line, BLACK));
+    CHECK(test_halt_count == 1);
+}
+
 static void test_open_asserts(void)
 {
     static const nge_rect_t too_wide = { 0, NGE_LAYER2_COLS, 0, 0 };
     static const nge_rect_t too_tall = { 0, 0, 0, NGE_LAYER2_ROWS };
 
-    TEST_EXPECT_HALT(nge_open_layer2(&too_wide, BLACK));
+    TEST_EXPECT_HALT(nge_open_layer2(0, &too_wide, BLACK));
     CHECK(test_halt_count == 1);
-    TEST_EXPECT_HALT(nge_open_layer2(&too_tall, BLACK));
+    TEST_EXPECT_HALT(nge_open_layer2(0, &too_tall, BLACK));
     CHECK(test_halt_count == 1);
 }
 
@@ -144,7 +198,7 @@ static void test_random(void)
         for (w = 0; w < nw; w++) {
             const nge_rect_t *a = (nw == 1) ? &areas[3] : &areas[w];
 
-            l2[w] = nge_open_layer2(a, BLACK);
+            l2[w] = nge_open_layer2(0, a, BLACK);
             tm[w] = nge_open_tilemap(a, 0);
         }
         for (i = 0; i < 3000; i++) {
@@ -178,6 +232,8 @@ int main(void)
 {
     test_init();
     test_colours();
+    test_paper();
+    test_buffers();
     test_open_asserts();
     test_random();
     return test_summary("l2_stream");

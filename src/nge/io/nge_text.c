@@ -16,6 +16,12 @@ void nge_text_attr(uint8_t a, NGE_FILE *stream)
     nge_putc(a, stream);
 }
 
+void nge_text_paper(uint8_t p, NGE_FILE *stream)
+{
+    nge_putc(NGE_CTRL_PAPER, stream);
+    nge_putc(p, stream);
+}
+
 void nge_text_at(uint8_t y, uint8_t x, NGE_FILE *stream)
 {
     nge_putc(NGE_CTRL_AT, stream);

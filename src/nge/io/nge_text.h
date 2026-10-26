@@ -19,6 +19,7 @@
  * | 0x10 | n          | INK: a text colour (NGE_INK_*)                  |
  * | 0x11 | n          | ATTR: the device's raw colour or attribute byte |
  * | 0x12 | n          | CLIP: n != 0 clips at the edges, 0 wraps/scrolls |
+ * | 0x13 | n          | PAPER: the device's raw background colour       |
  * | 0x16 | y, x       | AT: move cursor, relative to the window         |
  *
  * Other codes below 0x20 are ignored.
@@ -45,6 +46,7 @@
 #define NGE_CTRL_INK   0x10 /**< INK n. */
 #define NGE_CTRL_ATTR  0x11 /**< ATTR n. */
 #define NGE_CTRL_CLIP  0x12 /**< CLIP n. */
+#define NGE_CTRL_PAPER 0x13 /**< PAPER n. */
 #define NGE_CTRL_AT    0x16 /**< AT y, x. */
 
 /**
@@ -65,6 +67,13 @@ void nge_text_ink(uint8_t n, NGE_FILE *stream);
 
 /** @brief Set the device's raw colour or attribute byte for following characters. */
 void nge_text_attr(uint8_t a, NGE_FILE *stream);
+
+/**
+ * @brief Set the device's raw background colour for following characters
+ *        and clearing: a Layer 2 stream's paper (RRRGGGBB). A tilemap stream
+ *        has no paper, and ignores it.
+ */
+void nge_text_paper(uint8_t p, NGE_FILE *stream);
 
 /** @brief Move the cursor to row y, column x, relative to the window. */
 void nge_text_at(uint8_t y, uint8_t x, NGE_FILE *stream);

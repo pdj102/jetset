@@ -47,10 +47,10 @@ static void scroll_cols(uint8_t *p, uint8_t cells, uint8_t fill);
 
 /* ---- Set-up ---- */
 
-/* Map the page holding cell column col; the address of its first pixel column */
-static uint8_t *map_col(uint8_t col)
+/* Map the page holding cell column col of buffer b; the address of its first pixel column */
+static uint8_t *map_col(uint8_t b, uint8_t col)
 {
-    nge_mmu_map(SLOT, (uint8_t)(NGE_LAYER2_PAGE + col / CELLS_PER_PAGE));
+    nge_mmu_map(SLOT, (uint8_t)(NGE_LAYER2_PAGE + b * NGE_LAYER2_PAGES + col / CELLS_PER_PAGE));
     return SLOT_BASE + (uint16_t)(col % CELLS_PER_PAGE) * CELL * COLUMN;
 }
 
@@ -64,8 +64,9 @@ static void set_priority(uint8_t priority)
 void nge_layer2_init(void) NGE_BANKED
 {
     uint16_t i;
+    uint8_t b;
 
-    ZXN_WRITE_REG(REG_LAYER_2_RAM_BANK, NGE_LAYER2_PAGE / 2);
+    nge_layer2_show_buffer(0);
     ZXN_WRITE_REG(NGE_REG_LAYER_2_CONTROL, NGE_RL2C_320x256);
     ZXN_WRITE_REG(REG_LAYER_2_OFFSET_X, 0);
     ZXN_WRITE_REG(NGE_REG_LAYER_2_OFFSET_X_MSB, 0);
@@ -87,8 +88,18 @@ void nge_layer2_init(void) NGE_BANKED
         ZXN_WRITE_REG(REG_PALETTE_VALUE_8, (uint8_t)i);
     }
 
-    nge_layer2_fill(0, 0, NGE_LAYER2_COLS - 1, NGE_LAYER2_ROWS - 1, NGE_LAYER2_TRANSPARENT);
+    for (b = 0; b < NGE_LAYER2_BUFFERS; b++) {
+        nge_layer2_fill(b, 0, 0, NGE_LAYER2_COLS - 1, NGE_LAYER2_ROWS - 1, NGE_LAYER2_TRANSPARENT);
+    }
     nge_layer2_show(1);
+}
+
+void nge_layer2_show_buffer(uint8_t b) NGE_BANKED
+{
+    nge_util_assert(b < NGE_LAYER2_BUFFERS);
+
+    /* The register takes a 16K bank: two pages */
+    ZXN_WRITE_REG(REG_LAYER_2_RAM_BANK, (uint8_t)((NGE_LAYER2_PAGE + b * NGE_LAYER2_PAGES) / 2));
 }
 
 void nge_layer2_show(uint8_t on) NGE_BANKED
@@ -106,17 +117,18 @@ void nge_layer2_show(uint8_t on) NGE_BANKED
 
 /* ---- Drawing ---- */
 
-void nge_layer2_fill(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, uint8_t colour) NGE_BANKED
+void nge_layer2_fill(uint8_t b, uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, uint8_t colour) NGE_BANKED
 {
     uint8_t old = nge_mmu_get(SLOT);
     uint8_t cells;
     uint8_t col;
 
-    nge_util_assert(x1 <= x2 && x2 < NGE_LAYER2_COLS && y1 <= y2 && y2 < NGE_LAYER2_ROWS);
+    nge_util_assert(b < NGE_LAYER2_BUFFERS && x1 <= x2 && x2 < NGE_LAYER2_COLS && y1 <= y2 &&
+                    y2 < NGE_LAYER2_ROWS);
 
     cells = (uint8_t)(y2 - y1 + 1);
     for (col = x1; col <= x2; col++) {
-        fill_cols(map_col(col) + (uint16_t)y1 * CELL, cells, colour);
+        fill_cols(map_col(b, col) + (uint16_t)y1 * CELL, cells, colour);
     }
     nge_mmu_map(SLOT, old);
 }
@@ -408,27 +420,27 @@ static void glyph(uint8_t *p, uint8_t c, uint8_t ink, uint8_t paper)
     glyph_cols(p, nge_layer2_font[c - NGE_LAYER2_FONT_FIRST], ink, paper);
 }
 
-void nge_layer2_glyph(uint8_t col, uint8_t row, uint8_t c, uint8_t ink, uint8_t paper) NGE_BANKED
+void nge_layer2_glyph(uint8_t b, uint8_t col, uint8_t row, uint8_t c, uint8_t ink, uint8_t paper) NGE_BANKED
 {
     uint8_t old = nge_mmu_get(SLOT);
 
-    nge_util_assert(col < NGE_LAYER2_COLS && row < NGE_LAYER2_ROWS);
+    nge_util_assert(b < NGE_LAYER2_BUFFERS && col < NGE_LAYER2_COLS && row < NGE_LAYER2_ROWS);
 
-    glyph(map_col(col) + (uint16_t)row * CELL, c, ink, paper);
+    glyph(map_col(b, col) + (uint16_t)row * CELL, c, ink, paper);
     nge_mmu_map(SLOT, old);
 }
 
-void nge_layer2_text(uint8_t col, uint8_t row, const char *s, uint8_t ink, uint8_t paper) NGE_BANKED
+void nge_layer2_text(uint8_t b, uint8_t col, uint8_t row, const char *s, uint8_t ink, uint8_t paper) NGE_BANKED
 {
     uint8_t old = nge_mmu_get(SLOT);
     uint8_t *p = NULL;
 
-    nge_util_assert(row < NGE_LAYER2_ROWS);
+    nge_util_assert(b < NGE_LAYER2_BUFFERS && row < NGE_LAYER2_ROWS);
 
     for (; *s != '\0' && col < NGE_LAYER2_COLS; s++, col++) {
         /* A page holds 4 cell columns: map it only on entering it */
         if (p == NULL || col % CELLS_PER_PAGE == 0) {
-            p = map_col(col) + (uint16_t)row * CELL;
+            p = map_col(b, col) + (uint16_t)row * CELL;
         }
         glyph(p, (uint8_t)*s, ink, paper);
         p += CELL * COLUMN;   /* the next cell column */
@@ -436,17 +448,18 @@ void nge_layer2_text(uint8_t col, uint8_t row, const char *s, uint8_t ink, uint8
     nge_mmu_map(SLOT, old);
 }
 
-void nge_layer2_scroll_up(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, uint8_t fill) NGE_BANKED
+void nge_layer2_scroll_up(uint8_t b, uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, uint8_t fill) NGE_BANKED
 {
     uint8_t old = nge_mmu_get(SLOT);
     uint8_t cells;
     uint8_t col;
 
-    nge_util_assert(x1 <= x2 && x2 < NGE_LAYER2_COLS && y1 <= y2 && y2 < NGE_LAYER2_ROWS);
+    nge_util_assert(b < NGE_LAYER2_BUFFERS && x1 <= x2 && x2 < NGE_LAYER2_COLS && y1 <= y2 &&
+                    y2 < NGE_LAYER2_ROWS);
 
     cells = (uint8_t)(y2 - y1);   /* every row but the top one moves up */
     for (col = x1; col <= x2; col++) {
-        scroll_cols(map_col(col) + (uint16_t)y1 * CELL, cells, fill);
+        scroll_cols(map_col(b, col) + (uint16_t)y1 * CELL, cells, fill);
     }
     nge_mmu_map(SLOT, old);
 }

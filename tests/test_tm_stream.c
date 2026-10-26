@@ -163,6 +163,7 @@ static void ref_put(ref_t *r, int c)
         r->cy = r->arg > r->y2 - r->y1 ? r->y2 : r->y1 + r->arg;
         return;
     case 5: r->clip = c; return;
+    case 6: return;   /* PAPER's parameter: no paper on the tilemap */
     }
     if (c >= 0x20) {
         if (r->cx > r->x2) {
@@ -190,6 +191,7 @@ static void ref_put(ref_t *r, int c)
     case 0x10: r->esc = 1; break;
     case 0x11: r->esc = 2; break;
     case 0x12: r->esc = 5; break;
+    case 0x13: r->esc = 6; break;
     case 0x16: r->esc = 3; break;
     }
 }

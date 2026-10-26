@@ -14,6 +14,7 @@
 #define ESC_AT_Y  3
 #define ESC_AT_X  4
 #define ESC_CLIP  5
+#define ESC_PAPER 6   /* the tilemap has no paper: the parameter is skipped */
 
 /* Point the cached cell at the cursor after a non-sequential move. */
 static void tm_sync(nge_tm_state_t *tm)
@@ -116,6 +117,9 @@ static void tm_control(nge_tm_state_t *tm, uint8_t c)
     case NGE_CTRL_CLIP:
         tm->esc = ESC_CLIP;
         break;
+    case NGE_CTRL_PAPER:
+        tm->esc = ESC_PAPER;
+        break;
     default:
         break;
     }
@@ -153,6 +157,8 @@ static void tm_escape(nge_tm_state_t *tm, uint8_t c)
         break;
     case ESC_CLIP:
         tm->clip = c;
+        break;
+    case ESC_PAPER:
         break;
     }
 }

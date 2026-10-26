@@ -105,11 +105,17 @@ typedef struct test_l2_cell {
     uint8_t paper;   /**< Its background. */
 } test_l2_cell_t;
 
-extern test_l2_cell_t test_layer2[32][40];   /**< By row, then column (NGE_LAYER2_ROWS x NGE_LAYER2_COLS). */
+/** Each buffer by row, then column (NGE_LAYER2_BUFFERS x NGE_LAYER2_ROWS x NGE_LAYER2_COLS). */
+extern test_l2_cell_t test_layer2_buf[2][32][40];
+#define test_layer2  (test_layer2_buf[0])    /**< Buffer 0: the one most tests draw on. */
 extern uint8_t test_layer2_shown;           /**< The last nge_layer2_show(). */
+extern uint8_t test_layer2_buffer;          /**< The last nge_layer2_show_buffer(). */
 
-/** Copy the characters of Layer 2 row y, columns x1..x2, into out as a string. */
+/** Copy the characters of buffer 0's row y, columns x1..x2, into out as a string. */
 void test_layer2_row(uint8_t y, uint8_t x1, uint8_t x2, char *out);
+
+/** Copy the characters of buffer b's row y, columns x1..x2, into out as a string. */
+void test_layer2_buf_row(uint8_t b, uint8_t y, uint8_t x1, uint8_t x2, char *out);
 
 /* ---- CSpect DebugOut: the fake nge_cspect_trap() records each call ---- */
 

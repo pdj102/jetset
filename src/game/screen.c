@@ -84,10 +84,10 @@ void screen_init(void)
     }
     message_line_used = 0;
     nge_sprite_clear(overlay, SCREEN_OVERLAY_COUNT);
-    screen_stats = nge_open_layer2(&stats_area, PAPER);
-    screen_messages = nge_open_layer2(&message_area, PAPER);
-    screen_panel = nge_open_layer2(&screen_map_view, PAPER);
-    help = nge_open_layer2(&help_area, PAPER);
+    screen_stats = nge_open_layer2(0, &stats_area, PAPER);
+    screen_messages = nge_open_layer2(0, &message_area, PAPER);
+    screen_panel = nge_open_layer2(0, &screen_map_view, PAPER);
+    help = nge_open_layer2(0, &help_area, PAPER);
     nge_util_assert(help != NULL);   /* streams are handed out in turn: if one failed, the last did */
 
     nge_text_clip(1, screen_stats);
@@ -100,7 +100,7 @@ void screen_init(void)
 
 void screen_show_map(void)
 {
-    nge_layer2_fill(screen_map_view.x1, screen_map_view.y1, screen_map_view.x2, screen_map_view.y2,
+    nge_layer2_fill(0, screen_map_view.x1, screen_map_view.y1, screen_map_view.x2, screen_map_view.y2,
                     NGE_LAYER2_TRANSPARENT);
 }
 
