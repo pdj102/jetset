@@ -6,15 +6,15 @@
  * - gen.c (common memory): gen_name(), which finds the class's page;
  * - gen_shared_bank.c (page 110): helpers used by every class's generator;
  * - gen_<class>_bank.c (even page): a class's generator;
- * - gen_<class>_pdata.c (odd page): its table of base records.
+ * - gen_<class>_pdata.c (odd page): its table of kind records.
  *
  * A class's table is in its odd page, in slot 7 only while its own code
  * runs. Calling any other page (the shared helpers, the components, nge)
  * maps that page over slots 6 and 7, so a class first copies the record it
  * needs onto the stack, in common memory, and passes the copy.
  *
- * Base records are made of parts that match the components they set: a
- * component's base type (stats_base_t) is defined with the component and
+ * Kind records are made of parts that match the components they set: a
+ * component's kind type (stats_kind_t) is defined with the component and
  * passed to its _add() function, so the record and the component can't
  * drift apart. Records hold no pointers to code: behaviour is chosen by
  * numbers (flags, kinds) that the game's code switches on.
@@ -63,44 +63,44 @@ typedef struct gen_where {
 /* Creature flags */
 #define CREATURE_PLAYER  0x01   /* the player: its turns wait for commands */
 
-typedef struct gen_creature_base {
+typedef struct gen_creature_kind {
     const char  *name;    /* in the table's page */
     gen_render_t render;
     gen_block_t  block;
-    stats_base_t stats;
-    health_base_t health;
-    mana_base_t  mana;        /* mp 0 for none */
-    attack_base_t melee;      /* its natural melee attack (fists, a bite); dice 0 for none */
+    stats_kind_t stats;
+    health_kind_t health;
+    mana_kind_t  mana;        /* mp 0 for none */
+    attack_kind_t melee;      /* its natural melee attack (fists, a bite); dice 0 for none */
     gen_inventory_t inventory;
     uint8_t      flags;   /* CREATURE_* */
     uint8_t      hooks[GEN_HOOK_COUNT];   /* EF_* by GEN_HOOK_*: hit, innate */
     gen_seq_t    seqs[GEN_SEQ_COUNT];     /* by GEN_SEQ_*: count 0 for none */
     gen_where_t  where;
-} gen_creature_base_t;
+} gen_creature_kind_t;
 
-typedef struct gen_item_base {
+typedef struct gen_item_kind {
     const char  *name;    /* in the table's page */
     gen_render_t render;
     uint8_t      subclass;   /* ITEM_POTION, ITEM_WEAPON... (gen_kinds.h) */
     uint16_t     fits;       /* the slots it can be equipped in (SLOT_BIT() mask), 0 for none */
-    health_base_t health;    /* no hit points: it can't be damaged (no component) */
-    attack_base_t melee;     /* as a melee weapon; dice 0 for none */
+    health_kind_t health;    /* no hit points: it can't be damaged (no component) */
+    attack_kind_t melee;     /* as a melee weapon; dice 0 for none */
     uint8_t      hooks[GEN_HOOK_COUNT];   /* EF_* by GEN_HOOK_*: use, hit, worn */
     gen_where_t  where;
-} gen_item_base_t;
+} gen_item_kind_t;
 
-typedef struct gen_feature_base {
+typedef struct gen_feature_kind {
     const char        *name;   /* in the table's page */
     gen_feature_info_t info;   /* its looks, what it can do, what it blocks when closed */
     uint8_t            state;  /* FEAT_* it starts in */
     uint8_t            hooks[GEN_HOOK_COUNT];   /* EF_* by GEN_HOOK_* (none yet) */
     gen_where_t        where;  /* for random features, later (gen_feature_random()) */
-} gen_feature_base_t;
+} gen_feature_kind_t;
 
 /* The tables, in the classes' odd pages: read only by their own page's code */
-extern const gen_creature_base_t gen_creatures[CR_COUNT];   /* page 107 */
-extern const gen_item_base_t     gen_items[IT_COUNT];       /* page 109 */
-extern const gen_feature_base_t  gen_features[FT_COUNT];    /* page 123 */
+extern const gen_creature_kind_t gen_creatures[CR_COUNT];   /* page 107 */
+extern const gen_item_kind_t     gen_items[IT_COUNT];       /* page 109 */
+extern const gen_feature_kind_t  gen_features[FT_COUNT];    /* page 123 */
 
 /* ---- Shared helpers, banked in page 110: pointer arguments in common memory ---- */
 

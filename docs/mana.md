@@ -26,7 +26,7 @@ gives it to the player, and shows it.
 | Maximum MP | The most MP the entity can have: from its kind's base record |
 | Spend | Take MP away, for a spell: the caller has checked there are enough |
 | Restore | Give MP back, up to the maximum |
-| Base record | A kind's constant record in its generator's page (`gen_creature_base_t`, game/gen) |
+| Base record | A kind's constant record in its generator's page (`gen_creature_base_t`, game/gen). Since renamed the kind record (`gen_creature_kind_t`; docs/attributes.md D1) |
 
 ## 3. Requirements
 

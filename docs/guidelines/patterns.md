@@ -26,7 +26,7 @@ commit.
 - Its header comment lists its inputs, outputs, events and reasons.
 
 ### P-GEN-1 · must · Generators follow game/gen/gen.h
-- A class has a base record type (`gen_<class>_base_t`, `gen_internal.h`),
+- A class has a kind record type (`gen_<class>_kind_t`, `gen_internal.h`),
   kinds in `gen_kinds.h` (`<CLASS>_COUNT` ends each group), and a `const`
   table with designated initialisers in its odd page
   (`gen_<class>_pdata.c`).
@@ -34,7 +34,7 @@ commit.
   before calling other pages, creates the entity with `gen_begin()` and the
   owner it is given, adds every component the kind needs, and never sets a
   location.
-- Base data that never changes is read through a copying function
+- Kind data that never changes is read through a copying function
   (`gen_name()`, `gen_feature_info()`), not kept per entity.
 
 ### P-COMP-1 · must · Components follow game/components/components.h
@@ -49,7 +49,7 @@ in `game/components/components.h`.
   `components/<name>_cdata.c` (slot 0) when common code or several systems
   read them, else in its module's page data. They are read-only outside
   the component.
-- `<name>_add()` gives an entity the component from a base record (or a
+- `<name>_add()` gives an entity the component from a kind record (or a
   start state). Its functions hold its rules (G-ARCH-1), are banked in page
   110, and check their entity with asserts.
 - Code outside the component tests for it with the macro in its header

@@ -16,7 +16,7 @@ static int modifier(int score)
 
 int main(void)
 {
-    stats_base_t b = { 10, { 16, 14, 13, 9, 1, 30 } };
+    stats_kind_t b = { 10, { 16, 14, 13, 9, 1, 30 } };
     nge_entity_id_t id;
     int s;
     int ok;

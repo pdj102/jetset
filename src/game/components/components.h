@@ -20,14 +20,14 @@
  *   them, or in its module's page data when only that module does (the
  *   active effects' kinds, game/effects). Read-only outside the component;
  * - <name>_add(), which gives an entity the component, from its kind's
- *   base record (game/gen) or a start state;
+ *   kind record (game/gen) or a start state;
  * - functions that hold its rules (health_damage(), attack_hits()),
  *   called by every action and effect that needs them, banked in page 110
  *   (the component's .c file) and asserting on their entity;
  * - a macro in its header that tests for it (ITEM_IS(), FEATURE_IS(),
  *   INV_HAS()), used by other code instead of the mask.
  *
- * Model components: game/components/health.h (base record, rules,
+ * Model components: game/components/health.h (kind record, rules,
  * events) and game/components/feature.h (state, kept in step with the
  * map).
  */
@@ -35,7 +35,7 @@
 #include "ecs/components/nge_components.h"
 
 /* The game's components: numbers NGE_COMPONENT_USER + 0 to + COMPONENT_COUNT-1 */
-#define COMPONENT_KIND       NGE_COMPONENT(NGE_COMPONENT_USER + 0)   /**< Its base entity's class and kind (kind.h). */
+#define COMPONENT_KIND       NGE_COMPONENT(NGE_COMPONENT_USER + 0)   /**< The class and kind it was generated from (kind.h). */
 #define COMPONENT_STATS      NGE_COMPONENT(NGE_COMPONENT_USER + 1)   /**< Speed and the six abilities (stats.h). */
 #define COMPONENT_ITEM       NGE_COMPONENT(NGE_COMPONENT_USER + 2)   /**< Can be carried and equipped (item.h). */
 #define COMPONENT_INVENTORY  NGE_COMPONENT(NGE_COMPONENT_USER + 3)   /**< Can hold items (inventory.h). */

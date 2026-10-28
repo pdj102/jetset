@@ -32,7 +32,7 @@
 #define ANIM_LUNGE_PIXELS  8   /**< How far a lunge goes towards the target: half a tile. */
 #define ANIM_LUNGE_SPEED   4   /**< Pixels a frame of a lunge: 4 frames out and back. */
 
-/** @brief Copy the creature kinds' sequences from their base records: once, at start-up. */
+/** @brief Copy the creature kinds' sequences from their kind records: once, at start-up. */
 void anim_init(void) NGE_BANKED;
 
 /** @brief Start the animations an event shows: EV_MOVED, EV_HIT, EV_MISSED. */

@@ -1,6 +1,6 @@
 /* nge-dataseg: PAGE_123 */
 /*
- * The base features: one record per kind (gen_kinds.h), constant data in
+ * The feature kinds: one record per kind (gen_kinds.h), constant data in
  * page 123 with their names, read by the feature generator in page 122.
  * See gen_internal.h for the record and "Page data" in docs/memory_map.md.
  */
@@ -12,7 +12,7 @@
 
 #include "data/tile_data.h"
 
-const gen_feature_base_t gen_features[FT_COUNT] = {
+const gen_feature_kind_t gen_features[FT_COUNT] = {
     [FT_DOOR] = {
         .name = "door",
         .info = {

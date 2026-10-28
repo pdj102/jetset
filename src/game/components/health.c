@@ -29,23 +29,23 @@ static void check_health(nge_entity_id_t id)
     nge_util_assert(NGE_ENTITY_HAS_ANY_COMPONENTS(id, COMPONENT_HEALTH));
 }
 
-void health_add(nge_entity_id_t id, const health_base_t *b) NGE_BANKED
+void health_add(nge_entity_id_t id, const health_kind_t *k) NGE_BANKED
 {
     nge_util_assert(id < NGE_ENTITY_MAX);
     nge_util_assert(NGE_ENTITY_STATE(id) != NGE_ENTITY_FREE);
-    nge_util_assert(b->hp != 0);
+    nge_util_assert(k->hp_max != 0);
 
-    health_hp[id] = b->hp;
-    health_hp_max[id] = b->hp;
-    health_immune[id] = b->immune;
-    health_resist[id] = b->resist;
-    health_vuln[id] = b->vuln;
-    health_ac[id] = b->ac;
-    attr_base[ATTR_HP_MAX][id] = b->hp;
-    attr_base[ATTR_AC][id] = b->ac;
-    attr_base[ATTR_IMMUNE][id] = b->immune;
-    attr_base[ATTR_RESIST][id] = b->resist;
-    attr_base[ATTR_VULN][id] = b->vuln;
+    health_hp[id] = k->hp_max;
+    health_hp_max[id] = k->hp_max;
+    health_immune[id] = k->immune;
+    health_resist[id] = k->resist;
+    health_vuln[id] = k->vuln;
+    health_ac[id] = k->ac;
+    attr_base[ATTR_HP_MAX][id] = k->hp_max;
+    attr_base[ATTR_AC][id] = k->ac;
+    attr_base[ATTR_IMMUNE][id] = k->immune;
+    attr_base[ATTR_RESIST][id] = k->resist;
+    attr_base[ATTR_VULN][id] = k->vuln;
     status_mask[id] = 0;
     nge_entity_components[id] |= COMPONENT_HEALTH;
 }

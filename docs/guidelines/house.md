@@ -12,7 +12,7 @@ name without `_t`, so either form names the same thing. Exceptions:
 - `NGE_FILE`, which follows stdio's `FILE`.
 
 ### H-TYPE-2 · must · Values stored in data are uint8_t constants, not C enums
-A value kept in a table, a component, an event payload or a base record is a
+A value kept in a table, a component, an event payload or a kind record is a
 `uint8_t` from a `#define` group (H-CONST-1 to H-CONST-5). A C `enum` is only for values
 that are never stored in data (`game_state_t`).
 Why: SDCC makes an `enum` int-sized, two bytes per entry in tables indexed by

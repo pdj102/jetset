@@ -34,7 +34,7 @@ static int is(int i, uint8_t target, uint8_t id, uint8_t p1)
 
 int main(void)
 {
-    mana_base_t b;
+    mana_kind_t b;
     nge_entity_id_t a;
     nge_entity_id_t none;
 
@@ -42,9 +42,9 @@ int main(void)
     nge_entity_init();
     nge_event_init();
 
-    /* ---- add: full, at the base's maximum ---- */
-    b.mp = 5;
-    CHECK(MANA_BASE_HAS(&b));
+    /* ---- add: full, at the kind's maximum ---- */
+    b.mp_max = 5;
+    CHECK(MANA_KIND_HAS(&b));
     a = nge_entity_create();
     none = nge_entity_create();
     CHECK(!MANA_IS(a));
@@ -77,20 +77,20 @@ int main(void)
 
     /* ---- a new add starts afresh ---- */
     mana_spend(a, 4);
-    b.mp = 9;
+    b.mp_max = 9;
     mana_add(a, &b);
     CHECK(mana_mp[a] == 9 && mana_mp_max[a] == 9);
     events();
 
-    /* ---- asserts: spending too much, no component, no MP in the base ---- */
+    /* ---- asserts: spending too much, no component, no MP in the kind ---- */
     TEST_EXPECT_HALT(mana_spend(a, 10));
     CHECK(test_halt_count == 1 && mana_mp[a] == 9);         /* halted before any change */
     TEST_EXPECT_HALT(mana_spend(none, 1));
     CHECK(test_halt_count == 1);
     TEST_EXPECT_HALT(mana_restore(none, 1));
     CHECK(test_halt_count == 1);
-    b.mp = 0;
-    CHECK(!MANA_BASE_HAS(&b));
+    b.mp_max = 0;
+    CHECK(!MANA_KIND_HAS(&b));
     TEST_EXPECT_HALT(mana_add(none, &b));
     CHECK(test_halt_count == 1);
 

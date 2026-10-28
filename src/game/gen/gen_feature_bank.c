@@ -1,6 +1,6 @@
 /*
- * The feature generator: banked in page 122, with its table of base
- * features in page 123 (gen_feature_pdata.c), mapped into slot 7 while
+ * The feature generator: banked in page 122, with its table of feature
+ * kinds in page 123 (gen_feature_pdata.c), mapped into slot 7 while
  * this code runs.
  */
 #ifdef __SDCC

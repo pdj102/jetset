@@ -399,7 +399,7 @@ pattern, not a second case.
   - a lunge towards the target and back on `EV_HIT` and `EV_MISSED`;
   - the action's pattern sequence.
 
-  Which sequences a kind has (idle, move, attack) is in its base record.
+  Which sequences a kind has (idle, move, attack) is in its kind record.
 - **They advance in `game_frame_end()`.** A slide is the render system's
   draw offset moving to 0 over n frames, a per-frame batch job for the
   render system. A finished sequence returns to the kind's idle

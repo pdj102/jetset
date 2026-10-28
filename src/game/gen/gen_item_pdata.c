@@ -1,6 +1,6 @@
 /* nge-dataseg: PAGE_109 */
 /*
- * The base items: one record per kind (gen_kinds.h), constant data in page
+ * The item kinds: one record per kind (gen_kinds.h), constant data in page
  * 109 with their names, read by the item generator in page 108. See
  * gen_internal.h for the record and "Page data" in docs/memory_map.md.
  */
@@ -14,7 +14,7 @@
 #include "game/actors.h"
 #include "sprite/nge_sprite.h"
 
-const gen_item_base_t gen_items[IT_COUNT] = {
+const gen_item_kind_t gen_items[IT_COUNT] = {
     [IT_POTION] = {
         .name = "healing potion",
         .render = { SPRITE_POTION, 1, 0, NGE_SPRITE_PALETTE(BANK_RED), LAYER_OBJECTS },

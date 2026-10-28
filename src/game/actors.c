@@ -57,7 +57,7 @@ void actors_load_graphics(void)
 void actors_create(void)
 {
     /*
-     * The player, from its base data: placed by level_generate(). Created
+     * The player, from its kind data: placed by level_generate(). Created
      * first, so entity 0: on a tick where others are due too, its turn
      * comes first (timers fire in ID order)
      */

@@ -314,7 +314,7 @@ source (R15), and are the artist's to change.
   SPRITE_PALETTE_ENTRIES)`.
 - **Sprite records:** `gen_render_t` gets the mode
   (`NGE_SPRITE_PATTERN4`) and its flags carry `NGE_SPRITE_PALETTE(bank)`;
-  `gen_shared_bank.c` passes both to `nge_render_add()`. The base records
+  `gen_shared_bank.c` passes both to `nge_render_add()`. The kind records
   (`gen_*_pdata.c`) use the tags' names, and their colourways.
 - **Bank names:** the game names the banks of 5.2 in one place
   (`BANK_PLAYER`, `BANK_FLASH`, `BANK_SHADOW`, `BANK_RED`...).
@@ -427,7 +427,7 @@ CSpect and hardware checks (step 2):
    patterns in timeline order, so frames added in the middle renumber
    those after them; the names (`SPRITE_<TAG>`) follow, so the game
    doesn't change.
-3. Using it in the game: the base record (`gen_*_pdata.c`) names the tag:
+3. Using it in the game: the kind record (`gen_*_pdata.c`) names the tag:
    `{ SPRITE_<TAG>, SPRITE_<TAG>_COUNT, SPRITE_<TAG>_RATE,
    NGE_SPRITE_PALETTE(BANK_*), LAYER_* }`, or a creature's sequence
    `{ SPRITE_<TAG>, SPRITE_<TAG>_COUNT, SPRITE_<TAG>_RATE }`. A renamed or

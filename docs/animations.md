@@ -31,7 +31,7 @@ a time, through the pixel camera built in step 6
 | Draw offset | The offset set with `nge_render_set_offset()`, for example (0, -8) to stand on the tile. A motion is added to it and doesn't change it |
 | Busy | An entity in view whose motion or one-shot is still playing |
 | Holding | Any entity busy: the world doesn't act and the player's command waits |
-| Sequences | A kind's patterns for each action: rest, move, attack (in its base record) |
+| Sequences | A kind's patterns for each action: rest, move, attack (in its kind record) |
 
 ## 3. Requirements
 
@@ -185,12 +185,12 @@ Numbered for this step. game_loop.md's R18 is the source of R1 to R4.
   sprite's drawn rectangle only. An entity stepping into the view from
   outside would appear without a slide.
 - **D8 Kinds' sequences are copied into a table by kind at start-up.** The
-  base records (pages 107, 109, 123) are read only by the generators'
+  kind records (pages 107, 109, 123) are read only by the generators'
   pages. `gen_render_t` gains a move and an attack sequence (first,
   count, rate; count 0 for none), and the generator stores the kind's
   sequences for the entity where `anim_on_event()` can read them: the
   kind index is already in slot 0 (`kind_index`), so a table by class
-  and kind in the anim module's page, filled from the base records once
+  and kind in the anim module's page, filled from the kind records once
   at start-up, costs 6 bytes a kind and nothing per entity.
   **Rejected:** a per-entity component. It costs 6 bytes for each of 100
   entities for data that is the same for every entity of a kind.
@@ -289,7 +289,7 @@ void anim_on_event(const nge_event_t *e) NGE_BANKED;
 /* An animation the world waits for is playing (D5) */
 uint8_t anim_holding(void);
 
-/* Fill the kinds' sequences from the base records: once, at start-up (D8) */
+/* Fill the kinds' sequences from the kind records: once, at start-up (D8) */
 void anim_init(void) NGE_BANKED;
 ```
 
@@ -408,7 +408,7 @@ CSpect and hardware checks:
 ## 8. As built: differences from the design
 
 - **The sequences are in the creature record, not `gen_render_t`** (5.5):
-  `gen_creature_base_t` has `seqs[GEN_SEQ_COUNT]`, read by
+  `gen_creature_kind_t` has `seqs[GEN_SEQ_COUNT]`, read by
   `gen_creature_seqs()` (page 106). Items share `gen_render_t` and have
   no sequences, so they don't carry the 6 empty bytes.
 - **A one-shot shows each pattern for its full rate,** from the update

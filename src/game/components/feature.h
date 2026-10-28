@@ -7,7 +7,7 @@
  *        door, stairs; later chests, fountains, traps), and its state.
  *
  * A feature is an entity of CLASS_FEATURE (game/components/kind.h),
- * generated from its kind's base record (gen_feature(), game/gen/gen.h).
+ * generated from its kind record (gen_feature(), game/gen/gen.h).
  * What a kind can do and how it looks are fixed by kind, in the record;
  * the component holds what is per entity: its state (FEAT_*).
  *
@@ -40,7 +40,7 @@
 #define FEAT_OPEN    0x01   /**< Open (a door); else closed. */
 /* Reserved: FEAT_LOCKED 0x02, FEAT_HIDDEN 0x04, FEAT_SPENT 0x08 */
 
-/* What a kind can do: bits of its base record's `can` */
+/* What a kind can do: bits of its kind record's `can` */
 #define FCAN_OPEN    0x01   /**< Can be opened and closed. */
 #define FCAN_ASCEND  0x02   /**< Leads up a level: stood on (act_ascend()). */
 #define FCAN_DESCEND 0x04   /**< Leads down a level: stood on (act_descend()). */

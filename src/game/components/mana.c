@@ -22,14 +22,14 @@ static void check_mana(nge_entity_id_t id)
     nge_util_assert(MANA_IS(id));
 }
 
-void mana_add(nge_entity_id_t id, const mana_base_t *b) NGE_BANKED
+void mana_add(nge_entity_id_t id, const mana_kind_t *k) NGE_BANKED
 {
     nge_util_assert(id < NGE_ENTITY_MAX);
     nge_util_assert(NGE_ENTITY_STATE(id) != NGE_ENTITY_FREE);
-    nge_util_assert(MANA_BASE_HAS(b));
+    nge_util_assert(MANA_KIND_HAS(k));
 
-    mana_mp[id] = b->mp;
-    mana_mp_max[id] = b->mp;
+    mana_mp[id] = k->mp_max;
+    mana_mp_max[id] = k->mp_max;
     nge_entity_components[id] |= COMPONENT_MANA;
 }
 

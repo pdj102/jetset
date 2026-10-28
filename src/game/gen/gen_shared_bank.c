@@ -1,6 +1,6 @@
 /*
  * Helpers shared by every class's generator: banked in page 110 (with the
- * game components' add functions). They take copies of base record parts
+ * game components' add functions). They take copies of kind record parts
  * on the stack, in common memory: the class's table is mapped out while
  * they run.
  */

@@ -1,6 +1,6 @@
 /*
- * The creature generator: banked in page 106, with its table of base
- * creatures in page 107 (gen_creature_pdata.c), mapped into slot 7 while
+ * The creature generator: banked in page 106, with its table of creature
+ * kinds in page 107 (gen_creature_pdata.c), mapped into slot 7 while
  * this code runs.
  */
 #ifdef __SDCC
@@ -18,7 +18,7 @@
 
 static nge_entity_id_t create(uint8_t kind, nge_owner_t owner)
 {
-    gen_creature_base_t b;   /* a copy on the stack: the calls below map other pages */
+    gen_creature_kind_t b;   /* a copy on the stack: the calls below map other pages */
     nge_entity_id_t id;
 
     memcpy(&b, &gen_creatures[kind], sizeof(b));
@@ -30,10 +30,10 @@ static nge_entity_id_t create(uint8_t kind, nge_owner_t owner)
     nge_block_add(id, b.block.block, b.block.pass);
     stats_add(id, &b.stats);
     health_add(id, &b.health);
-    if (MANA_BASE_HAS(&b.mana)) {
+    if (MANA_KIND_HAS(&b.mana)) {
         mana_add(id, &b.mana);
     }
-    if (ATTACK_BASE_HAS(&b.melee)) {
+    if (ATTACK_KIND_HAS(&b.melee)) {
         attack_add(id, ATTACK_MELEE, &b.melee);
     }
     if (b.flags & CREATURE_PLAYER) {

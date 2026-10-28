@@ -3,28 +3,38 @@
 
 /**
  * @file attrs.h
- * @brief Attributes and statuses: the base values that effects modify,
- *        and the statuses effects grant.
+ * @brief Attributes: the numbers and masks equipment and effects change;
+ *        and statuses, the flags effects grant.
  *
- * An attribute has a base value per entity, set from its kind's base
- * record when the entity is generated (health_add(), stats_add()) and
- * changed for good only by effects_set_base() (game/effects/effects.h),
- * and a derived value: the base plus the modifiers of the items the entity
- * has equipped and of its active effects. The derived values are the
- * component tables the rules read (health_hp_max, health_ac, the damage
- * masks, stats_speed); only effects_recompute() writes them. Hit points
- * are not an attribute: a resource that damage and healing change, kept
- * within the derived maximum.
+ * An attribute is a number (or a mask) that equipment and effects can
+ * change: max hit points, AC, speed, the abilities, the damage masks.
+ * Each has, per entity:
+ *
+ *   kind value  constant, in its kind record (health_kind_t.hp_max):
+ *               sets the base when the entity is created
+ *   base        changed only for good, by effects_set_base() (a potion
+ *               of vitality): attr_base[ATTR_HP_MAX]
+ *   value       base + the modifiers of equipped items' worn effects and
+ *               of active effects, clamped: health_hp_max. The one rules
+ *               read; only effects_recompute() (game/effects/effects.h)
+ *               writes it, and it is recomputed whenever a source changes
+ *               (equip, an effect starts or ends, a base changes)
+ *
+ * A pool (hit points, later MP) also has a current amount (health_hp):
+ * not an attribute, but a resource that damage and healing change, kept
+ * within the value. A lower maximum takes it down; a higher one doesn't
+ * heal.
  *
  * A status is a flag an effect grants while it is active (poisoned): the
  * entity's status mask is the OR of the statuses of its effects, so it
  * stays set while any effect grants it, and a cure ends those effects
  * instead of clearing a bit. Rules ask STATUS_HAS().
  *
- * The tables are in slot 0 (attrs_cdata.c), meaningful for an entity with
- * the components they belong to (health, stats); the status mask for an
- * entity with health. There are no functions here: the components set the
- * bases, the effects module the rest.
+ * The values are the components' tables (health.h, stats.h). The bases
+ * and the status mask are here, in slot 0 (attrs_cdata.c), meaningful for
+ * an entity with the component each attribute belongs to; the status mask
+ * for an entity with health. There are no functions here: the components
+ * set the bases, the effects module the rest.
  */
 
 #include <stdint.h>

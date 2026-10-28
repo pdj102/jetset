@@ -1,5 +1,5 @@
 /*
- * The item generator: banked in page 108, with its table of base items in
+ * The item generator: banked in page 108, with its table of item kinds in
  * page 109 (gen_item_pdata.c), mapped into slot 7 while this code runs.
  */
 #ifdef __SDCC
@@ -15,17 +15,17 @@ static nge_entity_id_t create(uint8_t kind, nge_owner_t owner)
 {
     /* Copies on the stack: the calls below map other pages */
     gen_render_t render = gen_items[kind].render;
-    health_base_t health = gen_items[kind].health;
-    attack_base_t melee = gen_items[kind].melee;
+    health_kind_t health = gen_items[kind].health;
+    attack_kind_t melee = gen_items[kind].melee;
     nge_entity_id_t id = gen_begin(CLASS_ITEM, kind, owner);
 
     if (id != NGE_ENTITY_INVALID) {
         gen_render(id, &render);   /* items block nothing: no block component */
         item_add(id);
-        if (HEALTH_BASE_HAS(&health)) {
+        if (HEALTH_KIND_HAS(&health)) {
             health_add(id, &health);
         }
-        if (ATTACK_BASE_HAS(&melee)) {
+        if (ATTACK_KIND_HAS(&melee)) {
             attack_add(id, ATTACK_MELEE, &melee);
         }
     }

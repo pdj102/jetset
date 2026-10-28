@@ -26,12 +26,13 @@
  *   worn     an item's worn hook (game/gen/gen.h): its modifiers and
  *            statuses count while the item is equipped, with no instance.
  *
- * Derived values (the components' tables) are always the base plus the
- * modifiers of the worn effects of equipped items and of the target's
- * active effects. effects_recompute() works them out from scratch, so a
- * modifier can't be left behind; the code that changes any of these calls
- * it (equipping, an effect starting or ending, a base raised). Hit points
- * are kept within the derived maximum; a higher maximum doesn't heal.
+ * An attribute's value (game/components/attrs.h: kind value, base,
+ * value) is always its base plus the modifiers of the worn effects of
+ * equipped items and of the target's active effects. effects_recompute()
+ * works the values out from scratch, so a modifier can't be left behind;
+ * the code that changes any of these calls it (equipping, an effect
+ * starting or ending, a base raised). A pool's current amount (hit
+ * points) is kept within its value; a higher maximum doesn't heal.
  *
  * Effects are applied by direct calls, not by events: by actions (using an
  * item, a hit's hook), by generators (a creature's innate hook) and by ops

@@ -14,40 +14,40 @@
 #include "core/nge_util.h"
 #include "game/components/health.h"
 
-static void check_entity(nge_entity_id_t id, uint8_t kind)
+static void check_entity(nge_entity_id_t id, uint8_t use)
 {
     (void)id;   /* unused when asserts are compiled out (NDEBUG) */
-    (void)kind;
+    (void)use;
     nge_util_assert(id < NGE_ENTITY_MAX);
     nge_util_assert(NGE_ENTITY_STATE(id) != NGE_ENTITY_FREE);
-    nge_util_assert(kind < ATTACK_KIND_COUNT);
+    nge_util_assert(use < ATTACK_USE_COUNT);
 }
 
-void attack_add(nge_entity_id_t id, uint8_t kind, const attack_base_t *b) NGE_BANKED
+void attack_add(nge_entity_id_t id, uint8_t use, const attack_kind_t *k) NGE_BANKED
 {
-    check_entity(id, kind);
-    nge_util_assert(b->dice != 0 && b->sides != 0 && b->type < DMG_COUNT);
-    nge_util_assert(kind != ATTACK_MELEE || b->range == 1);
+    check_entity(id, use);
+    nge_util_assert(k->dice != 0 && k->sides != 0 && k->type < DMG_COUNT);
+    nge_util_assert(use != ATTACK_MELEE || k->range == 1);
 
-    attack_to_hit[kind][id] = b->to_hit;
-    attack_dice[kind][id] = b->dice;
-    attack_sides[kind][id] = b->sides;
-    attack_bonus[kind][id] = b->bonus;
-    attack_type[kind][id] = b->type;
-    attack_range[kind][id] = b->range;
-    nge_entity_components[id] |= ATTACK_COMPONENT(kind);
+    attack_to_hit[use][id] = k->to_hit;
+    attack_dice[use][id] = k->dice;
+    attack_sides[use][id] = k->sides;
+    attack_bonus[use][id] = k->bonus;
+    attack_type[use][id] = k->type;
+    attack_range[use][id] = k->range;
+    nge_entity_components[id] |= ATTACK_COMPONENT(use);
 }
 
-void attack_remove(nge_entity_id_t id, uint8_t kind) NGE_BANKED
+void attack_remove(nge_entity_id_t id, uint8_t use) NGE_BANKED
 {
-    check_entity(id, kind);
+    check_entity(id, use);
 
-    nge_entity_components[id] &= (nge_component_mask_t)~ATTACK_COMPONENT(kind);
+    nge_entity_components[id] &= (nge_component_mask_t)~ATTACK_COMPONENT(use);
 }
 
-uint8_t attack_hits(nge_entity_id_t id, uint8_t kind, nge_entity_id_t target, uint8_t roll) NGE_BANKED
+uint8_t attack_hits(nge_entity_id_t id, uint8_t use, nge_entity_id_t target, uint8_t roll) NGE_BANKED
 {
-    check_entity(id, kind);
+    check_entity(id, use);
     nge_util_assert(roll >= 1 && roll <= 20);
     nge_util_assert(NGE_ENTITY_HAS_ANY_COMPONENTS(target, COMPONENT_HEALTH));
 
@@ -57,19 +57,19 @@ uint8_t attack_hits(nge_entity_id_t id, uint8_t kind, nge_entity_id_t target, ui
     if (roll == ATTACK_ROLL_MISS) {
         return 0;
     }
-    return (int16_t)roll + attack_to_hit[kind][id] >= (int16_t)health_ac[target];
+    return (int16_t)roll + attack_to_hit[use][id] >= (int16_t)health_ac[target];
 }
 
-uint8_t attack_damage(nge_entity_id_t id, uint8_t kind) NGE_BANKED
+uint8_t attack_damage(nge_entity_id_t id, uint8_t use) NGE_BANKED
 {
     int16_t damage;
     uint8_t i;
 
-    check_entity(id, kind);
+    check_entity(id, use);
 
-    damage = attack_bonus[kind][id];
-    for (i = 0; i < attack_dice[kind][id]; i++) {
-        damage += 1 + (int16_t)((unsigned int)rand() % attack_sides[kind][id]);
+    damage = attack_bonus[use][id];
+    for (i = 0; i < attack_dice[use][id]; i++) {
+        damage += 1 + (int16_t)((unsigned int)rand() % attack_sides[use][id]);
     }
     if (damage < 1) {
         return 1;

@@ -80,7 +80,7 @@ int main(void)
     rat = creature(CR_RAT, 6, 5);
     nge_event_flush();                                   /* the player's innate effect */
 
-    /* ---- the kinds' sequences: copied from the base records; the player's from the art ---- */
+    /* ---- the kinds' sequences: copied from the kind records; the player's from the art ---- */
     CHECK(anim_seqs[CR_PLAYER][GEN_SEQ_MOVE].first == SPRITE_PLAYER_MOVE &&
           anim_seqs[CR_PLAYER][GEN_SEQ_MOVE].count == SPRITE_PLAYER_MOVE_COUNT &&
           anim_seqs[CR_PLAYER][GEN_SEQ_MOVE].rate == SPRITE_PLAYER_MOVE_RATE);
@@ -145,7 +145,7 @@ int main(void)
     post(rat, EV_MISSED, player, 1, NGE_EVENT_NONE);
     CHECK(nge_render_sprite_oneshot[player] == 1 && nge_render_sprite_first[player] == 6);
     settle();
-    anim_init();                                         /* back to the base records' */
+    anim_init();                                         /* back to the kind records' */
 
     /* ---- skipped: no sprite, or not on the current level ---- */
     nge_render_remove(rat);

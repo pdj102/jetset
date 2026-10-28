@@ -6,10 +6,11 @@
  * @brief The mana component: an entity with mana points (MP), a resource
  *        spent to cast spells (the player). See docs/mana.md.
  *
- * Each has MP now (mp, 0 to mp_max) and a maximum (mp_max), which comes
- * from its kind's base record (mana_base_t, game/gen) and doesn't change
- * yet: it isn't an attribute (game/components/attrs.h) until an item or
- * effect needs to change it (docs/mana.md, D2). An entity starts full.
+ * MP are a pool: each has current MP (mp, 0 to mp_max) and a maximum
+ * (mp_max), set from the kind value in its kind record (mana_kind_t,
+ * game/gen). The maximum doesn't change yet: it isn't an attribute
+ * (game/components/attrs.h) until an item or effect needs to change it
+ * (docs/mana.md, D2). An entity starts full.
  *
  * A spell's caller checks there are enough (MANA_HAS()) before spending
  * them: mana_spend() asserts it, and stops at 0 when asserts are compiled
@@ -27,16 +28,16 @@
 #include "ecs/nge_entity.h"
 #include "game/components/components.h"
 
-/** Base mana: the mana part of a kind's base record. */
-typedef struct mana_base {
-    uint8_t mp;   /**< Maximum MP, the same for every entity of the kind; 0 for none. */
-} mana_base_t;
+/** Kind mana: the mana part of a kind record. */
+typedef struct mana_kind {
+    uint8_t mp_max;   /**< Maximum MP, the same for every entity of the kind; 0 for none. */
+} mana_kind_t;
 
-/** A base record's mana part gives the component: it has some MP. */
-#define MANA_BASE_HAS(b)  ((b)->mp != 0)
+/** A kind record's mana part gives the component: it has some MP. */
+#define MANA_KIND_HAS(k)  ((k)->mp_max != 0)
 
 /* Tables in slot 0 (mana_cdata.c): read-only for game code; meaningful only with COMPONENT_MANA */
-extern uint8_t mana_mp[NGE_ENTITY_MAX];       /**< MP now, 0 to mana_mp_max. */
+extern uint8_t mana_mp[NGE_ENTITY_MAX];       /**< Current MP, 0 to mana_mp_max. */
 extern uint8_t mana_mp_max[NGE_ENTITY_MAX];   /**< The most MP it can have, 1 or more. */
 
 /** Entity id has the mana component. */
@@ -46,11 +47,11 @@ extern uint8_t mana_mp_max[NGE_ENTITY_MAX];   /**< The most MP it can have, 1 or
 #define MANA_HAS(id, n)  (mana_mp[id] >= (n))
 
 /**
- * @brief Give an entity in use the mana component from base mana: full,
- *        with the base's MP (1 or more).
- * @param b In common memory (a copy on the stack): the call maps page 110.
+ * @brief Give an entity in use the mana component from kind mana: full,
+ *        with the kind's maximum MP (1 or more).
+ * @param k In common memory (a copy on the stack): the call maps page 110.
  */
-void mana_add(nge_entity_id_t id, const mana_base_t *b) NGE_BANKED;
+void mana_add(nge_entity_id_t id, const mana_kind_t *k) NGE_BANKED;
 
 /**
  * @brief Spend amount MP of an entity with mana, which has them (the

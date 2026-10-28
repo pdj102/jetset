@@ -4,10 +4,10 @@
 /**
  * @file gen.h
  * @brief Entity generators: create an entity of a given kind, with all
- *        its components, from its base data.
+ *        its components, from its kind data.
  *
  * Each class of entity (creatures, items; features later) has a table of
- * base entities: constant records, one per kind (gen_kinds.h), defined as
+ * kind records: constant data, one per kind (gen_kinds.h), defined as
  * data in the class's page data file (gen_<class>_pdata.c). A generator
  * creates an entity, gives it its owner and its kind (game/components/
  * kind.h), adds every component the kind needs from the record (its
@@ -22,7 +22,7 @@
  * NGE_OWNER_WORLD. A generator never sets a location. The _random versions
  * choose a kind that appears at the depth, weighted by its rarity.
  *
- * Base data that never changes and isn't needed every turn stays in the
+ * Kind data that never changes and isn't needed every turn stays in the
  * table: read it through functions like gen_name(), which copies into the
  * caller's buffer (on the stack, in common memory).
  *
@@ -81,7 +81,7 @@ typedef struct gen_feature_look {
     uint8_t bank;
 } gen_feature_look_t;
 
-/** What a feature kind can do and how it looks: the part of its base record the feature component uses. */
+/** What a feature kind can do and how it looks: the part of its kind record the feature component uses. */
 typedef struct gen_feature_info {
     gen_feature_look_t look[2];   /**< Closed ([0]) and open ([1]). */
     uint8_t            can;       /**< FCAN_* (game/components/feature.h). */
@@ -123,7 +123,7 @@ typedef struct gen_seq {
  */
 void gen_creature_seqs(uint8_t kind, gen_seq_t *seq) NGE_BANKED;
 
-/* Hooks: the effect (EF_*, game/effects/effects.h) a kind's base record names for each */
+/* Hooks: the effect (EF_*, game/effects/effects.h) a kind record names for each */
 #define GEN_HOOK_USE     0   /**< Items: applied to the user when used up (drunk, eaten: act_use()). */
 #define GEN_HOOK_HIT     1   /**< Weapons and creatures: applied to what a hit leaves alive (act_melee()). */
 #define GEN_HOOK_WORN    2   /**< Items: its modifiers and statuses count while equipped. */

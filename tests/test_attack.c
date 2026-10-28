@@ -10,7 +10,7 @@
 
 static nge_entity_id_t with_attack(int8_t to_hit, uint8_t dice, uint8_t sides, int8_t bonus)
 {
-    attack_base_t b;
+    attack_kind_t b;
     nge_entity_id_t id = nge_entity_create();
 
     b.to_hit = to_hit;
@@ -25,8 +25,8 @@ static nge_entity_id_t with_attack(int8_t to_hit, uint8_t dice, uint8_t sides, i
 
 int main(void)
 {
-    health_base_t h = { 5, 0, 0, 0, 0 };   /* 5 hp; the AC is set below */
-    attack_base_t b;
+    health_kind_t h = { 5, 0, 0, 0, 0 };   /* 5 hp; the AC is set below */
+    attack_kind_t b;
     nge_entity_id_t id;
     nge_entity_id_t target;
     int to_hit;
@@ -51,9 +51,9 @@ int main(void)
     attack_remove(id, ATTACK_MELEE);
     CHECK(!ATTACK_HAS(id, ATTACK_MELEE));
     b.dice = 1;
-    CHECK(ATTACK_BASE_HAS(&b));
+    CHECK(ATTACK_KIND_HAS(&b));
     b.dice = 0;
-    CHECK(!ATTACK_BASE_HAS(&b));
+    CHECK(!ATTACK_KIND_HAS(&b));
 
     /* ---- the hit rule: 20 hits, 1 misses, else roll + to hit >= AC ---- */
     target = nge_entity_create();
@@ -112,7 +112,7 @@ int main(void)
     TEST_EXPECT_HALT(attack_add(id, ATTACK_MELEE, &b));
     CHECK(test_halt_count == 1);
     b.dice = 1;
-    TEST_EXPECT_HALT(attack_add(id, ATTACK_KIND_COUNT, &b));
+    TEST_EXPECT_HALT(attack_add(id, ATTACK_USE_COUNT, &b));
     CHECK(test_halt_count == 1);
     TEST_EXPECT_HALT(attack_hits(id, ATTACK_MELEE, target, 0));
     CHECK(test_halt_count == 1);

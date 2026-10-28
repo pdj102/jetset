@@ -229,7 +229,7 @@ int main(void)
     nge_render_set_view(AREA);
     nge_event_flush();   /* the player's innate effect started */
 
-    /* ---- the stats window: the player's stats, from the base record ---- */
+    /* ---- the stats window: the player's stats, from the kind record ---- */
     screen_draw_stats();
     player_show_stats();
     test_layer2_row(2, 28, 39, text);

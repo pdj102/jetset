@@ -37,10 +37,10 @@ static int is(int i, uint8_t target, uint8_t id, uint8_t source, uint8_t p1, uin
 /* An entity with health: hp hit points, these masks */
 static nge_entity_id_t make(uint8_t hp, uint8_t immune, uint8_t resist, uint8_t vuln)
 {
-    health_base_t b = { 0, 0, 0, 0, 0 };
+    health_kind_t b = { 0, 0, 0, 0, 0 };
     nge_entity_id_t id = nge_entity_create();
 
-    b.hp = hp;
+    b.hp_max = hp;
     b.immune = immune;
     b.resist = resist;
     b.vuln = vuln;
@@ -70,7 +70,7 @@ static unsigned int expected(unsigned int amount, int immune, int resist, int vu
 int main(void)
 {
     static const uint8_t amounts[] = { 0, 1, 2, 3, 127, 128, 200, 255 };
-    health_base_t b;
+    health_kind_t b;
     nge_entity_id_t a;
     nge_entity_id_t owned;
     nge_entity_id_t player;
@@ -90,8 +90,8 @@ int main(void)
     nge_entity_init();
     nge_event_init();
 
-    /* ---- add: the base's hit points, unhurt, the masks and AC ---- */
-    b.hp = 17;
+    /* ---- add: the kind's hit points, unhurt, the masks and AC ---- */
+    b.hp_max = 17;
     b.immune = 0x01;
     b.resist = 0x02;
     b.vuln = 0x04;
@@ -101,15 +101,15 @@ int main(void)
     CHECK(health_hp[a] == 17 && health_hp_max[a] == 17 && health_immune[a] == 0x01 &&
           health_resist[a] == 0x02 && health_vuln[a] == 0x04 && health_ac[a] == 11 &&
           NGE_ENTITY_HAS_COMPONENTS(a, COMPONENT_HEALTH));
-    b.hp = 255;
+    b.hp_max = 255;
     health_add(a, &b);                                        /* again: replaced */
     CHECK(health_hp[a] == 255 && health_hp_max[a] == 255);
-    /* The attributes' bases: the base's values; no statuses */
+    /* The attributes' bases: the kind values; no statuses */
     CHECK(attr_base[ATTR_HP_MAX][a] == 255 && attr_base[ATTR_AC][a] == 11 && attr_base[ATTR_IMMUNE][a] == 0x01 &&
           attr_base[ATTR_RESIST][a] == 0x02 && attr_base[ATTR_VULN][a] == 0x04 && status_mask[a] == 0);
-    CHECK(HEALTH_BASE_HAS(&b) == 1);
-    b.hp = 0;
-    CHECK(HEALTH_BASE_HAS(&b) == 0);
+    CHECK(HEALTH_KIND_HAS(&b) == 1);
+    b.hp_max = 0;
+    CHECK(HEALTH_KIND_HAS(&b) == 0);
     nge_entity_init();
 
     /* ---- dealt: every amount against every combination of masks ---- */
@@ -198,7 +198,7 @@ int main(void)
     a = make(5, 0, 0, 0);
     TEST_EXPECT_HALT(health_damage(a, NGE_ENTITY_INVALID, 1, DMG_COUNT));
     CHECK(test_halt_count == 1);
-    b.hp = 0;                                                 /* no hit points */
+    b.hp_max = 0;                                                 /* no hit points */
     TEST_EXPECT_HALT(health_add(a, &b));
     CHECK(test_halt_count == 1);
 

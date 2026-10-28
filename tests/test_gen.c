@@ -1,4 +1,4 @@
-/* game/gen: the entity generators, every kind against its base record. */
+/* game/gen: the entity generators, every kind against its kind record. */
 #include "test.h"
 
 #include <stdlib.h>
@@ -37,9 +37,9 @@ static int made(nge_entity_id_t id, nge_owner_t owner, uint8_t c, uint8_t kind)
 }
 
 /* The melee attack component matches a record's melee part (or there is none) */
-static int melee_is(nge_entity_id_t id, const attack_base_t *m)
+static int melee_is(nge_entity_id_t id, const attack_kind_t *m)
 {
-    if (!ATTACK_BASE_HAS(m)) {
+    if (!ATTACK_KIND_HAS(m)) {
         return !ATTACK_HAS(id, ATTACK_MELEE);
     }
     return ATTACK_HAS(id, ATTACK_MELEE) && attack_to_hit[ATTACK_MELEE][id] == m->to_hit &&
@@ -50,7 +50,7 @@ static int melee_is(nge_entity_id_t id, const attack_base_t *m)
 
 static int creature_ok(nge_entity_id_t id, nge_owner_t owner, uint8_t kind)
 {
-    const gen_creature_base_t *b = &gen_creatures[kind];
+    const gen_creature_kind_t *b = &gen_creatures[kind];
     uint8_t a;
 
     if (!made(id, owner, CLASS_CREATURE, kind) || !render_is(id, &b->render)) {
@@ -61,15 +61,15 @@ static int creature_ok(nge_entity_id_t id, nge_owner_t owner, uint8_t kind)
         return 0;
     }
     if (!NGE_ENTITY_HAS_COMPONENTS(id, COMPONENT_HEALTH) ||
-        health_hp[id] != b->health.hp || health_hp_max[id] != b->health.hp ||
+        health_hp[id] != b->health.hp_max || health_hp_max[id] != b->health.hp_max ||
         health_immune[id] != b->health.immune || health_resist[id] != b->health.resist ||
         health_vuln[id] != b->health.vuln || health_ac[id] != b->health.ac ||
         stats_speed[id] != b->stats.speed || !melee_is(id, &b->melee)) {
         return 0;
     }
     /* Mana if its kind has some, full */
-    if (MANA_IS(id) != MANA_BASE_HAS(&b->mana) ||
-        (MANA_IS(id) && (mana_mp[id] != b->mana.mp || mana_mp_max[id] != b->mana.mp))) {
+    if (MANA_IS(id) != MANA_KIND_HAS(&b->mana) ||
+        (MANA_IS(id) && (mana_mp[id] != b->mana.mp_max || mana_mp_max[id] != b->mana.mp_max))) {
         return 0;
     }
     /* Its abilities: the record's scores, as values and bases */
@@ -144,7 +144,7 @@ int main(void)
         CHECK(ok);
     }
 
-    /* ---- every kind: its components match its base record ---- */
+    /* ---- every kind: its components match its kind record ---- */
     reset();
     ok = 1;
     for (kind = 0; kind < CR_COUNT; kind++) {
@@ -249,7 +249,7 @@ int main(void)
     ok = 1;
     for (i = 0; i < 20 && ok; i++) {
         id = gen_creature(CR_RAT, AREA);
-        ok = health_hp[id] == gen_creatures[CR_RAT].health.hp && health_hp[id] == 3;
+        ok = health_hp[id] == gen_creatures[CR_RAT].health.hp_max && health_hp[id] == 3;
         nge_entity_destroy(id);
         nge_entity_release(nge_entity_next_dying());
     }

@@ -78,7 +78,7 @@ intended, and lets SDCC keep the operation in 8 bits.
 ### T-STACK-1 · must · Keep locals small
 The stack is 512 bytes, shared by every nested call. A function's locals
 stay under about 64 bytes: no large arrays or structs on the stack. Copies
-of base records on the stack (`gen_creature_base_t b`) are the largest
+of kind records on the stack (`gen_creature_kind_t b`) are the largest
 allowed, and say so in a comment.
 Check: local arrays and structs, in functions that are called deep in the
 call chain.

@@ -56,7 +56,7 @@ int main(void)
 
     CHECK(SLOT_COUNT <= 16 && (SLOTS_HUMANOID & SLOT_BIT(SLOT_NONE)) == 0);
 
-    /* ---- the generators give the components from the base records ---- */
+    /* ---- the generators give the components from the kind records ---- */
     reset();
     player = gen_creature(CR_PLAYER, AREA);
     goblin = gen_creature(CR_GOBLIN, AREA);

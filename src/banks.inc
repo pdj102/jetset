@@ -42,8 +42,8 @@
 //                                 decorating them / the room list, the terrain and
 //                                 the decorator's tables
 //                        104/105  free (was the title, now in ui)
-//                        106/107  gen creature: creature generator / base creatures
-//                        108/109  gen item: item generator / base items
+//                        106/107  gen creature: creature generator / creature kinds
+//                        108/109  gen item: item generator / item kinds
 //                        110/111  gen shared: generator helpers and game components'
 //                                 add functions / (unused)
 //                        112/113  actions: the actions / (unused)
@@ -54,7 +54,7 @@
 //                        118/119  messages: what the player is told / (unused)
 //                        120/121  effects: the effect system / the effect
 //                                 definitions and the active effects' kinds
-//                        122/123  gen feature: feature generator / base features
+//                        122/123  gen feature: feature generator / feature kinds
 //                        124/125  target: targeting and its cursor / (unused)
 //                        126/127  anim: starting the action animations / the
 //                                 creature kinds' sequences
