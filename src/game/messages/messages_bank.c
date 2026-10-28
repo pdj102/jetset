@@ -21,8 +21,10 @@
 #include "game/components/kind.h"
 #include "game/effects/effects.h"
 #include "game/events.h"
+#include "game/game.h"
 #include "game/gen/gen.h"
 #include "game/level/level.h"
+#include "game/quest/quest.h"
 #include "game/ui/screen_main.h"
 
 #define MESSAGE_MAX  41   /* a message window line, and its NUL */
@@ -185,6 +187,9 @@ void messages_on_event(const nge_event_t *e) NGE_BANKED
             say_named("You pick up a ", target, ".");
         }
         break;
+    case EV_QUEST_FOUND:
+        screen_message("Now climb back out of the dungeon.");
+        break;
     case EV_DROPPED:
         if (source == actor_player) {
             say_named("You drop a ", target, ".");
@@ -312,8 +317,21 @@ void messages_act_failed(const act_t *a) NGE_BANKED
     case ACT_R_NO_STAIRS:
         screen_message("There are no stairs that way here.");
         break;
+    case ACT_R_NO_QUEST:
+        say_named("You can't leave without the ", quest_item, ".");
+        break;
     default:
         break;
+    }
+}
+
+void messages_game_over(uint8_t reason) NGE_BANKED
+{
+    if (reason == GAME_OVER_WON) {
+        say_named("You escape with the ", quest_item, ". You win!");
+        screen_message("Press any key.");
+    } else {
+        screen_message("Game over. Press any key.");
     }
 }
 

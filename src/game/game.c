@@ -28,6 +28,7 @@
 #include "game/level/level.h"
 #include "game/messages/messages.h"
 #include "game/player/player.h"
+#include "game/quest/quest.h"
 #include "game/timers.h"
 #include "game/ui/screen.h"
 #include "game/ui/screen_main.h"
@@ -64,6 +65,7 @@ static void game_on_event(const nge_event_t *e)
 {
     anim_on_event(e);    /* first: the animations start in the frame the action happened */
     player_on_event(e);
+    quest_on_event(e);
     messages_on_event(e);
     death_on_event(e);   /* last: the death message comes before "Game over" */
 }
@@ -260,10 +262,13 @@ static void change_level(void)
         return;
     }
     if (depth == LEVEL_DEPTH_SURFACE) {
-        game_over(GAME_OVER_ESCAPED);
+        game_over(GAME_OVER_WON);
         return;
     }
     level_generate(depth, actor_player, arrival);
+#if GAME_DEV_KIT
+    quest_check();   /* still on one depth, and on the map if it is this one (docs/winning.md R14) */
+#endif
     nge_event_post(actor_player, EV_ARRIVED, NGE_EVENT_NONE, depth, arrival);
     game_play_redraw();   /* the new area's sprites, the map, the stats and the depth */
     nge_event_process(game_on_event);   /* the arrival, before the clean-up releases what parking ended */
@@ -333,8 +338,7 @@ void game_over(uint8_t reason)
 static void over_run(uint8_t reason)
 {
     nge_key_flush();
-    screen_message(reason == GAME_OVER_ESCAPED ? "You leave the dungeon. Press any key."
-                                               : "Game over. Press any key.");
+    messages_game_over(reason);
     screen_help("Any key: back to the title");
     game_wait_key(0);
 }

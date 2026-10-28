@@ -25,7 +25,8 @@
 #define IT_FOOD      4   /* a dead rat: poisoned */
 #define IT_ELIXIR    5   /* of vitality */
 #define IT_STRENGTH  6   /* potion of strength */
-#define IT_COUNT     7
+#define IT_QUEST     7   /* the quest item: one a game, made by game/actors.c, never at random */
+#define IT_COUNT     8
 
 /* Features (CLASS_FEATURE) */
 #define FT_DOOR         0
@@ -38,6 +39,7 @@
 #define ITEM_WEAPON  1
 #define ITEM_RING    2
 #define ITEM_FOOD    3
+#define ITEM_QUEST   4   /* the quest item (docs/winning.md) */
 
 #define KIND_INVALID 0xFF /* Invalid kind */
 

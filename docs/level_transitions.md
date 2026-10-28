@@ -353,8 +353,8 @@ visit, and escaping from depth 1. Not yet tried on hardware.
 
 ## 7. Later
 
-- The quest object and the boss: rows in the persistent table, and
-  `ACT_R_NO_QUEST` in `act_ascend()` at depth 1 (R3).
+- The quest object: done, see [winning.md](winning.md) (R3 is its R11).
+- The boss: a row in the persistent table.
 - Holes, trapdoors and teleports: feature records with `FCAN_DESCEND` and
   an `EV_STOOD_ON` handler, or effects calling `level_request()` and
   `level_send()`.

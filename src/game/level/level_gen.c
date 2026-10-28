@@ -413,11 +413,48 @@ static uint8_t free_floor(uint8_t *x, uint8_t *y)
     return 0;
 }
 
-/* Free floor somewhere: rooms have at least 6 floor tiles, and a level has few entities on floor: keep looking */
-static void any_free_floor(uint8_t *x, uint8_t *y)
+/*
+ * The first room floor tile, in room order, with no entity on it that has
+ * component c (0: no entity at all)
+ */
+static uint8_t scan_floor(nge_component_t c, uint8_t *x, uint8_t *y)
 {
-    while (!free_floor(x, y)) {
+    const level_room_t *r;
+    uint8_t i;
+    uint8_t tx;
+    uint8_t ty;
+    uint8_t x1;   /* the room's fields in locals (T-ZSDCC-1) */
+    uint8_t x2;
+    uint8_t y2;
+
+    for (i = 0; i < level_room_count; i++) {
+        r = &level_rooms[level_room_cells[i]];
+        x1 = r->x1;
+        x2 = r->x2;
+        y2 = r->y2;
+        for (ty = (uint8_t)(r->y1 + 1); ty < y2; ty++) {
+            for (tx = (uint8_t)(x1 + 1); tx < x2; tx++) {
+                if (nge_location_find(LEVEL_AREA, tx, ty, c, 0) == NGE_ENTITY_INVALID) {
+                    *x = tx;
+                    *y = ty;
+                    return 1;
+                }
+            }
+        }
     }
+    return 0;
+}
+
+void level_free_floor(uint8_t *x, uint8_t *y)
+{
+    uint8_t found;
+
+    if (free_floor(x, y) || scan_floor(0, x, y)) {
+        return;
+    }
+    found = scan_floor(COMPONENT_FEATURE, x, y);   /* shared with an item or a creature, never on a door or stairs */
+    nge_util_assert(found);
+    (void)found;
 }
 
 /* Stairs of kind (FT_STAIRS_*) on free floor in room r: its entity, or NGE_ENTITY_INVALID if none is free */
@@ -490,7 +527,7 @@ static void place_parked(nge_entity_id_t player)
 
     NGE_OWNER_FOR_EACH_OWNED(i, id, LEVEL_AREA) {
         if (id != player && !NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_LOCATION)) {
-            any_free_floor(&x, &y);
+            level_free_floor(&x, &y);
             nge_location_set(id, x, y);
         }
     }
@@ -510,7 +547,7 @@ static void place_player(nge_entity_id_t player, uint8_t arrival)
         x = NGE_LOCATION_X(stairs);
         y = NGE_LOCATION_Y(stairs);
     } else {
-        any_free_floor(&x, &y);
+        level_free_floor(&x, &y);
     }
     nge_owner_set(player, LEVEL_AREA);
     nge_location_set(player, x, y);

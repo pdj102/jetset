@@ -12,6 +12,7 @@
 
 #include "data/sprite_data.h"
 #include "game/actors.h"
+#include "game/level/level.h"
 #include "sprite/nge_sprite.h"
 
 const gen_item_kind_t gen_items[IT_COUNT] = {
@@ -71,5 +72,13 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .fits = 0,
         .hooks = { [GEN_HOOK_USE] = EF_STRENGTH },
         .where = { .depth = 1, .rarity = 1 },
+    },
+    /* The quest item (docs/winning.md): the ring's sprite until it has its own. Rarity 0: never at random */
+    [IT_QUEST] = {
+        .name = "crown",
+        .render = { SPRITE_RING, 1, 0, NGE_SPRITE_PALETTE(BANK_PURPLE), LAYER_OBJECTS },
+        .subclass = ITEM_QUEST,
+        .fits = 0,
+        .where = { .depth = LEVEL_DEPTH_BOTTOM, .rarity = 0 },
     },
 };

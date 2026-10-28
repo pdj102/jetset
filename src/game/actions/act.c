@@ -34,6 +34,7 @@ const uint8_t act_reason_flags[ACT_R_COUNT] = {
     [ACT_R_ALREADY_CLOSED]   = 0,
     [ACT_R_OBSTRUCTED]       = 0,
     [ACT_R_NO_STAIRS]        = 0,
+    [ACT_R_NO_QUEST]         = 0,
 };
 
 uint8_t act_do(uint8_t action, act_t *a, uint8_t mode)

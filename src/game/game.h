@@ -79,7 +79,7 @@
 /** Why the game ended (game_over()). */
 #define GAME_OVER_DIED     0   /**< The player died. */
 #define GAME_OVER_QUIT     1   /**< The player quit. */
-#define GAME_OVER_ESCAPED  2   /**< The player climbed out of the dungeon (later: with the quest object, a win). */
+#define GAME_OVER_WON      2   /**< The player climbed out of the dungeon with the quest item. */
 #define GAME_OVER_COUNT    3   /**< Number of reasons. */
 
 /** @brief Run the game, starting at the title. Never returns. */

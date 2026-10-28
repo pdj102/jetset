@@ -124,7 +124,8 @@ typedef struct act {
 #define ACT_R_ALREADY_CLOSED    23  /**< Refused: it is closed already. */
 #define ACT_R_OBSTRUCTED        24  /**< Refused: something (an item, a creature) is in the doorway. */
 #define ACT_R_NO_STAIRS         25  /**< Refused: no stairs the right way on the actor's tile. */
-#define ACT_R_COUNT             26
+#define ACT_R_NO_QUEST          26  /**< Refused: out of the dungeon only by the player, with the quest item. */
+#define ACT_R_COUNT             27
 
 /**
  * @brief Move one tile.
@@ -242,7 +243,8 @@ uint8_t act_close(act_t *a, uint8_t mode) NGE_BANKED;
  * The player asks for the level above (level_request(): the game takes
  * them there at the end of the frame, or out of the dungeon from depth
  * 1); anyone else leaves the level for it (level_send(): EV_LEFT_LEVEL).
- * Refused with ACT_R_NO_STAIRS.
+ * Refused with ACT_R_NO_STAIRS, or ACT_R_NO_QUEST out of depth 1 unless the
+ * actor is the player and carries the quest item (game/quest/quest.h).
  */
 uint8_t act_ascend(act_t *a, uint8_t mode) NGE_BANKED;
 

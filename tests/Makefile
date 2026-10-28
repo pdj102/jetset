@@ -53,7 +53,7 @@ GEN_GAME_SRCS := $(addprefix $(GAMEDIR)/,gen/gen.c gen/gen_shared_bank.c \
                  effects/effects_core.c effects/effects_game.c effects/effects_pdata.c)
 GEN_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(GEN_GAME_SRCS))
 LEVEL_GAME_SRCS := $(addprefix $(GAMEDIR)/,level/level.c level/level_bank.c level/level_gen.c level/level_deco.c \
-                   level/level_travel.c level/level_pdata.c)
+                   level/level_travel.c level/level_pdata.c quest/quest.c quest/quest_bank.c)
 # The decorator's tables, generated into src/data (docs/dungeon_decoration.md)
 DATADIR := ../src/data
 LEVEL_ONLY_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(LEVEL_GAME_SRCS)) \

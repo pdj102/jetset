@@ -107,6 +107,15 @@ void level_decorate_around(uint8_t x, uint8_t y);
 /* Each look of each terrain into the map's block table, with its terrain's block value */
 void level_deco_blocks(void);
 
+/*
+ * Room floor for something placed after the random entities (a parked
+ * entity, the player arriving anywhere): a random tile with nothing on it,
+ * else the first such tile in room order, else the first with no feature on
+ * it, shared with an item or a creature (docs/winning.md R10). Always finds
+ * one (page 102)
+ */
+void level_free_floor(uint8_t *x, uint8_t *y);
+
 /* Leave the current level: the player taken out of its area, its unkept entities released, the rest parked */
 void level_leave(nge_entity_id_t player) NGE_BANKED;
 

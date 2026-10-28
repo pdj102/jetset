@@ -363,8 +363,9 @@ state's events are today (R5).
 - **Died:** `death_on_event()` calls `game_over(GAME_OVER_DIED)` while the
   frame's events are handled. The loop ends after that `play_step()`.
 - **Quit:** Q's command calls `game_over(GAME_OVER_QUIT)`.
-- **Escaped:** `change_level()` with `LEVEL_DEPTH_SURFACE` calls
-  `game_over(GAME_OVER_ESCAPED)`.
+- **Won:** `change_level()` with `LEVEL_DEPTH_SURFACE` calls
+  `game_over(GAME_OVER_WON)` (was `GAME_OVER_ESCAPED`; only the player
+  with the quest item gets there, docs/winning.md).
 - **Mid-advance:** the clock is stopped, so no further timer fires in that
   advance, and `world_can_act()` stops the next one (R6).
 

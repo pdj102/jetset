@@ -36,6 +36,7 @@
 #include "game/level/level.h"
 #include "game/messages/messages.h"
 #include "game/player/player.h"
+#include "game/quest/quest.h"
 #include "game/ui/screen.h"
 #include "game/ui/screen_inv.h"
 #include "game/ui/screen_main.h"
@@ -178,6 +179,26 @@ static int starts(const char *t, const char *s)
 }
 
 /* The last message: the message window (rows 26-30) fills from the top, then scrolls */
+/* A message in the window (rows 26-30), not only the last */
+static int shown(const char *s)
+{
+    int y;
+
+    for (y = 26; y <= 30; y++) {
+        if (starts(row((uint8_t)y), s)) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/* The quest module, then the messages: the game's order (game_on_event()) */
+static void quest_and_messages(const nge_event_t *e)
+{
+    quest_on_event(e);
+    messages_on_event(e);
+}
+
 static int said(const char *s)
 {
     int y;
@@ -216,6 +237,7 @@ int main(void)
     nge_entity_id_t ring1;
     nge_entity_id_t ring2;
     nge_entity_id_t door;
+    nge_entity_id_t quest;
     nge_entity_id_t chosen;
     nge_entity_id_t many[29];
     nge_entity_id_t rat;
@@ -613,6 +635,33 @@ int main(void)
     nge_event_post(door, EV_LEFT_LEVEL, NGE_EVENT_NONE, 1, 0);       /* anything named: the door will do */
     nge_event_process(messages_on_event);
     CHECK(said("The door goes down and away."));
+
+    /* ---- the quest item: found once, needed to leave, the win (docs/winning.md) ---- */
+    quest = gen_item(IT_QUEST, actor_player);
+    nge_entity_set_flags(quest, NGE_ENTITY_PERSISTENT);
+    quest_set(quest);
+    screen_message("-");
+    nge_event_post(quest, EV_PICKED_UP, door, 0, 0);           /* not the player: nothing */
+    nge_event_process(quest_and_messages);
+    CHECK(said("-"));
+    nge_event_post(quest, EV_PICKED_UP, actor_player, 0, 0);
+    nge_event_process(quest_and_messages);
+    CHECK(said("Now climb back out of the dungeon.") && shown("You pick up a crown."));
+    nge_event_post(quest, EV_PICKED_UP, actor_player, 0, 0);   /* again: only the pick-up */
+    nge_event_process(quest_and_messages);
+    CHECK(said("You pick up a crown."));
+    {
+        act_t a = { 0 };
+
+        a.actor = actor_player;
+        a.reason = ACT_R_NO_QUEST;
+        messages_act_failed(&a);
+        CHECK(said("You can't leave without the crown."));
+    }
+    messages_game_over(GAME_OVER_WON);
+    CHECK(said("Press any key.") && shown("You escape with the crown. You win!"));
+    messages_game_over(GAME_OVER_DIED);
+    CHECK(said("Game over. Press any key."));
 
     /* ---- the player's turn: their timer starts it, a new game resets it ---- */
     player_init();

@@ -23,6 +23,9 @@ void messages_on_event(const nge_event_t *e) NGE_BANKED;
 /** @brief Tell the player why their action failed (a->reason, a on the caller's stack), if they need telling. */
 void messages_act_failed(const act_t *a) NGE_BANKED;
 
+/** @brief Why the game ended (GAME_OVER_*, game/game.h), and to press a key. */
+void messages_game_over(uint8_t reason) NGE_BANKED;
+
 /**
  * @brief Look at tile (x, y) of the current level: one message for each game
  *        entity on it, in ID order ("You see a ring.", "You see yourself."),

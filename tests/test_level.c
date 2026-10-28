@@ -34,6 +34,7 @@
 #include "game/events.h"
 #include "game/gen/gen.h"
 #include "game/level/level_internal.h"
+#include "game/quest/quest.h"
 #include "game/ui/screen_main.h"
 
 #define SEEDS  20   /* level_dev_seed values: SEEDS * LEVEL_DEPTH_BOTTOM levels checked */
@@ -550,6 +551,7 @@ int main(void)
     nge_entity_id_t boss;
     nge_entity_id_t poison;
     nge_entity_id_t regen;
+    nge_entity_id_t quest;
 
     test_init();
 
@@ -769,6 +771,102 @@ int main(void)
     CHECK(NGE_ENTITY_IS_ALIVE(sword) && NGE_OWNER_OF(sword) == boss);
     go(5, LEVEL_ARRIVE_DOWN_STAIRS);
     CHECK(NGE_OWNER_OF(boss) == LEVEL_AREA && NGE_OWNER_OF(ring) == boss && NGE_OWNER_OF(sword) == boss);
+
+    /* ---- the quest item (docs/winning.md): parked at the bottom, on the map of its depth on each visit ---- */
+    quest = gen_item(IT_QUEST, NGE_OWNER_AREA(LEVEL_DEPTH_BOTTOM));   /* as actors_create() makes it */
+    nge_entity_set_flags(quest, NGE_ENTITY_PERSISTENT);
+    quest_set(quest);
+    go(3, LEVEL_ARRIVE_ANY);
+    quest_check();
+    CHECK(NGE_OWNER_OF(quest) == NGE_OWNER_AREA(LEVEL_DEPTH_BOTTOM) &&
+          !NGE_ENTITY_HAS_COMPONENT(quest, NGE_COMPONENT_LOCATION));
+    go(LEVEL_DEPTH_BOTTOM, LEVEL_ARRIVE_UP_STAIRS);   /* R9: the first visit */
+    quest_check();
+    CHECK(NGE_OWNER_OF(quest) == LEVEL_AREA && NGE_ENTITY_HAS_COMPONENT(quest, NGE_COMPONENT_LOCATION));
+    CHECK(room_of(NGE_LOCATION_X(quest), NGE_LOCATION_Y(quest)) >= 0 &&
+          entities_at(NGE_LOCATION_X(quest), NGE_LOCATION_Y(quest)) == 1);   /* alone on room floor */
+    CHECK(!quest_carried(player));
+    inv_stow(quest, player);
+    CHECK(quest_carried(player));
+    go(6, LEVEL_ARRIVE_DOWN_STAIRS);   /* carried up */
+    quest_check();
+    CHECK(quest_carried(player));
+    inv_place(quest, LEVEL_AREA, NGE_LOCATION_X(player), NGE_LOCATION_Y(player));   /* dropped on depth 6 */
+    CHECK(!quest_carried(player));
+    go(5, LEVEL_ARRIVE_DOWN_STAIRS);
+    quest_check();
+    CHECK(NGE_OWNER_OF(quest) == NGE_OWNER_AREA(6) && !NGE_ENTITY_HAS_COMPONENT(quest, NGE_COMPONENT_LOCATION));
+    go(6, LEVEL_ARRIVE_UP_STAIRS);
+    quest_check();
+    CHECK(NGE_OWNER_OF(quest) == LEVEL_AREA && NGE_ENTITY_HAS_COMPONENT(quest, NGE_COMPONENT_LOCATION));
+    go(6, LEVEL_ARRIVE_ANY);   /* a new map of the same depth: there again */
+    quest_check();
+    CHECK(NGE_OWNER_OF(quest) == LEVEL_AREA && NGE_ENTITY_HAS_COMPONENT(quest, NGE_COMPONENT_LOCATION));
+    CHECK(nge_entity_destroy(quest) == 0 && NGE_ENTITY_IS_ALIVE(quest));   /* R3 */
+
+    /* Held by a monster that dies: dropped on its tile (R7) */
+    monster = placed_creature(CR_GOBLIN);
+    inv_stow(quest, monster);
+    {
+        uint8_t mx = NGE_LOCATION_X(monster);
+        uint8_t my = NGE_LOCATION_Y(monster);
+
+        health_damage(monster, player, 200, DMG_SLASH);
+        level_release_dying();
+        CHECK(NGE_ENTITY_STATE(monster) == NGE_ENTITY_FREE && NGE_OWNER_OF(quest) == LEVEL_AREA &&
+              NGE_LOCATION_X(quest) == mx && NGE_LOCATION_Y(quest) == my);
+        quest_check();
+    }
+    /* Held by a monster that leaves the level: dropped where it was */
+    monster = placed_creature(CR_GOBLIN);
+    inv_stow(quest, monster);
+    {
+        uint8_t mx = NGE_LOCATION_X(monster);
+        uint8_t my = NGE_LOCATION_Y(monster);
+
+        CHECK(level_send(monster, 7) == 1);
+        level_release_dying();
+        CHECK(NGE_OWNER_OF(quest) == LEVEL_AREA && NGE_LOCATION_X(quest) == mx && NGE_LOCATION_Y(quest) == my);
+        quest_check();
+    }
+    /* Held by a persistent monster that leaves: with it, held, on its new depth (R7, R8) */
+    boss = placed_creature(CR_GOBLIN);
+    nge_entity_set_flags(boss, NGE_ENTITY_PERSISTENT);
+    inv_stow(quest, boss);
+    CHECK(level_send(boss, 2) == 1);
+    quest_check();
+    CHECK(NGE_OWNER_OF(quest) == boss && NGE_OWNER_OF(boss) == NGE_OWNER_AREA(2));
+    go(2, LEVEL_ARRIVE_ANY);
+    quest_check();
+    CHECK(NGE_OWNER_OF(quest) == boss && NGE_OWNER_OF(boss) == LEVEL_AREA &&
+          NGE_ENTITY_HAS_COMPONENT(boss, NGE_COMPONENT_LOCATION));
+
+    /* ---- level_free_floor() always ends (R10): free floor, else shared, never on a feature ---- */
+    go(4, LEVEL_ARRIVE_ANY);
+    CHECK(entities_at(2, 2) == 0 && entities_at(3, 2) == 0);
+    level_room_count = 1;   /* one room, two floor tiles: (2, 2) and (3, 2) */
+    level_rooms[level_room_cells[0]].x1 = 1;
+    level_rooms[level_room_cells[0]].y1 = 1;
+    level_rooms[level_room_cells[0]].x2 = 4;
+    level_rooms[level_room_cells[0]].y2 = 3;
+    potion = gen_item(IT_POTION, LEVEL_AREA);
+    nge_location_set(potion, 2, 2);
+    level_free_floor(&d, &arrival);
+    CHECK(d == 3 && arrival == 2);   /* the free one */
+    sword = gen_item(IT_SWORD, LEVEL_AREA);
+    nge_location_set(sword, 3, 2);
+    level_free_floor(&d, &arrival);
+    CHECK(d == 2 && arrival == 2);   /* none free: shared with the potion */
+    id = gen_feature(FT_DOOR, LEVEL_AREA);
+    nge_location_set(id, 2, 2);
+    level_free_floor(&d, &arrival);
+    CHECK(d == 3 && arrival == 2);   /* not on the door */
+    go(4, LEVEL_ARRIVE_ANY);   /* a real level again */
+
+    /* ---- quest_check() catches a quest item nowhere (R14) ---- */
+    nge_owner_set(quest, NGE_OWNER_WORLD);
+    TEST_EXPECT_HALT(quest_check());
+    CHECK(test_halt_count == 1);
 
     return test_summary("level");
 }

@@ -26,6 +26,7 @@
 #include "game/events.h"
 #include "game/gen/gen.h"
 #include "game/level/level.h"
+#include "game/quest/quest.h"
 
 #define AREA   NGE_OWNER_AREA(0)
 #define FLOOR  '.'
@@ -134,6 +135,7 @@ int main(void)
     nge_entity_id_t opener;
     nge_entity_id_t stairs;
     nge_entity_id_t climber;
+    nge_entity_id_t quest;
     uint8_t depth;
     uint8_t arrival;
     unsigned int s;
@@ -709,13 +711,38 @@ int main(void)
     CHECK(act_descend(&a, ACT_DO) == ACT_SUCCESS && a.used == 1 && !level_pending());
     CHECK(NGE_ENTITY_STATE(climber) == NGE_ENTITY_DYING);
     CHECK(events() == 1 && is(0, climber, EV_LEFT_LEVEL, NGE_EVENT_NONE) && seen[0].p1 == 1);
-    /* Up the stairs from depth 1: out of the dungeon (depth 0) */
+    /* Up the stairs from depth 1: out of the dungeon (depth 0), only by the player with the quest item */
     level_depth = 1;
     climber = gen_creature(CR_PLAYER, LEVEL_AREA);
     nge_location_set(climber, 1, 8);
     stairs = gen_feature(FT_STAIRS_UP, LEVEL_AREA);
     feature_place(stairs, 1, 8);
+    quest = gen_item(IT_QUEST, LEVEL_AREA);
+    nge_entity_set_flags(quest, NGE_ENTITY_PERSISTENT);
+    quest_set(quest);
+    nge_location_set(quest, 2, 8);                            /* on the floor: not carried */
     events();
+    a = ctx(climber);
+    CHECK(act_ascend(&a, ACT_CHECK) == ACT_FAIL && a.reason == ACT_R_NO_QUEST);
+    a = ctx(climber);
+    CHECK(act_ascend(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_NO_QUEST && a.used == 0 && !level_pending());
+    biter = gen_creature(CR_GOBLIN, LEVEL_AREA);              /* a monster with it: refused too */
+    nge_location_set(biter, 1, 8);
+    inv_stow(quest, biter);
+    CHECK(quest_carried(biter) && !quest_carried(climber));
+    a = ctx(biter);
+    CHECK(act_ascend(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_NO_QUEST && a.used == 0);
+    CHECK(NGE_ENTITY_IS_ALIVE(biter) && events() == 0);
+    inv_stow(quest, climber);
+    CHECK(quest_carried(climber) && !quest_carried(biter));
+    /* It can't be used, equipped or destroyed */
+    a = ctx(climber);
+    a.item = quest;
+    CHECK(act_use(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_CANT_USE);
+    a = ctx(climber);
+    a.item = quest;
+    CHECK(act_equip(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_CANT_EQUIP);
+    CHECK(nge_entity_destroy(quest) == 0 && NGE_ENTITY_IS_ALIVE(quest));
     a = ctx(climber);
     CHECK(act_ascend(&a, ACT_DO) == ACT_SUCCESS && level_pending());
     level_take_request(&depth, &arrival);

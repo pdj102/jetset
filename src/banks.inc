@@ -58,6 +58,7 @@
 //                        124/125  target: targeting and its cursor / (unused)
 //                        126/127  anim: starting the action animations / the
 //                                 creature kinds' sequences
+//                        128/129  quest: the quest item's checks / (unused)
 //             132-223  game assets (maps, graphics, level data):
 //                        133  the map tiles' palette (slot 7, via nge_palette_load9();
 //                             src/data/tile_palette_data.asm, generated)
@@ -125,6 +126,9 @@
 
 // game anim: the action animations (game/anim)
 #pragma define CRT_ORG_PAGE_126 = 0x7EC000
+
+// game quest: the quest item (game/quest)
+#pragma define CRT_ORG_PAGE_128 = 0x80C000
 
 // nge map: set-up functions
 #pragma define CRT_ORG_PAGE_44 = 0x2CC000

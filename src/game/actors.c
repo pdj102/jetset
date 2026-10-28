@@ -15,6 +15,7 @@
 #include "game/effects/effects.h"
 #include "game/gen/gen.h"
 #include "game/level/level.h"
+#include "game/quest/quest.h"
 #include "sprite/nge_sprite.h"
 
 #if GAME_DEV_KIT
@@ -31,8 +32,9 @@ typedef struct actor_persistent {
     uint8_t depth;   /* 1 to LEVEL_DEPTH_BOTTOM */
 } actor_persistent_t;
 
-/* The persistent entities besides the player: later the quest object and the final boss */
+/* The persistent entities besides the player: the quest item (docs/winning.md), later the final boss */
 static const actor_persistent_t persistents[] = {
+    { CLASS_ITEM, IT_QUEST, LEVEL_DEPTH_BOTTOM },
 #if GAME_DEV_KIT
     { CLASS_CREATURE, CR_GOBLIN, 2 },   /* for trying out parking: the same goblin on every visit */
 #endif
@@ -76,6 +78,9 @@ void actors_create(const char *name)
                                         : gen_item(p->kind, NGE_OWNER_AREA(p->depth));
         nge_util_assert(id != NGE_ENTITY_INVALID);
         nge_entity_set_flags(id, NGE_ENTITY_PERSISTENT);
+        if (p->cls == CLASS_ITEM && p->kind == IT_QUEST) {
+            quest_set(id);
+        }
     }
 
 #if GAME_DEV_KIT

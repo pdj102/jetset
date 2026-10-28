@@ -33,6 +33,7 @@
  * | EV_XP_GAINED      | the player          | -        | p1, p2: XP gained, low and high byte |
  * | EV_LEVEL_GAINED   | the player          | -        | p1: the new level |
  * | EV_GOLD_CHANGED   | the player          | -        | -        |
+ * | EV_QUEST_FOUND    | the quest item      | the player | -      |
  */
 
 #include "event/nge_event.h"
@@ -61,5 +62,6 @@
 #define EV_XP_GAINED      (NGE_EVENT_USER + 21)    /**< Gained p1 + 256 * p2 XP (game/components/pc.h). */
 #define EV_LEVEL_GAINED   (NGE_EVENT_USER + 22)    /**< Went up to level p1. */
 #define EV_GOLD_CHANGED   (NGE_EVENT_USER + 23)    /**< Gold gained or spent: pc_gold is the new amount. */
+#define EV_QUEST_FOUND    (NGE_EVENT_USER + 24)    /**< Picked up by the player for the first time this game (game/quest/quest.h). */
 
 #endif

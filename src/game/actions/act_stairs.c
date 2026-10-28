@@ -16,6 +16,7 @@
 #include "game/components/pc.h"
 #include "game/gen/gen.h"
 #include "game/level/level.h"
+#include "game/quest/quest.h"
 
 /*
  * Both: stairs that can (FCAN_ASCEND or FCAN_DESCEND) on the actor's tile,
@@ -47,14 +48,17 @@ static uint8_t take_stairs(act_t *a, uint8_t mode, uint8_t can, int8_t step)
         return act_fail(a, ACT_R_NO_STAIRS);
     }
     a->target = stairs;
+    depth = (uint8_t)(level_depth + step);
+    if (depth == LEVEL_DEPTH_SURFACE && (!PC_IS(actor) || !quest_carried(actor))) {
+        return act_fail(a, ACT_R_NO_QUEST);   /* only the player leaves, and only with it (docs/winning.md) */
+    }
     if (mode == ACT_CHECK) {
         return act_checked(a);
     }
 
-    /* 3. Resolve: nothing to roll (later: the quest object, to leave from depth 1) */
+    /* 3. Resolve: nothing to roll */
 
     /* 4. Apply: the player at the end of the frame, anyone else now */
-    depth = (uint8_t)(level_depth + step);
     if (PC_IS(actor)) {
         level_request(depth, step > 0 ? LEVEL_ARRIVE_UP_STAIRS : LEVEL_ARRIVE_DOWN_STAIRS);
     } else {
