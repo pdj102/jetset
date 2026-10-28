@@ -25,7 +25,7 @@ static void check_health(nge_entity_id_t id)
     (void)id;   /* unused when asserts are compiled out (NDEBUG) */
     nge_util_assert(id < NGE_ENTITY_MAX);
     nge_util_assert(NGE_ENTITY_STATE(id) != NGE_ENTITY_FREE);
-    nge_util_assert(NGE_ENTITY_HAS_ANY_COMPONENTS(id, COMPONENT_HEALTH));
+    nge_util_assert(NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_HEALTH));
 }
 
 void health_add(nge_entity_id_t id, const health_kind_t *k) NGE_BANKED
@@ -45,7 +45,7 @@ void health_add(nge_entity_id_t id, const health_kind_t *k) NGE_BANKED
     health_immune_base[id] = k->immune;
     health_resist_base[id] = k->resist;
     health_vuln_base[id] = k->vuln;
-    nge_entity_components[id] |= COMPONENT_HEALTH;
+    NGE_ENTITY_ADD_COMPONENT(id, COMPONENT_HEALTH);
 }
 
 uint8_t health_dealt(nge_entity_id_t id, uint8_t amount, uint8_t type, uint8_t *outcome) NGE_BANKED

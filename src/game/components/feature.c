@@ -32,7 +32,7 @@ static void update(nge_entity_id_t id)
     nge_tile_t tile;
     uint8_t open = FEATURE_IS_OPEN(id);
 
-    nge_util_assert(NGE_ENTITY_HAS_COMPONENTS(id, NGE_COMPONENT_LOCATION));
+    nge_util_assert(NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_LOCATION));
     gen_feature_info(kind_index[id], &info);
     nge_block_add(id, open ? NGE_BLOCK_NONE : info.block_shut, NGE_BLOCK_NONE);
     tile.tile_id = info.look[open].tile_id;
@@ -46,7 +46,7 @@ void feature_add(nge_entity_id_t id, uint8_t state) NGE_BANKED
     nge_util_assert(NGE_ENTITY_STATE(id) != NGE_ENTITY_FREE);
 
     feature_state[id] = state;
-    nge_entity_components[id] |= COMPONENT_FEATURE;
+    NGE_ENTITY_ADD_COMPONENT(id, COMPONENT_FEATURE);
 }
 
 void feature_place(nge_entity_id_t id, uint8_t x, uint8_t y) NGE_BANKED

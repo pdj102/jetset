@@ -17,5 +17,5 @@ void item_add(nge_entity_id_t id) NGE_BANKED
     nge_util_assert(NGE_ENTITY_STATE(id) != NGE_ENTITY_FREE);
 
     item_slot[id] = SLOT_NONE;
-    nge_entity_components[id] |= COMPONENT_ITEM;
+    NGE_ENTITY_ADD_COMPONENT(id, COMPONENT_ITEM);
 }

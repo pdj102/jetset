@@ -97,7 +97,7 @@ static void move(int8_t dx, int8_t dy)
     a.dy = dy;
     if (act_move(&a, ACT_CHECK) == ACT_FAIL && a.reason == ACT_R_BLOCKED_ENTITY) {
         blocker = a.target;
-        if (NGE_ENTITY_HAS_ANY_COMPONENTS(blocker, COMPONENT_HEALTH)) {
+        if (NGE_ENTITY_HAS_COMPONENT(blocker, COMPONENT_HEALTH)) {
             player_act(ACT_MELEE, &a);   /* a.target: the blocker */
             return;
         }

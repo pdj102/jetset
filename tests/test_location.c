@@ -10,17 +10,17 @@
 #define AREA0  NGE_OWNER_AREA(0)
 #define AREA1  NGE_OWNER_AREA(1)
 #define COMP_CREATURE  NGE_COMPONENT(NGE_COMPONENT_USER)
-#define COMP_ITEM      NGE_COMPONENT(NGE_COMPONENT_USER + 1)
+#define COMP_ITEM      NGE_COMPONENT(NGE_COMPONENT_MAX - 1)   /* in another table from the location's */
 
 /* The reference: a plain scan of every ID */
 static nge_entity_id_t find_slow(nge_owner_t area, uint8_t x, uint8_t y,
-                                 nge_component_mask_t mask, nge_entity_id_t from)
+                                 nge_component_t c, nge_entity_id_t from)
 {
     int id;
 
-    mask |= NGE_COMPONENT_LOCATION;
     for (id = from; id < NGE_ENTITY_MAX; id++) {
-        if (NGE_ENTITY_IS_ALIVE(id) && NGE_ENTITY_HAS_COMPONENTS(id, mask) &&
+        if (NGE_ENTITY_IS_ALIVE(id) && NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_LOCATION) &&
+            (c == 0 || NGE_ENTITY_HAS_COMPONENT(id, c)) &&
             nge_owner_of[id] == area && nge_location_x[id] == x && nge_location_y[id] == y) {
             return (nge_entity_id_t)id;
         }
@@ -28,14 +28,16 @@ static nge_entity_id_t find_slow(nge_owner_t area, uint8_t x, uint8_t y,
     return NGE_ENTITY_INVALID;
 }
 
-/* An alive entity in area at (x, y) with extra components */
-static nge_entity_id_t put(nge_owner_t area, uint8_t x, uint8_t y, nge_component_mask_t comp)
+/* An alive entity in area at (x, y), with component comp (0 for none) */
+static nge_entity_id_t put(nge_owner_t area, uint8_t x, uint8_t y, nge_component_t comp)
 {
     nge_entity_id_t id = nge_entity_create();
 
     nge_owner_set(id, area);
     nge_location_set(id, x, y);
-    nge_entity_set_components(id, comp);
+    if (comp != 0) {
+        nge_entity_set_component(id, comp);
+    }
     return id;
 }
 
@@ -66,7 +68,6 @@ static void test_find(void)
     CHECK(nge_location_find(AREA0, 5, 7, 0, 0) == monster);
     CHECK(nge_location_find(AREA0, 5, 7, COMP_CREATURE, 0) == monster);
     CHECK(nge_location_find(AREA0, 5, 7, COMP_ITEM, 0) == potion);
-    CHECK(nge_location_find(AREA0, 5, 7, COMP_ITEM | COMP_CREATURE, 0) == NGE_ENTITY_INVALID);
     CHECK(nge_location_find(AREA0, 6, 7, 0, 0) == NGE_ENTITY_INVALID);  /* empty tile */
     CHECK(nge_location_find(AREA1, 5, 7, 0, 0) != NGE_ENTITY_INVALID);
     /* Continuing after a match; from past the last ID */
@@ -109,7 +110,7 @@ static void test_find(void)
         uint8_t x = (uint8_t)(rand() % 4);
         uint8_t y = (uint8_t)(rand() % 4);
         nge_owner_t area = (rand() & 1) ? AREA0 : AREA1;
-        nge_component_mask_t mask = (nge_component_mask_t)((rand() % 3 == 0) ? COMP_ITEM : 0);
+        nge_component_t mask = (nge_component_t)((rand() % 3 == 0) ? COMP_ITEM : 0);
         nge_entity_id_t from = (nge_entity_id_t)(rand() % (NGE_ENTITY_MAX + 2));
 
         switch (rand() % 6) {
@@ -158,13 +159,14 @@ int main(void)
     nge_entity_init();
     a = nge_entity_create();
     b = nge_entity_create();
-    CHECK(!NGE_ENTITY_HAS_COMPONENTS(a, NGE_COMPONENT_LOCATION));   /* new: no location */
+    CHECK(!NGE_ENTITY_HAS_COMPONENT(a, NGE_COMPONENT_LOCATION));   /* new: no location */
 
     /* ---- set: values and the component, other components kept ---- */
-    nge_entity_set_components(a, NGE_COMPONENT(NGE_COMPONENT_USER));
+    nge_entity_set_component(a, NGE_COMPONENT(NGE_COMPONENT_USER));
     nge_location_set(a, 79, 47);
     CHECK(NGE_LOCATION_X(a) == 79 && NGE_LOCATION_Y(a) == 47);
-    CHECK(nge_entity_components[a] == (NGE_COMPONENT_LOCATION | NGE_COMPONENT(NGE_COMPONENT_USER)));
+    CHECK(NGE_ENTITY_HAS_COMPONENT(a, NGE_COMPONENT_LOCATION) &&
+          NGE_ENTITY_HAS_COMPONENT(a, NGE_COMPONENT(NGE_COMPONENT_USER)));
     nge_location_set(b, 3, 4);
     CHECK(NGE_LOCATION_X(a) == 79 && NGE_LOCATION_X(b) == 3 && NGE_LOCATION_Y(b) == 4);
 
@@ -175,15 +177,16 @@ int main(void)
 
     /* ---- remove: only the component ---- */
     nge_location_remove(a);
-    CHECK(nge_entity_components[a] == NGE_COMPONENT(NGE_COMPONENT_USER));
-    CHECK(NGE_ENTITY_HAS_COMPONENTS(b, NGE_COMPONENT_LOCATION));
+    CHECK(!NGE_ENTITY_HAS_COMPONENT(a, NGE_COMPONENT_LOCATION) &&
+          NGE_ENTITY_HAS_COMPONENT(a, NGE_COMPONENT(NGE_COMPONENT_USER)));
+    CHECK(NGE_ENTITY_HAS_COMPONENT(b, NGE_COMPONENT_LOCATION));
 
     /* ---- a dying entity may still be moved; a reused ID has no location ---- */
     nge_entity_destroy(b);
     nge_location_set(b, 1, 2);
     CHECK(NGE_LOCATION_X(b) == 1);
     nge_entity_release(nge_entity_next_dying());
-    CHECK(nge_entity_create() == b && !NGE_ENTITY_HAS_COMPONENTS(b, NGE_COMPONENT_LOCATION));
+    CHECK(nge_entity_create() == b && !NGE_ENTITY_HAS_COMPONENT(b, NGE_COMPONENT_LOCATION));
 
     /* ---- fine position and pixel moves ---- */
     nge_entity_init();

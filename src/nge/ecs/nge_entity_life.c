@@ -13,6 +13,16 @@
 
 #include "core/nge_util.h"
 
+/* No components: entity id's byte in every table */
+static void clear_components(nge_entity_id_t id)
+{
+    uint8_t t;
+
+    for (t = 0; t < NGE_COMPONENT_TABLES; t++) {
+        nge_entity_components[t][id] = 0;
+    }
+}
+
 void nge_entity_init(void) NGE_BANKED
 {
     uint8_t i;
@@ -20,7 +30,7 @@ void nge_entity_init(void) NGE_BANKED
     /* Top of the free stack is ID 0, so IDs are handed out 0, 1, 2... */
     for (i = 0; i < NGE_ENTITY_MAX; i++) {
         nge_entity_flags[i] = NGE_ENTITY_FREE;
-        nge_entity_components[i] = 0;
+        clear_components(i);
         nge_owner_of[i] = NGE_OWNER_WORLD;
         nge_entity_free_stack[i] = NGE_ENTITY_MAX - 1 - i;
     }
@@ -39,7 +49,7 @@ nge_entity_id_t nge_entity_create(void) NGE_BANKED
     id = nge_entity_free_stack[--nge_entity_free_top];
 
     nge_entity_flags[id] = NGE_ENTITY_ALIVE;
-    nge_entity_components[id] = 0;
+    clear_components(id);
     nge_owner_of[id] = NGE_OWNER_WORLD;
     nge_entity_alive_pos[id] = nge_entity_alive_count;
     nge_entity_alive[nge_entity_alive_count++] = id;
@@ -84,7 +94,7 @@ void nge_entity_release(nge_entity_id_t id) NGE_BANKED
     nge_util_assert(nge_owner_count(id) == 0);   /* see nge_owner.h */
 
     nge_entity_flags[id] = NGE_ENTITY_FREE;
-    nge_entity_components[id] = 0;
+    clear_components(id);
     nge_entity_free_stack[nge_entity_free_top++] = id;
 }
 

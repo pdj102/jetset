@@ -37,21 +37,21 @@ void attack_add(nge_entity_id_t id, uint8_t use, const attack_kind_t *k) NGE_BAN
     attack_bonus[use][id] = k->bonus;
     attack_type[use][id] = k->type;
     attack_range[use][id] = k->range;
-    nge_entity_components[id] |= ATTACK_COMPONENT(use);
+    NGE_ENTITY_ADD_COMPONENT(id, ATTACK_COMPONENT(use));
 }
 
 void attack_remove(nge_entity_id_t id, uint8_t use) NGE_BANKED
 {
     check_entity(id, use);
 
-    nge_entity_components[id] &= (nge_component_mask_t)~ATTACK_COMPONENT(use);
+    NGE_ENTITY_REMOVE_COMPONENT(id, ATTACK_COMPONENT(use));
 }
 
 uint8_t attack_hits(nge_entity_id_t id, uint8_t use, nge_entity_id_t target, uint8_t roll) NGE_BANKED
 {
     check_entity(id, use);
     nge_util_assert(roll >= 1 && roll <= 20);
-    nge_util_assert(NGE_ENTITY_HAS_ANY_COMPONENTS(target, COMPONENT_HEALTH));
+    nge_util_assert(NGE_ENTITY_HAS_COMPONENT(target, COMPONENT_HEALTH));
 
     if (roll == ATTACK_ROLL_HIT) {
         return 1;

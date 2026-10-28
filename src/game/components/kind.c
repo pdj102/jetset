@@ -19,5 +19,5 @@ void kind_add(nge_entity_id_t id, uint8_t c, uint8_t i) NGE_BANKED
 
     kind_class[id] = c;
     kind_index[id] = i;
-    nge_entity_components[id] |= COMPONENT_KIND;
+    NGE_ENTITY_ADD_COMPONENT(id, COMPONENT_KIND);
 }

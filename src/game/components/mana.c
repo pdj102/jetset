@@ -30,7 +30,7 @@ void mana_add(nge_entity_id_t id, const mana_kind_t *k) NGE_BANKED
 
     mana_mp[id] = k->mp_max;
     mana_mp_max[id] = k->mp_max;
-    nge_entity_components[id] |= COMPONENT_MANA;
+    NGE_ENTITY_ADD_COMPONENT(id, COMPONENT_MANA);
 }
 
 void mana_spend(nge_entity_id_t id, uint8_t amount) NGE_BANKED

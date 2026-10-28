@@ -48,7 +48,7 @@ static uint8_t can_enter_slow(nge_owner_t area, uint8_t x, uint8_t y, nge_block_
 
     for (id = 0; id < NGE_ENTITY_MAX; id++) {
         if (id != ignore && NGE_ENTITY_IS_ALIVE(id) &&
-            NGE_ENTITY_HAS_COMPONENTS(id, NGE_COMPONENT_LOCATION | NGE_COMPONENT_BLOCK) &&
+            NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_LOCATION) && NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_BLOCK) &&
             nge_owner_of[id] == area && nge_location_x[id] == x && nge_location_y[id] == y) {
             block |= nge_block_of[id];
         }

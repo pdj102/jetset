@@ -33,7 +33,7 @@ void inv_add(nge_entity_id_t id, uint8_t capacity, uint16_t slots) NGE_BANKED
 
     inv_capacity[id] = capacity;
     inv_slots[id] = slots;
-    nge_entity_components[id] |= COMPONENT_INVENTORY;
+    NGE_ENTITY_ADD_COMPONENT(id, COMPONENT_INVENTORY);
 }
 
 uint8_t inv_count(nge_entity_id_t holder) NGE_BANKED
@@ -104,7 +104,7 @@ uint8_t inv_drop_all(nge_entity_id_t holder) NGE_BANKED
     uint8_t i;
 
     check_entity(holder);
-    if (!NGE_ENTITY_HAS_COMPONENTS(holder, NGE_COMPONENT_LOCATION)) {
+    if (!NGE_ENTITY_HAS_COMPONENT(holder, NGE_COMPONENT_LOCATION)) {
         return 0;
     }
     NGE_OWNER_FOR_EACH_OWNED(i, id, holder) {

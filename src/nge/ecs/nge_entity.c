@@ -41,23 +41,36 @@ uint8_t nge_entity_has_flags(nge_entity_id_t id, nge_entity_flags_t f)
     return NGE_ENTITY_HAS_FLAGS(id, f);
 }
 
-void nge_entity_set_components(nge_entity_id_t id, nge_component_mask_t m)
+/* A handle of one component: one bit, in a table there is */
+static void check_component(nge_component_t c)
 {
-    nge_entity_check_in_use(id);
+    uint8_t bit = (uint8_t)c;
 
-    nge_entity_components[id] |= m;
+    (void)bit;   /* unused when asserts are compiled out (NDEBUG) */
+    nge_util_assert((c >> 8) < NGE_COMPONENT_TABLES);
+    nge_util_assert(bit != 0 && (bit & (uint8_t)(bit - 1)) == 0);
 }
 
-void nge_entity_clear_components(nge_entity_id_t id, nge_component_mask_t m)
+void nge_entity_set_component(nge_entity_id_t id, nge_component_t c)
 {
     nge_entity_check_in_use(id);
+    check_component(c);
 
-    nge_entity_components[id] &= (nge_component_mask_t)~m;
+    NGE_ENTITY_ADD_COMPONENT(id, c);
 }
 
-uint8_t nge_entity_has_components(nge_entity_id_t id, nge_component_mask_t m)
+void nge_entity_clear_component(nge_entity_id_t id, nge_component_t c)
+{
+    nge_entity_check_in_use(id);
+    check_component(c);
+
+    NGE_ENTITY_REMOVE_COMPONENT(id, c);
+}
+
+uint8_t nge_entity_has_component(nge_entity_id_t id, nge_component_t c)
 {
     nge_util_assert(id < NGE_ENTITY_MAX);
+    check_component(c);
 
-    return NGE_ENTITY_HAS_COMPONENTS(id, m);
+    return NGE_ENTITY_HAS_COMPONENT(id, c);
 }

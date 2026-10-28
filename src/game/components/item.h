@@ -56,7 +56,7 @@ typedef char item_slots_check[(SLOT_COUNT <= 16) ? 1 : -1];
 extern uint8_t item_slot[NGE_ENTITY_MAX];
 
 /** The entity has the item component. */
-#define ITEM_IS(id)  NGE_ENTITY_HAS_ANY_COMPONENTS(id, COMPONENT_ITEM)
+#define ITEM_IS(id)  NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_ITEM)
 
 /** @brief Give an entity in use the item component: not equipped. */
 void item_add(nge_entity_id_t id) NGE_BANKED;

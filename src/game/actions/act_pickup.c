@@ -26,7 +26,7 @@ uint8_t act_pickup(act_t *a, uint8_t mode) NGE_BANKED
 
     /* 1. Context: the actor's tile, and the item on it */
     nge_util_assert(actor < NGE_ENTITY_MAX && NGE_ENTITY_IS_ALIVE(actor));
-    nge_util_assert(NGE_ENTITY_HAS_COMPONENTS(actor, NGE_COMPONENT_LOCATION));
+    nge_util_assert(NGE_ENTITY_HAS_COMPONENT(actor, NGE_COMPONENT_LOCATION));
     nge_util_assert(item == NGE_ENTITY_INVALID || item < NGE_ENTITY_MAX);
 
     area = NGE_OWNER_OF(actor);
@@ -46,7 +46,7 @@ uint8_t act_pickup(act_t *a, uint8_t mode) NGE_BANKED
         if (!NGE_ENTITY_IS_ALIVE(item) || !ITEM_IS(item)) {
             return act_fail(a, ACT_R_NOT_ITEM);
         }
-        if (!NGE_ENTITY_HAS_COMPONENTS(item, NGE_COMPONENT_LOCATION) || NGE_OWNER_OF(item) != area ||
+        if (!NGE_ENTITY_HAS_COMPONENT(item, NGE_COMPONENT_LOCATION) || NGE_OWNER_OF(item) != area ||
             NGE_LOCATION_X(item) != x || NGE_LOCATION_Y(item) != y) {
             return act_fail(a, ACT_R_NOTHING_HERE);
         }

@@ -9,11 +9,12 @@
  * A component is a kind of data an entity can have (a location, a
  * sprite, hit points). It has:
  *
- * - a number, 0 to NGE_COMPONENT_MAX-1, and its mask bit
- *   NGE_COMPONENT(n) (ecs/nge_entity.h). An entity's mask
- *   (nge_entity_components[]) says which components it has. Numbers 0 to
- *   NGE_COMPONENT_USER-1 are nge's, listed here; the game's start at
- *   NGE_COMPONENT_USER and are listed in one place of its own;
+ * - a number, 0 to NGE_COMPONENT_MAX-1, and its handle NGE_COMPONENT(n)
+ *   (ecs/nge_entity.h). Which components an entity has is in byte tables,
+ *   8 components each (nge_entity_components[n / 8][id], bit n % 8), so
+ *   each test is one byte test; the handle names the table and the bit.
+ *   Numbers 0 to NGE_COMPONENT_USER-1 are nge's, listed here; the game's
+ *   start at NGE_COMPONENT_USER and are listed in one place of its own;
  * - its data: one table per field, indexed by entity ID
  *   (nge_location_x[], nge_location_y[]), not an array of structs, so each
  *   access is one byte-table read on the Z80. A table is meaningful only
@@ -36,8 +37,8 @@
 
 #include "ecs/nge_entity.h"
 
-/** Component numbers are below this: one bit each in nge_component_mask_t. */
-#define NGE_COMPONENT_MAX   16
+/** Component numbers are below this: one bit each in the component tables. */
+#define NGE_COMPONENT_MAX   (NGE_COMPONENT_TABLES * 8)
 /** The game's first component number: those below are nge's. */
 #define NGE_COMPONENT_USER  4
 
@@ -47,7 +48,7 @@
 #define NGE_COMPONENT_BLOCK     NGE_COMPONENT(2)   /**< What it blocks and can enter (ecs/components/nge_block.h). */
 #define NGE_COMPONENT_TIMER     NGE_COMPONENT(3)   /**< Fires every period (ecs/systems/nge_timer.h). */
 
-/* Every number has a bit in the mask type */
-typedef char nge_component_max_check[(sizeof(nge_component_mask_t) * 8 == NGE_COMPONENT_MAX) ? 1 : -1];
+/* Every table number fits the handle's high byte */
+typedef char nge_component_tables_check[(NGE_COMPONENT_TABLES >= 1 && NGE_COMPONENT_TABLES <= 255) ? 1 : -1];
 
 #endif

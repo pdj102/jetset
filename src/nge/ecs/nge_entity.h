@@ -3,7 +3,7 @@
 
 /**
  * @file nge_entity.h
- * @brief Entities: IDs with a lifecycle state, flags and a component mask.
+ * @brief Entities: IDs with a lifecycle state, flags and components.
  *
  * Lifecycle: FREE -> ALIVE -> DYING -> FREE.
  * - nge_entity_create() takes a free ID and makes it alive.
@@ -49,7 +49,12 @@
 
 typedef uint8_t  nge_entity_id_t;      /**< Entity ID, 0 to NGE_ENTITY_MAX-1. */
 typedef uint8_t  nge_entity_flags_t;   /**< State (bits 0-1) and flags (bits 2-7). */
-typedef uint16_t nge_component_mask_t; /**< One bit per component; uint32_t for up to 32. */
+typedef uint16_t nge_component_t;      /**< One component: its table (high byte) and bit (low byte); 0 for none. */
+
+#ifndef NGE_COMPONENT_TABLES
+/** Component tables, 8 components each (ecs/components/nge_components.h). */
+#define NGE_COMPONENT_TABLES  3
+#endif
 
 /* State: bits 0-1 of the flags byte */
 #define NGE_ENTITY_STATE_MASK  0x03
@@ -63,14 +68,18 @@ typedef uint16_t nge_component_mask_t; /**< One bit per component; uint32_t for 
 #define NGE_ENTITY_FLAG_USER   0x08   /**< First of five flags for the game: 0x08 to 0x80. */
 
 /**
- * Component n as a mask bit. The numbers, nge's and the game's range, and
- * what a component is, are in ecs/components/nge_components.h.
+ * Component n's handle: table n / 8 in the high byte, bit n % 8 in the low
+ * byte. A handle names one component: never OR two, as handles in different
+ * tables would test the wrong one. The shifts are unsigned: zsdcc types
+ * 1 << 7 as a signed char, -128, which would make table 255. The numbers,
+ * nge's and the game's range, and what a component is, are in
+ * ecs/components/nge_components.h.
  */
-#define NGE_COMPONENT(n)  ((nge_component_mask_t)1 << (n))
+#define NGE_COMPONENT(n)  ((nge_component_t)(((nge_component_t)((n) >> 3) << 8) | ((nge_component_t)1 << ((n) & 7))))
 
 /* Tables in slot 0 (nge_entity_cdata.c): read-only for game code, written by the functions below */
 extern nge_entity_flags_t   nge_entity_flags[NGE_ENTITY_MAX];      /**< Per entity. */
-extern nge_component_mask_t nge_entity_components[NGE_ENTITY_MAX]; /**< Per entity. */
+extern uint8_t              nge_entity_components[NGE_COMPONENT_TABLES][NGE_ENTITY_MAX]; /**< Per table, per entity: use the macros. */
 extern nge_entity_id_t      nge_entity_alive[NGE_ENTITY_MAX];      /**< Alive IDs, in no order. */
 extern uint8_t              nge_entity_alive_count;                /**< Entries in nge_entity_alive. */
 
@@ -84,10 +93,15 @@ extern uint8_t              nge_entity_alive_count;                /**< Entries 
 /** Any of the flags f is set. */
 #define NGE_ENTITY_HAS_ANY_FLAGS(id, f)  ((nge_entity_flags[id] & (f)) != 0)
 
-/** All of the components in mask m are set. */
-#define NGE_ENTITY_HAS_COMPONENTS(id, m)      ((nge_entity_components[id] & (m)) == (m))
-/** Any of the components in mask m is set. */
-#define NGE_ENTITY_HAS_ANY_COMPONENTS(id, m)  ((nge_entity_components[id] & (m)) != 0)
+/** The byte of entity id's table that holds component c. */
+#define NGE_ENTITY_COMPONENT_BYTE(id, c)  (nge_entity_components[(c) >> 8][id])
+
+/** The entity has component c. With a constant c, one byte test at a fixed address plus id. */
+#define NGE_ENTITY_HAS_COMPONENT(id, c)     ((NGE_ENTITY_COMPONENT_BYTE(id, c) & (uint8_t)(c)) != 0)
+/** Give the entity component c: for the component's add function. */
+#define NGE_ENTITY_ADD_COMPONENT(id, c)     (NGE_ENTITY_COMPONENT_BYTE(id, c) |= (uint8_t)(c))
+/** Take component c away: for the component's remove function. */
+#define NGE_ENTITY_REMOVE_COMPONENT(id, c)  (NGE_ENTITY_COMPONENT_BYTE(id, c) &= (uint8_t)~(c))
 
 /**
  * Loop over the alive entities, last to first: i is a uint8_t loop counter,
@@ -150,13 +164,13 @@ void nge_entity_clear_flags(nge_entity_id_t id, nge_entity_flags_t f);
 /** @brief 1 if all of the flags f are set. */
 uint8_t nge_entity_has_flags(nge_entity_id_t id, nge_entity_flags_t f);
 
-/** @brief Add components to a live or dying entity. */
-void nge_entity_set_components(nge_entity_id_t id, nge_component_mask_t m);
+/** @brief Add component c to a live or dying entity. */
+void nge_entity_set_component(nge_entity_id_t id, nge_component_t c);
 
-/** @brief Remove components from a live or dying entity. */
-void nge_entity_clear_components(nge_entity_id_t id, nge_component_mask_t m);
+/** @brief Remove component c from a live or dying entity. */
+void nge_entity_clear_component(nge_entity_id_t id, nge_component_t c);
 
-/** @brief 1 if all of the components in mask m are set. */
-uint8_t nge_entity_has_components(nge_entity_id_t id, nge_component_mask_t m);
+/** @brief 1 if the entity has component c. */
+uint8_t nge_entity_has_component(nge_entity_id_t id, nge_component_t c);
 
 #endif

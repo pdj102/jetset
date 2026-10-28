@@ -37,7 +37,7 @@ void anim_init(void) NGE_BANKED
 static uint8_t shown(nge_entity_id_t id)
 {
     return id < NGE_ENTITY_MAX && NGE_ENTITY_IS_ALIVE(id) &&
-           NGE_ENTITY_HAS_COMPONENTS(id, NGE_COMPONENT_LOCATION | NGE_COMPONENT_SPRITE) &&
+           NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_LOCATION) && NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_SPRITE) &&
            NGE_OWNER_OF(id) == LEVEL_AREA;
 }
 
@@ -84,7 +84,7 @@ void anim_on_event(const nge_event_t *e) NGE_BANKED
     case EV_HIT:
     case EV_MISSED:
         /* The attacker lunges towards what it attacked */
-        if (shown(source) && target < NGE_ENTITY_MAX && NGE_ENTITY_HAS_COMPONENTS(target, NGE_COMPONENT_LOCATION)) {
+        if (shown(source) && target < NGE_ENTITY_MAX && NGE_ENTITY_HAS_COMPONENT(target, NGE_COMPONENT_LOCATION)) {
             dx = sign(NGE_LOCATION_X(source), NGE_LOCATION_X(target));
             dy = sign(NGE_LOCATION_Y(source), NGE_LOCATION_Y(target));
             if (dx != 0 || dy != 0) {

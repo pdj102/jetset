@@ -99,7 +99,7 @@ void effects_add(effects_derived_t *d, uint8_t ef);
 /* An attribute (ATTR_*): its base table, the component that has it, and how modifiers combine */
 typedef struct effects_attr {
     uint8_t             *base;        /* the component's base table, [NGE_ENTITY_MAX] */
-    nge_component_mask_t component;   /* an entity has the attribute only with it */
+    nge_component_t      component;   /* an entity has the attribute only with it */
     uint8_t              is_mask;     /* modifiers ORed (1) or added (0) */
 } effects_attr_t;
 

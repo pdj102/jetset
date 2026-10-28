@@ -35,7 +35,7 @@ uint8_t act_melee(act_t *a, uint8_t mode) NGE_BANKED
 
     /* 1. Context: the attack used, and the target */
     nge_util_assert(actor < NGE_ENTITY_MAX && NGE_ENTITY_IS_ALIVE(actor));
-    nge_util_assert(NGE_ENTITY_HAS_COMPONENTS(actor, NGE_COMPONENT_LOCATION));
+    nge_util_assert(NGE_ENTITY_HAS_COMPONENT(actor, NGE_COMPONENT_LOCATION));
     nge_util_assert(target == NGE_ENTITY_INVALID || target < NGE_ENTITY_MAX);
 
     area = NGE_OWNER_OF(actor);
@@ -57,11 +57,11 @@ uint8_t act_melee(act_t *a, uint8_t mode) NGE_BANKED
     if (target == NGE_ENTITY_INVALID || target == actor) {
         return act_fail(a, ACT_R_NO_TARGET);
     }
-    if (!NGE_ENTITY_IS_ALIVE(target) || !NGE_ENTITY_HAS_ANY_COMPONENTS(target, COMPONENT_HEALTH) ||
+    if (!NGE_ENTITY_IS_ALIVE(target) || !NGE_ENTITY_HAS_COMPONENT(target, COMPONENT_HEALTH) ||
         health_hp[target] == 0) {
         return act_fail(a, ACT_R_CANT_DAMAGE);
     }
-    if (!NGE_ENTITY_HAS_COMPONENTS(target, NGE_COMPONENT_LOCATION) || NGE_OWNER_OF(target) != area) {
+    if (!NGE_ENTITY_HAS_COMPONENT(target, NGE_COMPONENT_LOCATION) || NGE_OWNER_OF(target) != area) {
         return act_fail(a, ACT_R_OUT_OF_RANGE);
     }
     roll = act_distance(x, y, NGE_LOCATION_X(target), NGE_LOCATION_Y(target));

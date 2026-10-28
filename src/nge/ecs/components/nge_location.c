@@ -15,7 +15,7 @@ static void check_located(nge_entity_id_t id)
     (void)id;   /* unused when asserts are compiled out (NDEBUG) */
     nge_util_assert(id < NGE_ENTITY_MAX);
     nge_util_assert(NGE_ENTITY_STATE(id) != NGE_ENTITY_FREE);
-    nge_util_assert(nge_entity_components[id] & NGE_COMPONENT_LOCATION);
+    nge_util_assert(NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_LOCATION));
 }
 
 void nge_location_set(nge_entity_id_t id, uint8_t x, uint8_t y)
@@ -27,7 +27,7 @@ void nge_location_set(nge_entity_id_t id, uint8_t x, uint8_t y)
     nge_location_y[id] = y;
     nge_location_fx[id] = 0;
     nge_location_fy[id] = 0;
-    nge_entity_components[id] |= NGE_COMPONENT_LOCATION;
+    NGE_ENTITY_ADD_COMPONENT(id, NGE_COMPONENT_LOCATION);
 }
 
 void nge_location_set_fine(nge_entity_id_t id, uint8_t fx, uint8_t fy)
@@ -59,16 +59,15 @@ void nge_location_remove(nge_entity_id_t id)
     nge_util_assert(id < NGE_ENTITY_MAX);
     nge_util_assert(NGE_ENTITY_STATE(id) != NGE_ENTITY_FREE);
 
-    nge_entity_components[id] &= (nge_component_mask_t)~NGE_COMPONENT_LOCATION;
+    NGE_ENTITY_REMOVE_COMPONENT(id, NGE_COMPONENT_LOCATION);
 }
 
 nge_entity_id_t nge_location_find(nge_owner_t area, uint8_t x, uint8_t y,
-                                  nge_component_mask_t mask, nge_entity_id_t from)
+                                  nge_component_t c, nge_entity_id_t from)
 {
     const uint8_t *p;
     nge_entity_id_t id;
 
-    mask |= NGE_COMPONENT_LOCATION;
     while (from < NGE_ENTITY_MAX) {
         /* Next entity in column x: the only search over every entity */
         p = memchr(&nge_location_x[from], x, NGE_ENTITY_MAX - from);
@@ -78,7 +77,8 @@ nge_entity_id_t nge_location_find(nge_owner_t area, uint8_t x, uint8_t y,
         id = (nge_entity_id_t)(p - nge_location_x);
         /* Free entities keep old locations: check the rest only for this one */
         if (nge_location_y[id] == y && NGE_ENTITY_IS_ALIVE(id) &&
-            NGE_ENTITY_HAS_COMPONENTS(id, mask) && nge_owner_of[id] == area) {
+            NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_LOCATION) &&
+            (c == 0 || NGE_ENTITY_HAS_COMPONENT(id, c)) && nge_owner_of[id] == area) {
             return id;
         }
         from = id + 1;

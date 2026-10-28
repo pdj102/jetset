@@ -41,7 +41,7 @@ extern uint8_t mana_mp[NGE_ENTITY_MAX];       /**< Current MP, 0 to mana_mp_max.
 extern uint8_t mana_mp_max[NGE_ENTITY_MAX];   /**< The most MP it can have, 1 or more. */
 
 /** Entity id has the mana component. */
-#define MANA_IS(id)      NGE_ENTITY_HAS_ANY_COMPONENTS(id, COMPONENT_MANA)
+#define MANA_IS(id)      NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_MANA)
 
 /** Entity id (with mana) has at least n MP. */
 #define MANA_HAS(id, n)  (mana_mp[id] >= (n))

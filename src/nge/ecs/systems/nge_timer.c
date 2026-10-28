@@ -16,7 +16,7 @@ typedef char nge_timer_ticks_check[(NGE_TIMER_TICKS_PER_TURN >= 1 && NGE_TIMER_T
 
 /* Alive, with a timer: the entities the clock drives */
 #define HAS_TIMER(id) \
-    (NGE_ENTITY_IS_ALIVE(id) && (nge_entity_components[id] & NGE_COMPONENT_TIMER))
+    (NGE_ENTITY_IS_ALIVE(id) && NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_TIMER))
 
 /* An entity in use, with a timer unless adding one */
 static void check_entity(nge_entity_id_t id, uint8_t with_timer)
@@ -25,12 +25,12 @@ static void check_entity(nge_entity_id_t id, uint8_t with_timer)
     (void)with_timer;
     nge_util_assert(id < NGE_ENTITY_MAX);
     nge_util_assert(NGE_ENTITY_STATE(id) != NGE_ENTITY_FREE);
-    nge_util_assert(!with_timer || (nge_entity_components[id] & NGE_COMPONENT_TIMER));
+    nge_util_assert(!with_timer || NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_TIMER));
 }
 
 static void remove_timer(nge_entity_id_t id)
 {
-    nge_entity_components[id] &= (nge_component_mask_t)~NGE_COMPONENT_TIMER;
+    NGE_ENTITY_REMOVE_COMPONENT(id, NGE_COMPONENT_TIMER);
 }
 
 void nge_timer_init(void) NGE_BANKED
@@ -49,7 +49,7 @@ void nge_timer_add(nge_entity_id_t id, uint8_t kind, uint8_t period, uint8_t cyc
     nge_timer_period[id] = period;
     nge_timer_cycles[id] = cycles;
     nge_timer_kind[id] = kind;
-    nge_entity_components[id] |= NGE_COMPONENT_TIMER;
+    NGE_ENTITY_ADD_COMPONENT(id, NGE_COMPONENT_TIMER);
 }
 
 void nge_timer_set_period(nge_entity_id_t id, uint8_t period) NGE_BANKED

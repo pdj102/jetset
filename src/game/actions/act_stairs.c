@@ -31,7 +31,7 @@ static uint8_t take_stairs(act_t *a, uint8_t mode, uint8_t can, int8_t step)
 
     /* 1. Context: the stairs here */
     nge_util_assert(actor < NGE_ENTITY_MAX && NGE_ENTITY_IS_ALIVE(actor));
-    nge_util_assert(NGE_ENTITY_HAS_COMPONENTS(actor, NGE_COMPONENT_LOCATION));
+    nge_util_assert(NGE_ENTITY_HAS_COMPONENT(actor, NGE_COMPONENT_LOCATION));
     nge_util_assert(NGE_OWNER_OF(actor) == LEVEL_AREA);
 
     NGE_LOCATION_FOR_EACH_AT(id, LEVEL_AREA, NGE_LOCATION_X(actor), NGE_LOCATION_Y(actor), COMPONENT_FEATURE) {

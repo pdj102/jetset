@@ -45,9 +45,9 @@ void pc_add(nge_entity_id_t id) NGE_BANKED
 {
     nge_util_assert(id < NGE_ENTITY_MAX);
     nge_util_assert(NGE_ENTITY_STATE(id) != NGE_ENTITY_FREE);
-    nge_util_assert(NGE_ENTITY_HAS_COMPONENTS(id, COMPONENT_HEALTH | COMPONENT_STATS));   /* a new level needs them */
+    nge_util_assert(NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_HEALTH) && NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_STATS));   /* a new level needs them */
 
-    nge_entity_components[id] |= COMPONENT_PC;
+    NGE_ENTITY_ADD_COMPONENT(id, COMPONENT_PC);
     pc_set_name(id, default_name);
     pc_class = PC_CLASS_FIGHTER;
     pc_level = PC_LEVEL_MIN;

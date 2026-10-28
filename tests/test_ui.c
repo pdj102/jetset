@@ -207,7 +207,7 @@ static void fresh(void)
 static int stowed(nge_entity_id_t id)
 {
     return NGE_OWNER_OF(id) == actor_player && item_slot[id] == SLOT_NONE &&
-           !NGE_ENTITY_HAS_COMPONENTS(id, NGE_COMPONENT_LOCATION);
+           !NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_LOCATION);
 }
 
 int main(void)
@@ -722,7 +722,7 @@ int main(void)
         uint8_t i;
 
         NGE_OWNER_FOR_EACH_OWNED(i, id, actor_player) {
-            if (NGE_ENTITY_HAS_ANY_COMPONENTS(id, COMPONENT_EFFECT) && effect_kind_of(id) == EF_REGEN) {
+            if (NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_EFFECT) && effect_kind_of(id) == EF_REGEN) {
                 last = id;
             }
         }

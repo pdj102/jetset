@@ -28,7 +28,7 @@ static void check_entity(nge_entity_id_t id, uint8_t with_sprite)
     (void)with_sprite;
     nge_util_assert(id < NGE_ENTITY_MAX);
     nge_util_assert(NGE_ENTITY_STATE(id) != NGE_ENTITY_FREE);
-    nge_util_assert(!with_sprite || (nge_entity_components[id] & NGE_COMPONENT_SPRITE));
+    nge_util_assert(!with_sprite || NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_SPRITE));
 }
 
 /* Patterns first to first+count-1 exist for the pattern type in mode */
@@ -116,7 +116,7 @@ static uint8_t in_view(nge_entity_id_t id, int16_t mx, int16_t my)
     int16_t ry;
 
     return nge_render_area != NGE_RENDER_NO_VIEW && nge_owner_of[id] == nge_render_area &&
-           NGE_ENTITY_HAS_COMPONENTS(id, NGE_COMPONENT_LOCATION) && on_view(id, mx, my, &rx, &ry);
+           NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_LOCATION) && on_view(id, mx, my, &rx, &ry);
 }
 
 void nge_render_init(void) NGE_BANKED
@@ -149,14 +149,14 @@ void nge_render_add(nge_entity_id_t id, uint8_t pattern, uint8_t flags, uint8_t 
     nge_render_sprite_ox[id] = 0;
     nge_render_sprite_oy[id] = 0;
     nge_render_sprite_layer[id] = layer;
-    nge_entity_components[id] |= NGE_COMPONENT_SPRITE;
+    NGE_ENTITY_ADD_COMPONENT(id, NGE_COMPONENT_SPRITE);
 }
 
 void nge_render_remove(nge_entity_id_t id) NGE_BANKED
 {
     check_entity(id, 0);
 
-    nge_entity_components[id] &= (nge_component_mask_t)~NGE_COMPONENT_SPRITE;
+    NGE_ENTITY_REMOVE_COMPONENT(id, NGE_COMPONENT_SPRITE);
 }
 
 void nge_render_set_pattern(nge_entity_id_t id, uint8_t pattern) NGE_BANKED
@@ -354,7 +354,7 @@ static void move(nge_entity_id_t id)
 /* The entity is drawn: alive (the caller's loop), with location and sprite, in the view's area */
 static uint8_t drawn(nge_entity_id_t id)
 {
-    return NGE_ENTITY_HAS_COMPONENTS(id, NGE_COMPONENT_LOCATION | NGE_COMPONENT_SPRITE) &&
+    return NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_LOCATION) && NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_SPRITE) &&
            nge_owner_of[id] == nge_render_area;
 }
 

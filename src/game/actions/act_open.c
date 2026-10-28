@@ -33,7 +33,7 @@ static uint8_t find_openable(act_t *a)
     uint8_t y;
 
     nge_util_assert(actor < NGE_ENTITY_MAX && NGE_ENTITY_IS_ALIVE(actor));
-    nge_util_assert(NGE_ENTITY_HAS_COMPONENTS(actor, NGE_COMPONENT_LOCATION));
+    nge_util_assert(NGE_ENTITY_HAS_COMPONENT(actor, NGE_COMPONENT_LOCATION));
     nge_util_assert(target == NGE_ENTITY_INVALID || target < NGE_ENTITY_MAX);
 
     area = NGE_OWNER_OF(actor);
@@ -54,7 +54,7 @@ static uint8_t find_openable(act_t *a)
     if (!(info.can & FCAN_OPEN)) {
         return ACT_R_CANT_OPEN;
     }
-    if (!NGE_ENTITY_HAS_COMPONENTS(target, NGE_COMPONENT_LOCATION) || NGE_OWNER_OF(target) != area ||
+    if (!NGE_ENTITY_HAS_COMPONENT(target, NGE_COMPONENT_LOCATION) || NGE_OWNER_OF(target) != area ||
         act_distance(x, y, NGE_LOCATION_X(target), NGE_LOCATION_Y(target)) > 1) {
         return ACT_R_OUT_OF_RANGE;
     }

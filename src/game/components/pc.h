@@ -59,7 +59,7 @@ extern uint16_t pc_gold;
 extern uint8_t  pc_depth_max;               /**< The deepest depth reached, 1 or more. */
 
 /** Entity id is the player: it has the PC component. */
-#define PC_IS(id)  NGE_ENTITY_HAS_ANY_COMPONENTS(id, COMPONENT_PC)
+#define PC_IS(id)  NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_PC)
 
 /** The player has at least n gold. */
 #define PC_HAS_GOLD(n)  (pc_gold >= (n))

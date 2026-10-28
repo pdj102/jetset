@@ -89,7 +89,7 @@ static int count_effects(nge_entity_id_t target, uint8_t ef)
     int n = 0;
 
     NGE_OWNER_FOR_EACH_OWNED(i, id, target) {
-        if (NGE_ENTITY_HAS_ANY_COMPONENTS(id, COMPONENT_EFFECT) && effect_kind_of(id) == ef) {
+        if (NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_EFFECT) && effect_kind_of(id) == ef) {
             n++;
         }
     }
@@ -103,7 +103,7 @@ static nge_entity_id_t effect_on(nge_entity_id_t target, uint8_t ef)
     uint8_t i;
 
     NGE_OWNER_FOR_EACH_OWNED(i, id, target) {
-        if (NGE_ENTITY_HAS_ANY_COMPONENTS(id, COMPONENT_EFFECT) && effect_kind_of(id) == ef) {
+        if (NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_EFFECT) && effect_kind_of(id) == ef) {
             return id;
         }
     }
@@ -231,7 +231,7 @@ int main(void)
     CHECK(effect_apply(EF_POISON, g, NGE_ENTITY_INVALID) == 1);
     e = effect_on(g, EF_POISON);
     CHECK(e != NGE_ENTITY_INVALID && NGE_OWNER_OF(e) == g && effect_kind_of(e) == EF_POISON);
-    CHECK(NGE_ENTITY_HAS_COMPONENTS(e, NGE_COMPONENT_TIMER) && nge_timer_kind[e] == TIMER_EFFECT &&
+    CHECK(NGE_ENTITY_HAS_COMPONENT(e, NGE_COMPONENT_TIMER) && nge_timer_kind[e] == TIMER_EFFECT &&
           nge_timer_period[e] == 30 && nge_timer_cycles[e] == 4 && nge_timer_count[e] == 30);
     CHECK(STATUS_HAS(g, STATUS_POISONED) && effects_check(g));
     CHECK(events() == 2 && is(0, g, EV_ATTRS_CHANGED, NGE_EVENT_NONE, 0) &&

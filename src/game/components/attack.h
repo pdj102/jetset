@@ -60,7 +60,7 @@ extern uint8_t attack_type[ATTACK_USE_COUNT][NGE_ENTITY_MAX];
 extern uint8_t attack_range[ATTACK_USE_COUNT][NGE_ENTITY_MAX];
 
 /** The entity has an attack of this use. */
-#define ATTACK_HAS(id, use)  NGE_ENTITY_HAS_ANY_COMPONENTS(id, ATTACK_COMPONENT(use))
+#define ATTACK_HAS(id, use)  NGE_ENTITY_HAS_COMPONENT(id, ATTACK_COMPONENT(use))
 
 /**
  * @brief Give an entity in use an attack of this use (ATTACK_MELEE), or

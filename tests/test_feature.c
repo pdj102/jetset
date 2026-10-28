@@ -68,7 +68,8 @@ int main(void)
     door = gen_feature(FT_DOOR, AREA);
     CHECK(door != NGE_ENTITY_INVALID && FEATURE_IS(door) && KIND_IS(door, CLASS_FEATURE) &&
           kind_index[door] == FT_DOOR && NGE_OWNER_OF(door) == AREA && !FEATURE_IS_OPEN(door));
-    CHECK(!NGE_ENTITY_HAS_ANY_COMPONENTS(door, NGE_COMPONENT_LOCATION | NGE_COMPONENT_BLOCK | NGE_COMPONENT_SPRITE));
+    CHECK(!NGE_ENTITY_HAS_COMPONENT(door, NGE_COMPONENT_LOCATION) && !NGE_ENTITY_HAS_COMPONENT(door, NGE_COMPONENT_BLOCK) &&
+          !NGE_ENTITY_HAS_COMPONENT(door, NGE_COMPONENT_SPRITE));
     gen_name(door, name, sizeof(name));
     CHECK_STR(name, "door");
     CHECK(gen_hook(door, GEN_HOOK_USE) == EF_NONE && gen_feature_hook(FT_DOOR, GEN_HOOK_HIT) == EF_NONE);

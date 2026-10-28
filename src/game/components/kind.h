@@ -33,7 +33,7 @@ extern uint8_t kind_index[NGE_ENTITY_MAX];   /**< Index into the class's table (
 
 /** The entity has the kind component and is of class c. */
 #define KIND_IS(id, c) \
-    (NGE_ENTITY_HAS_COMPONENTS(id, COMPONENT_KIND) && kind_class[id] == (c))
+    (NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_KIND) && kind_class[id] == (c))
 
 /** @brief Give an entity in use the kind component: class c, index i in its table. */
 void kind_add(nge_entity_id_t id, uint8_t c, uint8_t i) NGE_BANKED;

@@ -359,7 +359,7 @@ static void draw_effects(NGE_FILE *s)
 
     memset(count, 0, sizeof(count));
     NGE_OWNER_FOR_EACH_OWNED(i, id, actor_player) {
-        if (NGE_ENTITY_HAS_ANY_COMPONENTS(id, COMPONENT_EFFECT)) {
+        if (NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_EFFECT)) {
             ef = effect_kind_of(id);
             t = turns_left(id);
             if (count[ef]++ == 0) {

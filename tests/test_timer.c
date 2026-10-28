@@ -105,7 +105,7 @@ static int fired(int i, nge_entity_id_t id, uint8_t cycles, uint32_t time)
 
 static int has_timer(nge_entity_id_t id)
 {
-    return (nge_entity_components[id] & NGE_COMPONENT_TIMER) != 0;
+    return NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_TIMER);
 }
 
 /* A fresh start: every entity free, the clock at 0, nothing seen */

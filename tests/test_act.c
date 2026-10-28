@@ -112,7 +112,7 @@ static unsigned int seed_for_roll(int r)
 
 static int stowed(nge_entity_id_t id, nge_entity_id_t holder)
 {
-    return NGE_OWNER_OF(id) == holder && !NGE_ENTITY_HAS_COMPONENTS(id, NGE_COMPONENT_LOCATION);
+    return NGE_OWNER_OF(id) == holder && !NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_LOCATION);
 }
 
 int main(void)

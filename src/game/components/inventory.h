@@ -34,7 +34,7 @@ extern uint8_t  inv_capacity[NGE_ENTITY_MAX];   /**< Items it can stow, 1 or mor
 extern uint16_t inv_slots[NGE_ENTITY_MAX];      /**< The equipment slots it has (SLOT_BIT() mask). */
 
 /** The entity has the inventory component. */
-#define INV_HAS(id)  NGE_ENTITY_HAS_ANY_COMPONENTS(id, COMPONENT_INVENTORY)
+#define INV_HAS(id)  NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_INVENTORY)
 
 /**
  * @brief Give an entity in use the inventory component (or replace it).

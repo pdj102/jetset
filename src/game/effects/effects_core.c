@@ -29,7 +29,7 @@ static void check_effect(nge_entity_id_t effect)
     (void)effect;   /* unused when asserts are compiled out (NDEBUG) */
     nge_util_assert(effect < NGE_ENTITY_MAX);
     nge_util_assert(NGE_ENTITY_IS_ALIVE(effect));
-    nge_util_assert(NGE_ENTITY_HAS_ANY_COMPONENTS(effect, COMPONENT_EFFECT));
+    nge_util_assert(NGE_ENTITY_HAS_COMPONENT(effect, COMPONENT_EFFECT));
     nge_util_assert(NGE_OWNER_IS_ENTITY(NGE_OWNER_OF(effect)));
 }
 
@@ -64,7 +64,7 @@ static uint8_t *base_of(nge_entity_id_t id, uint8_t attr)
 
     nge_util_assert(attr < ATTR_COUNT);
     at = &effects_game_attrs[attr];
-    nge_util_assert(NGE_ENTITY_HAS_ANY_COMPONENTS(id, at->component));
+    nge_util_assert(NGE_ENTITY_HAS_COMPONENT(id, at->component));
     return at->base;
 }
 
@@ -72,7 +72,7 @@ static uint8_t *base_of(nge_entity_id_t id, uint8_t attr)
 static void derive(nge_entity_id_t id, effects_derived_t *d)
 {
     nge_entity_id_t owned;
-    nge_component_mask_t component;
+    nge_component_t component;
     uint8_t *base;
     uint8_t a;
     uint8_t i;
@@ -81,12 +81,12 @@ static void derive(nge_entity_id_t id, effects_derived_t *d)
         /* The fields in locals (T-ZSDCC-1) */
         base = effects_game_attrs[a].base;
         component = effects_game_attrs[a].component;
-        d->value[a] = NGE_ENTITY_HAS_ANY_COMPONENTS(id, component) ? base[id] : 0;
+        d->value[a] = NGE_ENTITY_HAS_COMPONENT(id, component) ? base[id] : 0;
     }
     d->status = 0;
     effects_game_sources(id, d);
     NGE_OWNER_FOR_EACH_OWNED(i, owned, id) {
-        if (NGE_ENTITY_HAS_ANY_COMPONENTS(owned, COMPONENT_EFFECT)) {
+        if (NGE_ENTITY_HAS_COMPONENT(owned, COMPONENT_EFFECT)) {
             effects_add(d, effect_kind[owned]);
         }
     }
@@ -162,7 +162,7 @@ static nge_entity_id_t find(nge_entity_id_t target, uint8_t ef)
     uint8_t i;
 
     NGE_OWNER_FOR_EACH_OWNED(i, id, target) {
-        if (NGE_ENTITY_HAS_ANY_COMPONENTS(id, COMPONENT_EFFECT) && effect_kind[id] == ef) {
+        if (NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_EFFECT) && effect_kind[id] == ef) {
             return id;
         }
     }
@@ -205,7 +205,7 @@ uint8_t effect_apply(uint8_t ef, nge_entity_id_t target, nge_entity_id_t source)
     }
     nge_owner_set(e, target);   /* it goes when its target goes */
     effect_kind[e] = ef;
-    nge_entity_components[e] |= COMPONENT_EFFECT;
+    NGE_ENTITY_ADD_COMPONENT(e, COMPONENT_EFFECT);
     nge_timer_add(e, effects_game_timer_kind, def.period, def.cycles);
     /*
      * Its on_start op now (a burst); its on_tick op comes from the timer, a
@@ -253,7 +253,7 @@ uint8_t effect_cure(nge_entity_id_t target, uint8_t statuses) NGE_BANKED
 
     /* Ending the current entity is allowed while walking the alive list */
     NGE_OWNER_FOR_EACH_OWNED(i, id, target) {
-        if (NGE_ENTITY_HAS_ANY_COMPONENTS(id, COMPONENT_EFFECT) && (effect_defs[effect_kind[id]].status & statuses)) {
+        if (NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_EFFECT) && (effect_defs[effect_kind[id]].status & statuses)) {
             end(id, EFFECT_END_CURED);
             n++;
         }
@@ -293,7 +293,7 @@ void effects_on_timer(nge_entity_id_t effect, uint8_t cycles) NGE_BANKED
 uint8_t effect_kind_of(nge_entity_id_t effect) NGE_BANKED
 {
     nge_util_assert(effect < NGE_ENTITY_MAX);
-    nge_util_assert(NGE_ENTITY_HAS_ANY_COMPONENTS(effect, COMPONENT_EFFECT));
+    nge_util_assert(NGE_ENTITY_HAS_COMPONENT(effect, COMPONENT_EFFECT));
 
     return effect_kind[effect];
 }

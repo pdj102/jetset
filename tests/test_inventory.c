@@ -32,13 +32,13 @@ static nge_entity_id_t floor_item(uint8_t kind, uint8_t x, uint8_t y)
 
 static int on_floor(nge_entity_id_t id, nge_owner_t area, uint8_t x, uint8_t y)
 {
-    return NGE_OWNER_OF(id) == area && NGE_ENTITY_HAS_COMPONENTS(id, NGE_COMPONENT_LOCATION) &&
+    return NGE_OWNER_OF(id) == area && NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_LOCATION) &&
            NGE_LOCATION_X(id) == x && NGE_LOCATION_Y(id) == y && item_slot[id] == SLOT_NONE;
 }
 
 static int stowed(nge_entity_id_t id, nge_entity_id_t holder)
 {
-    return NGE_OWNER_OF(id) == holder && !NGE_ENTITY_HAS_COMPONENTS(id, NGE_COMPONENT_LOCATION) &&
+    return NGE_OWNER_OF(id) == holder && !NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_LOCATION) &&
            item_slot[id] == SLOT_NONE;
 }
 

@@ -100,7 +100,7 @@ int main(void)
     health_add(a, &b);
     CHECK(health_hp[a] == 17 && health_hp_max[a] == 17 && health_immune[a] == 0x01 &&
           health_resist[a] == 0x02 && health_vuln[a] == 0x04 && health_ac[a] == 11 &&
-          NGE_ENTITY_HAS_COMPONENTS(a, COMPONENT_HEALTH));
+          NGE_ENTITY_HAS_COMPONENT(a, COMPONENT_HEALTH));
     b.hp_max = 255;
     health_add(a, &b);                                        /* again: replaced */
     CHECK(health_hp[a] == 255 && health_hp_max[a] == 255);
@@ -164,7 +164,7 @@ int main(void)
     /* ---- the player (persistent) isn't destroyed at 0 ---- */
     player = make(5, 0, 0, 0);
     kind_add(player, CLASS_CREATURE, CR_PLAYER);
-    nge_entity_components[player] |= COMPONENT_PC;   /* PC_IS(): pc_add() needs stats too */
+    NGE_ENTITY_ADD_COMPONENT(player, COMPONENT_PC);   /* PC_IS(): pc_add() needs stats too */
     nge_entity_set_flags(player, NGE_ENTITY_PERSISTENT);
     CHECK(health_damage(player, NGE_ENTITY_INVALID, 9, DMG_ACID) == 9 && health_hp[player] == 0);
     CHECK(events() == 2 && is(1, player, EV_DIED, NGE_EVENT_NONE, 0, 0));

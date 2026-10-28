@@ -9,8 +9,9 @@
  * What a component is, and how nge keeps its data, is in
  * ecs/components/nge_components.h. A game component is:
  *
- * - a number in the list below, NGE_COMPONENT_USER + n, and its mask
- *   COMPONENT_<NAME>. A new one takes the next number, COMPONENT_COUNT,
+ * - a number in the list below, NGE_COMPONENT_USER + n, and its handle
+ *   COMPONENT_<NAME>, one component (never OR two: test each with
+ *   NGE_ENTITY_HAS_COMPONENT()). A new one takes the next number, COMPONENT_COUNT,
  *   and COMPONENT_COUNT goes up by one; the compiler stops the game going
  *   past NGE_COMPONENT_MAX;
  * - a header, game/components/<name>.h, which includes this file and
@@ -27,7 +28,7 @@
  *   called by every action and effect that needs them, banked in page 110
  *   (the component's .c file) and asserting on their entity;
  * - a macro in its header that tests for it (ITEM_IS(), FEATURE_IS(),
- *   INV_HAS()), used by other code instead of the mask.
+ *   INV_HAS()), used by other code instead of the handle.
  *
  * Model components: game/components/health.h (kind record, rules,
  * events) and game/components/feature.h (state, kept in step with the

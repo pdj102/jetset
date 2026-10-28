@@ -16,7 +16,7 @@ void nge_block_add(nge_entity_id_t id, nge_block_t block, nge_block_t pass)
 
     nge_block_of[id] = block;
     nge_block_pass[id] = pass;
-    nge_entity_components[id] |= NGE_COMPONENT_BLOCK;
+    NGE_ENTITY_ADD_COMPONENT(id, NGE_COMPONENT_BLOCK);
 }
 
 void nge_block_remove(nge_entity_id_t id)
@@ -24,7 +24,7 @@ void nge_block_remove(nge_entity_id_t id)
     nge_util_assert(id < NGE_ENTITY_MAX);
     nge_util_assert(NGE_ENTITY_STATE(id) != NGE_ENTITY_FREE);
 
-    nge_entity_components[id] &= (nge_component_mask_t)~NGE_COMPONENT_BLOCK;
+    NGE_ENTITY_REMOVE_COMPONENT(id, NGE_COMPONENT_BLOCK);
 }
 
 nge_entity_id_t nge_block_find(nge_owner_t area, uint8_t x, uint8_t y, nge_block_t pass,

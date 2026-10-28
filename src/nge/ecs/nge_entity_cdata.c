@@ -7,6 +7,6 @@
 #include "ecs/nge_entity.h"
 
 nge_entity_flags_t   nge_entity_flags[NGE_ENTITY_MAX];
-nge_component_mask_t nge_entity_components[NGE_ENTITY_MAX];
+uint8_t              nge_entity_components[NGE_COMPONENT_TABLES][NGE_ENTITY_MAX];
 nge_entity_id_t      nge_entity_alive[NGE_ENTITY_MAX];
 uint8_t              nge_entity_alive_count;

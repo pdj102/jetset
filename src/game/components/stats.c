@@ -35,12 +35,12 @@ void stats_add(nge_entity_id_t id, const stats_kind_t *k) NGE_BANKED
         stats_ability_base[a][id] = score;
     }
     stats_status[id] = 0;
-    nge_entity_components[id] |= COMPONENT_STATS;
+    NGE_ENTITY_ADD_COMPONENT(id, COMPONENT_STATS);
 }
 
 void stats_remove(nge_entity_id_t id) NGE_BANKED
 {
     check_entity(id);
 
-    nge_entity_components[id] &= (nge_component_mask_t)~COMPONENT_STATS;
+    NGE_ENTITY_REMOVE_COMPONENT(id, COMPONENT_STATS);
 }

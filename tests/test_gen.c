@@ -20,7 +20,7 @@
 /* The sprite component matches a record's sprite part */
 static int render_is(nge_entity_id_t id, const gen_render_t *r)
 {
-    return NGE_ENTITY_HAS_COMPONENTS(id, NGE_COMPONENT_SPRITE) &&
+    return NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_SPRITE) &&
            nge_render_sprite_first[id] == r->pattern &&
            nge_render_sprite_anim_count[id] == r->anim_count &&
            (r->anim_count == 1 || nge_render_sprite_anim_rate[id] == r->anim_rate) &&
@@ -33,7 +33,7 @@ static int made(nge_entity_id_t id, nge_owner_t owner, uint8_t c, uint8_t kind)
 {
     return id != NGE_ENTITY_INVALID && NGE_ENTITY_IS_ALIVE(id) && NGE_OWNER_OF(id) == owner &&
            KIND_IS(id, c) && kind_index[id] == kind &&
-           !NGE_ENTITY_HAS_COMPONENTS(id, NGE_COMPONENT_LOCATION);
+           !NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_LOCATION);
 }
 
 /* The melee attack component matches a record's melee part (or there is none) */
@@ -56,11 +56,11 @@ static int creature_ok(nge_entity_id_t id, nge_owner_t owner, uint8_t kind)
     if (!made(id, owner, CLASS_CREATURE, kind) || !render_is(id, &b->render)) {
         return 0;
     }
-    if (!NGE_ENTITY_HAS_COMPONENTS(id, NGE_COMPONENT_BLOCK | COMPONENT_STATS | NGE_COMPONENT_TIMER) ||
+    if (!NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_BLOCK) || !NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_STATS) || !NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_TIMER) ||
         nge_block_of[id] != b->block.block || nge_block_pass[id] != b->block.pass) {
         return 0;
     }
-    if (!NGE_ENTITY_HAS_COMPONENTS(id, COMPONENT_HEALTH) ||
+    if (!NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_HEALTH) ||
         health_hp[id] != b->health.hp_max || health_hp_max[id] != b->health.hp_max ||
         health_immune[id] != b->health.immune || health_resist[id] != b->health.resist ||
         health_vuln[id] != b->health.vuln || health_ac[id] != b->health.ac ||
@@ -99,8 +99,8 @@ static int item_ok(nge_entity_id_t id, nge_owner_t owner, uint8_t kind)
 {
     return made(id, owner, CLASS_ITEM, kind) && render_is(id, &gen_items[kind].render) &&
            ITEM_IS(id) && item_slot[id] == SLOT_NONE && melee_is(id, &gen_items[kind].melee) &&
-           !NGE_ENTITY_HAS_ANY_COMPONENTS(id, NGE_COMPONENT_BLOCK | COMPONENT_STATS | NGE_COMPONENT_TIMER |
-                                              COMPONENT_INVENTORY | COMPONENT_HEALTH);
+           !NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_BLOCK) && !NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_STATS) && !NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_TIMER) &&
+           !NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_INVENTORY) && !NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_HEALTH);
 }
 
 static void reset(void)
@@ -128,18 +128,23 @@ int main(void)
 
     /* ---- every component, nge's and the game's, has a bit of its own (game/components/components.h) ---- */
     {
-        static const nge_component_mask_t masks[] = {
+        static const nge_component_t masks[] = {
             NGE_COMPONENT_LOCATION, NGE_COMPONENT_SPRITE, NGE_COMPONENT_BLOCK, NGE_COMPONENT_TIMER,
             COMPONENT_KIND, COMPONENT_STATS, COMPONENT_ITEM, COMPONENT_INVENTORY, COMPONENT_HEALTH,
             COMPONENT_MELEE, COMPONENT_RANGED, COMPONENT_EFFECT, COMPONENT_FEATURE, COMPONENT_MANA, COMPONENT_PC,
         };
-        nge_component_mask_t seen = 0;
+        uint8_t seen[NGE_COMPONENT_TABLES] = {0};
         unsigned int m;
 
         ok = sizeof(masks) / sizeof(masks[0]) == NGE_COMPONENT_USER + COMPONENT_COUNT;
         for (m = 0; m < sizeof(masks) / sizeof(masks[0]); m++) {
-            ok = ok && masks[m] != 0 && (masks[m] & (masks[m] - 1)) == 0 && (seen & masks[m]) == 0;
-            seen |= masks[m];
+            unsigned int t = masks[m] >> 8;
+            uint8_t bit = (uint8_t)masks[m];
+
+            ok = ok && t < NGE_COMPONENT_TABLES && bit != 0 && (bit & (bit - 1)) == 0 && (seen[t] & bit) == 0;
+            if (ok) {
+                seen[t] |= bit;
+            }
         }
         CHECK(ok);
     }

@@ -474,7 +474,7 @@ int main(void)
     CHECK(test_halt_count == 1);
     nge_render_add(b, 100, 0, NGE_SPRITE_PATTERN4, 0);       /* 4-bit patterns go to 127 */
     nge_render_set_anim(b, 120, 8, 1);
-    CHECK(NGE_ENTITY_HAS_COMPONENTS(b, NGE_COMPONENT_SPRITE));
+    CHECK(NGE_ENTITY_HAS_COMPONENT(b, NGE_COMPONENT_SPRITE));
 
     return test_summary("render");
 }

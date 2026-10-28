@@ -49,7 +49,7 @@
 extern uint8_t feature_state[NGE_ENTITY_MAX];   /**< FEAT_* bits. */
 
 /** The entity is a feature. */
-#define FEATURE_IS(id)       NGE_ENTITY_HAS_ANY_COMPONENTS(id, COMPONENT_FEATURE)
+#define FEATURE_IS(id)       NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_FEATURE)
 /** A feature is open. */
 #define FEATURE_IS_OPEN(id)  ((feature_state[id] & FEAT_OPEN) != 0)
 

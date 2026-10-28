@@ -41,7 +41,7 @@ int main(void)
     id = nge_entity_create();
     stats_status[id] = 0xFF;                                  /* left by an earlier entity */
     stats_add(id, &b);
-    CHECK(NGE_ENTITY_HAS_COMPONENTS(id, COMPONENT_STATS) && stats_status[id] == 0);
+    CHECK(NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_STATS) && stats_status[id] == 0);
     CHECK(stats_speed[id] == 10 && stats_speed_base[id] == 10);
     ok = 1;
     for (a = 0; a < ABIL_COUNT; a++) {
@@ -50,7 +50,7 @@ int main(void)
     CHECK(ok);
     CHECK(stats_ability[ABIL_WIS][id] == 1 && stats_ability[ABIL_CHA][id] == 30);   /* the limits are allowed */
     stats_remove(id);
-    CHECK(!NGE_ENTITY_HAS_ANY_COMPONENTS(id, COMPONENT_STATS));
+    CHECK(!NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_STATS));
 
     /* ---- asserts: scores outside 1-30, speed 0 ---- */
     b.ability[ABIL_DEX] = 0;

@@ -22,7 +22,7 @@ static uint8_t request_arrival;
 
 uint8_t level_can_enter(nge_entity_id_t id, uint8_t x, uint8_t y, nge_entity_id_t *blocker)
 {
-    nge_block_t pass = NGE_ENTITY_HAS_COMPONENTS(id, NGE_COMPONENT_BLOCK) ? NGE_BLOCK_PASS(id)
+    nge_block_t pass = NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_BLOCK) ? NGE_BLOCK_PASS(id)
                                                                          : NGE_BLOCK_NONE;
 
     return nge_block_can_enter(LEVEL_AREA, x, y, pass, id, blocker);
@@ -82,7 +82,7 @@ void level_release_dying(void)
     uint8_t gone;
 
     while ((id = nge_entity_next_dying()) != NGE_ENTITY_INVALID) {
-        if (FEATURE_IS(id) && NGE_ENTITY_HAS_COMPONENTS(id, NGE_COMPONENT_LOCATION)) {
+        if (FEATURE_IS(id) && NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_LOCATION)) {
             level_redraw(NGE_LOCATION_X(id), NGE_LOCATION_Y(id));   /* a feature gone: its cell's look */
         }
         inv_drop_all(id);

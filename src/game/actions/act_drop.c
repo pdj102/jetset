@@ -23,7 +23,7 @@ uint8_t act_drop(act_t *a, uint8_t mode) NGE_BANKED
 
     /* 1. Context */
     nge_util_assert(actor < NGE_ENTITY_MAX && NGE_ENTITY_IS_ALIVE(actor));
-    nge_util_assert(NGE_ENTITY_HAS_COMPONENTS(actor, NGE_COMPONENT_LOCATION));
+    nge_util_assert(NGE_ENTITY_HAS_COMPONENT(actor, NGE_COMPONENT_LOCATION));
     nge_util_assert(item < NGE_ENTITY_MAX);
 
     /* 2. Validate: the actor has the item, stowed */

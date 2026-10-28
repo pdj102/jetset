@@ -55,7 +55,7 @@ int main(void)
           attack_dice[ATTACK_MELEE][id] == 3 && attack_sides[ATTACK_MELEE][id] == 6 &&
           attack_bonus[ATTACK_MELEE][id] == 4 && attack_type[ATTACK_MELEE][id] == DMG_PIERCE &&
           attack_range[ATTACK_MELEE][id] == 1);
-    CHECK(!NGE_ENTITY_HAS_ANY_COMPONENTS(id, COMPONENT_RANGED));
+    CHECK(!NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_RANGED));
     attack_remove(id, ATTACK_MELEE);
     CHECK(!ATTACK_HAS(id, ATTACK_MELEE));
     b.dice = 1;

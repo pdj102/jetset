@@ -489,7 +489,7 @@ static void place_parked(nge_entity_id_t player)
     uint8_t y;
 
     NGE_OWNER_FOR_EACH_OWNED(i, id, LEVEL_AREA) {
-        if (id != player && !NGE_ENTITY_HAS_COMPONENTS(id, NGE_COMPONENT_LOCATION)) {
+        if (id != player && !NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_LOCATION)) {
             any_free_floor(&x, &y);
             nge_location_set(id, x, y);
         }

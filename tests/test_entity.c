@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 
+#include "ecs/components/nge_components.h"
 #include "ecs/nge_entity.h"
 
 #define F_USER0  NGE_ENTITY_FLAG_USER
@@ -31,7 +32,7 @@ static int alive_list_ok(void)
 
 static uint8_t model_state[NGE_ENTITY_MAX];
 static uint8_t model_flags[NGE_ENTITY_MAX];        /* bits 2-7 */
-static uint16_t model_comp[NGE_ENTITY_MAX];
+static uint32_t model_comp[NGE_ENTITY_MAX];   /* bit n: component n */
 static uint8_t model_dying[NGE_ENTITY_MAX];        /* stack */
 static int model_dying_top;
 
@@ -46,6 +47,18 @@ static int model_count(uint8_t state)
     return n;
 }
 
+/* Entity i's component tables, as the model's bits */
+static uint32_t comp_bits(int i)
+{
+    uint32_t bits = 0;
+    int t;
+
+    for (t = 0; t < NGE_COMPONENT_TABLES; t++) {
+        bits |= (uint32_t)nge_entity_components[t][i] << (8 * t);
+    }
+    return bits;
+}
+
 static int matches_model(void)
 {
     int i;
@@ -53,7 +66,7 @@ static int matches_model(void)
     for (i = 0; i < NGE_ENTITY_MAX; i++) {
         if (NGE_ENTITY_STATE(i) != model_state[i] ||
             (nge_entity_flags[i] & NGE_ENTITY_FLAG_MASK) != model_flags[i] ||
-            nge_entity_components[i] != model_comp[i]) {
+            comp_bits(i) != model_comp[i]) {
             return 0;
         }
     }
@@ -78,7 +91,7 @@ static void random_ops(void)
     for (step = 0; step < 20000 && ok; step++) {
         nge_entity_id_t id = (nge_entity_id_t)(rand() % NGE_ENTITY_MAX);
         uint8_t f = (uint8_t)(rand() & NGE_ENTITY_FLAG_MASK);
-        uint16_t c = (uint16_t)rand();
+        uint8_t n = (uint8_t)(rand() % NGE_COMPONENT_MAX);   /* a component number */
 
         switch (rand() % 8) {
         case 0:
@@ -133,14 +146,14 @@ static void random_ops(void)
             break;
         case 6:
             if (model_state[id] != NGE_ENTITY_FREE) {
-                nge_entity_set_components(id, c);
-                model_comp[id] |= c;
+                nge_entity_set_component(id, NGE_COMPONENT(n));
+                model_comp[id] |= (uint32_t)1 << n;
             }
             break;
         default:
             if (model_state[id] != NGE_ENTITY_FREE) {
-                nge_entity_clear_components(id, c);
-                model_comp[id] &= (uint16_t)~c;
+                nge_entity_clear_component(id, NGE_COMPONENT(n));
+                model_comp[id] &= ~((uint32_t)1 << n);
             }
             break;
         }
@@ -171,7 +184,7 @@ int main(void)
     c = nge_entity_create();
     CHECK(a == 0 && b == 1 && c == 2);                    /* handed out in order */
     CHECK(NGE_ENTITY_IS_ALIVE(a) && nge_entity_flags[a] == NGE_ENTITY_ALIVE);
-    CHECK(nge_entity_components[a] == 0);
+    CHECK(comp_bits(a) == 0);
     CHECK(nge_entity_alive_count == 3 && alive_list_ok());
     CHECK(nge_entity_free_count() == NGE_ENTITY_MAX - 3);
 
@@ -211,7 +224,7 @@ int main(void)
     CHECK(NGE_ENTITY_STATE(a) == NGE_ENTITY_FREE && nge_entity_flags[a] == 0);
     CHECK(nge_entity_free_count() == NGE_ENTITY_MAX - 1);
     CHECK(nge_entity_create() == a);                        /* last released, first reused */
-    CHECK(nge_entity_flags[a] == NGE_ENTITY_ALIVE && nge_entity_components[a] == 0);
+    CHECK(nge_entity_flags[a] == NGE_ENTITY_ALIVE && comp_bits(a) == 0);
 
     /* ---- flags ---- */
     nge_entity_init();
@@ -225,18 +238,26 @@ int main(void)
     CHECK(!NGE_ENTITY_HAS_ANY_FLAGS(a, F_USER0) && NGE_ENTITY_HAS_FLAGS(a, F_USER4));
     CHECK(NGE_ENTITY_IS_ALIVE(a));
 
-    /* ---- components ---- */
-    nge_entity_set_components(a, NGE_COMPONENT(0) | NGE_COMPONENT(15));
-    CHECK(nge_entity_components[a] == 0x8001);
-    CHECK(NGE_ENTITY_HAS_COMPONENTS(a, NGE_COMPONENT(15)));
-    CHECK(nge_entity_has_components(a, NGE_COMPONENT(0) | NGE_COMPONENT(15)));
-    CHECK(!NGE_ENTITY_HAS_COMPONENTS(a, NGE_COMPONENT(0) | NGE_COMPONENT(3)));
-    CHECK(NGE_ENTITY_HAS_ANY_COMPONENTS(a, NGE_COMPONENT(0) | NGE_COMPONENT(3)));
-    nge_entity_clear_components(a, NGE_COMPONENT(0));
-    CHECK(nge_entity_components[a] == 0x8000);
+    /* ---- components: the handle, and the first and last of each table ---- */
+    CHECK(NGE_COMPONENT_MAX == 24);
+    CHECK(NGE_COMPONENT(0) == 0x0001 && NGE_COMPONENT(7) == 0x0080);
+    CHECK(NGE_COMPONENT(8) == 0x0101 && NGE_COMPONENT(15) == 0x0180);
+    CHECK(NGE_COMPONENT(16) == 0x0201 && NGE_COMPONENT(23) == 0x0280);
+    for (n = 0; n < NGE_COMPONENT_MAX; n += 7) {           /* 0, 7, 14, 21 */
+        nge_entity_set_component(a, NGE_COMPONENT(n));
+    }
+    nge_entity_set_component(a, NGE_COMPONENT(8));
+    NGE_ENTITY_ADD_COMPONENT(a, NGE_COMPONENT(23));
+    CHECK(comp_bits(a) == 0xA04181UL);
+    CHECK(NGE_ENTITY_HAS_COMPONENT(a, NGE_COMPONENT(23)) && nge_entity_has_component(a, NGE_COMPONENT(8)));
+    CHECK(!NGE_ENTITY_HAS_COMPONENT(a, NGE_COMPONENT(15)) && !nge_entity_has_component(a, NGE_COMPONENT(16)));
+    nge_entity_clear_component(a, NGE_COMPONENT(0));
+    NGE_ENTITY_REMOVE_COMPONENT(a, NGE_COMPONENT(21));
+    CHECK(comp_bits(a) == 0x804180UL);                     /* the others in the byte kept */
+    CHECK(comp_bits(b) == 0);                              /* other entities untouched */
     nge_entity_destroy(a);
     nge_entity_release(nge_entity_next_dying());
-    CHECK(nge_entity_components[a] == 0);                  /* cleared on release */
+    CHECK(comp_bits(a) == 0);                              /* cleared on release */
 
     /* ---- iteration: destroying and creating inside the loop ---- */
     nge_entity_init();
@@ -293,7 +314,15 @@ int main(void)
     CHECK(test_halt_count == 1);
     TEST_EXPECT_HALT(nge_entity_set_flags(50, F_USER0));           /* free */
     CHECK(test_halt_count == 1);
-    TEST_EXPECT_HALT(nge_entity_set_components(NGE_ENTITY_MAX, 1));
+    TEST_EXPECT_HALT(nge_entity_set_component(NGE_ENTITY_MAX, NGE_COMPONENT(0)));
+    CHECK(test_halt_count == 1);
+    TEST_EXPECT_HALT(nge_entity_set_component(a, 0));                          /* no component */
+    CHECK(test_halt_count == 1);
+    TEST_EXPECT_HALT(nge_entity_set_component(a, 0x0003));                     /* two */
+    CHECK(test_halt_count == 1);
+    TEST_EXPECT_HALT(nge_entity_has_component(a, NGE_COMPONENT(NGE_COMPONENT_MAX)));   /* no table */
+    CHECK(test_halt_count == 1);
+    TEST_EXPECT_HALT(nge_entity_clear_component(a, NGE_COMPONENT(8) | NGE_COMPONENT(16)));   /* table 3 */
     CHECK(test_halt_count == 1);
     CHECK(NGE_ENTITY_IS_ALIVE(a) && alive_list_ok());
 

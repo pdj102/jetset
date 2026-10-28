@@ -334,7 +334,7 @@ static int check_level(int depth)
         return fail(depth, "level_depth isn't the depth");
     }
     if (!NGE_ENTITY_IS_ALIVE(player) || NGE_OWNER_OF(player) != LEVEL_AREA ||
-        !NGE_ENTITY_HAS_COMPONENTS(player, NGE_COMPONENT_LOCATION)) {
+        !NGE_ENTITY_HAS_COMPONENT(player, NGE_COMPONENT_LOCATION)) {
         return fail(depth, "the player isn't placed in the area");
     }
     x = NGE_LOCATION_X(player);
@@ -369,7 +369,7 @@ static int check_level(int depth)
             uint8_t sy = NGE_LOCATION_Y(id);
             int up = kind_index[id] == FT_STAIRS_UP;
 
-            if (!NGE_ENTITY_HAS_COMPONENTS(id, NGE_COMPONENT_LOCATION) ||
+            if (!NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_LOCATION) ||
                 tile(sx, sy) != (up ? LOOK_STAIRS_UP : LOOK_STAIRS_DOWN) ||
                 NGE_BLOCK_OF(id) != NGE_BLOCK_NONE || nge_map_block(sx, sy) != NGE_BLOCK_NONE ||
                 room_of(sx, sy) < 0) {
@@ -400,8 +400,8 @@ static int check_level(int depth)
             uint8_t d;
 
             if (kind_index[id] != FT_DOOR || !FEATURE_IS(id) ||
-                !NGE_ENTITY_HAS_COMPONENTS(id, NGE_COMPONENT_LOCATION | NGE_COMPONENT_BLOCK) ||
-                NGE_ENTITY_HAS_ANY_COMPONENTS(id, NGE_COMPONENT_SPRITE)) {
+                !NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_LOCATION) || !NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_BLOCK) ||
+                NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_SPRITE)) {
                 return fail(depth, "a feature isn't a placed door drawn as a tile");
             }
             fx = NGE_LOCATION_X(id);
@@ -429,14 +429,15 @@ static int check_level(int depth)
             }
             continue;
         }
-        if (!NGE_ENTITY_HAS_COMPONENTS(id, COMPONENT_KIND | NGE_COMPONENT_LOCATION | NGE_COMPONENT_SPRITE)) {
+        if (!NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_KIND) || !NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_LOCATION) ||
+            !NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_SPRITE)) {
             return fail(depth, "an entity in the area isn't a placed, drawn, generated one");
         }
         if (kind_class[id] == CLASS_ITEM && kind_index[id] < IT_COUNT && ITEM_IS(id) &&
-            !NGE_ENTITY_HAS_COMPONENTS(id, NGE_COMPONENT_BLOCK)) {
+            !NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_BLOCK)) {
             items++;
         } else if (kind_class[id] == CLASS_CREATURE && kind_index[id] < CR_COUNT &&
-                   kind_index[id] != CR_PLAYER && NGE_ENTITY_HAS_COMPONENTS(id, NGE_COMPONENT_BLOCK)) {
+                   kind_index[id] != CR_PLAYER && NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_BLOCK)) {
             monsters++;
         } else {
             return fail(depth, "an entity isn't an item or a monster");
@@ -602,7 +603,7 @@ int main(void)
     take(again, again_items, sword);
     CHECK(memcmp(snapshot, again, sizeof(again)) == 0);
     CHECK(memcmp(snapshot_items, again_items, sizeof(again_items)) == 0);
-    CHECK(NGE_OWNER_OF(sword) == LEVEL_AREA && NGE_ENTITY_HAS_COMPONENTS(sword, NGE_COMPONENT_LOCATION) &&
+    CHECK(NGE_OWNER_OF(sword) == LEVEL_AREA && NGE_ENTITY_HAS_COMPONENT(sword, NGE_COMPONENT_LOCATION) &&
           is_floor(NGE_LOCATION_X(sword), NGE_LOCATION_Y(sword)));   /* placed again (R8) */
 
     /* ---- leaving a level: only kept entities stay, parked, unlocated (R12, R13) ---- */
@@ -623,13 +624,13 @@ int main(void)
     CHECK(NGE_OWNER_OF(player) == NGE_OWNER_WORLD);
     go(6, LEVEL_ARRIVE_UP_STAIRS);
     CHECK(NGE_ENTITY_IS_ALIVE(ring) && NGE_OWNER_OF(ring) == NGE_OWNER_AREA(5) &&
-          !NGE_ENTITY_HAS_COMPONENTS(ring, NGE_COMPONENT_LOCATION));   /* parked on depth 5 */
+          !NGE_ENTITY_HAS_COMPONENT(ring, NGE_COMPONENT_LOCATION));   /* parked on depth 5 */
     CHECK(NGE_ENTITY_IS_ALIVE(id) && NGE_OWNER_OF(id) == player);
     CHECK(NGE_ENTITY_IS_ALIVE(sword) && NGE_OWNER_OF(sword) == player);
     ok = 1;
     NGE_ENTITY_FOR_EACH_ALIVE(i, id) {
         if (top_owner(id) == NGE_OWNER_AREA(5) &&
-            (!kept(id) || NGE_ENTITY_HAS_COMPONENTS(id, NGE_COMPONENT_LOCATION))) {
+            (!kept(id) || NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_LOCATION))) {
             ok = 0;
         }
     }
@@ -656,7 +657,7 @@ int main(void)
     poison = NGE_ENTITY_INVALID;
     regen = NGE_ENTITY_INVALID;
     NGE_OWNER_FOR_EACH_OWNED(i, id, boss) {
-        if (NGE_ENTITY_HAS_ANY_COMPONENTS(id, COMPONENT_EFFECT)) {
+        if (NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_EFFECT)) {
             if (nge_timer_cycles[id] != 0) {
                 poison = id;
             } else {
@@ -668,13 +669,13 @@ int main(void)
     CHECK(level_holds(boss) && level_holds(poison));
     go(3, LEVEL_ARRIVE_UP_STAIRS);
     CHECK(NGE_ENTITY_IS_ALIVE(boss) && NGE_OWNER_OF(boss) == NGE_OWNER_AREA(2) &&
-          !NGE_ENTITY_HAS_COMPONENTS(boss, NGE_COMPONENT_LOCATION));
+          !NGE_ENTITY_HAS_COMPONENT(boss, NGE_COMPONENT_LOCATION));
     CHECK(!level_holds(boss) && !level_holds(regen));
     CHECK(NGE_ENTITY_IS_ALIVE(regen) && NGE_OWNER_OF(regen) == boss);   /* lasts for ever: stays */
     CHECK(NGE_ENTITY_STATE(poison) == NGE_ENTITY_FREE || NGE_OWNER_OF(poison) != boss);   /* ended */
     CHECK(!(stats_status[boss] & STATUS_POISONED));
     go(2, LEVEL_ARRIVE_DOWN_STAIRS);
-    CHECK(NGE_OWNER_OF(boss) == LEVEL_AREA && NGE_ENTITY_HAS_COMPONENTS(boss, NGE_COMPONENT_LOCATION) &&
+    CHECK(NGE_OWNER_OF(boss) == LEVEL_AREA && NGE_ENTITY_HAS_COMPONENT(boss, NGE_COMPONENT_LOCATION) &&
           is_floor(NGE_LOCATION_X(boss), NGE_LOCATION_Y(boss)) && level_holds(boss));
 
     /* ---- a persistent boss killed: its persistent item survives, dropped where it died (R10, R10a) ---- */
@@ -748,9 +749,9 @@ int main(void)
     nge_entity_set_flags(boss, NGE_ENTITY_PERSISTENT);
     CHECK(level_send(boss, LEVEL_DEPTH_BOTTOM + 3) == 1);   /* kept to the bottom */
     CHECK(NGE_ENTITY_IS_ALIVE(boss) && NGE_OWNER_OF(boss) == NGE_OWNER_AREA(LEVEL_DEPTH_BOTTOM) &&
-          !NGE_ENTITY_HAS_COMPONENTS(boss, NGE_COMPONENT_LOCATION));
+          !NGE_ENTITY_HAS_COMPONENT(boss, NGE_COMPONENT_LOCATION));
     go(LEVEL_DEPTH_BOTTOM, LEVEL_ARRIVE_ANY);
-    CHECK(NGE_OWNER_OF(boss) == LEVEL_AREA && NGE_ENTITY_HAS_COMPONENTS(boss, NGE_COMPONENT_LOCATION));
+    CHECK(NGE_OWNER_OF(boss) == LEVEL_AREA && NGE_ENTITY_HAS_COMPONENT(boss, NGE_COMPONENT_LOCATION));
 
     /* ---- a boss left behind with what it carries: both parked, still held (R10a, R12) ---- */
     go(5, LEVEL_ARRIVE_ANY);
@@ -764,7 +765,7 @@ int main(void)
     go(6, LEVEL_ARRIVE_UP_STAIRS);
     CHECK(NGE_ENTITY_IS_ALIVE(boss) && NGE_OWNER_OF(boss) == NGE_OWNER_AREA(5));
     CHECK(NGE_ENTITY_IS_ALIVE(ring) && NGE_OWNER_OF(ring) == boss &&
-          !NGE_ENTITY_HAS_COMPONENTS(ring, NGE_COMPONENT_LOCATION));
+          !NGE_ENTITY_HAS_COMPONENT(ring, NGE_COMPONENT_LOCATION));
     CHECK(NGE_ENTITY_IS_ALIVE(sword) && NGE_OWNER_OF(sword) == boss);
     go(5, LEVEL_ARRIVE_DOWN_STAIRS);
     CHECK(NGE_OWNER_OF(boss) == LEVEL_AREA && NGE_OWNER_OF(ring) == boss && NGE_OWNER_OF(sword) == boss);

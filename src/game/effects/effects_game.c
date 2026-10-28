@@ -27,7 +27,7 @@
 /* Attributes are kept for entities with health (and, for speed, stats) */
 uint8_t effects_game_has_attrs(nge_entity_id_t id)
 {
-    return NGE_ENTITY_HAS_ANY_COMPONENTS(id, COMPONENT_HEALTH);
+    return NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_HEALTH);
 }
 
 /* 1d20 + the ability's modifier (0 without stats) >= dc */
@@ -37,7 +37,7 @@ uint8_t effects_game_save(nge_entity_id_t target, uint8_t arg, uint8_t dc)
 
     nge_util_assert(arg < ABIL_COUNT);
     roll = (int16_t)(1 + (unsigned int)rand() % 20);
-    if (NGE_ENTITY_HAS_ANY_COMPONENTS(target, COMPONENT_STATS)) {
+    if (NGE_ENTITY_HAS_COMPONENT(target, COMPONENT_STATS)) {
         roll += STATS_MOD(stats_ability[arg][target]);
     }
     return roll >= (int16_t)dc;
@@ -131,14 +131,14 @@ uint8_t effects_game_store(nge_entity_id_t id, const effects_derived_t *d, uint8
     changed |= set(&health_immune[id], (uint8_t)d->value[ATTR_IMMUNE], write);
     changed |= set(&health_resist[id], (uint8_t)d->value[ATTR_RESIST], write);
     changed |= set(&health_vuln[id], (uint8_t)d->value[ATTR_VULN], write);
-    if (NGE_ENTITY_HAS_ANY_COMPONENTS(id, COMPONENT_STATS) &&
+    if (NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_STATS) &&
         set(&stats_speed[id], clamp(d->value[ATTR_SPEED], 1), write)) {
         changed = 1;
-        if (write && NGE_ENTITY_HAS_ANY_COMPONENTS(id, NGE_COMPONENT_TIMER)) {
+        if (write && NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_TIMER)) {
             nge_timer_set_period(id, stats_speed[id]);   /* its turns: every speed ticks */
         }
     }
-    if (NGE_ENTITY_HAS_ANY_COMPONENTS(id, COMPONENT_STATS)) {
+    if (NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_STATS)) {
         changed |= set(&stats_status[id], d->status, write);   /* only creatures have statuses */
         for (a = 0; a < ABIL_COUNT; a++) {
             changed |= set(&stats_ability[a][id], clamp_ability(d->value[ATTR_ABILITY(a)]), write);
