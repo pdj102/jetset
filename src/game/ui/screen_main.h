@@ -64,12 +64,6 @@ extern NGE_FILE *screen_stats;
 /** Message window stream: new lines scroll older messages up. Write with screen_message(), or call screen_message_line() first. */
 extern NGE_FILE *screen_messages;
 
-/** Longest player name: it follows "Name: " on one stats line. */
-#define SCREEN_NAME_MAX  6
-
-/** The player's name, shown in the stats window (asked for by the title, game/ui/screen_title.h). */
-extern char screen_name[SCREEN_NAME_MAX + 1];
-
 /**
  * @brief Set up the tilemap for the map, Layer 2 (nge_layer2_init()), the
  *        main screen's panels and help line on buffer SCREEN_BUFFER_MAIN,
@@ -81,11 +75,23 @@ extern char screen_name[SCREEN_NAME_MAX + 1];
  */
 void screen_init(void) NGE_BANKED;
 
-/**
- * @brief Draw the stats window's fixed parts: the name, and a placeholder
- *        for the gold. The values are shown with screen_show_*().
- */
+/** @brief Clear the stats window: the values are shown with screen_show_*(). */
 void screen_draw_stats(void) NGE_BANKED;
+
+/**
+ * @brief Show the player's name in the stats window: "Name: Rogue".
+ * @param name In common memory or slot 0 (pc_name).
+ */
+void screen_show_name(const char *name) NGE_BANKED;
+
+/** @brief Show the player's experience level in the stats window: "Level     2". */
+void screen_show_level(uint8_t level) NGE_BANKED;
+
+/** @brief Show the player's experience points in the stats window: "XP       25". */
+void screen_show_xp(uint16_t xp) NGE_BANKED;
+
+/** @brief Show the player's gold in the stats window: "Gold     10". */
+void screen_show_gold(uint16_t gold) NGE_BANKED;
 
 /** @brief Show the hit points in the stats window: "HP   12/ 12". */
 void screen_show_hp(uint8_t hp, uint8_t hp_max) NGE_BANKED;

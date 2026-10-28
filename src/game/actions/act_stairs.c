@@ -13,6 +13,7 @@
 #include "ecs/components/nge_location.h"
 #include "game/components/feature.h"
 #include "game/components/kind.h"
+#include "game/components/pc.h"
 #include "game/gen/gen.h"
 #include "game/level/level.h"
 
@@ -54,7 +55,7 @@ static uint8_t take_stairs(act_t *a, uint8_t mode, uint8_t can, int8_t step)
 
     /* 4. Apply: the player at the end of the frame, anyone else now */
     depth = (uint8_t)(level_depth + step);
-    if (KIND_IS_PLAYER(actor)) {
+    if (PC_IS(actor)) {
         level_request(depth, step > 0 ? LEVEL_ARRIVE_UP_STAIRS : LEVEL_ARRIVE_DOWN_STAIRS);
     } else {
         level_send(actor, depth);

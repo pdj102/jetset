@@ -30,6 +30,9 @@
  * | EV_LEFT_LEVEL     | the entity (maybe dying) | -   | p1: the depth it went to |
  * | EV_MANA_SPENT     | the entity          | -        | p1: MP spent |
  * | EV_MANA_RESTORED  | the entity          | -        | p1: MP restored |
+ * | EV_XP_GAINED      | the player          | -        | p1, p2: XP gained, low and high byte |
+ * | EV_LEVEL_GAINED   | the player          | -        | p1: the new level |
+ * | EV_GOLD_CHANGED   | the player          | -        | -        |
  */
 
 #include "event/nge_event.h"
@@ -55,5 +58,8 @@
 #define EV_LEFT_LEVEL     (NGE_EVENT_USER + 18)    /**< Left the current level for depth p1 (level_send()). */
 #define EV_MANA_SPENT     (NGE_EVENT_USER + 19)    /**< Spent p1 MP (game/components/mana.h). */
 #define EV_MANA_RESTORED  (NGE_EVENT_USER + 20)    /**< Got p1 MP back. */
+#define EV_XP_GAINED      (NGE_EVENT_USER + 21)    /**< Gained p1 + 256 * p2 XP (game/components/pc.h). */
+#define EV_LEVEL_GAINED   (NGE_EVENT_USER + 22)    /**< Went up to level p1. */
+#define EV_GOLD_CHANGED   (NGE_EVENT_USER + 23)    /**< Gold gained or spent: pc_gold is the new amount. */
 
 #endif

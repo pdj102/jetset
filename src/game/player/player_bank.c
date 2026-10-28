@@ -22,10 +22,14 @@
 #include "game/components/health.h"
 #include "game/components/stats.h"
 #include "game/dev.h"
+#include "game/events.h"
 #include "game/components/inventory.h"
 #include "game/components/item.h"
+#include "game/components/kind.h"
 #include "game/components/mana.h"
+#include "game/components/pc.h"
 #include "game/game.h"
+#include "game/gen/gen.h"
 #include "game/level/level.h"
 #include "game/messages/messages.h"
 #include "game/target/target.h"
@@ -166,6 +170,8 @@ static void fire_command(void)
 }
 
 #if GAME_DEV_KIT
+#define DEV_GOLD  10   /* the gold the E key gives */
+
 /* -1, 0 or 1: the movement keys held for one axis (the cursor keys, CAPS+5-8, or h j k l) */
 static int8_t held_axis(uint8_t less, uint8_t less_caps, uint8_t less_key, uint8_t more, uint8_t more_caps,
                         uint8_t more_key)
@@ -303,9 +309,60 @@ void player_command(nge_key_event_t ev) NGE_BANKED
             }
         }
         break;
+    case 'E': {
+        /*
+         * Development: up a level and 10 gold (no turn used): the XP the
+         * next level needs, less the 10 the gold gives (one per gold piece)
+         */
+        uint16_t need;
+
+        if (pc_level < PC_LEVEL_MAX) {
+            need = (uint16_t)(pc_xp_needed((uint8_t)(pc_level + 1)) - pc_xp);
+            if (need > DEV_GOLD) {
+                pc_gain_xp(actor_player, (uint16_t)(need - DEV_GOLD));
+            }
+        }
+        pc_gain_gold(actor_player, DEV_GOLD);
+        break;
+    }
 #endif
     default:
         break;   /* other keys: no command, no turn */
+    }
+}
+
+void player_on_pc_event(const nge_event_t *e) NGE_BANKED
+{
+    nge_entity_id_t target = e->target;   /* locals: see messages_on_event() */
+    nge_entity_id_t source = e->source;
+    uint8_t id = e->id;
+    uint8_t p1 = e->p1;
+
+    if (id == EV_DIED) {
+        /* A creature the player killed: its kind's XP (it is dying, so its kind is still there) */
+        if (source == actor_player && target != actor_player && KIND_IS(target, CLASS_CREATURE)) {
+            pc_gain_xp(actor_player, gen_creature_xp(kind_index[target]));
+        }
+        return;
+    }
+    if (target != actor_player) {
+        return;
+    }
+    switch (id) {
+    case EV_XP_GAINED:
+        screen_show_xp(pc_xp);
+        break;
+    case EV_LEVEL_GAINED:
+        screen_show_level(pc_level);
+        break;
+    case EV_GOLD_CHANGED:
+        screen_show_gold(pc_gold);
+        break;
+    case EV_ARRIVED:
+        pc_reach_depth(actor_player, p1);
+        break;
+    default:
+        break;
     }
 }
 
@@ -317,12 +374,16 @@ void player_show_stats(void) NGE_BANKED
     for (a = 0; a < ABIL_COUNT; a++) {
         scores[a] = stats_ability[a][actor_player];
     }
+    screen_show_name(pc_name);
+    screen_show_level(pc_level);
     screen_show_hp(health_hp[actor_player], health_hp_max[actor_player]);
     if (MANA_IS(actor_player)) {   /* none: no row (a class without magic, later) */
         screen_show_mp(mana_mp[actor_player], mana_mp_max[actor_player]);
     }
     screen_show_ac(health_ac[actor_player]);
     screen_show_abilities(scores);
+    screen_show_xp(pc_xp);
+    screen_show_gold(pc_gold);
     screen_show_status(stats_status[actor_player]);
 }
 

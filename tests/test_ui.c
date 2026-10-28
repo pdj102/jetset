@@ -24,6 +24,7 @@
 #include "game/components/inventory.h"
 #include "game/components/item.h"
 #include "game/components/mana.h"
+#include "game/components/pc.h"
 #include "game/components/stats.h"
 #include "game/game.h"
 #include "game/effects/effects.h"
@@ -203,6 +204,8 @@ int main(void)
     nge_entity_id_t door;
     nge_entity_id_t chosen;
     nge_entity_id_t many[29];
+    nge_entity_id_t rat;
+    char name[PC_NAME_MAX + 1] = "Rogue";
     static test_l2_cell_t main_before[32][40];
     uint8_t x;
     uint8_t y;
@@ -232,6 +235,10 @@ int main(void)
     /* ---- the stats window: the player's stats, from the kind record ---- */
     screen_draw_stats();
     player_show_stats();
+    test_layer2_row(0, 28, 39, text);
+    CHECK(strcmp(text, "Name: Rogue ") == 0);
+    test_layer2_row(1, 28, 39, text);
+    CHECK(strcmp(text, "Level     1 ") == 0);
     test_layer2_row(2, 28, 39, text);
     CHECK(strcmp(text, "HP   12/ 12 ") == 0);
     test_layer2_row(3, 28, 39, text);
@@ -242,8 +249,12 @@ int main(void)
     CHECK(strcmp(text, "Str      16 ") == 0);
     test_layer2_row(10, 28, 39, text);
     CHECK(strcmp(text, "Cha      10 ") == 0);
+    test_layer2_row(11, 28, 39, text);
+    CHECK(strcmp(text, "            ") == 0);
     test_layer2_row(12, 28, 39, text);
-    CHECK(strncmp(text, "Gold", 4) == 0);
+    CHECK(strcmp(text, "XP        0 ") == 0);
+    test_layer2_row(13, 28, 39, text);
+    CHECK(strcmp(text, "Gold      0 ") == 0);
     effect_apply(EF_STRENGTH, actor_player, NGE_ENTITY_INVALID);
     player_show_stats();
     test_layer2_row(5, 28, 39, text);
@@ -258,6 +269,38 @@ int main(void)
     nge_event_process(player_on_event);
     test_layer2_row(3, 28, 39, text);
     CHECK(strcmp(text, "MP    5/  5 ") == 0);
+    /* XP, level and gold follow their events; gold gives XP */
+    pc_gain_gold(actor_player, 12);
+    nge_event_process(player_on_event);
+    test_layer2_row(12, 28, 39, text);
+    CHECK(strcmp(text, "XP       12 ") == 0);
+    test_layer2_row(13, 28, 39, text);
+    CHECK(strcmp(text, "Gold     12 ") == 0);
+    pc_gain_xp(actor_player, 8);                                   /* 20: level 2 */
+    nge_event_process(player_on_event);
+    test_layer2_row(1, 28, 39, text);
+    CHECK(strcmp(text, "Level     2 ") == 0);
+    test_layer2_row(12, 28, 39, text);
+    CHECK(strcmp(text, "XP       20 ") == 0);
+    /* A monster the player kills gives its XP; one killed by anything else, none */
+    rat = gen_creature(CR_RAT, AREA);
+    nge_event_flush();
+    health_damage(rat, actor_player, 99, DMG_SLASH);
+    nge_event_process(player_on_event);
+    CHECK(pc_xp == 25);
+    test_layer2_row(12, 28, 39, text);
+    CHECK(strcmp(text, "XP       25 ") == 0);
+    rat = gen_creature(CR_RAT, AREA);
+    nge_event_flush();
+    health_damage(rat, NGE_ENTITY_INVALID, 99, DMG_POISON);        /* immune: poison doesn't kill it */
+    health_damage(rat, NGE_ENTITY_INVALID, 99, DMG_FIRE);          /* a trap */
+    nge_event_process(player_on_event);
+    CHECK(pc_xp == 25);
+    /* An arrival: the deepest depth */
+    nge_event_post(actor_player, EV_ARRIVED, NGE_EVENT_NONE, 4, LEVEL_ARRIVE_ANY);
+    nge_event_post(actor_player, EV_ARRIVED, NGE_EVENT_NONE, 3, LEVEL_ARRIVE_ANY);
+    nge_event_process(player_on_event);
+    CHECK(pc_depth_max == 4);
 
     /* ---- the inventory, empty: titled, says so, SPACE goes back; the main screen untouched ---- */
     memcpy(main_before, test_layer2_buf[0], sizeof(main_before));
@@ -478,13 +521,17 @@ int main(void)
     press(EV(NGE_KEY_B));
     press(EV(NGE_KEY_O));
     press(EV(NGE_KEY_ENTER));
-    screen_title_run();
+    screen_title_run(name);
     CHECK(RAN_AND_CLOSED());
     CHECK(strcmp(OVER_ROW(11), "               NGE ROGUE                ") == 0);
     CHECK(starts(seen_cols(1, 29, 0, 39), " What is your name? bo"));
     CHECK(starts(HELP(), "Type a name, then ENTER"));
-    CHECK(strcmp(screen_name, "bo") == 0);
+    CHECK(strcmp(name, "bo") == 0);
     CHECK(said("i inv, d drop, f fire, x look, Q quit."));
+    /* A new experience level's message */
+    nge_event_post(actor_player, EV_LEVEL_GAINED, NGE_EVENT_NONE, 2, 0);
+    nge_event_process(messages_on_event);
+    CHECK(said("Welcome to experience level 2."));
 
     /* ---- doors: bump to open, c and a direction to close ---- */
     fresh();

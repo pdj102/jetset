@@ -19,9 +19,11 @@
 
 /**
  * @brief Show the title over everything, wait for a key, ask the player's
- *        name (into screen_name, game/ui/screen_main.h) until ENTER, then
- *        close it and greet them in the message window.
+ *        name until ENTER, then close it and greet them in the message
+ *        window.
+ * @param name In common memory, PC_NAME_MAX + 1 bytes (game/components/
+ *        pc.h): the name typed, or as it was if none was.
  */
-void screen_title_run(void) NGE_BANKED;
+void screen_title_run(char *name) NGE_BANKED;
 
 #endif

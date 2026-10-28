@@ -9,6 +9,7 @@
 
 #include "game/components/health.h"
 #include "game/components/kind.h"
+#include "game/components/pc.h"
 #include "game/events.h"
 
 /* The events posted since the last call */
@@ -163,6 +164,7 @@ int main(void)
     /* ---- the player (persistent) isn't destroyed at 0 ---- */
     player = make(5, 0, 0, 0);
     kind_add(player, CLASS_CREATURE, CR_PLAYER);
+    nge_entity_components[player] |= COMPONENT_PC;   /* PC_IS(): pc_add() needs stats too */
     nge_entity_set_flags(player, NGE_ENTITY_PERSISTENT);
     CHECK(health_damage(player, NGE_ENTITY_INVALID, 9, DMG_ACID) == 9 && health_hp[player] == 0);
     CHECK(events() == 2 && is(1, player, EV_DIED, NGE_EVENT_NONE, 0, 0));

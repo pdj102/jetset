@@ -13,7 +13,8 @@
  * cycling through the damage types (game/player); V pans the view a pixel
  * at a time while a movement key is held, to check the pixel camera; M
  * spends 1 of the player's MP, or restores them all at 0, to check the
- * stats window follows (game/components/mana.h).
+ * stats window follows (game/components/mana.h); E puts the player up a
+ * level and gives 10 gold (game/components/pc.h).
  */
 
 #ifndef GAME_DEV_KIT

@@ -58,9 +58,11 @@ void actors_load_graphics(void);
  *        (game/dev.h, debug builds), the player starts with a sword, three
  *        rings and one of each potion and food in their pack and some
  *        resistances, for trying things out.
+ * @param name The player's name (game/components/pc.h): 1 to PC_NAME_MAX
+ *        characters, in common memory.
  *
  * Call after nge_entity_init(), nge_render_init() and nge_timer_init().
  */
-void actors_create(void);
+void actors_create(const char *name);
 
 #endif

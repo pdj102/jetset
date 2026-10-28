@@ -32,6 +32,7 @@ void player_on_event(const nge_event_t *e)
 {
     nge_entity_id_t target = e->target;   /* a local: see messages_on_event() */
 
+    player_on_pc_event(e);   /* every event: it chooses, in banked code, to keep common memory free */
     if (target != actor_player) {
         return;
     }

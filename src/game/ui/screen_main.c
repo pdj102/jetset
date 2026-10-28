@@ -20,7 +20,6 @@ const nge_rect_t screen_map_view = { .x1 = 0, .x2 = 27, .y1 = 0, .y2 = 25 };
 
 NGE_FILE *screen_stats = NULL;
 NGE_FILE *screen_messages = NULL;
-char screen_name[SCREEN_NAME_MAX + 1] = "Rogue";
 
 uint8_t screen_message_line_used;
 NGE_FILE *screen_message_stream = NULL;

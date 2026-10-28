@@ -28,6 +28,7 @@
 #include "game/components/inventory.h"
 #include "game/components/item.h"
 #include "game/components/kind.h"
+#include "game/components/pc.h"
 #include "game/components/stats.h"
 #include "game/effects/effects.h"
 #include "game/events.h"
@@ -558,7 +559,7 @@ int main(void)
     level_init();
 
     player = gen_creature(CR_PLAYER, NGE_OWNER_WORLD);
-    CHECK(NGE_ENTITY_HAS_FLAGS(player, NGE_ENTITY_PERSISTENT) && KIND_IS_PLAYER(player));
+    CHECK(NGE_ENTITY_HAS_FLAGS(player, NGE_ENTITY_PERSISTENT) && PC_IS(player));
 
     /* ---- every depth, many seeds: the layout's rules, reachability, the entities, the stairs ---- */
     ok = 1;

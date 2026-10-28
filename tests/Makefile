@@ -46,7 +46,7 @@ GEN_GAME_SRCS := $(addprefix $(GAMEDIR)/,gen/gen.c gen/gen_shared_bank.c \
                  components/kind_cdata.c components/stats.c components/stats_cdata.c \
                  components/item.c components/item_cdata.c components/inventory.c \
                  components/inventory_cdata.c components/health.c components/health_cdata.c \
-                 components/mana.c components/mana_cdata.c \
+                 components/mana.c components/mana_cdata.c components/pc.c components/pc_cdata.c \
                  components/attack.c components/attack_cdata.c \
                  components/feature.c components/feature_cdata.c \
                  gen/gen_feature_bank.c gen/gen_feature_pdata.c \
@@ -90,7 +90,7 @@ all: run
 # The effects core knows nothing of the game's components: it reaches them
 # through its seam (src/game/effects/effects_core.h)
 EFFECTS_CORE := $(GAMEDIR)/effects/effects_core.c $(GAMEDIR)/effects/effects_core.h
-EFFECTS_CORE_BANNED := ^\#include "game/(components/(health|item|stats|inventory|attack|kind|mana)|gen/|timers|actions/|actors|player/)
+EFFECTS_CORE_BANNED := ^\#include "game/(components/(health|item|stats|inventory|attack|kind|mana|pc)|gen/|timers|actions/|actors|player/)
 
 .PHONY: check-effects-core
 check-effects-core:
@@ -137,6 +137,9 @@ $(BUILD)/test_health: $(BUILD)/test_health.o $(LIB_OBJS) $(SUPPORT_OBJS) $(GEN_G
 	$(HOSTCC) $(CFLAGS) $^ -o $@
 
 $(BUILD)/test_mana: $(BUILD)/test_mana.o $(LIB_OBJS) $(SUPPORT_OBJS) $(GEN_GAME_OBJS)
+	$(HOSTCC) $(CFLAGS) $^ -o $@
+
+$(BUILD)/test_pc: $(BUILD)/test_pc.o $(LIB_OBJS) $(SUPPORT_OBJS) $(GEN_GAME_OBJS)
 	$(HOSTCC) $(CFLAGS) $^ -o $@
 
 $(BUILD)/test_attack: $(BUILD)/test_attack.o $(LIB_OBJS) $(SUPPORT_OBJS) $(GEN_GAME_OBJS)

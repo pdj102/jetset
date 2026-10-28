@@ -11,6 +11,7 @@
 #include "game/components/attrs.h"
 #include "game/components/health.h"
 #include "game/components/kind.h"
+#include "game/components/pc.h"
 #include "game/effects/effects.h"
 #include "game/gen/gen.h"
 #include "game/level/level.h"
@@ -54,7 +55,7 @@ void actors_load_graphics(void)
     nge_palette_load9(SPRITE_PALETTE_PAGE, RPC_SELECT_SPRITES_PALETTE_0, 0, sprite_palette, SPRITE_PALETTE_ENTRIES);
 }
 
-void actors_create(void)
+void actors_create(const char *name)
 {
     /*
      * The player, from its kind data: placed by level_generate(). Created
@@ -66,6 +67,7 @@ void actors_create(void)
 
     actor_player = gen_creature(CR_PLAYER, NGE_OWNER_WORLD);
     nge_util_assert(actor_player != NGE_ENTITY_INVALID);
+    pc_set_name(actor_player, name);
 
     /* Not placed: each is placed when its depth's level is generated */
     for (p = persistents; p->cls != CLASS_NONE; p++) {

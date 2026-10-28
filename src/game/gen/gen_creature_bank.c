@@ -38,6 +38,7 @@ static nge_entity_id_t create(uint8_t kind, nge_owner_t owner)
     }
     if (b.flags & CREATURE_PLAYER) {
         nge_entity_set_flags(id, NGE_ENTITY_PERSISTENT);   /* at 0 hp the game ends instead (EV_DIED) */
+        pc_add(id);                                        /* a new character: level 1 */
     }
     if (b.inventory.capacity != 0) {
         inv_add(id, b.inventory.capacity, b.inventory.slots);
@@ -82,6 +83,13 @@ uint8_t gen_creature_hook(uint8_t kind, uint8_t hook) NGE_BANKED
     nge_util_assert(hook < GEN_HOOK_COUNT);
 
     return gen_creatures[kind].hooks[hook];
+}
+
+uint16_t gen_creature_xp(uint8_t kind) NGE_BANKED
+{
+    nge_util_assert(kind < CR_COUNT);
+
+    return gen_creatures[kind].xp;
 }
 
 void gen_creature_name(uint8_t kind, char *buf, uint8_t size) NGE_BANKED

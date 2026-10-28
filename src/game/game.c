@@ -20,6 +20,7 @@
 #include "map/nge_map.h"
 
 #include "game/actors.h"
+#include "game/components/pc.h"
 #include "game/anim/anim.h"
 #include "game/dev.h"
 #include "game/effects/effects.h"
@@ -44,6 +45,7 @@ static uint16_t frames;       /* frames since the start: a release build's rando
 static uint8_t  frame_open;   /* 1 between game_frame_start() and game_frame_end() */
 static uint8_t  ended;        /* 1 once game_over() has ended the game */
 static uint8_t  end_reason;   /* GAME_OVER_*: why it ended */
+static char     name[PC_NAME_MAX + 1] = "Rogue";   /* the player's, from the title: kept for the next game */
 
 /* ---- Events ---- */
 
@@ -295,7 +297,7 @@ static void play_start(void)
     player_init();           /* not the player's turn until their timer fires */
     level_clear_request();
     ended = 0;
-    actors_create();
+    actors_create(name);
     nge_render_follow(actor_player);   /* the camera slides with them (after nge_render_init()) */
     level_generate(1, actor_player, LEVEL_ARRIVE_ANY);   /* the first level; the camera on the player */
     shown_turn = 0;
@@ -341,7 +343,7 @@ void game_run(void)
 {
     nge_event_init();
     for (;;) {
-        screen_title_run();
+        screen_title_run(name);
         over_run(play_run());
     }
 }

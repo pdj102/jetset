@@ -131,7 +131,7 @@ int main(void)
         static const nge_component_mask_t masks[] = {
             NGE_COMPONENT_LOCATION, NGE_COMPONENT_SPRITE, NGE_COMPONENT_BLOCK, NGE_COMPONENT_TIMER,
             COMPONENT_KIND, COMPONENT_STATS, COMPONENT_ITEM, COMPONENT_INVENTORY, COMPONENT_HEALTH,
-            COMPONENT_MELEE, COMPONENT_RANGED, COMPONENT_EFFECT, COMPONENT_FEATURE, COMPONENT_MANA,
+            COMPONENT_MELEE, COMPONENT_RANGED, COMPONENT_EFFECT, COMPONENT_FEATURE, COMPONENT_MANA, COMPONENT_PC,
         };
         nge_component_mask_t seen = 0;
         unsigned int m;
@@ -224,10 +224,14 @@ int main(void)
     id = gen_creature(CR_RAT, AREA);
     CHECK(gen_hook(id, GEN_HOOK_HIT) == EF_POISON && gen_hook(id, GEN_HOOK_INNATE) == EF_NONE);
     CHECK(!MANA_IS(id));                                       /* monsters have no mana yet */
+    CHECK(!PC_IS(id));
     CHECK(nge_owner_count(id) == 0);                           /* no innate effect */
     id = gen_creature(CR_PLAYER, AREA);
     CHECK(gen_hook(id, GEN_HOOK_INNATE) == EF_REGEN && nge_owner_count(id) == 1);   /* its innate effect */
     CHECK(MANA_IS(id) && mana_mp[id] == 5 && mana_mp_max[id] == 5);                 /* full */
+    CHECK(PC_IS(id) && pc_level == 1 && pc_xp == 0 && pc_gold == 0);                 /* a new character */
+    CHECK(strcmp(pc_name, "Rogue") == 0 && pc_class == PC_CLASS_FIGHTER && pc_depth_max == 1);
+    CHECK(gen_creature_xp(CR_RAT) == 5 && gen_creature_xp(CR_GOBLIN) == 5 && gen_creature_xp(CR_PLAYER) == 0);
     chest = nge_entity_create();                               /* no kind: no hooks */
     CHECK(gen_hook(chest, GEN_HOOK_USE) == EF_NONE);
     TEST_EXPECT_HALT(gen_hook(id, GEN_HOOK_COUNT));

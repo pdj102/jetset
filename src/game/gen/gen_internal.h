@@ -30,6 +30,7 @@
 #include "game/components/item.h"
 #include "game/components/kind.h"
 #include "game/components/mana.h"
+#include "game/components/pc.h"
 #include "game/components/stats.h"
 #include "game/effects/effects.h"
 
@@ -72,6 +73,7 @@ typedef struct gen_creature_kind {
     mana_kind_t  mana;        /* mp 0 for none */
     attack_kind_t melee;      /* its natural melee attack (fists, a bite); dice 0 for none */
     gen_inventory_t inventory;
+    uint16_t     xp;      /* XP the player gains for killing one (classic B/X, by hit dice); 0 for the player */
     uint8_t      flags;   /* CREATURE_* */
     uint8_t      hooks[GEN_HOOK_COUNT];   /* EF_* by GEN_HOOK_*: hit, innate */
     gen_seq_t    seqs[GEN_SEQ_COUNT];     /* by GEN_SEQ_*: count 0 for none */

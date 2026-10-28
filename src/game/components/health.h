@@ -25,7 +25,7 @@
  * health_damage() always posts EV_DAMAGED, even when 0 is taken: p1 the
  * amount taken, p2 the outcome and type packed (EV_DMG_OUTCOME(),
  * EV_DMG_TYPE()). At 0 hp it posts EV_DIED and destroys the entity, unless
- * it is the player (KIND_IS_PLAYER(), persistent), when the game reacts to
+ * it is the player (PC_IS(), persistent), when the game reacts to
  * EV_DIED. Any other persistent entity (a boss) loses its persistent flag
  * and is destroyed; what it owns keeps its own (a quest object it carries
  * drops where it died). An entity at 0 hp takes no more damage and can't be

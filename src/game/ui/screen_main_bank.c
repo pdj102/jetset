@@ -39,13 +39,17 @@ static const nge_panel_t panels[PANEL_COUNT] = {
                          NGE_PANEL_CLIP },
 };
 
-#define STATS_ROW_HP         2    /* stats window row of the hit points */
+#define STATS_ROW_NAME       0    /* stats window row of the player's name */
+#define STATS_ROW_LEVEL      1    /* ...of the experience level */
+#define STATS_ROW_HP         2    /* ...of the hit points */
 #define STATS_ROW_MP         3    /* ...of the mana points */
 #define STATS_ROW_AC         4    /* ...of the armour class */
 #define STATS_ROW_ABILITIES  5    /* ...of the first ability: one row each */
-#define STATS_ROW_GOLD       12   /* ...of the gold and, under it, the depth */
-#define STATS_ROW_TURN       14   /* ...of the turn count */
-#define STATS_ROW_STATUS     16   /* ...of the statuses */
+#define STATS_ROW_XP         12   /* ...of the experience points */
+#define STATS_ROW_GOLD       13   /* ...of the gold */
+#define STATS_ROW_DEPTH      14   /* ...of the depth */
+#define STATS_ROW_TURN       15   /* ...of the turn count */
+#define STATS_ROW_STATUS     17   /* ...of the statuses */
 
 /* The abilities' names, by ABIL_* */
 static const char ability_names[ABIL_COUNT][4] = { "Str", "Dex", "Con", "Int", "Wis", "Cha" };
@@ -96,17 +100,43 @@ void screen_init(void) NGE_BANKED
 void screen_draw_stats(void) NGE_BANKED
 {
     nge_text_cls(screen_stats);
+}
+
+void screen_show_name(const char *name) NGE_BANKED
+{
+    nge_text_at(STATS_ROW_NAME, 0, screen_stats);
     nge_text_ink(NGE_INK_YELLOW, screen_stats);
     nge_puts("Name: ", screen_stats);
-    nge_puts(screen_name, screen_stats);
+    nge_puts(name, screen_stats);
+}
+
+void screen_show_level(uint8_t level) NGE_BANKED
+{
+    nge_text_at(STATS_ROW_LEVEL, 0, screen_stats);
+    nge_text_ink(NGE_INK_YELLOW, screen_stats);
+    nge_puts("Level ", screen_stats);
+    nge_putu16w(level, 5, ' ', screen_stats);
+}
+
+void screen_show_xp(uint16_t xp) NGE_BANKED
+{
+    nge_text_at(STATS_ROW_XP, 0, screen_stats);
+    nge_text_ink(NGE_INK_WHITE, screen_stats);
+    nge_puts("XP ", screen_stats);
+    nge_putu16w(xp, 8, ' ', screen_stats);
+}
+
+void screen_show_gold(uint16_t gold) NGE_BANKED
+{
     nge_text_at(STATS_ROW_GOLD, 0, screen_stats);
     nge_text_ink(NGE_INK_WHITE, screen_stats);
-    nge_puts("Gold      0", screen_stats);
+    nge_puts("Gold ", screen_stats);
+    nge_putu16w(gold, 6, ' ', screen_stats);
 }
 
 void screen_show_depth(uint8_t depth) NGE_BANKED
 {
-    nge_text_at(STATS_ROW_GOLD + 1, 0, screen_stats);
+    nge_text_at(STATS_ROW_DEPTH, 0, screen_stats);
     nge_text_ink(NGE_INK_CYAN, screen_stats);
     nge_puts("Depth ", screen_stats);
     nge_putu16w(depth, 5, ' ', screen_stats);

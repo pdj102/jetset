@@ -44,7 +44,8 @@
  *        stats, health, mana if its kind has some, timer (the player's or a
  *        monster's turn) and, if it can carry things, inventory; then its innate effect, if any
  *        (GEN_HOOK_INNATE). The player is persistent: at 0 hp it isn't
- *        destroyed (game over instead).
+ *        destroyed (game over instead); and a new character, with the PC
+ *        component (game/components/pc.h).
  * @return The entity, or NGE_ENTITY_INVALID if no entity is free.
  */
 nge_entity_id_t gen_creature(uint8_t kind, nge_owner_t owner) NGE_BANKED;
@@ -122,6 +123,13 @@ typedef struct gen_seq {
  *        Banked with the creature table (page 106).
  */
 void gen_creature_seqs(uint8_t kind, gen_seq_t *seq) NGE_BANKED;
+
+/**
+ * @brief The XP the player gains for killing a creature of kind (CR_*),
+ *        classic B/X values by hit dice (game/components/pc.h). Banked
+ *        with the creature table (page 106).
+ */
+uint16_t gen_creature_xp(uint8_t kind) NGE_BANKED;
 
 /* Hooks: the effect (EF_*, game/effects/effects.h) a kind record names for each */
 #define GEN_HOOK_USE     0   /**< Items: applied to the user when used up (drunk, eaten: act_use()). */

@@ -46,13 +46,25 @@ void player_on_turn(nge_entity_id_t id);
 
 /**
  * @brief React to events about the player: the stats window shows their
- *        hit points (EV_DAMAGED, EV_HEALED) and all their stats
- *        (EV_ATTRS_CHANGED). The camera follows them through the render
- *        system (nge_render_follow(), set by play_start()), with their slide.
+ *        hit points (EV_DAMAGED, EV_HEALED), MP, XP, level and gold, and
+ *        all their stats (EV_ATTRS_CHANGED); an arrival may be their
+ *        deepest depth. A monster they killed (EV_DIED, the player its
+ *        source) gives them its kind's XP (game/components/pc.h). The
+ *        camera follows them through the render system
+ *        (nge_render_follow(), set by play_start()), with their slide.
  */
 void player_on_event(const nge_event_t *e);
 
-/** @brief Show the player's hit points, AC, abilities and statuses in the stats window (banked, page 114). */
+/**
+ * @brief player_on_event()'s reactions for the PC component, banked to keep
+ *        common memory free: XP for a creature the player killed
+ *        (EV_DIED), the deepest depth (EV_ARRIVED), and the XP, level and
+ *        gold in the stats window.
+ * @param e In common memory (the event's copy).
+ */
+void player_on_pc_event(const nge_event_t *e) NGE_BANKED;
+
+/** @brief Show the player's name, level, hit points, MP, AC, abilities, XP, gold and statuses in the stats window (banked, page 114). */
 void player_show_stats(void) NGE_BANKED;
 
 /**

@@ -20,6 +20,7 @@
 #include "io/nge_text.h"
 #include "ui/nge_panel.h"
 
+#include "game/components/pc.h"
 #include "game/ui/screen.h"
 #include "game/ui/screen_main.h"
 
@@ -38,12 +39,12 @@ static const nge_panel_t panels[PANEL_COUNT] = {
 
 /*
  * Ask for the player's name on the prompt panel and read it from the
- * keyboard into screen_name, running paused frames until ENTER. An empty
+ * keyboard into player_name, running paused frames until ENTER. An empty
  * name keeps the current one
  */
-static void ask_name(NGE_FILE *prompt)
+static void ask_name(NGE_FILE *prompt, char *player_name)
 {
-    char name[SCREEN_NAME_MAX + 1];   /* on the stack: common memory, as the line editor needs */
+    char name[PC_NAME_MAX + 1];   /* on the stack: common memory, as the line editor needs */
     NGE_FILE *keyboard = nge_open_keyboard();
     nge_line_t line;
     uint8_t done;
@@ -62,11 +63,11 @@ static void ask_name(NGE_FILE *prompt)
     nge_close(keyboard);
 
     if (name[0] != 0) {
-        strcpy(screen_name, name);
+        strcpy(player_name, name);
     }
 }
 
-void screen_title_run(void) NGE_BANKED
+void screen_title_run(char *name) NGE_BANKED
 {
     NGE_FILE *streams[PANEL_COUNT];
     uint8_t ok;
@@ -81,7 +82,7 @@ void screen_title_run(void) NGE_BANKED
     screen_help("Any key: start a new game");
     screen_wait_key();
 
-    ask_name(streams[PANEL_PROMPT]);
+    ask_name(streams[PANEL_PROMPT], name);
     nge_panel_close_all(streams, PANEL_COUNT);
     screen_close();
 

@@ -125,6 +125,17 @@ static void say_arrived(uint8_t depth, uint8_t arrival)
     screen_message(line);
 }
 
+/* EV_LEVEL_GAINED: "Welcome to experience level 2." (not "level": that is the depth) */
+static void say_level(uint8_t level)
+{
+    char line[MESSAGE_MAX];
+
+    strcpy(line, "Welcome to experience level ");
+    add_number(line, level);
+    add(line, ".");
+    screen_message(line);
+}
+
 void messages_on_event(const nge_event_t *e) NGE_BANKED
 {
     /*
@@ -218,6 +229,9 @@ void messages_on_event(const nge_event_t *e) NGE_BANKED
         break;
     case EV_ARRIVED:
         say_arrived(p1, p2);
+        break;
+    case EV_LEVEL_GAINED:
+        say_level(p1);
         break;
     case EV_LEFT_LEVEL:
         say_named("The ", target, p1 < level_depth ? " goes up and away." : " goes down and away.");
