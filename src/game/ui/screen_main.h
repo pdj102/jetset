@@ -102,7 +102,7 @@ void screen_show_ac(uint8_t ac) NGE_BANKED;
  */
 void screen_show_abilities(const uint8_t *scores) NGE_BANKED;
 
-/** @brief Show the statuses (STATUS_*, game/components/attrs.h) in the stats window: "Poisoned", or nothing. */
+/** @brief Show the statuses (STATUS_*, game/components/stats.h) in the stats window: "Poisoned", or nothing. */
 void screen_show_status(uint8_t status) NGE_BANKED;
 
 /** @brief Show the depth (the current level) in the stats window: "Depth     2". */

@@ -49,7 +49,7 @@ void effects_add(effects_derived_t *d, uint8_t ef)
         attr = def->mod[i].attr;
         amount = def->mod[i].amount;
         nge_util_assert(attr < ATTR_COUNT);
-        if (effects_game_attr_is_mask[attr]) {
+        if (effects_game_attrs[attr].is_mask) {
             d->value[attr] |= (uint8_t)amount;
         } else {
             d->value[attr] += amount;
@@ -57,15 +57,31 @@ void effects_add(effects_derived_t *d, uint8_t ef)
     }
 }
 
-/* id's bases, plus the modifiers and statuses of the game's sources and of its active effects */
+/* id's base table of attribute attr, which id has (asserted) */
+static uint8_t *base_of(nge_entity_id_t id, uint8_t attr)
+{
+    const effects_attr_t *at;
+
+    nge_util_assert(attr < ATTR_COUNT);
+    at = &effects_game_attrs[attr];
+    nge_util_assert(NGE_ENTITY_HAS_ANY_COMPONENTS(id, at->component));
+    return at->base;
+}
+
+/* id's bases (0 for an attribute it hasn't), plus the modifiers and statuses of the game's sources and of its active effects */
 static void derive(nge_entity_id_t id, effects_derived_t *d)
 {
     nge_entity_id_t owned;
+    nge_component_mask_t component;
+    uint8_t *base;
     uint8_t a;
     uint8_t i;
 
     for (a = 0; a < ATTR_COUNT; a++) {
-        d->value[a] = attr_base[a][id];
+        /* The fields in locals (T-ZSDCC-1) */
+        base = effects_game_attrs[a].base;
+        component = effects_game_attrs[a].component;
+        d->value[a] = NGE_ENTITY_HAS_ANY_COMPONENTS(id, component) ? base[id] : 0;
     }
     d->status = 0;
     effects_game_sources(id, d);
@@ -106,9 +122,8 @@ void effects_set_base(nge_entity_id_t id, uint8_t attr, uint8_t value) NGE_BANKE
 {
     nge_util_assert(id < NGE_ENTITY_MAX && NGE_ENTITY_IS_ALIVE(id));
     nge_util_assert(effects_game_has_attrs(id));
-    nge_util_assert(attr < ATTR_COUNT);
 
-    attr_base[attr][id] = value;
+    base_of(id, attr)[id] = value;
     effects_recompute(id);
 }
 
@@ -129,8 +144,7 @@ static void run_op(const effect_op_t *op, nge_entity_id_t target, nge_entity_id_
         effect_cure(target, arg);
         break;
     case OP_RAISE_BASE:
-        nge_util_assert(arg < ATTR_COUNT);
-        v = (int16_t)attr_base[arg][target] + op->amount;   /* a base stays within 0-255 */
+        v = (int16_t)base_of(target, arg)[target] + op->amount;   /* a base stays within 0-255 */
         effects_set_base(target, arg, (v < 0) ? 0 : (v > 255) ? 255 : (uint8_t)v);
         break;
     default:

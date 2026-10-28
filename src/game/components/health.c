@@ -9,7 +9,6 @@
 
 #include "game/components/health.h"
 
-#include "game/components/attrs.h"
 
 #include <stddef.h>
 
@@ -41,12 +40,11 @@ void health_add(nge_entity_id_t id, const health_kind_t *k) NGE_BANKED
     health_resist[id] = k->resist;
     health_vuln[id] = k->vuln;
     health_ac[id] = k->ac;
-    attr_base[ATTR_HP_MAX][id] = k->hp_max;
-    attr_base[ATTR_AC][id] = k->ac;
-    attr_base[ATTR_IMMUNE][id] = k->immune;
-    attr_base[ATTR_RESIST][id] = k->resist;
-    attr_base[ATTR_VULN][id] = k->vuln;
-    status_mask[id] = 0;
+    health_hp_max_base[id] = k->hp_max;
+    health_ac_base[id] = k->ac;
+    health_immune_base[id] = k->immune;
+    health_resist_base[id] = k->resist;
+    health_vuln_base[id] = k->vuln;
     nge_entity_components[id] |= COMPONENT_HEALTH;
 }
 

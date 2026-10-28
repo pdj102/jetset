@@ -91,10 +91,17 @@ extern uint8_t health_resist[NGE_ENTITY_MAX];   /**< ...takes half from. Derived
 extern uint8_t health_vuln[NGE_ENTITY_MAX];     /**< ...takes double from. Derived (ATTR_VULN). */
 extern uint8_t health_ac[NGE_ENTITY_MAX];       /**< Armour class. Derived (ATTR_AC). */
 
+/* The attributes' bases (attrs.h): read-only outside this component and the effects */
+extern uint8_t health_hp_max_base[NGE_ENTITY_MAX];
+extern uint8_t health_immune_base[NGE_ENTITY_MAX];
+extern uint8_t health_resist_base[NGE_ENTITY_MAX];
+extern uint8_t health_vuln_base[NGE_ENTITY_MAX];
+extern uint8_t health_ac_base[NGE_ENTITY_MAX];
+
 /**
  * @brief Give an entity in use the health component from kind health:
  *        unhurt, with the kind values (hit points 1 or more) as its
- *        attributes' bases and values; no statuses.
+ *        attributes' bases and values.
  * @param k In common memory (a copy on the stack): the call maps page 110.
  */
 void health_add(nge_entity_id_t id, const health_kind_t *k) NGE_BANKED;

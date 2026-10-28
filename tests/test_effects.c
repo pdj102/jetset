@@ -277,13 +277,13 @@ int main(void)
     health_damage(g, NGE_ENTITY_INVALID, 2, DMG_SLASH);
     events();
     CHECK(effect_apply(EF_VITALITY, g, NGE_ENTITY_INVALID) == 1);
-    CHECK(attr_base[ATTR_HP_MAX][g] == 7 && health_hp_max[g] == 7 && health_hp[g] == 4);
+    CHECK(health_hp_max_base[g] == 7 && health_hp_max[g] == 7 && health_hp[g] == 4);
     CHECK(events() == 2 && is(0, g, EV_ATTRS_CHANGED, NGE_EVENT_NONE, 0) &&
           is(1, g, EV_EFFECT_STARTED, NGE_EVENT_NONE, EF_VITALITY));
     CHECK(count_effects(g, EF_VITALITY) == 0);                     /* nothing left behind */
     effects_set_base(g, ATTR_HP_MAX, 255);
     effect_apply(EF_VITALITY, g, NGE_ENTITY_INVALID);
-    CHECK(attr_base[ATTR_HP_MAX][g] == 255 && health_hp_max[g] == 255);   /* at most 255 */
+    CHECK(health_hp_max_base[g] == 255 && health_hp_max[g] == 255);   /* at most 255 */
 
     /* ---- worn: an equipped ring counts, stowed or on the floor it doesn't ---- */
     reset();
@@ -342,23 +342,23 @@ int main(void)
           health_vuln[g] == (DMG_BIT(DMG_COLD) | DMG_BIT(DMG_MAGIC)) && effects_check(g));
     CHECK(events() == 9);                                          /* one EV_ATTRS_CHANGED each */
     /* Abilities: clamped to 1-30 */
-    CHECK(stats_ability[ABIL_STR][g] == 8 && attr_base[ATTR_STR][g] == 8);   /* a goblin's */
+    CHECK(stats_ability[ABIL_STR][g] == 8 && stats_ability_base[ABIL_STR][g] == 8);   /* a goblin's */
     effects_set_base(g, ATTR_CHA, 200);
-    CHECK(stats_ability[ABIL_CHA][g] == 30 && attr_base[ATTR_CHA][g] == 200);
+    CHECK(stats_ability[ABIL_CHA][g] == 30 && stats_ability_base[ABIL_CHA][g] == 200);
     effects_set_base(g, ATTR_CHA, 0);
     CHECK(stats_ability[ABIL_CHA][g] == 1 && effects_check(g));
     effects_set_base(g, ATTR_CHA, 8);
     /* A potion of strength: +1 base strength, for good */
     events();
     CHECK(effect_apply(EF_STRENGTH, g, NGE_ENTITY_INVALID) == 1);
-    CHECK(attr_base[ATTR_STR][g] == 9 && stats_ability[ABIL_STR][g] == 9 && stats_ability[ABIL_DEX][g] == 14);
+    CHECK(stats_ability_base[ABIL_STR][g] == 9 && stats_ability[ABIL_STR][g] == 9 && stats_ability[ABIL_DEX][g] == 14);
     CHECK(events() == 2 && is(0, g, EV_ATTRS_CHANGED, NGE_EVENT_NONE, 0) &&
           is(1, g, EV_EFFECT_STARTED, NGE_EVENT_NONE, EF_STRENGTH));
     effect_text(EF_STRENGTH, EFFECT_TEXT_START, text, sizeof(text));
     CHECK_STR(text, "You feel strong!");
-    attr_base[ATTR_STR][g] = 30;
+    stats_ability_base[ABIL_STR][g] = 30;
     effect_apply(EF_STRENGTH, g, NGE_ENTITY_INVALID);
-    CHECK(attr_base[ATTR_STR][g] == 31 && stats_ability[ABIL_STR][g] == 30);   /* the base may pass 30, the score can't */
+    CHECK(stats_ability_base[ABIL_STR][g] == 31 && stats_ability[ABIL_STR][g] == 30);   /* the base may pass 30, the score can't */
     effects_set_base(g, ATTR_STR, 9);
     /* effects_check() notices every derived value out of step */
     health_ac[g]++;
@@ -370,9 +370,9 @@ int main(void)
     stats_speed[g]++;
     k = k || effects_check(g);
     stats_speed[g]--;
-    status_mask[g] ^= STATUS_POISONED;
+    stats_status[g] ^= STATUS_POISONED;
     k = k || effects_check(g);
-    status_mask[g] ^= STATUS_POISONED;
+    stats_status[g] ^= STATUS_POISONED;
     for (i = 0; i < ABIL_COUNT; i++) {
         stats_ability[i][g]++;
         k = k || effects_check(g);
@@ -387,15 +387,18 @@ int main(void)
     CHECK(!effects_check(g) && health_hp[g] == health_hp_max[g] + 1);
     effects_recompute(g);
     CHECK(health_hp[g] == health_hp_max[g] && effects_check(g));
-    /* The game's attribute kinds: the damage masks are ORed, the rest added */
-    CHECK(!effects_game_attr_is_mask[ATTR_HP_MAX] && !effects_game_attr_is_mask[ATTR_AC] &&
-          !effects_game_attr_is_mask[ATTR_SPEED] && effects_game_attr_is_mask[ATTR_IMMUNE] &&
-          effects_game_attr_is_mask[ATTR_RESIST] && effects_game_attr_is_mask[ATTR_VULN]);
+    /* The game's attributes: each a base table and a component; the damage masks are ORed, the rest added */
     ok = 1;
-    for (i = 0; i < ABIL_COUNT; i++) {
-        ok = ok && !effects_game_attr_is_mask[ATTR_ABILITY(i)];   /* scores are numbers */
+    for (i = 0; i < ATTR_COUNT; i++) {
+        ok = ok && effects_game_attrs[i].base != NULL && effects_game_attrs[i].component != 0 &&
+             effects_game_attrs[i].is_mask == (i == ATTR_IMMUNE || i == ATTR_RESIST || i == ATTR_VULN);
     }
     CHECK(ok);
+    CHECK(effects_game_attrs[ATTR_HP_MAX].base == health_hp_max_base &&
+          effects_game_attrs[ATTR_HP_MAX].component == COMPONENT_HEALTH &&
+          effects_game_attrs[ATTR_SPEED].base == stats_speed_base &&
+          effects_game_attrs[ATTR_SPEED].component == COMPONENT_STATS &&
+          effects_game_attrs[ATTR_ABILITY(ABIL_CHA)].base == stats_ability_base[ABIL_CHA]);
     CHECK(effects_game_timer_kind == TIMER_EFFECT);
 
     /* ---- a target that dies: its effects stop acting, and no end event ---- */
@@ -412,6 +415,24 @@ int main(void)
     CHECK(!NGE_ENTITY_IS_ALIVE(e) && find_event(0, EV_EFFECT_ENDED) < 0 && events() == 0);
     effects_recompute(g);                                          /* a dead entity: nothing */
     CHECK(events() == 0);
+
+    /* ---- health but no stats: abilities and speed left alone, no statuses, no stats bases ---- */
+    reset();
+    g = goblin();
+    stats_remove(g);
+    stats_ability[ABIL_STR][g] = 99;                               /* not its attribute now: left alone */
+    stats_speed[g] = 99;
+    stats_status[g] = 0;
+    effects_recompute(g);
+    CHECK(stats_ability[ABIL_STR][g] == 99 && stats_speed[g] == 99 && effects_check(g));
+    events();
+    CHECK(effect_apply(EF_POISON, g, NGE_ENTITY_INVALID) == 1);
+    fire(1);
+    CHECK(health_hp[g] == 5 && stats_status[g] == 0 && effects_check(g));   /* damaged; no status stored */
+    TEST_EXPECT_HALT(effects_set_base(g, ATTR_STR, 1));
+    CHECK(test_halt_count == 1);
+    TEST_EXPECT_HALT(effect_apply(EF_STRENGTH, g, NGE_ENTITY_INVALID));    /* raising a base it hasn't */
+    CHECK(test_halt_count == 1);
 
     /* ---- the player: their innate regeneration ---- */
     reset();

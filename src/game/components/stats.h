@@ -18,9 +18,17 @@
  * abilities are attributes (game/components/attrs.h): stats_add() sets
  * their bases and values from their kind values (stats_kind_t, part of a
  * creature's kind record in game/gen/), and effects change them
- * (game/effects/effects.h). The tables are in slot 0 (the ECS data page,
- * stats_cdata.c): read every turn by the timer handlers and, later, by
- * the rules that use abilities.
+ * (game/effects/effects.h).
+ *
+ * A creature's statuses (stats_status) are flags its effects grant while
+ * they last (poisoned): the OR of the statuses of its effects, so a status
+ * stays set while any effect grants it, and a cure ends those effects
+ * instead of clearing a bit. Rules ask STATUS_HAS(). An entity without
+ * stats has none, though effects still act on it (poison damages a chest).
+ *
+ * The tables are in slot 0 (the ECS data page, stats_cdata.c): read
+ * every turn by the timer handlers and the stats window, and by the rules
+ * that use abilities and statuses.
  *
  * Banking: stats_add() and stats_remove() are banked (NGE_BANKED, page 110,
  * with the shared generator helpers): they run when an entity is created
@@ -55,14 +63,25 @@ typedef struct stats_kind {
     uint8_t ability[ABIL_COUNT];    /**< Scores by ABIL_*, 1-30. */
 } stats_kind_t;
 
+/* Statuses: bits of stats_status, granted by effects (game/effects/effects.h) */
+#define STATUS_POISONED  0x01
+
 /* Tables in slot 0 (stats_cdata.c): read-only for game code; meaningful only with COMPONENT_STATS */
 extern uint8_t stats_speed[NGE_ENTITY_MAX];                 /**< Ticks between turns: its timer's period. Derived (ATTR_SPEED). */
 extern uint8_t stats_ability[ABIL_COUNT][NGE_ENTITY_MAX];   /**< Scores by ABIL_*, 1-30. Derived (ATTR_ABILITY()). */
+extern uint8_t stats_status[NGE_ENTITY_MAX];                /**< STATUS_* granted by its effects. Derived. */
+
+/* The attributes' bases (attrs.h): read-only outside this component and the effects */
+extern uint8_t stats_speed_base[NGE_ENTITY_MAX];
+extern uint8_t stats_ability_base[ABIL_COUNT][NGE_ENTITY_MAX];
+
+/** Creature id (with stats) has any of statuses s. */
+#define STATUS_HAS(id, s)  ((stats_status[id] & (s)) != 0)
 
 /**
  * @brief Give an entity in use the stats component from kind stats: the
  *        kind values of its speed and abilities, as their attributes'
- *        bases and values.
+ *        bases and values; no statuses.
  * @param k In common memory (a copy on the stack): the call maps page 110
  *          over slots 6 and 7.
  */

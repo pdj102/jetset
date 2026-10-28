@@ -7,7 +7,6 @@
 #include "ecs/nge_owner.h"
 #include "event/nge_event.h"
 
-#include "game/components/attrs.h"
 #include "game/components/health.h"
 #include "game/components/kind.h"
 #include "game/events.h"
@@ -104,9 +103,9 @@ int main(void)
     b.hp_max = 255;
     health_add(a, &b);                                        /* again: replaced */
     CHECK(health_hp[a] == 255 && health_hp_max[a] == 255);
-    /* The attributes' bases: the kind values; no statuses */
-    CHECK(attr_base[ATTR_HP_MAX][a] == 255 && attr_base[ATTR_AC][a] == 11 && attr_base[ATTR_IMMUNE][a] == 0x01 &&
-          attr_base[ATTR_RESIST][a] == 0x02 && attr_base[ATTR_VULN][a] == 0x04 && status_mask[a] == 0);
+    /* The attributes' bases: the kind values */
+    CHECK(health_hp_max_base[a] == 255 && health_ac_base[a] == 11 && health_immune_base[a] == 0x01 &&
+          health_resist_base[a] == 0x02 && health_vuln_base[a] == 0x04);
     CHECK(HEALTH_KIND_HAS(&b) == 1);
     b.hp_max = 0;
     CHECK(HEALTH_KIND_HAS(&b) == 0);

@@ -21,7 +21,6 @@
 #include "ui/nge_panel.h"
 
 #include "data/tile_data.h"
-#include "game/components/attrs.h"
 #include "game/components/stats.h"
 #include "game/ui/screen_internal.h"
 

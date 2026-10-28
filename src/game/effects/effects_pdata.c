@@ -2,7 +2,7 @@
 /*
  * The effects' page data, in page 121 (slot 7 while the effects' code in
  * page 120 runs): the definitions, constant data with their texts, the
- * game's side's data for the core (effects_core.h: the attributes' kinds,
+ * game's side's data for the core (effects_core.h: the attributes' tables,
  * the timer kind), and the kind of each active effect (uninitialised: set
  * when one starts). Tables are here, not in page 120, whose addresses carry
  * the page in their high bits. See "Page data" in docs/memory_map.md.
@@ -16,6 +16,7 @@
 #include "ecs/systems/nge_timer.h"
 #include "game/components/attrs.h"
 #include "game/components/health.h"
+#include "game/components/stats.h"
 #include "game/timers.h"
 
 #define TURNS(n)  ((n) * NGE_TIMER_TICKS_PER_TURN)
@@ -65,19 +66,19 @@ const effect_def_t effect_defs[EF_COUNT] = {
 
 /* ---- The game's side, read by the core ---- */
 
-const uint8_t effects_game_attr_is_mask[ATTR_COUNT] = {
-    [ATTR_HP_MAX] = 0,
-    [ATTR_AC]     = 0,
-    [ATTR_SPEED]  = 0,
-    [ATTR_IMMUNE] = 1,
-    [ATTR_RESIST] = 1,
-    [ATTR_VULN]   = 1,
-    [ATTR_STR]    = 0,
-    [ATTR_DEX]    = 0,
-    [ATTR_CON]    = 0,
-    [ATTR_INT]    = 0,
-    [ATTR_WIS]    = 0,
-    [ATTR_CHA]    = 0,
+const effects_attr_t effects_game_attrs[ATTR_COUNT] = {
+    [ATTR_HP_MAX] = { health_hp_max_base,               COMPONENT_HEALTH, 0 },
+    [ATTR_AC]     = { health_ac_base,                   COMPONENT_HEALTH, 0 },
+    [ATTR_SPEED]  = { stats_speed_base,                 COMPONENT_STATS,  0 },
+    [ATTR_IMMUNE] = { health_immune_base,               COMPONENT_HEALTH, 1 },
+    [ATTR_RESIST] = { health_resist_base,               COMPONENT_HEALTH, 1 },
+    [ATTR_VULN]   = { health_vuln_base,                 COMPONENT_HEALTH, 1 },
+    [ATTR_STR]    = { &stats_ability_base[ABIL_STR][0], COMPONENT_STATS,  0 },
+    [ATTR_DEX]    = { &stats_ability_base[ABIL_DEX][0], COMPONENT_STATS,  0 },
+    [ATTR_CON]    = { &stats_ability_base[ABIL_CON][0], COMPONENT_STATS,  0 },
+    [ATTR_INT]    = { &stats_ability_base[ABIL_INT][0], COMPONENT_STATS,  0 },
+    [ATTR_WIS]    = { &stats_ability_base[ABIL_WIS][0], COMPONENT_STATS,  0 },
+    [ATTR_CHA]    = { &stats_ability_base[ABIL_CHA][0], COMPONENT_STATS,  0 },
 };
 
 const uint8_t effects_game_timer_kind = TIMER_EFFECT;

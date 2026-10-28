@@ -116,7 +116,7 @@ void effects_recompute(nge_entity_id_t id) NGE_BANKED;
  */
 uint8_t effects_check(nge_entity_id_t id) NGE_BANKED;
 
-/** @brief Set attribute attr's base value for good, then recompute (an alive entity with health). */
+/** @brief Set attribute attr's base for good, then recompute (an alive entity with health and the attribute's component). */
 void effects_set_base(nge_entity_id_t id, uint8_t attr, uint8_t value) NGE_BANKED;
 
 /** @brief The kind (EF_*) of an active effect. */

@@ -18,7 +18,6 @@
 
 #include "game/actions/act.h"
 #include "game/actors.h"
-#include "game/components/attrs.h"
 #include "game/components/feature.h"
 #include "game/components/health.h"
 #include "game/components/stats.h"
@@ -324,7 +323,7 @@ void player_show_stats(void) NGE_BANKED
     }
     screen_show_ac(health_ac[actor_player]);
     screen_show_abilities(scores);
-    screen_show_status(status_mask[actor_player]);
+    screen_show_status(stats_status[actor_player]);
 }
 
 /* ---- The direction prompt ---- */

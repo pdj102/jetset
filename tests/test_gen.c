@@ -74,7 +74,7 @@ static int creature_ok(nge_entity_id_t id, nge_owner_t owner, uint8_t kind)
     }
     /* Its abilities: the record's scores, as values and bases */
     for (a = 0; a < ABIL_COUNT; a++) {
-        if (stats_ability[a][id] != b->stats.ability[a] || attr_base[ATTR_ABILITY(a)][id] != b->stats.ability[a] ||
+        if (stats_ability[a][id] != b->stats.ability[a] || stats_ability_base[a][id] != b->stats.ability[a] ||
             b->stats.ability[a] < STATS_ABILITY_MIN || b->stats.ability[a] > STATS_ABILITY_MAX) {
             return 0;
         }

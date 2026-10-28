@@ -23,12 +23,12 @@
 
 #include "data/tile_data.h"
 
-#include "game/components/attrs.h"
 #include "game/components/feature.h"
 #include "game/components/health.h"
 #include "game/components/inventory.h"
 #include "game/components/item.h"
 #include "game/components/kind.h"
+#include "game/components/stats.h"
 #include "game/effects/effects.h"
 #include "game/events.h"
 #include "game/gen/gen.h"
@@ -671,7 +671,7 @@ int main(void)
     CHECK(!level_holds(boss) && !level_holds(regen));
     CHECK(NGE_ENTITY_IS_ALIVE(regen) && NGE_OWNER_OF(regen) == boss);   /* lasts for ever: stays */
     CHECK(NGE_ENTITY_STATE(poison) == NGE_ENTITY_FREE || NGE_OWNER_OF(poison) != boss);   /* ended */
-    CHECK(!(status_mask[boss] & STATUS_POISONED));
+    CHECK(!(stats_status[boss] & STATUS_POISONED));
     go(2, LEVEL_ARRIVE_DOWN_STAIRS);
     CHECK(NGE_OWNER_OF(boss) == LEVEL_AREA && NGE_ENTITY_HAS_COMPONENTS(boss, NGE_COMPONENT_LOCATION) &&
           is_floor(NGE_LOCATION_X(boss), NGE_LOCATION_Y(boss)) && level_holds(boss));

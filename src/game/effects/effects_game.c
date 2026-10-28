@@ -20,7 +20,7 @@
 #include "game/components/stats.h"
 #include "game/gen/gen.h"
 
-/* Its data (the attributes' kinds, the timer kind) is in page 121 with the definitions: effects_pdata.c */
+/* Its data (the attributes' tables, the timer kind) is in page 121 with the definitions: effects_pdata.c */
 
 /* Attributes are kept for entities with health (and, for speed, stats) */
 uint8_t effects_game_has_attrs(nge_entity_id_t id)
@@ -123,8 +123,8 @@ uint8_t effects_game_store(nge_entity_id_t id, const effects_derived_t *d, uint8
             nge_timer_set_period(id, stats_speed[id]);   /* its turns: every speed ticks */
         }
     }
-    changed |= set(&status_mask[id], d->status, write);
     if (NGE_ENTITY_HAS_ANY_COMPONENTS(id, COMPONENT_STATS)) {
+        changed |= set(&stats_status[id], d->status, write);   /* only creatures have statuses */
         for (a = 0; a < ABIL_COUNT; a++) {
             changed |= set(&stats_ability[a][id], clamp_ability(d->value[ATTR_ABILITY(a)]), write);
         }

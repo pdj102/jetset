@@ -36,15 +36,16 @@ int main(void)
     CHECK(STATS_MOD(1) == -5 && STATS_MOD(9) == -1 && STATS_MOD(10) == 0 && STATS_MOD(11) == 0 &&
           STATS_MOD(12) == 1 && STATS_MOD(30) == 10);
 
-    /* ---- add: speed and abilities, as values and as bases ---- */
+    /* ---- add: speed and abilities, as values and as bases; no statuses ---- */
     nge_entity_init();
     id = nge_entity_create();
+    stats_status[id] = 0xFF;                                  /* left by an earlier entity */
     stats_add(id, &b);
-    CHECK(NGE_ENTITY_HAS_COMPONENTS(id, COMPONENT_STATS));
-    CHECK(stats_speed[id] == 10 && attr_base[ATTR_SPEED][id] == 10);
+    CHECK(NGE_ENTITY_HAS_COMPONENTS(id, COMPONENT_STATS) && stats_status[id] == 0);
+    CHECK(stats_speed[id] == 10 && stats_speed_base[id] == 10);
     ok = 1;
     for (a = 0; a < ABIL_COUNT; a++) {
-        ok = ok && stats_ability[a][id] == b.ability[a] && attr_base[ATTR_ABILITY(a)][id] == b.ability[a];
+        ok = ok && stats_ability[a][id] == b.ability[a] && stats_ability_base[a][id] == b.ability[a];
     }
     CHECK(ok);
     CHECK(stats_ability[ABIL_WIS][id] == 1 && stats_ability[ABIL_CHA][id] == 30);   /* the limits are allowed */

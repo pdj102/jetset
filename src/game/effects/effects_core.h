@@ -13,9 +13,10 @@
  *   It knows nothing of the game's components: it may include only this
  *   file, nge headers and game/events.h (tests/Makefile checks it);
  * - the game's side (effects_game.c, page 120): the content. What the
- *   attributes mean and where their derived values are stored, the
- *   game's ops (OP_GAME and up, effects_game.h), the sources that aren't
- *   active effects (equipped items), which entities effects act on;
+ *   attributes mean and where their bases and values are stored
+ *   (effects_game_attrs[]), the game's ops (OP_GAME and up,
+ *   effects_game.h), the sources that aren't active effects (equipped
+ *   items), which entities effects act on;
  * - effects_pdata.c (page 121): the definitions and the active effects'
  *   kinds, in slot 7 only while the code in page 120 runs.
  *
@@ -63,7 +64,7 @@ typedef struct effect_def {
     uint8_t      flags;        /* EFFECT_STACK */
     uint8_t      period;       /* timed: ticks between firings, 1-255 */
     uint8_t      cycles;       /* timed: firings, 0 for ever */
-    uint8_t      status;       /* STATUS_* granted while it lasts */
+    uint8_t      status;       /* statuses granted while it lasts: bits the game defines */
     effect_mod_t mod[EFFECT_MODS];
     effect_op_t  on_start;     /* once, when applied */
     effect_op_t  on_tick;      /* timed: at each firing, a period after the last */
@@ -87,8 +88,15 @@ void effects_add(effects_derived_t *d, uint8_t ef);
 
 /* ---- The seam: the game's side, called by the core (page 120, plain calls; data in page 121) ---- */
 
-/* Which attributes are masks of bits (ORed), not numbers (added) */
-extern const uint8_t effects_game_attr_is_mask[ATTR_COUNT];
+/* An attribute (ATTR_*): its base table, the component that has it, and how modifiers combine */
+typedef struct effects_attr {
+    uint8_t             *base;        /* the component's base table, [NGE_ENTITY_MAX] */
+    nge_component_mask_t component;   /* an entity has the attribute only with it */
+    uint8_t              is_mask;     /* modifiers ORed (1) or added (0) */
+} effects_attr_t;
+
+/* The attributes, by ATTR_* */
+extern const effects_attr_t effects_game_attrs[ATTR_COUNT];
 
 /* The timer kind of active effects: its handler calls effects_on_timer() */
 extern const uint8_t effects_game_timer_kind;

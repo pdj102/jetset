@@ -12,3 +12,8 @@ uint8_t health_immune[NGE_ENTITY_MAX];
 uint8_t health_resist[NGE_ENTITY_MAX];
 uint8_t health_vuln[NGE_ENTITY_MAX];
 uint8_t health_ac[NGE_ENTITY_MAX];
+uint8_t health_hp_max_base[NGE_ENTITY_MAX];
+uint8_t health_immune_base[NGE_ENTITY_MAX];
+uint8_t health_resist_base[NGE_ENTITY_MAX];
+uint8_t health_vuln_base[NGE_ENTITY_MAX];
+uint8_t health_ac_base[NGE_ENTITY_MAX];

@@ -3,8 +3,8 @@
 
 /**
  * @file attrs.h
- * @brief Attributes: the numbers and masks equipment and effects change;
- *        and statuses, the flags effects grant.
+ * @brief Attributes: the numbers and masks that equipment and effects
+ *        change, numbered so effect definitions can name them.
  *
  * An attribute is a number (or a mask) that equipment and effects can
  * change: max hit points, AC, speed, the abilities, the damage masks.
@@ -13,7 +13,7 @@
  *   kind value  constant, in its kind record (health_kind_t.hp_max):
  *               sets the base when the entity is created
  *   base        changed only for good, by effects_set_base() (a potion
- *               of vitality): attr_base[ATTR_HP_MAX]
+ *               of vitality): health_hp_max_base
  *   value       base + the modifiers of equipped items' worn effects and
  *               of active effects, clamped: health_hp_max. The one rules
  *               read; only effects_recompute() (game/effects/effects.h)
@@ -25,30 +25,24 @@
  * within the value. A lower maximum takes it down; a higher one doesn't
  * heal.
  *
- * A status is a flag an effect grants while it is active (poisoned): the
- * entity's status mask is the OR of the statuses of its effects, so it
- * stays set while any effect grants it, and a cure ends those effects
- * instead of clearing a bit. Rules ask STATUS_HAS().
- *
- * The values are the components' tables (health.h, stats.h). The bases
- * and the status mask are here, in slot 0 (attrs_cdata.c), meaningful for
- * an entity with the component each attribute belongs to; the status mask
- * for an entity with health. There are no functions here: the components
- * set the bases, the effects module the rest.
+ * The tables live in the component each attribute belongs to, meaningful
+ * only for an entity with that component; this file only numbers them
+ * (ATTR_*). The components set the bases and values from the kind values
+ * (health_add(), stats_add()); the effects module does the rest, finding
+ * each attribute's base table through effects_game_attrs[]
+ * (game/effects/effects_core.h).
  */
 
 #include <stdint.h>
 
-#include "ecs/nge_entity.h"
-
-/* Attributes: numbers add up; masks (immune, resist, vuln) are ORed (game/effects/effects_pdata.c) */
-#define ATTR_HP_MAX  0   /**< health_hp_max: 1-255. */
-#define ATTR_AC      1   /**< health_ac: 0-255. */
-#define ATTR_SPEED   2   /**< stats_speed, and the timer's period: 1-255. */
-#define ATTR_IMMUNE  3   /**< health_immune: DMG_BIT() mask. */
-#define ATTR_RESIST  4   /**< health_resist. */
-#define ATTR_VULN    5   /**< health_vuln. */
-#define ATTR_STR     6   /**< stats_ability[ABIL_STR]: 1-30 (game/components/stats.h). */
+/* Attributes: numbers add up; masks (immune, resist, vuln) are ORed */
+#define ATTR_HP_MAX  0   /**< health: health_hp_max, health_hp_max_base; 1-255. */
+#define ATTR_AC      1   /**< health: health_ac, health_ac_base; 0-255. */
+#define ATTR_SPEED   2   /**< stats: stats_speed, stats_speed_base, and the timer's period; 1-255. */
+#define ATTR_IMMUNE  3   /**< health: health_immune, health_immune_base; DMG_BIT() mask. */
+#define ATTR_RESIST  4   /**< health: health_resist, health_resist_base. */
+#define ATTR_VULN    5   /**< health: health_vuln, health_vuln_base. */
+#define ATTR_STR     6   /**< stats: stats_ability[ABIL_STR], stats_ability_base[ABIL_STR]; 1-30. */
 #define ATTR_DEX     7
 #define ATTR_CON     8
 #define ATTR_INT     9
@@ -58,15 +52,5 @@
 
 /** The attribute of ability a (ABIL_*, game/components/stats.h): in the same order. */
 #define ATTR_ABILITY(a)  ((uint8_t)(ATTR_STR + (a)))
-
-/* Statuses: bits of status_mask */
-#define STATUS_POISONED  0x01
-
-/* Tables in slot 0 (attrs_cdata.c) */
-extern uint8_t attr_base[ATTR_COUNT][NGE_ENTITY_MAX];   /**< Base values: read-only outside the components and effects. */
-extern uint8_t status_mask[NGE_ENTITY_MAX];             /**< STATUS_* granted by its effects: read-only for game code. */
-
-/** Entity id (with health) has status s. */
-#define STATUS_HAS(id, s)  ((status_mask[id] & (s)) != 0)
 
 #endif

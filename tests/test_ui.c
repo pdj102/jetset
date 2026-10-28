@@ -19,12 +19,12 @@
 
 #include "data/tile_data.h"
 
-#include "game/components/attrs.h"
 #include "game/components/health.h"
 #include "game/components/feature.h"
 #include "game/components/inventory.h"
 #include "game/components/item.h"
 #include "game/components/mana.h"
+#include "game/components/stats.h"
 #include "game/game.h"
 #include "game/effects/effects.h"
 #include "game/gen/gen.h"
