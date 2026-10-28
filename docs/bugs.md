@@ -30,3 +30,20 @@ the commit, and it stays listed so the number keeps its meaning.
   both go by the location), or one left from the level above? And can
   the generator place a creature on a doorway tile or a wall? It may not
   come from the fall in particular: try the stairs as well.
+
+## B2 An empty name keeps the previous game's name
+
+- **Seen:** 2026-10-28, CSpect, dev branch at 8474fa9.
+- **Steps:** play a game, typing a name at the title. When it ends, go back
+  to the title and press ENTER at the name prompt without typing a name.
+- **Seen:** the new game's player has the name from the previous game.
+- **Expected:** the default name, "Rogue" (docs/player_character.md: "Rogue"
+  if none).
+- **Status:** open, cause found, not fixed.
+- **Notes:** the code does this on purpose, against the spec. `game.c` keeps
+  the name in a static buffer, `name[]` ("kept for the next game"), set to
+  "Rogue" only once at start-up. `ask_name()` in `ui/screen_title_bank.c`
+  copies the typed name into it only if it isn't empty ("An empty name
+  keeps the current one"). To fix: an empty name should set "Rogue",
+  either in `ask_name()` or by resetting the buffer before each title.
+  Update both comments.
