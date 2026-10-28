@@ -6,8 +6,10 @@
  * @brief The attack component: how an entity, or a weapon, attacks.
  *
  * One layout with two uses (ATTACK_*): a melee attack (COMPONENT_MELEE,
- * range 1) and later a ranged attack (COMPONENT_RANGED, the weapon's range,
- * using the ammo in the ammo slot). An entity can have both. A creature's
+ * range 1) and a ranged attack (COMPONENT_RANGED, range 2 or more; later
+ * the weapon's range, using the ammo in the ammo slot). An entity can have
+ * both. No kind has a ranged attack yet, and no action fires one
+ * (docs/ranged_ai_components.md). A creature's
  * own melee attack is its natural one (fists, a bite); a weapon (a sword)
  * has one too, and an attacker uses its wielded weapon's (SLOT_WEAPON)
  * before its own (game/actions/act_melee.c).
@@ -28,8 +30,9 @@
 #include "game/components/components.h"
 
 /* Uses of the component: the tables' rows */
-#define ATTACK_MELEE  0
-#define ATTACK_USE_COUNT  1   /**< Uses with tables (ATTACK_RANGED comes with ranged weapons). */
+#define ATTACK_MELEE      0
+#define ATTACK_RANGED     1
+#define ATTACK_USE_COUNT  2
 
 /** The component bit of a use. */
 #define ATTACK_COMPONENT(use)  ((use) == ATTACK_MELEE ? COMPONENT_MELEE : COMPONENT_RANGED)
@@ -38,14 +41,14 @@
 #define ATTACK_ROLL_HIT   20
 #define ATTACK_ROLL_MISS  1
 
-/** Kind attack: the attack part of a creature's or an item's kind record. */
+/** Kind attack: the attack part of a creature's or an item's kind record (melee only, so far). */
 typedef struct attack_kind {
     int8_t  to_hit;   /**< Added to the d20 roll. */
     uint8_t dice;     /**< Damage dice, 0 for no attack. */
     uint8_t sides;    /**< Sides on each die, 1 or more. */
     int8_t  bonus;    /**< Added to the damage roll. */
     uint8_t type;     /**< Damage type (DMG_*). */
-    uint8_t range;    /**< Tiles: 1 for melee. */
+    uint8_t range;    /**< Tiles: 1 for melee, 2 or more for ranged. */
 } attack_kind_t;
 
 /** A kind record's attack part gives the component: it has damage dice. */
@@ -63,8 +66,9 @@ extern uint8_t attack_range[ATTACK_USE_COUNT][NGE_ENTITY_MAX];
 #define ATTACK_HAS(id, use)  NGE_ENTITY_HAS_COMPONENT(id, ATTACK_COMPONENT(use))
 
 /**
- * @brief Give an entity in use an attack of this use (ATTACK_MELEE), or
- *        replace it. A melee attack's range must be 1.
+ * @brief Give an entity in use an attack of this use (ATTACK_*), or
+ *        replace it. A melee attack's range must be 1, a ranged one's 2 or
+ *        more.
  * @param k In common memory (a copy on the stack): the call maps page 110.
  */
 void attack_add(nge_entity_id_t id, uint8_t use, const attack_kind_t *k) NGE_BANKED;

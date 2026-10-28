@@ -29,7 +29,7 @@ void attack_add(nge_entity_id_t id, uint8_t use, const attack_kind_t *k) NGE_BAN
 {
     check_entity(id, use);
     nge_util_assert(k->dice != 0 && k->sides != 0 && k->type < DMG_COUNT);
-    nge_util_assert(use != ATTACK_MELEE || k->range == 1);
+    nge_util_assert(use == ATTACK_MELEE ? k->range == 1 : k->range >= 2);
 
     attack_to_hit[use][id] = k->to_hit;
     attack_dice[use][id] = k->dice;

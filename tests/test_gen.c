@@ -56,8 +56,8 @@ static int creature_ok(nge_entity_id_t id, nge_owner_t owner, uint8_t kind)
     if (!made(id, owner, CLASS_CREATURE, kind) || !render_is(id, &b->render)) {
         return 0;
     }
-    if (!NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_BLOCK) || !NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_STATS) || !NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_TIMER) ||
-        nge_block_of[id] != b->block.block || nge_block_pass[id] != b->block.pass) {
+    if (!NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_BLOCK) || !NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_STATS) ||
+        !NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_TIMER) || nge_block_of[id] != b->block.block || nge_block_pass[id] != b->block.pass) {
         return 0;
     }
     if (!NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_HEALTH) ||
@@ -65,6 +65,10 @@ static int creature_ok(nge_entity_id_t id, nge_owner_t owner, uint8_t kind)
         health_immune[id] != b->health.immune || health_resist[id] != b->health.resist ||
         health_vuln[id] != b->health.vuln || health_ac[id] != b->health.ac ||
         stats_speed[id] != b->stats.speed || !melee_is(id, &b->melee)) {
+        return 0;
+    }
+    /* AI unless it is the player */
+    if (AI_IS(id) != !(b->flags & CREATURE_PLAYER)) {
         return 0;
     }
     /* Mana if its kind has some, full */
@@ -99,8 +103,9 @@ static int item_ok(nge_entity_id_t id, nge_owner_t owner, uint8_t kind)
 {
     return made(id, owner, CLASS_ITEM, kind) && render_is(id, &gen_items[kind].render) &&
            ITEM_IS(id) && item_slot[id] == SLOT_NONE && melee_is(id, &gen_items[kind].melee) &&
-           !NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_BLOCK) && !NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_STATS) && !NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_TIMER) &&
-           !NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_INVENTORY) && !NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_HEALTH);
+           !NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_BLOCK) && !NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_STATS) &&
+           !NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_TIMER) && !NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_INVENTORY) &&
+           !NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_HEALTH) && !AI_IS(id);
 }
 
 static void reset(void)
@@ -132,6 +137,7 @@ int main(void)
             NGE_COMPONENT_LOCATION, NGE_COMPONENT_SPRITE, NGE_COMPONENT_BLOCK, NGE_COMPONENT_TIMER,
             COMPONENT_KIND, COMPONENT_STATS, COMPONENT_ITEM, COMPONENT_INVENTORY, COMPONENT_HEALTH,
             COMPONENT_MELEE, COMPONENT_RANGED, COMPONENT_EFFECT, COMPONENT_FEATURE, COMPONENT_MANA, COMPONENT_PC,
+            COMPONENT_AI,
         };
         uint8_t seen[NGE_COMPONENT_TABLES] = {0};
         unsigned int m;
@@ -191,7 +197,7 @@ int main(void)
         id = gen_feature(kind, AREA);
         gen_feature_info(kind, &info);
         gen_name(id, buf, sizeof(buf));
-        ok = ok && strcmp(buf, gen_features[kind].name) == 0 && feature_state[id] == gen_features[kind].state &&
+        ok = ok && !AI_IS(id) && strcmp(buf, gen_features[kind].name) == 0 && feature_state[id] == gen_features[kind].state &&
              memcmp(&info, &gen_features[kind].info, sizeof(info)) == 0;
         for (i = 0; i < GEN_HOOK_COUNT; i++) {
             ok = ok && gen_feature_hook(kind, (uint8_t)i) == gen_features[kind].hooks[i] &&
@@ -229,12 +235,13 @@ int main(void)
     id = gen_creature(CR_RAT, AREA);
     CHECK(gen_hook(id, GEN_HOOK_HIT) == EF_POISON && gen_hook(id, GEN_HOOK_INNATE) == EF_NONE);
     CHECK(!MANA_IS(id));                                       /* monsters have no mana yet */
-    CHECK(!PC_IS(id));
+    CHECK(!PC_IS(id) && AI_IS(id));                            /* a monster */
     CHECK(nge_owner_count(id) == 0);                           /* no innate effect */
     id = gen_creature(CR_PLAYER, AREA);
     CHECK(gen_hook(id, GEN_HOOK_INNATE) == EF_REGEN && nge_owner_count(id) == 1);   /* its innate effect */
     CHECK(MANA_IS(id) && mana_mp[id] == 5 && mana_mp_max[id] == 5);                 /* full */
     CHECK(PC_IS(id) && pc_level == 1 && pc_xp == 0 && pc_gold == 0);                 /* a new character */
+    CHECK(!AI_IS(id));
     CHECK(strcmp(pc_name, "Rogue") == 0 && pc_class == PC_CLASS_FIGHTER && pc_depth_max == 1);
     CHECK(gen_creature_xp(CR_RAT) == 5 && gen_creature_xp(CR_GOBLIN) == 5 && gen_creature_xp(CR_PLAYER) == 0);
     chest = nge_entity_create();                               /* no kind: no hooks */

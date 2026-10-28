@@ -200,7 +200,7 @@ Banked so far:
 | 104/105 | game `ui` | the player character screen (`game/ui/screen_pc_bank.c`, `docs/pc_screen.md`), with its literals, about 4.1K with asserts: it didn't fit in page 116 beside the other screens | none |
 | 106/107 | game `gen` creatures | the creature generator (`game/gen/gen_creature_bank.c`, about 0.6K) | the creature kinds: a `const` table and its names (`gen_creature_pdata.c`, with `constseg PAGE_107`) |
 | 108/109 | game `gen` items | the item generator (`gen_item_bank.c`, about 0.4K) | the item kinds (`gen_item_pdata.c`) |
-| 110/111 | game `gen` shared | helpers every generator calls, and the game components' functions (`gen_shared_bank.c`, `components/kind.c`, `stats.c`, `item.c`, `inventory.c`, `health.c`, `attack.c`, `mana.c`, `pc.c` and the level table): they take copies of kind data on the stack, as the class's table is mapped out while they run | none |
+| 110/111 | game `gen` shared | helpers every generator calls, and the game components' functions (`gen_shared_bank.c`, `components/kind.c`, `stats.c`, `item.c`, `inventory.c`, `health.c`, `attack.c`, `mana.c`, `pc.c`, `ai.c` and the level table): they take copies of kind data on the stack, as the class's table is mapped out while they run | none |
 | 112/113 | game `actions` | what entities do, one file per action (`game/actions/act_move.c`, `act_pickup.c`, `act_drop.c`, `act_equip.c`, `act_melee.c`, `act_use.c`, `act_open.c`, `act_stairs.c`) and their shared endings (`act_shared.c`), about 7.0K with asserts; the dispatcher `act_do()` and the reason table are common (`act.c`) | none yet |
 | 114/115 | game `player` | the player's commands, the firing screen and the reasons for refused commands (`game/player/player_bank.c`); the handlers called for every event and timer firing are common (`player.c`) | none |
 | 118/119 | game `messages` | the message window's reactions to events and to refused commands, with their texts (`game/messages/messages_bank.c`) | none |
@@ -499,7 +499,7 @@ data.
 | Address | Contents |
 |---|---|
 | `$0000`-`$00FF` | Guard area against null pointers |
-| `$0100`-`$1FFF` | ECS tables (`SECTION PAGE_50`, `CRT_ORG_PAGE_50 = 0x0100` in [banks.inc](../src/banks.inc)): entity flags, components and alive list, owners, locations, block flags, timers and the clock, and the game's components (`src/game/components/*_cdata.c`: kind, stats, item, inventory, health, attack, mana, and the player character's single variables, pc) (about 3.4K at `NGE_ENTITY_MAX` 100) |
+| `$0100`-`$1FFF` | ECS tables (`SECTION PAGE_50`, `CRT_ORG_PAGE_50 = 0x0100` in [banks.inc](../src/banks.inc)): entity flags, components and alive list, owners, locations, block flags, timers and the clock, and the game's components (`src/game/components/*_cdata.c`: kind, stats, item, inventory, health, attack (melee and ranged), mana, and the player character's single variables, pc) (about 6.3K at `NGE_ENTITY_MAX` 100) |
 
 ### Where component data goes
 

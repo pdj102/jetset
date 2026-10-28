@@ -63,6 +63,44 @@ int main(void)
     b.dice = 0;
     CHECK(!ATTACK_KIND_HAS(&b));
 
+    /* ---- ranged: the second use, beside melee, each removed alone ---- */
+    id = with_attack(1, 1, 6, 0);                             /* melee */
+    b.to_hit = 3;
+    b.dice = 2;
+    b.sides = 4;
+    b.bonus = -1;
+    b.type = DMG_PIERCE;
+    b.range = 4;
+    attack_add(id, ATTACK_RANGED, &b);
+    CHECK(ATTACK_COMPONENT(ATTACK_RANGED) == COMPONENT_RANGED);
+    CHECK(ATTACK_HAS(id, ATTACK_RANGED) && ATTACK_HAS(id, ATTACK_MELEE));
+    CHECK(attack_to_hit[ATTACK_RANGED][id] == 3 && attack_dice[ATTACK_RANGED][id] == 2 &&
+          attack_sides[ATTACK_RANGED][id] == 4 && attack_bonus[ATTACK_RANGED][id] == -1 &&
+          attack_type[ATTACK_RANGED][id] == DMG_PIERCE && attack_range[ATTACK_RANGED][id] == 4);
+    CHECK(attack_to_hit[ATTACK_MELEE][id] == 1 && attack_range[ATTACK_MELEE][id] == 1);   /* melee untouched */
+    target = nge_entity_create();
+    health_add(target, &h);
+    health_ac[target] = 10;
+    CHECK(attack_hits(id, ATTACK_RANGED, target, 7) && !attack_hits(id, ATTACK_RANGED, target, 6));   /* + 3 */
+    CHECK(!attack_hits(id, ATTACK_MELEE, target, 8));                                                 /* + 1 */
+    srand(5);
+    lo = 255;
+    hi = 0;
+    for (i = 0; i < 500; i++) {
+        d = attack_damage(id, ATTACK_RANGED);                 /* 2d4 - 1: 1 to 7 */
+        lo = d < lo ? d : lo;
+        hi = d > hi ? d : hi;
+    }
+    CHECK(lo == 1 && hi == 7);
+    attack_remove(id, ATTACK_MELEE);
+    CHECK(!ATTACK_HAS(id, ATTACK_MELEE) && ATTACK_HAS(id, ATTACK_RANGED));
+    attack_remove(id, ATTACK_RANGED);
+    CHECK(!ATTACK_HAS(id, ATTACK_RANGED));
+    nge_entity_destroy(id);
+    nge_entity_release(nge_entity_next_dying());
+    nge_entity_destroy(target);
+    nge_entity_release(nge_entity_next_dying());
+
     /* ---- the hit rule: 20 hits, 1 misses, else roll + to hit >= AC ---- */
     target = nge_entity_create();
     health_add(target, &h);
@@ -132,6 +170,8 @@ int main(void)
     TEST_EXPECT_HALT(attack_add(id, ATTACK_MELEE, &b));
     CHECK(test_halt_count == 1);
     b.dice = 1;
+    TEST_EXPECT_HALT(attack_add(id, ATTACK_RANGED, &b));      /* ranged reaches 2 or more */
+    CHECK(test_halt_count == 1);
     TEST_EXPECT_HALT(attack_add(id, ATTACK_USE_COUNT, &b));
     CHECK(test_halt_count == 1);
     TEST_EXPECT_HALT(attack_hits(id, ATTACK_MELEE, target, 0));

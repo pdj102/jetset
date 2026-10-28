@@ -39,6 +39,8 @@ static nge_entity_id_t create(uint8_t kind, nge_owner_t owner)
     if (b.flags & CREATURE_PLAYER) {
         nge_entity_set_flags(id, NGE_ENTITY_PERSISTENT);   /* at 0 hp the game ends instead (EV_DIED) */
         pc_add(id);                                        /* a new character: level 1 */
+    } else {
+        ai_add(id);                                        /* a monster: the game decides its turns */
     }
     if (b.inventory.capacity != 0) {
         inv_add(id, b.inventory.capacity, b.inventory.slots);

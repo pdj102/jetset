@@ -23,6 +23,7 @@
 #include "game/gen/gen.h"
 
 #include "ecs/components/nge_block.h"
+#include "game/components/ai.h"
 #include "game/components/attack.h"
 #include "game/components/feature.h"
 #include "game/components/health.h"

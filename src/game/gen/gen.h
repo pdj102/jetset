@@ -45,7 +45,8 @@
  *        monster's turn) and, if it can carry things, inventory; then its innate effect, if any
  *        (GEN_HOOK_INNATE). The player is persistent: at 0 hp it isn't
  *        destroyed (game over instead); and a new character, with the PC
- *        component (game/components/pc.h).
+ *        component (game/components/pc.h). Every other creature has the AI
+ *        component (game/components/ai.h).
  * @return The entity, or NGE_ENTITY_INVALID if no entity is free.
  */
 nge_entity_id_t gen_creature(uint8_t kind, nge_owner_t owner) NGE_BANKED;
