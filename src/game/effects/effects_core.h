@@ -57,6 +57,12 @@ typedef struct effect_mod {
     int8_t  amount;
 } effect_mod_t;
 
+/* A saving throw: tried at each firing of a timed effect, after its tick op; passed ends the effect */
+typedef struct effect_save {
+    uint8_t arg;   /* what the game's side rolls with (an ability) */
+    uint8_t dc;    /* what the roll must reach; 0 for no saving throw */
+} effect_save_t;
+
 typedef struct effect_def {
     const char  *start_text;   /* in page 121, or NULL */
     const char  *end_text;
@@ -68,7 +74,8 @@ typedef struct effect_def {
     effect_mod_t mod[EFFECT_MODS];
     effect_op_t  on_start;     /* once, when applied */
     effect_op_t  on_tick;      /* timed: at each firing, a period after the last */
-    effect_op_t  on_end;       /* timed: once, when it ends (expired or cured) */
+    effect_op_t  on_end;       /* timed: once, when it ends (expired, cured or saved) */
+    effect_save_t save;        /* timed: a saving throw that ends it; dc 0 for none */
 } effect_def_t;
 
 /* Derived values being worked out: numbers can pass 255 or go below 0 until the game clamps them */
@@ -106,6 +113,9 @@ uint8_t effects_game_has_attrs(nge_entity_id_t id);
 
 /* Effects can act on id: it has attributes and isn't dead */
 uint8_t effects_game_affectable(nge_entity_id_t id);
+
+/* 1 if target passes saving throw arg (effect_save_t) against dc (1 or more) */
+uint8_t effects_game_save(nge_entity_id_t target, uint8_t arg, uint8_t dc);
 
 /* Do a game op (OP_GAME and up) to target, caused by source */
 void effects_game_op(const effect_op_t *op, nge_entity_id_t target, nge_entity_id_t source);

@@ -22,7 +22,7 @@
  * | EV_DIED           | the entity killed   | killer   | -        |
  * | EV_HIT            | the entity hit      | attacker | p1: d20 roll, p2: weapon or NGE_EVENT_NONE |
  * | EV_MISSED         | the entity missed   | attacker | p1: d20 roll, p2: weapon or NGE_EVENT_NONE |
- * | EV_EFFECT_ENDED   | the entity affected | the effect (dying) | p1: EF_* |
+ * | EV_EFFECT_ENDED   | the entity affected | the effect (dying) | p1: EF_*, p2: EFFECT_END_* |
  * | EV_ATTRS_CHANGED  | the entity          | -        | -        |
  * | EV_OPENED         | the feature         | opener   | -        |
  * | EV_CLOSED         | the feature         | closer   | -        |
@@ -47,7 +47,7 @@
 #define EV_DIED           (NGE_EVENT_USER + 10)    /**< Hit points reached 0: destroyed unless persistent. */
 #define EV_HIT            (NGE_EVENT_USER + 11)    /**< Hit by the source's attack (act_melee()); EV_DAMAGED follows. */
 #define EV_MISSED         (NGE_EVENT_USER + 12)    /**< Missed by the source's attack. */
-#define EV_EFFECT_ENDED   (NGE_EVENT_USER + 13)    /**< Effect p1 ended on the target: expired or cured. */
+#define EV_EFFECT_ENDED   (NGE_EVENT_USER + 13)    /**< Effect p1 ended on the target: expired, cured or saved (p2). */
 #define EV_ATTRS_CHANGED  (NGE_EVENT_USER + 14)    /**< Derived attributes or statuses changed (effects_recompute()). */
 #define EV_OPENED         (NGE_EVENT_USER + 15)    /**< Opened by the source (act_open()). */
 #define EV_CLOSED         (NGE_EVENT_USER + 16)    /**< Closed by the source (act_close()). */

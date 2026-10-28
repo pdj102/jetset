@@ -179,6 +179,7 @@ uint8_t effect_apply(uint8_t ef, nge_entity_id_t target, nge_entity_id_t source)
 
     memcpy(&def, &effect_defs[ef], sizeof(def));
     nge_util_assert(def.duration != EFFECT_WORN);   /* worn effects count through equipment */
+    nge_util_assert(def.save.dc == 0 || def.duration == EFFECT_TIMED);   /* a saving throw is tried at firings */
     if (!effects_game_affectable(target)) {
         return 0;
     }
@@ -216,7 +217,8 @@ uint8_t effect_apply(uint8_t ef, nge_entity_id_t target, nge_entity_id_t source)
     return 1;
 }
 
-void effect_end(nge_entity_id_t effect) NGE_BANKED
+/* End an active effect for reason (EFFECT_END_*): see effect_end() */
+static void end(nge_entity_id_t effect, uint8_t reason)
 {
     effect_op_t on_end;
     nge_entity_id_t target;
@@ -232,8 +234,13 @@ void effect_end(nge_entity_id_t effect) NGE_BANKED
     if (effects_game_affectable(target)) {
         run_op(&on_end, target, effect);
         effects_recompute(target);
-        nge_event_post(target, EV_EFFECT_ENDED, effect, ef, 0);
+        nge_event_post(target, EV_EFFECT_ENDED, effect, ef, reason);
     }
+}
+
+void effect_end(nge_entity_id_t effect) NGE_BANKED
+{
+    end(effect, EFFECT_END_EXPIRED);
 }
 
 uint8_t effect_cure(nge_entity_id_t target, uint8_t statuses) NGE_BANKED
@@ -247,7 +254,7 @@ uint8_t effect_cure(nge_entity_id_t target, uint8_t statuses) NGE_BANKED
     /* Ending the current entity is allowed while walking the alive list */
     NGE_OWNER_FOR_EACH_OWNED(i, id, target) {
         if (NGE_ENTITY_HAS_ANY_COMPONENTS(id, COMPONENT_EFFECT) && (effect_defs[effect_kind[id]].status & statuses)) {
-            effect_end(id);
+            end(id, EFFECT_END_CURED);
             n++;
         }
     }
@@ -258,16 +265,28 @@ void effects_on_timer(nge_entity_id_t effect, uint8_t cycles) NGE_BANKED
 {
     effect_op_t on_tick;
     nge_entity_id_t target;
+    uint8_t ef;
+    uint8_t save_arg;
+    uint8_t save_dc;
 
     check_effect(effect);
     target = (nge_entity_id_t)NGE_OWNER_OF(effect);
-    on_tick = effect_defs[effect_kind[effect]].on_tick;
+    ef = effect_kind[effect];
+    on_tick = effect_defs[ef].on_tick;
+    /* The fields in locals (T-ZSDCC-1) */
+    save_arg = effect_defs[ef].save.arg;
+    save_dc = effect_defs[ef].save.dc;
 
     if (effects_game_affectable(target)) {
         run_op(&on_tick, target, effect);
     }
+    /* Its op may have ended it, or killed its target */
+    if (save_dc != 0 && NGE_ENTITY_IS_ALIVE(effect) && effects_game_affectable(target) &&
+        effects_game_save(target, save_arg, save_dc)) {
+        end(effect, EFFECT_END_SAVED);
+    }
     if (cycles == 1 && NGE_ENTITY_IS_ALIVE(effect)) {
-        effect_end(effect);   /* its last firing (unless its op ended it) */
+        end(effect, EFFECT_END_EXPIRED);   /* its last firing (unless its op or its saving throw ended it) */
     }
 }
 

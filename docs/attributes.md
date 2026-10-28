@@ -1,8 +1,9 @@
 # Attributes, statuses and conditions
 
-Status: agreed (2026-10-28). Q1-Q6 are answered (section 10), and the
-decisions stand as proposed except Q5 (bits reserved now: R21). Nothing
-is built yet.
+Status: implemented (2026-10-28); the CSpect checks in section 8
+passed. Q1-Q6 are answered (section 10), and the decisions stand as
+proposed except Q5 (bits reserved now: R21). Section 11 lists where the
+build differs from the design.
 
 This redesigns how attributes and statuses are stored and described, and
 adds conditions. Parts A and B change no rules: the PC tests still pass,
@@ -554,3 +555,44 @@ The questions as asked:
   their rules, each in its own step (proposed), or reserve the bits now?
 - **Q6 (D10)** Keep statuses derived (the OR of their effects, proposed),
   or have the core set and clear bits, with D10's problems?
+
+## 11. As built: differences from the design
+
+Built in three parts, as agreed (Q3); the build and the PC tests pass
+after each.
+
+- **"Kind" in attack.h now means one thing (D1).** The attack component
+  already used "kind" for an attack's use, melee or later ranged
+  (`ATTACK_KIND_COUNT`, a `kind` parameter); its comments called them
+  uses. With `attack_kind_t` meaning the kind record's attack part, these
+  became `ATTACK_USE_COUNT` and a `use` parameter.
+- **Other kind data wording.** The tables of kind records are now "the
+  creature (item, feature) kinds", and "base data" is "kind data", in the
+  code, banks.inc and the docs. The local `gen_creature_kind_t b` in the
+  creature generator keeps its name.
+- **zsdcc and the ability rows (D4).** zsdcc doesn't accept
+  `stats_ability_base[ABIL_STR]` (a row of a 2D array) as a constant
+  initialiser; `&stats_ability_base[ABIL_STR][0]` works. The table's
+  addresses were checked in the page 121 binary, and the asm of
+  `base_of()`, `derive()`, `OP_RAISE_BASE`, `effects_on_timer()` and
+  `effects_game_save()` was read (T-ZSDCC-3).
+- **`base_of()`** (effects_core.c) is the one place the core finds a base:
+  it asserts the attribute and its component (R9), for
+  `effects_set_base()` and `OP_RAISE_BASE`. `derive()` reads the table
+  itself, with 0 for an attribute the entity hasn't.
+- **The status mask is cleared by `stats_add()` (D9), not
+  `health_add()`.** D6's note about a missing recompute no longer applies.
+- **attrs.h no longer needs nge_entity.h,** and the files that included it
+  only for the statuses include stats.h instead (player_bank.c,
+  screen_main_bank.c, test_ui.c, test_level.c; test_health.c needed
+  neither). tests/Makefile no longer lists attrs_cdata.c.
+- **Tests.** test_effects finds seeds for the d20 rolls it needs, as
+  test_act does (`seed_for_rolls()`). The poison tests in test_act,
+  test_ui and test_level didn't need seeding: none depend on all four
+  firings. *Not built:* section 8's "two effects granting one status"
+  test. No two effects grant the same status yet, and the definitions
+  are constant, so it waits for a second source of poisoning.
+- **Memory** (debug build, against the last commit): slot 0 unchanged
+  (ECS data ends at `$16E5`); common memory unchanged (412 bytes free
+  below the stack); page 110 +6 bytes; page 120 +517 bytes, more than the
+  estimate, mostly the new asserts' strings; page 121 +64 bytes.

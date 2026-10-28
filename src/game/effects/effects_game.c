@@ -12,6 +12,8 @@
 
 #include "game/effects/effects_game.h"
 
+#include <stdlib.h>
+
 #include "core/nge_util.h"
 #include "ecs/nge_owner.h"
 #include "ecs/systems/nge_timer.h"
@@ -26,6 +28,19 @@
 uint8_t effects_game_has_attrs(nge_entity_id_t id)
 {
     return NGE_ENTITY_HAS_ANY_COMPONENTS(id, COMPONENT_HEALTH);
+}
+
+/* 1d20 + the ability's modifier (0 without stats) >= dc */
+uint8_t effects_game_save(nge_entity_id_t target, uint8_t arg, uint8_t dc)
+{
+    int16_t roll;
+
+    nge_util_assert(arg < ABIL_COUNT);
+    roll = (int16_t)(1 + (unsigned int)rand() % 20);
+    if (NGE_ENTITY_HAS_ANY_COMPONENTS(target, COMPONENT_STATS)) {
+        roll += STATS_MOD(stats_ability[arg][target]);
+    }
+    return roll >= (int16_t)dc;
 }
 
 /* Alive, with health, not dead */

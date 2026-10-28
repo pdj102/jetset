@@ -36,6 +36,7 @@ const effect_def_t effect_defs[EF_COUNT] = {
         .cycles = 4,
         .status = STATUS_POISONED,
         .on_tick = { OP_DAMAGE, DMG_POISON, 1 },
+        .save = { ABIL_CON, 10 },   /* shaken off at a firing on 55% for an average creature */
     },
     [EF_CURE] = {
         .duration = EFFECT_INSTANT,

@@ -20,9 +20,11 @@
  *   timed    an active effect: an entity owned by the target, with
  *            COMPONENT_EFFECT and a timer (TIMER_EFFECT, game/timers.h)
  *            that runs its on_tick op every period for its cycles (0: for
- *            ever), then ends it. It goes when its target goes. Applied
- *            again, it is refreshed (its timer restarted) unless its
- *            definition stacks (another instance);
+ *            ever), then ends it. Its definition may name a saving throw
+ *            the target tries at each firing, after the tick op: passed,
+ *            it ends early. It goes when its target goes. Applied again,
+ *            it is refreshed (its timer restarted) unless its definition
+ *            stacks (another instance);
  *   worn     an item's worn hook (game/gen/gen.h): its modifiers and
  *            statuses count while the item is equipped, with no instance.
  *
@@ -64,6 +66,12 @@
 #define EF_STRENGTH     7   /**< Instant: +1 base strength, for good. */
 #define EF_COUNT        8
 
+/* Why an effect ended: EV_EFFECT_ENDED's p2 */
+#define EFFECT_END_EXPIRED  0   /**< Its time ran out, or effect_end(). */
+#define EFFECT_END_CURED    1   /**< effect_cure() (or a cure op). */
+#define EFFECT_END_SAVED    2   /**< Its target passed its saving throw. */
+#define EFFECT_END_COUNT    3
+
 /* effect_text(): which text */
 #define EFFECT_TEXT_START  0   /**< When it starts: "You feel sick." */
 #define EFFECT_TEXT_END    1   /**< When it ends: "The poison wears off." */
@@ -84,19 +92,22 @@ uint8_t effect_apply(uint8_t ef, nge_entity_id_t target, nge_entity_id_t source)
 
 /**
  * @brief End an active effect: destroy it, run its on_end op, recompute its
- *        target and post EV_EFFECT_ENDED (unless the target is dead).
+ *        target and post EV_EFFECT_ENDED, p2 EFFECT_END_EXPIRED (unless the
+ *        target is dead).
  */
 void effect_end(nge_entity_id_t effect) NGE_BANKED;
 
 /**
- * @brief End target's active effects that grant any of statuses.
+ * @brief End target's active effects that grant any of statuses
+ *        (EV_EFFECT_ENDED, p2 EFFECT_END_CURED).
  * @return How many were ended.
  */
 uint8_t effect_cure(nge_entity_id_t target, uint8_t statuses) NGE_BANKED;
 
 /**
  * @brief An active effect's timer handler (TIMER_EFFECT): its on_tick op on
- *        its target; on its last cycle (cycles 1) it ends.
+ *        its target, then its saving throw, if it has one (passed, it ends:
+ *        EFFECT_END_SAVED); on its last cycle (cycles 1) it ends.
  */
 void effects_on_timer(nge_entity_id_t effect, uint8_t cycles) NGE_BANKED;
 

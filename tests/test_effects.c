@@ -1,6 +1,7 @@
 /* game/effects: applying, timing, ending and recomputing effects. */
 #include "test.h"
 
+#include <stdlib.h>
 #include <string.h>
 
 #include "ecs/nge_entity.h"
@@ -118,6 +119,28 @@ static nge_entity_id_t goblin(void)
     return id;
 }
 
+/* A seed whose first n d20 rolls (1 + rand() % 20, a saving throw's) are all lo to hi */
+static unsigned int seed_for_rolls(int n, int lo, int hi)
+{
+    unsigned int s;
+    int i;
+    int r;
+    int ok;
+
+    for (s = 1;; s++) {
+        srand(s);
+        ok = 1;
+        for (i = 0; i < n && ok; i++) {
+            r = 1 + rand() % 20;
+            ok = r >= lo && r <= hi;
+        }
+        if (ok) {
+            srand(s);
+            return s;
+        }
+    }
+}
+
 /* Start a new world: every entity free, the clock at 0 */
 static void reset(void)
 {
@@ -139,6 +162,7 @@ int main(void)
     uint8_t free_before;
     int ok;
     int k;
+    int r;
 
     test_init();
 
@@ -212,7 +236,8 @@ int main(void)
     CHECK(STATUS_HAS(g, STATUS_POISONED) && effects_check(g));
     CHECK(events() == 2 && is(0, g, EV_ATTRS_CHANGED, NGE_EVENT_NONE, 0) &&
           is(1, g, EV_EFFECT_STARTED, e, EF_POISON));
-    /* Each firing: 1 poison damage, caused by the effect */
+    /* Each firing: 1 poison damage, caused by the effect; every saving throw fails (Con 10 against DC 10) */
+    seed_for_rolls(4, 1, 9);
     fire(1);
     CHECK(nge_timer_turns == 3 && health_hp[g] == 5);
     CHECK(events() == 1 && is(0, g, EV_DAMAGED, e, 1));
@@ -223,15 +248,65 @@ int main(void)
     CHECK(nge_timer_turns == 12 && health_hp[g] == 2);
     CHECK(!NGE_ENTITY_IS_ALIVE(e) && !STATUS_HAS(g, STATUS_POISONED) && effects_check(g));
     CHECK(events() == 3 && is(0, g, EV_DAMAGED, e, 1) && is(1, g, EV_ATTRS_CHANGED, NGE_EVENT_NONE, 0) &&
-          is(2, g, EV_EFFECT_ENDED, e, EF_POISON));
+          is(2, g, EV_EFFECT_ENDED, e, EF_POISON) && seen[2].p2 == EFFECT_END_EXPIRED);
     fire(1);
     CHECK(health_hp[g] == 2);                                      /* no more firings */
+
+    /* ---- a saving throw passed: the firing's damage, then it ends early ---- */
+    reset();
+    g = goblin();
+    effect_apply(EF_POISON, g, NGE_ENTITY_INVALID);
+    e = effect_on(g, EF_POISON);
+    events();
+    seed_for_rolls(1, 10, 10);                                     /* just reaches DC 10 */
+    fire(1);
+    CHECK(health_hp[g] == 5 && !NGE_ENTITY_IS_ALIVE(e) && !STATUS_HAS(g, STATUS_POISONED) && effects_check(g));
+    CHECK(events() == 3 && is(0, g, EV_DAMAGED, e, 1) && is(1, g, EV_ATTRS_CHANGED, NGE_EVENT_NONE, 0) &&
+          is(2, g, EV_EFFECT_ENDED, e, EF_POISON) && seen[2].p2 == EFFECT_END_SAVED);
+    fire(3);
+    CHECK(health_hp[g] == 5);                                      /* no more firings */
+
+    /* ---- saving throws: 1d20 + the ability's modifier >= DC ---- */
+    seed_for_rolls(1, 9, 9);
+    CHECK(effects_game_save(g, ABIL_CON, 10) == 0);                /* Con 10: +0 */
+    seed_for_rolls(1, 10, 10);
+    CHECK(effects_game_save(g, ABIL_CON, 10) == 1);
+    seed_for_rolls(1, 10, 10);
+    CHECK(effects_game_save(g, ABIL_CON, 11) == 0);                /* a higher DC */
+    stats_ability[ABIL_CON][g] = 30;                               /* +10: a 1 passes */
+    seed_for_rolls(1, 1, 1);
+    CHECK(effects_game_save(g, ABIL_CON, 10) == 1);
+    stats_ability[ABIL_CON][g] = 1;                                /* -5 */
+    seed_for_rolls(1, 14, 14);
+    CHECK(effects_game_save(g, ABIL_CON, 10) == 0);
+    seed_for_rolls(1, 15, 15);
+    CHECK(effects_game_save(g, ABIL_CON, 10) == 1);
+    seed_for_rolls(1, 9, 9);
+    CHECK(effects_game_save(g, ABIL_STR, 7) == 1);                 /* the ability named: Str 8, -1 */
+    stats_remove(g);                                               /* no stats: +0, whatever its scores */
+    seed_for_rolls(1, 14, 14);
+    CHECK(effects_game_save(g, ABIL_CON, 10) == 1);
+    seed_for_rolls(1, 9, 9);
+    CHECK(effects_game_save(g, ABIL_CON, 10) == 0);
+    TEST_EXPECT_HALT(effects_game_save(g, ABIL_COUNT, 10));
+    CHECK(test_halt_count == 1);
+
+    /* ---- no saving throw (DC 0): no roll ---- */
+    reset();
+    g = goblin();
+    effect_apply(EF_REGEN, g, NGE_ENTITY_INVALID);
+    srand(5);
+    r = rand();
+    srand(5);
+    fire(1);
+    CHECK(rand() == r && count_effects(g, EF_REGEN) == 1);
 
     /* ---- refresh: poison again restarts the one there ---- */
     reset();
     g = goblin();
     effect_apply(EF_POISON, g, NGE_ENTITY_INVALID);
     e = effect_on(g, EF_POISON);
+    seed_for_rolls(2, 1, 9);                                       /* its saving throws fail */
     fire(2);
     events();
     free_before = nge_entity_free_count();
@@ -263,7 +338,8 @@ int main(void)
     CHECK(effect_apply(EF_CURE, g, NGE_ENTITY_INVALID) == 1);
     CHECK(!NGE_ENTITY_IS_ALIVE(e) && !STATUS_HAS(g, STATUS_POISONED) && count_effects(g, EF_REGEN) == 1);
     CHECK(events() == 3 && is(0, g, EV_ATTRS_CHANGED, NGE_EVENT_NONE, 0) &&
-          is(1, g, EV_EFFECT_ENDED, e, EF_POISON) && is(2, g, EV_EFFECT_STARTED, NGE_EVENT_NONE, EF_CURE));
+          is(1, g, EV_EFFECT_ENDED, e, EF_POISON) && seen[1].p2 == EFFECT_END_CURED &&
+          is(2, g, EV_EFFECT_STARTED, NGE_EVENT_NONE, EF_CURE));
     CHECK(effect_cure(g, STATUS_POISONED) == 0);                   /* nothing left to cure */
     effect_apply(EF_POISON, g, NGE_ENTITY_INVALID);
     CHECK(effect_cure(g, 0x80) == 0 && STATUS_HAS(g, STATUS_POISONED));   /* another status: kept */
