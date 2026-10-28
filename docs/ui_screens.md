@@ -129,7 +129,8 @@ a requirement that differs from the request, with the reason.
 
 ### Future screens (the framework must allow them; not built now)
 
-- **R23 (later)** Stats screen: the player's full stats.
+- **R23 (later)** Stats screen: the player's full stats. Built as the
+  player character screen: [pc_screen.md](pc_screen.md).
 - **R24 (later)** Help screen: pages of help, by context (R13).
 - **R25 (later)** Title screen: full screen, with an optional demo in a
   map panel (R8).

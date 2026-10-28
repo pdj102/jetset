@@ -29,6 +29,7 @@ const effect_def_t effect_defs[EF_COUNT] = {
         .on_start = { OP_HEAL, 0, 6 },
     },
     [EF_POISON] = {
+        .name = "Poison",
         .start_text = "You feel sick.",
         .end_text = "The poison wears off.",
         .duration = EFFECT_TIMED,   /* refreshed, not doubled */
@@ -57,6 +58,7 @@ const effect_def_t effect_defs[EF_COUNT] = {
         .on_start = { OP_RAISE_BASE, ATTR_STR, 1 },
     },
     [EF_REGEN] = {
+        .name = "Regeneration",
         .duration = EFFECT_TIMED,
         .flags = EFFECT_STACK,   /* each source of regeneration counts */
         .period = TURNS(10),

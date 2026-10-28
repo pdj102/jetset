@@ -540,6 +540,27 @@ int main(void)
     CHECK_STR(text, "You ");                                       /* cut to fit */
     effect_text(EF_POISON, EFFECT_TEXT_START, text, 1);
     CHECK_STR(text, "");
+    effect_text(EF_POISON, EFFECT_TEXT_NAME, text, sizeof(text));
+    CHECK_STR(text, "Poison");
+    effect_text(EF_REGEN, EFFECT_TEXT_NAME, text, sizeof(text));
+    CHECK_STR(text, "Regeneration");
+    effect_text(EF_HEALING, EFFECT_TEXT_NAME, text, sizeof(text));
+    CHECK_STR(text, "");                                           /* instant: nothing lasts to name */
+    ok = 1;
+    for (i = 1; i < EF_COUNT; i++) {
+        effect_text(i, EFFECT_TEXT_NAME, text, sizeof(text));
+        ok = ok && strlen(text) <= EFFECT_NAME_MAX &&
+             (effect_defs[i].duration != EFFECT_TIMED || text[0] != '\0');   /* every timed effect named */
+    }
+    CHECK(ok);
+
+    /* ---- saving throws ---- */
+    {
+        uint8_t ability = 99;
+
+        CHECK(effect_save_of(EF_POISON, &ability) == 10 && ability == ABIL_CON);
+        CHECK(effect_save_of(EF_REGEN, &ability) == 0);
+    }
 
     /* ---- asserts ---- */
     reset();
@@ -555,6 +576,8 @@ int main(void)
     TEST_EXPECT_HALT(effect_end(e));                               /* not an effect */
     CHECK(test_halt_count == 1);
     TEST_EXPECT_HALT(effects_set_base(g, ATTR_COUNT, 1));
+    CHECK(test_halt_count == 1);
+    TEST_EXPECT_HALT(effect_text(EF_POISON, EFFECT_TEXT_COUNT, text, sizeof(text)));
     CHECK(test_halt_count == 1);
     TEST_EXPECT_HALT(effects_set_base(e, ATTR_AC, 1));             /* no health */
     CHECK(test_halt_count == 1);

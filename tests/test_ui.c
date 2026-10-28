@@ -1,9 +1,10 @@
 /*
- * game/ui: the screens (the inventory, the title) on the fake Layer 2's two
+ * game/ui: the screens (the inventory, the title, the player character) on the fake Layer 2's two
  * buffers, and the player's commands that use them.
  */
 #include "test.h"
 
+#include <stdio.h>
 #include <string.h>
 
 #include "ecs/components/nge_location.h"
@@ -14,11 +15,13 @@
 #include "event/nge_event.h"
 #include "input/nge_input.h"
 #include "input/nge_input_internal.h"
+#include "io/nge_text.h"
 #include "layer2/nge_layer2.h"
 #include "map/nge_map.h"
 
 #include "data/tile_data.h"
 
+#include "game/components/attack.h"
 #include "game/components/health.h"
 #include "game/components/feature.h"
 #include "game/components/inventory.h"
@@ -36,7 +39,9 @@
 #include "game/ui/screen.h"
 #include "game/ui/screen_inv.h"
 #include "game/ui/screen_main.h"
+#include "game/ui/screen_pc.h"
 #include "game/ui/screen_title.h"
+#include "game/ui/screen_internal.h"
 
 #define AREA     NGE_OWNER_AREA(0)
 #define EV(k)    ((nge_key_event_t)(k))
@@ -149,6 +154,15 @@ static const char *seen_cols(uint8_t b, uint8_t y, uint8_t x1, uint8_t x2)
 #define STATUS()     seen_cols(1, 29, 0, 39)
 #define HELP()       seen_cols(1, 31, 0, 39)
 #define HIGHLIGHTED(i)  (seen[1][2 + (i)][0].paper == SCREEN_HIGHLIGHT && seen[1][2 + (i)][27].paper == SCREEN_HIGHLIGHT)
+
+/* The text colours as the Layer 2 stream draws them (io/nge_l2_stream.c) */
+#define L2_WHITE   0xFF
+#define L2_YELLOW  0xFC
+#define L2_CYAN    0x1F
+#define L2_RED     0xE0
+
+/* The ink of the overlay screen's cell at row y, column x, as last seen */
+#define INK(y, x)  (seen[1][(y)][(x)].ink)
 
 /* Row y of the main screen (buffer 0), now */
 static const char *row(uint8_t y)
@@ -607,6 +621,129 @@ int main(void)
     CHECK(player_turn);
     player_init();
     CHECK(!player_turn);
+
+    /* ---- the player character screen ---- */
+    CHECK(screen_pc_ink(10, 10, 0) == NGE_INK_WHITE && screen_pc_ink(11, 10, 0) == NGE_INK_CYAN &&
+          screen_pc_ink(9, 10, 0) == NGE_INK_RED);
+    CHECK(screen_pc_ink(10, 10, 1) == NGE_INK_WHITE && screen_pc_ink(5, 10, 1) == NGE_INK_CYAN &&
+          screen_pc_ink(20, 10, 1) == NGE_INK_RED);                /* speed: lower is better */
+    /* C (CAPS SHIFT): opens and closes it, no turn used, the main screen untouched */
+    effects_recompute(actor_player);
+    nge_event_flush();
+    memcpy(main_before, test_layer2_buf[0], sizeof(main_before));
+    fresh();
+    press(EV(NGE_KEY_A));                                           /* not a key of the screen: it stays */
+    press(EV(NGE_KEY_SPACE));
+    player_turn = 1;
+    player_command(NGE_KEY_C | (NGE_MOD_CAPS << 8));
+    CHECK(RAN_AND_CLOSED() && paused == 3);
+    CHECK(player_turn && nge_event_count() == 0);
+    CHECK(memcmp(main_before, test_layer2_buf[0], sizeof(main_before)) == 0);
+    CHECK(strstr(OVER_ROW(0), " Rogue the Fighter ") != NULL && INK(0, 20) == L2_YELLOW);
+    CHECK(starts(HELP(), "SPACE:back"));
+    CHECK(seen[1][0][0].paper == SCREEN_PAPER && seen[1][30][39].paper == SCREEN_PAPER);   /* rows 0-30 covered */
+    {
+        char want[48];
+        uint8_t a;
+        int ok = 1;
+
+        /* The character, left; the abilities, right: at their bases, all white */
+        snprintf(want, sizeof(want), "Level       %6u", pc_level);
+        CHECK(strcmp(seen_cols(1, 2, 0, 17), want) == 0);
+        snprintf(want, sizeof(want), "XP          %6u", pc_xp);
+        CHECK(strcmp(seen_cols(1, 3, 0, 17), want) == 0);
+        snprintf(want, sizeof(want), "Next        %6u", pc_xp_needed((uint8_t)(pc_level + 1)));
+        CHECK(strcmp(seen_cols(1, 4, 0, 17), want) == 0);
+        snprintf(want, sizeof(want), "Gold        %6u", pc_gold);
+        CHECK(strcmp(seen_cols(1, 5, 0, 17), want) == 0);
+        snprintf(want, sizeof(want), "Depth       %6u", level_depth);
+        CHECK(strcmp(seen_cols(1, 6, 0, 17), want) == 0);
+        CHECK(strcmp(seen_cols(1, 7, 0, 17), "Deepest          4") == 0);
+        CHECK(strcmp(seen_cols(1, 2, 20, 39), "      Now  Mod Base ") == 0);
+        for (a = 0; a < ABIL_COUNT; a++) {
+            snprintf(want, sizeof(want), " %.3s %4u  %+3d %4u ", a == 0 ? "Str" : a == 1 ? "Dex" : a == 2 ? "Con" :
+                     a == 3 ? "Int" : a == 4 ? "Wis" : "Cha", stats_ability[a][actor_player],
+                     STATS_MOD(stats_ability[a][actor_player]), stats_ability_base[a][actor_player]);
+            ok = ok && strcmp(seen_cols(1, (uint8_t)(3 + a), 20, 39), want) == 0 && INK(3 + a, 28) == L2_WHITE;
+        }
+        CHECK(ok);
+        /* The attributes: HP and MP with now, value and base; speed's word; the attack */
+        CHECK(strcmp(seen_cols(1, 10, 0, 24), "         Now  Value  Base") == 0);
+        snprintf(want, sizeof(want), "HP       %3u  %5u  %4u", health_hp[actor_player],
+                 health_hp_max[actor_player], health_hp_max_base[actor_player]);
+        CHECK(strcmp(seen_cols(1, 11, 0, 24), want) == 0 && INK(11, 18) == L2_WHITE);
+        snprintf(want, sizeof(want), "MP       %3u  %5u  %4u", mana_mp[actor_player], mana_mp_max[actor_player],
+                 mana_mp_max[actor_player]);
+        CHECK(strcmp(seen_cols(1, 12, 0, 24), want) == 0);
+        snprintf(want, sizeof(want), "Speed         %5u  %4u  normal", stats_speed[actor_player],
+                 stats_speed_base[actor_player]);
+        CHECK(strcmp(seen_cols(1, 14, 0, 32), want) == 0);
+        CHECK(starts(OVER_ROW(15), "Attack  ") && strstr(OVER_ROW(15), " to hit  ") != NULL);
+    }
+    CHECK(starts(OVER_ROW(17), "Damage  Bl Sl Pi Fi Co Po Ac Ma"));
+    CHECK(starts(OVER_ROW(22), "Status  None"));
+    CHECK(starts(OVER_ROW(24), "Effect           Turns  Save"));
+    CHECK(starts(OVER_ROW(25), "Regeneration") && strstr(OVER_ROW(25), "always") != NULL);   /* innate */
+    CHECK(starts(OVER_ROW(30), "Cyan: better than base  Red: worse") && INK(30, 0) == L2_CYAN &&
+          INK(30, 24) == L2_RED);
+    /* Values away from their bases (as effects would set them, after the poison's recompute): better cyan, worse red */
+    CHECK(effect_apply(EF_POISON, actor_player, NGE_ENTITY_INVALID));
+    nge_event_flush();
+    stats_ability[ABIL_STR][actor_player] = (uint8_t)(stats_ability_base[ABIL_STR][actor_player] + 1);
+    stats_ability[ABIL_INT][actor_player] = (uint8_t)(stats_ability_base[ABIL_INT][actor_player] - 2);
+    health_hp_max[actor_player] = (uint8_t)(health_hp_max_base[actor_player] + 2);
+    stats_speed[actor_player] = 5;                                  /* faster: a lower number */
+    health_resist[actor_player] |= DMG_BIT(DMG_FIRE);
+    health_vuln[actor_player] |= DMG_BIT(DMG_COLD);
+    fresh();
+    press(EV(NGE_KEY_SPACE));
+    screen_pc_run();
+    CHECK(RAN_AND_CLOSED());
+    CHECK(INK(3, 28) == L2_CYAN && INK(3, 33) == L2_CYAN && INK(3, 38) == L2_WHITE);   /* Str: value, mod; base */
+    CHECK(INK(6, 28) == L2_RED && INK(6, 33) == L2_RED);                                 /* Int */
+    CHECK(INK(11, 18) == L2_CYAN && INK(11, 24) == L2_WHITE);                            /* HP's value; base */
+    CHECK(INK(14, 18) == L2_CYAN && strstr(OVER_ROW(14), " fast") != NULL);
+    CHECK(seen[1][19][17].c == '*' && INK(19, 17) == L2_CYAN);                          /* resist fire */
+    CHECK(seen[1][20][20].c == '*' && INK(20, 20) == L2_RED);                           /* vulnerable to cold */
+    CHECK(starts(OVER_ROW(22), "Status  Poisoned") && INK(22, 8) == L2_RED);            /* a condition */
+    CHECK(strcmp(seen_cols(1, 25, 0, 29), "Poison              12  Con 10") == 0);       /* 4 firings, 3 turns apart */
+    CHECK(starts(OVER_ROW(26), "Regeneration  ") && starts(OVER_ROW(27), "    "));       /* in EF_* order */
+    /* A second regeneration (it stacks): one row, counted */
+    CHECK(effect_apply(EF_REGEN, actor_player, NGE_ENTITY_INVALID));
+    nge_event_flush();
+    fresh();
+    press(EV(NGE_KEY_SPACE));
+    screen_pc_run();
+    CHECK(starts(OVER_ROW(26), "Regeneration x2") && strstr(OVER_ROW(26), "always") != NULL &&
+          starts(OVER_ROW(27), "    "));
+    {
+        nge_entity_id_t id;
+        nge_entity_id_t last = NGE_ENTITY_INVALID;
+        uint8_t i;
+
+        NGE_OWNER_FOR_EACH_OWNED(i, id, actor_player) {
+            if (NGE_ENTITY_HAS_ANY_COMPONENTS(id, COMPONENT_EFFECT) && effect_kind_of(id) == EF_REGEN) {
+                last = id;
+            }
+        }
+        effect_end(last);                                           /* back to the innate one */
+        nge_event_flush();
+    }
+    /* At the highest level: no next level */
+    {
+        uint8_t level = pc_level;
+
+        pc_level = PC_LEVEL_MAX;
+        fresh();
+        press(EV(NGE_KEY_SPACE));
+        screen_pc_run();
+        CHECK(strcmp(seen_cols(1, 4, 0, 17), "Next           max") == 0);
+        pc_level = level;
+    }
+    effect_cure(actor_player, STATUS_POISONED);
+    effects_recompute(actor_player);
+    nge_event_flush();
+    CHECK(effects_check(actor_player));
 
     /* ---- asserts ---- */
     TEST_EXPECT_HALT(screen_inv_run(ACT_COUNT + 1, &chosen));

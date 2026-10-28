@@ -13,6 +13,8 @@
 
 #include "core/nge_util.h"
 #include "game/components/health.h"
+#include "game/components/inventory.h"
+#include "game/components/item.h"
 
 static void check_entity(nge_entity_id_t id, uint8_t use)
 {
@@ -75,4 +77,20 @@ uint8_t attack_damage(nge_entity_id_t id, uint8_t use) NGE_BANKED
         return 1;
     }
     return (damage > 255) ? 255 : (uint8_t)damage;
+}
+
+nge_entity_id_t attack_weapon(nge_entity_id_t id) NGE_BANKED
+{
+    nge_entity_id_t weapon;
+
+    nge_util_assert(id < NGE_ENTITY_MAX);
+
+    if (!INV_HAS(id)) {
+        return NGE_ENTITY_INVALID;
+    }
+    weapon = inv_equipped(id, SLOT_WEAPON);
+    if (weapon != NGE_ENTITY_INVALID && !ATTACK_HAS(weapon, ATTACK_MELEE)) {
+        return NGE_ENTITY_INVALID;   /* wielded, but not a melee weapon */
+    }
+    return weapon;
 }

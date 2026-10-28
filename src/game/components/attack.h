@@ -83,4 +83,11 @@ uint8_t attack_hits(nge_entity_id_t id, uint8_t use, nge_entity_id_t target, uin
 /** @brief Roll id's damage with its attack of this use: dice d sides + bonus, 1 to 255. */
 uint8_t attack_damage(nge_entity_id_t id, uint8_t use) NGE_BANKED;
 
+/**
+ * @brief The melee weapon id wields (SLOT_WEAPON, with a melee attack),
+ *        whose attack it makes before its own; NGE_ENTITY_INVALID if none
+ *        (no inventory, nothing wielded, or not a melee weapon).
+ */
+nge_entity_id_t attack_weapon(nge_entity_id_t id) NGE_BANKED;
+
 #endif

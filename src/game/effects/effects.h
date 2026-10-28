@@ -75,7 +75,10 @@
 /* effect_text(): which text */
 #define EFFECT_TEXT_START  0   /**< When it starts: "You feel sick." */
 #define EFFECT_TEXT_END    1   /**< When it ends: "The poison wears off." */
-#define EFFECT_TEXT_COUNT  2
+#define EFFECT_TEXT_NAME   2   /**< While it lasts (a timed effect): "Poison". */
+#define EFFECT_TEXT_COUNT  3
+
+#define EFFECT_NAME_MAX  14   /**< The longest name (EFFECT_TEXT_NAME). */
 
 /**
  * @brief Apply effect ef (not EF_NONE) to target: an instant effect runs
@@ -134,9 +137,16 @@ void effects_set_base(nge_entity_id_t id, uint8_t attr, uint8_t value) NGE_BANKE
 uint8_t effect_kind_of(nge_entity_id_t effect) NGE_BANKED;
 
 /**
- * @brief Copy effect ef's start or end text (EFFECT_TEXT_*) into buf: at
- *        most size-1 characters and a NUL; empty if it has none.
+ * @brief Copy effect ef's start or end text, or its name (EFFECT_TEXT_*),
+ *        into buf: at most size-1 characters and a NUL; empty if it has
+ *        none.
  */
 void effect_text(uint8_t ef, uint8_t which, char *buf, uint8_t size) NGE_BANKED;
+
+/**
+ * @brief Effect ef's saving throw: its DC, 0 if it has none, and in
+ *        *ability the ability rolled (ABIL_*, game/components/stats.h).
+ */
+uint8_t effect_save_of(uint8_t ef, uint8_t *ability) NGE_BANKED;
 
 #endif

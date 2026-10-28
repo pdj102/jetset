@@ -41,7 +41,7 @@
 //                        102/103  level: setting up the map, generating levels and
 //                                 decorating them / the room list, the terrain and
 //                                 the decorator's tables
-//                        104/105  free (was the title, now in ui)
+//                        104/105  ui: the player character screen / (unused)
 //                        106/107  gen creature: creature generator / creature kinds
 //                        108/109  gen item: item generator / item kinds
 //                        110/111  gen shared: generator helpers and game components'
@@ -89,6 +89,9 @@
 
 // game level: setting up and building a level
 #pragma define CRT_ORG_PAGE_102 = 0x66C000
+
+// game ui: the player character screen (game/ui/screen_pc_bank.c)
+#pragma define CRT_ORG_PAGE_104 = 0x68C000
 
 // game gen: the creature generator
 #pragma define CRT_ORG_PAGE_106 = 0x6AC000

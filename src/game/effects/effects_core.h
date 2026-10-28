@@ -64,6 +64,7 @@ typedef struct effect_save {
 } effect_save_t;
 
 typedef struct effect_def {
+    const char  *name;         /* timed: shown while it lasts (the PC screen), 14 characters at most; in page 121 */
     const char  *start_text;   /* in page 121, or NULL */
     const char  *end_text;
     uint8_t      duration;     /* EFFECT_INSTANT, EFFECT_TIMED or EFFECT_WORN */

@@ -8,6 +8,7 @@
  * - screen_main.c (common), screen_main_bank.c (page 116): the main screen;
  * - screen_inv_bank.c (page 116): the inventory screen;
  * - screen_title_bank.c (page 116): the title screen;
+ * - screen_pc_bank.c (page 104): the player character screen;
  * - screen_pdata.c (page 117): the inventory's list, mapped into slot 7
  *   while the module's code runs.
  */
@@ -39,6 +40,15 @@ extern NGE_FILE *screen_message_stream;
 
 /* The overlay sprites' records */
 extern nge_sprite_attr_t screen_overlay[SCREEN_OVERLAY_COUNT];
+
+/* ---- The player character screen (screen_pc_bank.c) ---- */
+
+/*
+ * The ink (NGE_INK_*) for an attribute's value against its base: white
+ * when equal, cyan when better, red when worse. Higher is better, or lower
+ * if lower_is_better (speed: ticks between turns)
+ */
+uint8_t screen_pc_ink(uint8_t value, uint8_t base, uint8_t lower_is_better);
 
 /* ---- The inventory's page data (screen_pdata.c) ---- */
 

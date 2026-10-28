@@ -304,10 +304,29 @@ void effect_text(uint8_t ef, uint8_t which, char *buf, uint8_t size) NGE_BANKED
 
     nge_util_assert(ef < EF_COUNT);
     nge_util_assert(size >= 1);
+    nge_util_assert(which < EFFECT_TEXT_COUNT);
 
-    s = (which == EFFECT_TEXT_START) ? effect_defs[ef].start_text : effect_defs[ef].end_text;
+    switch (which) {
+    case EFFECT_TEXT_START:
+        s = effect_defs[ef].start_text;
+        break;
+    case EFFECT_TEXT_END:
+        s = effect_defs[ef].end_text;
+        break;
+    default:
+        s = effect_defs[ef].name;
+        break;
+    }
     buf[0] = '\0';
     if (s != NULL) {
         strncat(buf, s, size - 1);   /* common code: it may read this page's text */
     }
+}
+
+uint8_t effect_save_of(uint8_t ef, uint8_t *ability) NGE_BANKED
+{
+    nge_util_assert(ef < EF_COUNT);
+
+    *ability = effect_defs[ef].save.arg;
+    return effect_defs[ef].save.dc;
 }

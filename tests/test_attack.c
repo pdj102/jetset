@@ -4,9 +4,15 @@
 #include <stdlib.h>
 
 #include "ecs/nge_entity.h"
+#include "ecs/nge_owner.h"
 
 #include "game/components/attack.h"
 #include "game/components/health.h"
+#include "game/components/inventory.h"
+#include "game/components/item.h"
+#include "game/gen/gen.h"
+
+#define AREA  NGE_OWNER_AREA(0)
 
 static nge_entity_id_t with_attack(int8_t to_hit, uint8_t dice, uint8_t sides, int8_t bonus)
 {
@@ -29,6 +35,8 @@ int main(void)
     attack_kind_t b;
     nge_entity_id_t id;
     nge_entity_id_t target;
+    nge_entity_id_t holder;
+    nge_entity_id_t item;
     int to_hit;
     int ac;
     int roll;
@@ -98,6 +106,18 @@ int main(void)
     }
     CHECK(ok);
 
+    /* ---- the weapon used: a wielded melee weapon, or none ---- */
+    holder = gen_creature(CR_PLAYER, AREA);
+    CHECK(attack_weapon(holder) == NGE_ENTITY_INVALID);         /* nothing wielded */
+    item = gen_item(IT_SWORD, AREA);
+    inv_stow(item, holder);
+    CHECK(attack_weapon(holder) == NGE_ENTITY_INVALID);         /* carried, not wielded */
+    item_slot[item] = SLOT_WEAPON;                              /* as the equip action would */
+    CHECK(attack_weapon(holder) == item);
+    attack_remove(item, ATTACK_MELEE);
+    CHECK(attack_weapon(holder) == NGE_ENTITY_INVALID);         /* wielded, but not a melee weapon */
+    CHECK(attack_weapon(target) == NGE_ENTITY_INVALID);         /* no inventory */
+
     /* ---- asserts ---- */
     b.to_hit = 0;
     b.dice = 1;
@@ -115,6 +135,8 @@ int main(void)
     TEST_EXPECT_HALT(attack_add(id, ATTACK_USE_COUNT, &b));
     CHECK(test_halt_count == 1);
     TEST_EXPECT_HALT(attack_hits(id, ATTACK_MELEE, target, 0));
+    CHECK(test_halt_count == 1);
+    TEST_EXPECT_HALT(attack_weapon(NGE_ENTITY_MAX));
     CHECK(test_halt_count == 1);
 
     return test_summary("attack");

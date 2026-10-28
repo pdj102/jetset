@@ -16,8 +16,6 @@
 #include "event/nge_event.h"
 #include "game/components/attack.h"
 #include "game/components/health.h"
-#include "game/components/inventory.h"
-#include "game/components/item.h"
 #include "game/effects/effects.h"
 #include "game/gen/gen.h"
 #include "game/events.h"
@@ -26,7 +24,7 @@ uint8_t act_melee(act_t *a, uint8_t mode) NGE_BANKED
 {
     nge_entity_id_t actor = a->actor;
     nge_entity_id_t target = a->target;
-    nge_entity_id_t weapon = NGE_ENTITY_INVALID;
+    nge_entity_id_t weapon;
     nge_entity_id_t attacker;   /* whose attack component: the weapon's or the actor's */
     nge_owner_t area;
     uint8_t x;
@@ -43,12 +41,7 @@ uint8_t act_melee(act_t *a, uint8_t mode) NGE_BANKED
     area = NGE_OWNER_OF(actor);
     x = NGE_LOCATION_X(actor);
     y = NGE_LOCATION_Y(actor);
-    if (INV_HAS(actor)) {
-        weapon = inv_equipped(actor, SLOT_WEAPON);
-        if (weapon != NGE_ENTITY_INVALID && !ATTACK_HAS(weapon, ATTACK_MELEE)) {
-            weapon = NGE_ENTITY_INVALID;   /* wielded, but not a melee weapon */
-        }
-    }
+    weapon = attack_weapon(actor);
     attacker = (weapon != NGE_ENTITY_INVALID) ? weapon : actor;
     if (target == NGE_ENTITY_INVALID) {
         nge_util_assert(a->dx >= -1 && a->dx <= 1 && a->dy >= -1 && a->dy <= 1 && (a->dx | a->dy) != 0);
