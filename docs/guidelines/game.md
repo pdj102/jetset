@@ -101,11 +101,11 @@ frame, a static variable) must belong to something that lives at least as
 long, or be cleared when it goes. IDs are reused at once. An active effect
 records no source for this reason.
 
-### G-ENT-4 · must · The player is identified by KIND_IS_PLAYER() or actor_player
-Rules that treat the player differently test `KIND_IS_PLAYER(id)` in
-components and actions (no dependency on `actors.h`), or `actor_player` in
-game, player and message code. Never test the persistent flag for this:
-other entities are persistent too.
+### G-ENT-4 · must · The player is identified by PC_IS() or actor_player
+Rules that treat the player differently test `PC_IS(id)`
+(`game/components/pc.h`) in components and actions (no dependency on
+`actors.h`), or `actor_player` in game, player and message code. Never
+test the persistent flag for this: other entities are persistent too.
 
 ## Game flow
 

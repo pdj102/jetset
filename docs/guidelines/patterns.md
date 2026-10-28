@@ -45,7 +45,8 @@ in `game/components/components.h`.
   `COMPONENT_COUNT` goes up by one. No mask is defined anywhere else. An nge
   component is added to the list in `nge_components.h`, below
   `NGE_COMPONENT_USER`.
-- Its tables are one per field, `[NGE_ENTITY_MAX]` (N-DATA-3), in
+- Its tables are one per field, `[NGE_ENTITY_MAX]` (N-DATA-3), or single
+  variables for a component only one entity has (`pc.h`), in
   `components/<name>_cdata.c` (slot 0) when common code or several systems
   read them, else in its module's page data. They are read-only outside
   the component.

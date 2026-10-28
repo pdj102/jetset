@@ -114,6 +114,8 @@ Its variables have no initialiser, and the module's init sets them.
 ### N-DATA-3 · should · One table per field, indexed by entity ID
 Component data is a set of arrays `[NGE_ENTITY_MAX]`, one per field
 (`nge_location_x[]`, `nge_location_y[]`), not an array of structs.
+A component only one entity ever has (the player's, `game/components/pc.h`)
+has one variable per field instead.
 
 ### N-DATA-4 · must · Layer 2 only through the MMU
 Never map Layer 2 with port `$123B`: it would hide the ECS data in slot 0
