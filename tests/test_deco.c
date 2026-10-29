@@ -127,7 +127,7 @@ int main(void)
     }
     CHECK(ok);
 
-    /* ---- variants by weight: floor_2 (weight 1) among weights 8 in all, over a level of floor ---- */
+    /* ---- variants by weight: floor_2 and floor_3 (weights 1, 2) among 9 in all, over a level of floor ---- */
     fill(TERRAIN_FLOOR);
     level_decorate_all();
     floors = 0;
@@ -135,10 +135,10 @@ int main(void)
     for (y = 1; y < LEVEL_HEIGHT - 1; y++) {
         for (x = 1; x < LEVEL_WIDTH - 1; x++) {
             floors++;
-            variant += look(x, y) != LOOK_FLOOR;   /* floor_2: LOOK_FLOOR is variant 1 */
+            variant += look(x, y) != LOOK_FLOOR;   /* floor_2, floor_3: LOOK_FLOOR is variant 1 */
         }
     }
-    CHECK(variant * 100 > floors * 5 && variant * 100 < floors * 20);   /* about 12% */
+    CHECK(variant * 100 > floors * 23 && variant * 100 < floors * 43);   /* about 33% */
 
     /* ---- the same look every time; another seed, another pattern (R10, D4) ---- */
     t = look(17, 9);

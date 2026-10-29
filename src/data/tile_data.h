@@ -20,7 +20,7 @@
 #define TILE_PALETTE_PAGE   133  /**< SECTION PAGE_133 in tile_palette_data.asm. */
 #define TILE_PALETTE_BANKS  1    /**< Banks in tile_palette, 16 entries each. */
 #define TILE_PALETTE_ENTRIES 16  /**< Entries in tile_palette: load them from index 0. */
-#define TILE_METATILES      25   /**< Metatiles in the tileset, tile 0 included. */
+#define TILE_METATILES      28   /**< Metatiles in the tileset, tile 0 included. */
 
 #define TILE_BANK_0  0
 #define TILE_BANK_1  0
@@ -47,6 +47,9 @@
 #define TILE_BANK_22  0
 #define TILE_BANK_23  0
 #define TILE_BANK_24  0
+#define TILE_BANK_25  0
+#define TILE_BANK_26  0
+#define TILE_BANK_27  0
 
 /** A metatile's bank, from a metatile number that is a constant. */
 #define TILE_BANK(m)    TILE_BANK_X(m)
@@ -56,7 +59,7 @@
  * Looks, by the names of the tileset's slices (docs/dungeon_decoration.md
  * 5.2): LOOK_<NAME> is its variant 1, LOOK_<NAME>_BANK its bank.
  */
-#define LOOK_CORRIDOR                    8
+#define LOOK_CORRIDOR                    26
 #define LOOK_CORRIDOR_BANK               0
 #define LOOK_DOOR_OPEN                   22
 #define LOOK_DOOR_OPEN_BANK              0
@@ -66,8 +69,10 @@
 #define LOOK_DOORWAY_BANK                0
 #define LOOK_FLOOR                       8
 #define LOOK_FLOOR_BANK                  0
-#define LOOK_HOLE                        1
+#define LOOK_HOLE                        27
 #define LOOK_HOLE_BANK                   0
+#define LOOK_HOLE_FXXX                   1
+#define LOOK_HOLE_FXXX_BANK              0
 #define LOOK_ROCK                        0
 #define LOOK_ROCK_BANK                   0
 #define LOOK_STAIRS_DOWN                 3
@@ -133,8 +138,8 @@
 #define TILE_TERRAIN_DOORWAY             4
 #define TILE_TERRAIN_HOLE                5
 #define TILE_TERRAINS                    6
-#define TILE_RULES                       30
-#define TILE_LOOKS                       31
+#define TILE_RULES                       31
+#define TILE_LOOKS                       33
 #define TILE_ANY                         0xFF /**< A rule's neighbour of any terrain. */
 
 /** A look a rule can choose: a variant, with its share of the picks. */

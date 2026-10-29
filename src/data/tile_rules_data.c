@@ -11,7 +11,7 @@
 
 #include "data/tile_data.h"
 
-const tile_look_t tile_looks[31] = {
+const tile_look_t tile_looks[33] = {
     { 0, 0x00, 1 },   /* rock */
     { 19, 0x00, 1 },   /* wall_ffff */
     { 5, 0x00, 1 },   /* wall_fwfw */
@@ -38,14 +38,16 @@ const tile_look_t tile_looks[31] = {
     { 4, 0x00, 1 },   /* wall_xwwx */
     { 7, 0x00, 1 },   /* wall_xxww */
     { 24, 0x00, 1 },   /* wall */
-    { 8, 0x00, 7 },   /* floor */
+    { 8, 0x00, 6 },   /* floor */
     { 20, 0x00, 1 },   /* floor */
-    { 8, 0x00, 1 },   /* corridor */
+    { 25, 0x00, 2 },   /* floor */
+    { 26, 0x00, 1 },   /* corridor */
     { 23, 0x00, 1 },   /* doorway */
-    { 1, 0x00, 1 },   /* hole */
+    { 1, 0x00, 1 },   /* hole_fxxx */
+    { 27, 0x00, 1 },   /* hole */
 };
 
-const tile_rule_t tile_rules[30] = {
+const tile_rule_t tile_rules[31] = {
     { { TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY }, 0, 1 },   /* rock */
     { { 2, TILE_ANY, 2, TILE_ANY, 2, TILE_ANY, 2, TILE_ANY }, 1, 1 },   /* wall_ffff */
     { { 2, TILE_ANY, 1, TILE_ANY, 2, TILE_ANY, 1, TILE_ANY }, 2, 1 },   /* wall_fwfw */
@@ -72,10 +74,11 @@ const tile_rule_t tile_rules[30] = {
     { { TILE_ANY, TILE_ANY, 1, TILE_ANY, 1, TILE_ANY, TILE_ANY, TILE_ANY }, 23, 1 },   /* wall_xwwx */
     { { TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, 1, TILE_ANY, 1, TILE_ANY }, 24, 1 },   /* wall_xxww */
     { { TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY }, 25, 1 },   /* wall */
-    { { TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY }, 26, 2 },   /* floor */
-    { { TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY }, 28, 1 },   /* corridor */
-    { { TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY }, 29, 1 },   /* doorway */
-    { { TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY }, 30, 1 },   /* hole */
+    { { TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY }, 26, 3 },   /* floor */
+    { { TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY }, 29, 1 },   /* corridor */
+    { { TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY }, 30, 1 },   /* doorway */
+    { { 2, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY }, 31, 1 },   /* hole_fxxx */
+    { { TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY, TILE_ANY }, 32, 1 },   /* hole */
 };
 
 const tile_base_t tile_bases[6] = {
@@ -84,5 +87,5 @@ const tile_base_t tile_bases[6] = {
     { 26, 1 },   /* floor */
     { 27, 1 },   /* corridor */
     { 28, 1 },   /* doorway */
-    { 29, 1 },   /* hole */
+    { 29, 2 },   /* hole */
 };
