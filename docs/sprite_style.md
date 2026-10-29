@@ -267,7 +267,7 @@ art is compared with them:
 | Class | Master |
 |---|---|
 | Medium creature | `player.idle` frame 0 (agreed 2026-10-29) |
-| Small creature | to draw: `rat.idle` frame 0 |
+| Small creature | `rat.idle` frame 0 (agreed 2026-10-29) |
 | Item | to draw: `potion` |
 
 ## 7. Workflow with Claude
