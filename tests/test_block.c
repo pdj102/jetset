@@ -1,4 +1,4 @@
-/* nge_block.c: the block component, and entering tiles (map and entities). */
+/* nge_block.c, nge_block_line.c: the block component, entering tiles (map and entities), and lines. */
 #include "test.h"
 
 #include <stdlib.h>
@@ -186,6 +186,47 @@ int main(void)
               (nge_block_of[blocker] & (nge_block_t)~pass) != 0);
     }
     CHECK(ok);
+
+    /* ---- the line test: the tiles strictly between the ends ---- */
+    nge_entity_init();
+    for (y = 0; y < 10; y++) {
+        for (x = 0; x < 10; x++) {
+            tile((uint8_t)x, (uint8_t)y, FLOOR);
+        }
+    }
+    CHECK(nge_block_line(AREA0, 0, 0, 9, 0, NGE_BLOCK_SOLID) == 1);   /* horizontal */
+    CHECK(nge_block_line(AREA0, 3, 9, 3, 0, NGE_BLOCK_SOLID) == 1);   /* vertical, upwards */
+    CHECK(nge_block_line(AREA0, 9, 9, 0, 0, NGE_BLOCK_SOLID) == 1);   /* diagonal */
+    CHECK(nge_block_line(AREA0, 0, 0, 2, 9, NGE_BLOCK_SOLID) == 1);   /* steep */
+    CHECK(nge_block_line(AREA0, 4, 4, 4, 4, NGE_BLOCK_SOLID) == 1);   /* the same tile */
+    /* A wall between blocks, from either end; a wall at either end doesn't */
+    tile(5, 0, WALL);
+    CHECK(nge_block_line(AREA0, 0, 0, 9, 0, NGE_BLOCK_SOLID) == 0);
+    CHECK(nge_block_line(AREA0, 9, 0, 0, 0, NGE_BLOCK_SOLID) == 0);
+    CHECK(nge_block_line(AREA0, 5, 0, 9, 0, NGE_BLOCK_SOLID) == 1);
+    CHECK(nge_block_line(AREA0, 0, 0, 5, 0, NGE_BLOCK_SOLID) == 1);
+    CHECK(nge_block_line(AREA0, 4, 1, 6, 1, NGE_BLOCK_SOLID) == 1);   /* passes below it */
+    /* Next-door tiles: nothing between, whatever they are */
+    CHECK(nge_block_line(AREA0, 4, 0, 5, 0, NGE_BLOCK_SOLID) == 1);
+    CHECK(nge_block_line(AREA0, 4, 1, 5, 0, NGE_BLOCK_SOLID) == 1);
+    /* Only the flags asked for: a pit blocks a line asked about NO_FLOOR, not SOLID */
+    tile(5, 2, PIT);
+    CHECK(nge_block_line(AREA0, 0, 2, 9, 2, NGE_BLOCK_SOLID) == 1);
+    CHECK(nge_block_line(AREA0, 0, 2, 9, 2, NGE_BLOCK_NO_FLOOR) == 0);
+    /* Entities: one with the flag blocks (a closed door), one without (a creature) doesn't */
+    id = put(AREA0, 4, 6, NGE_BLOCK_OCCUPIED, PASS_PLAYER);
+    CHECK(nge_block_line(AREA0, 0, 6, 9, 6, NGE_BLOCK_SOLID) == 1);
+    CHECK(nge_block_line(AREA0, 0, 6, 9, 6, NGE_BLOCK_SOLID | NGE_BLOCK_OCCUPIED) == 0);
+    orc = put(AREA0, 6, 6, NGE_BLOCK_SOLID, PASS_PLAYER);
+    CHECK(nge_block_line(AREA0, 0, 6, 9, 6, NGE_BLOCK_SOLID) == 0);
+    CHECK(nge_block_line(AREA0, 6, 6, 9, 6, NGE_BLOCK_SOLID) == 1);   /* at the end: not tested */
+    nge_block_add(orc, NGE_BLOCK_NONE, PASS_PLAYER);                  /* the door opened */
+    CHECK(nge_block_line(AREA0, 0, 6, 9, 6, NGE_BLOCK_SOLID) == 1);
+    put(AREA1, 6, 7, NGE_BLOCK_SOLID, PASS_PLAYER);                   /* another area's */
+    CHECK(nge_block_line(AREA0, 0, 7, 9, 7, NGE_BLOCK_SOLID) == 1);
+    /* The edge always blocks: a line through it, even asking for nothing */
+    CHECK(nge_block_line(AREA0, 8, 0, 11, 0, NGE_BLOCK_NONE) == 0);
+    CHECK(nge_block_line(AREA0, 8, 0, 10, 0, NGE_BLOCK_NONE) == 1);   /* only the end outside */
 
     /* ---- asserts ---- */
     nge_entity_init();

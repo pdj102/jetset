@@ -25,11 +25,13 @@
  *
  * An entity without this component blocks nothing. The tables are in slot 0
  * (the ECS data page): movement, monster AI and targeting read them every
- * turn. Everything here is in common memory.
+ * turn. Everything here is in common memory, except the line test
+ * nge_block_line(), banked (NGE_BANKED, page 56).
  */
 
 #include <stdint.h>
 
+#include "core/nge_bank.h"
 #include "ecs/components/nge_components.h"
 #include "ecs/nge_entity.h"
 #include "ecs/nge_owner.h"
@@ -73,5 +75,20 @@ nge_entity_id_t nge_block_find(nge_owner_t area, uint8_t x, uint8_t y, nge_block
  */
 uint8_t nge_block_can_enter(nge_owner_t area, uint8_t x, uint8_t y, nge_block_t pass,
                             nge_entity_id_t ignore, nge_entity_id_t *blocker);
+
+/**
+ * @brief Is the line from (x0, y0) to (x1, y1) in an area clear: does no
+ *        tile strictly between the two ends have any of the flags in
+ *        block, in the map or on an entity there with this component?
+ *
+ * For sight (NGE_BLOCK_SOLID: walls and closed doors block it, creatures
+ * don't) and later a line of fire. NGE_BLOCK_EDGE always blocks. The ends
+ * aren't tested, so a creature in a doorway sees out; a tile and its
+ * neighbours are always clear. The tiles are Bresenham's line from
+ * (x0, y0), which isn't symmetric: from the other end a line may differ.
+ * @return 1 if clear, 0 if blocked.
+ */
+uint8_t nge_block_line(nge_owner_t area, uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1,
+                       nge_block_t block) NGE_BANKED;
 
 #endif
