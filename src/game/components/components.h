@@ -19,8 +19,8 @@
  * - its tables, one per field and [NGE_ENTITY_MAX], in slot 0
  *   (components/<name>_cdata.c) when common code or several systems read
  *   them, or in its module's page data when only that module does (the
- *   active effects' kinds, game/effects; each AI entity's state and brain,
- *   game/ai). Read-only outside the component.
+ *   active effects' kinds, game/effects; each AI entity's state, brain,
+ *   target and goal, game/ai). Read-only outside the component.
  *   A single component, which only one entity ever has (the player's,
  *   pc.h), has one variable per field instead;
  * - <name>_add(), which gives an entity the component, from its kind's

@@ -7,6 +7,15 @@ numbers, capabilities worked out from the entity each turn, D3, and one
 brain to start, D2). Q1 to Q4 answered in section 10. Section 11 lists
 where the build differs from the design.
 
+The next step, [ai_default_brain.md](ai_default_brain.md), builds the
+default brain on this framework: hearing and sight, the hunt state, a
+target and goal per entity, the pattern for states and their options,
+and `ACT_WAIT`. It changes three things here: hurt while asleep goes to
+hunt, not idle (R11); a stimulus from sensing changes the state before
+the entity acts (D6); and an AI turn always ends in one action, waiting
+if nothing else applies (R9). Of R18, hunt, a target and noticing the
+player (sight, and hearing with Wisdom) are done there.
+
 The AI module decides what an entity with the AI component does on its
 turn, through the same actions as the player's commands
 ([game/actions/act.h](../src/game/actions/act.h)). This step builds the

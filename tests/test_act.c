@@ -34,6 +34,9 @@
 
 static const nge_rect_t window = { .x1 = 0, .x2 = 19, .y1 = 0, .y2 = 19 };   /* a view of 10 x 10 tiles */
 
+/* The player, for the AI linked with the actions (game/actors.c isn't linked) */
+nge_entity_id_t actor_player = NGE_ENTITY_INVALID;
+
 /* The screen's map view, for the level module (screen.c isn't linked) */
 const nge_rect_t screen_map_view = { .x1 = 0, .x2 = 27, .y1 = 0, .y2 = 25 };
 

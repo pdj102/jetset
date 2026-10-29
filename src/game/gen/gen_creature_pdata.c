@@ -12,7 +12,15 @@
 
 #include "data/sprite_data.h"
 #include "game/actors.h"
+#include "game/dev.h"
 #include "sprite/nge_sprite.h"
+
+/* Development: the monsters act half as often, to watch the AI (game/dev.h) */
+#if GAME_DEV_KIT
+#define MONSTER_SPEED  20
+#else
+#define MONSTER_SPEED  10
+#endif
 
 const gen_creature_kind_t gen_creatures[CR_COUNT] = {
     [CR_PLAYER] = {
@@ -40,7 +48,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .render = { SPRITE_RAT_IDLE, SPRITE_RAT_IDLE_COUNT, SPRITE_RAT_IDLE_RATE,
                     NGE_SPRITE_PALETTE(BANK_EARTH), LAYER_MONSTERS },
         .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
-        .stats = { .speed = 10, .ability = { 2, 11, 9, 2, 10, 4 } },
+        .stats = { .speed = MONSTER_SPEED, .ability = { 2, 11, 9, 2, 10, 4 } },
         .health = { .hp_max = 3, .immune = DMG_BIT(DMG_POISON), .ac = 12 },
         .melee = { .to_hit = 0, .dice = 1, .sides = 3, .bonus = 0, .type = DMG_PIERCE, .range = 1 },  /* bite */
         .inventory = { .capacity = 0, .slots = 0 },     /* carries nothing */
@@ -55,7 +63,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .render = { SPRITE_GOBLIN_IDLE, SPRITE_GOBLIN_IDLE_COUNT, SPRITE_GOBLIN_IDLE_RATE,
                     NGE_SPRITE_PALETTE(BANK_GREEN), LAYER_MONSTERS },
         .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
-        .stats = { .speed = 10, .ability = { 8, 14, 10, 10, 8, 8 } },
+        .stats = { .speed = MONSTER_SPEED, .ability = { 8, 14, 10, 10, 8, 8 } },
         .health = { .hp_max = 6, .resist = DMG_BIT(DMG_BLUNT), .vuln = DMG_BIT(DMG_FIRE), .ac = 13 },
         .melee = { .to_hit = 0, .dice = 1, .sides = 4, .bonus = 0, .type = DMG_SLASH, .range = 1 },   /* claws */
         .inventory = { .capacity = 4, .slots = SLOT_BIT(SLOT_WEAPON) },

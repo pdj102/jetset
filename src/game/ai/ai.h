@@ -10,7 +10,8 @@
  * A state machine, with three concerns kept apart:
  * - state (AI_STATE_*): what the entity is doing now, one byte each. Each
  *   state has one handler, shared by every brain, which runs on the
- *   entity's turn and may do one action and return a stimulus;
+ *   entity's turn: it tries its options in order until one acts
+ *   (game/ai/ai_think.c says how a state is written);
  * - brain (AI_BRAIN_*): how it chooses, named by its kind's record (an
  *   ai_kind_t part): a transition table, state and stimulus (AI_STIM_*)
  *   to the next state, constant data. A new brain is a row of data;
@@ -20,7 +21,16 @@
  *
  * Turns: its timer (TIMER_AI, game/timers.h) fires every `speed` ticks,
  * and the game calls ai_on_turn() for an AI entity on the current level.
- * It does at most one action that uses the turn; not acting is waiting.
+ * It senses (hears while asleep, else looks: a stimulus from that changes
+ * its state at once), its state acts, and it does exactly one action
+ * that uses the turn: ACT_WAIT if nothing else applies.
+ *
+ * Target and goal: who it is after (the player it saw, or whoever hurt
+ * it) and where it thinks they are, kept between turns with its state.
+ * Out of sight, it goes to where it last saw or felt them; there, for
+ * AI_TRACK turns, the goal follows where they really are (it hears them
+ * go), so it follows them through the doorway they left by and round
+ * the corner beyond.
  *
  * Events: ai_on_event() turns events about an alive AI entity into
  * stimuli (attacked: AI_STIM_HURT). Reacting changes only the state,
@@ -50,19 +60,23 @@ typedef uint8_t ai_can_t;     /**< A mask of AI_CAN_*. */
 
 /* States */
 #define AI_STATE_NONE    0   /**< No state: never an entity's. */
-#define AI_STATE_ASLEEP  1   /**< Does nothing; wakes when hurt. */
-#define AI_STATE_IDLE    2   /**< Awake with nothing to do: waits (later: wanders, looks). */
-#define AI_STATE_COUNT   3
+#define AI_STATE_ASLEEP  1   /**< Does nothing; wakes when it hears the player, or is hurt. */
+#define AI_STATE_IDLE    2   /**< Awake, after no one: picks up, wields, wanders; looks. */
+#define AI_STATE_HUNT    3   /**< After its target: attacks, drinks, steps towards it. */
+#define AI_STATE_COUNT   4
 #define AI_STATE_NO_CHANGE  AI_STATE_NONE   /**< In a brain's table: stay in the current state. */
 
 /* Stimuli */
 #define AI_STIM_NONE   0   /**< Nothing new: from a state's handler. Changes no state. */
-#define AI_STIM_HURT   1   /**< Attacked: hit, missed or damaged. */
-#define AI_STIM_COUNT  2
+#define AI_STIM_HURT   1   /**< Attacked: hit, missed or damaged. Its source becomes the target. */
+#define AI_STIM_NOISE  2   /**< Heard the player (asleep). */
+#define AI_STIM_SEEN   3   /**< Saw its target, or the player. */
+#define AI_STIM_LOST   4   /**< Lost its target: at the goal and not seen, or can't get there. */
+#define AI_STIM_COUNT  5
 
 /* Brains */
 #define AI_BRAIN_NONE     0   /**< In a kind record: no AI. */
-#define AI_BRAIN_DEFAULT  1   /**< The shared one: wakes when hurt. */
+#define AI_BRAIN_DEFAULT  1   /**< The shared one: wakes, hunts what it sees or what hurt it, gives up. */
 #define AI_BRAIN_COUNT    2
 
 /* Capabilities: bits of ai_can() */
@@ -77,6 +91,12 @@ typedef uint8_t ai_can_t;     /**< A mask of AI_CAN_*. */
 /* The least Intelligence for the AI's own rules (the player needs none) */
 #define AI_INT_USE   5
 #define AI_INT_OPEN  6
+
+/* The senses */
+#define AI_SIGHT    8    /**< Sees this far (nge_map_within()), if the line is clear. */
+#define AI_HEAR     4    /**< Asleep, hears the player this near, walls or not... */
+#define AI_WAKE_DC  15   /**< ...and wakes on 1d20 + its Wisdom modifier of this or more. */
+#define AI_TRACK    3    /**< Its turns the goal follows the target unseen, from where it was last seen or hurt it. */
 
 /** The AI part of a creature's kind record. */
 typedef struct ai_kind {
@@ -111,8 +131,15 @@ ai_state_t ai_get_state(nge_entity_id_t id) NGE_BANKED;
  */
 ai_can_t ai_can(nge_entity_id_t id) NGE_BANKED;
 
-/** @brief An AI entity's turn (TIMER_AI): its state's handler. */
+/** @brief An AI entity's turn (TIMER_AI): sense, its state's handler, one action. */
 void ai_on_turn(nge_entity_id_t id) NGE_BANKED;
+
+/**
+ * @brief 1 if viewer sees entity id: both alive and placed in the same
+ *        area, within AI_SIGHT, with no wall or closed door between. Any
+ *        viewer, AI or not: the messages ask it for the player.
+ */
+uint8_t ai_sees(nge_entity_id_t viewer, nge_entity_id_t id) NGE_BANKED;
 
 /**
  * @brief React to events about alive AI entities: their stimuli, which may

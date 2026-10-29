@@ -19,7 +19,9 @@
 #include "game/ai/ai.h"
 #include "game/components/components.h"
 #include "game/components/health.h"
+#include "game/components/item.h"
 #include "game/components/kind.h"
+#include "game/dev.h"
 #include "game/effects/effects.h"
 #include "game/events.h"
 #include "game/game.h"
@@ -116,6 +118,36 @@ static void say_damage(nge_entity_id_t target, uint8_t taken, uint8_t p2)
     screen_message(line);
 }
 
+/* A monster with AI that the player sees (an AI entity's doings are said only then) */
+static uint8_t seen_ai(nge_entity_id_t id)
+{
+    return id != NGE_EVENT_NONE && AI_IS(id) && ai_sees(actor_player, id);
+}
+
+/* "The goblin picks up a sword.": verb is " picks up a ", thing is the sword */
+static void say_did(nge_entity_id_t actor, const char *verb, nge_entity_id_t thing)
+{
+    char line[MESSAGE_MAX];
+    char name[NAME_MAX];
+
+    strcpy(line, "The ");
+    gen_name(actor, name, sizeof(name));
+    add(line, name);
+    add(line, verb);
+    gen_name(thing, name, sizeof(name));
+    add(line, name);
+    add(line, ".");
+    screen_message(line);
+}
+
+#if GAME_DEV_KIT
+/* Development: what look says after a monster's name, by its AI state (game/dev.h) */
+static const char *const ai_state_names[AI_STATE_COUNT] = {
+    [AI_STATE_NONE] = ".", [AI_STATE_ASLEEP] = " (asleep).", [AI_STATE_IDLE] = " (idle).",
+    [AI_STATE_HUNT] = " (hunting).",
+};
+#endif
+
 /* EV_ARRIVED: "You go down to level 2.", by how the player came (LEVEL_ARRIVE_*) */
 static void say_arrived(uint8_t depth, uint8_t arrival)
 {
@@ -186,6 +218,8 @@ void messages_on_event(const nge_event_t *e) NGE_BANKED
     case EV_PICKED_UP:
         if (source == actor_player) {
             say_named("You pick up a ", target, ".");
+        } else if (seen_ai(source)) {
+            say_did(source, " picks up a ", target);
         }
         break;
     case EV_QUEST_FOUND:
@@ -199,6 +233,8 @@ void messages_on_event(const nge_event_t *e) NGE_BANKED
     case EV_OPENED:
         if (source == actor_player) {
             say_named("You open the ", target, ".");
+        } else if (seen_ai(source)) {
+            say_did(source, " opens the ", target);
         }
         break;
     case EV_CLOSED:
@@ -209,6 +245,8 @@ void messages_on_event(const nge_event_t *e) NGE_BANKED
     case EV_EQUIPPED:
         if (source == actor_player) {
             say_named("You equip a ", target, ".");
+        } else if (seen_ai(source)) {
+            say_did(source, p1 == SLOT_WEAPON ? " wields a " : " puts on a ", target);
         }
         break;
     case EV_UNEQUIPPED:
@@ -221,6 +259,11 @@ void messages_on_event(const nge_event_t *e) NGE_BANKED
             say_named(KIND_IS(target, CLASS_ITEM) && gen_item_subclass(kind_index[target]) == ITEM_FOOD
                           ? "You eat the " : "You drink the ",
                       target, ".");
+        } else if (seen_ai(source)) {
+            say_did(source,
+                    KIND_IS(target, CLASS_ITEM) && gen_item_subclass(kind_index[target]) == ITEM_FOOD
+                        ? " eats the " : " drinks the ",
+                    target);
         }
         break;
     case EV_EFFECT_STARTED:
@@ -243,8 +286,10 @@ void messages_on_event(const nge_event_t *e) NGE_BANKED
         say_named("The ", target, p1 < level_depth ? " goes up and away." : " goes down and away.");
         break;
     case EV_AI_CHANGED:
-        if (p1 == AI_STATE_ASLEEP) {
+        if (p1 == AI_STATE_ASLEEP && seen_ai(target)) {
             say_named("The ", target, " wakes up.");
+        } else if (p1 == AI_STATE_IDLE && p2 == AI_STATE_HUNT && source == actor_player && seen_ai(target)) {
+            say_named("The ", target, " notices you.");
         }
         break;
     default:
@@ -351,7 +396,11 @@ void messages_look(uint8_t x, uint8_t y) NGE_BANKED
         if (id == actor_player) {
             screen_message("You see yourself.");
         } else {
+#if GAME_DEV_KIT
+            say_named("You see a ", id, AI_IS(id) ? ai_state_names[ai_get_state(id)] : ".");
+#else
             say_named("You see a ", id, ".");
+#endif
         }
         seen = 1;
     }

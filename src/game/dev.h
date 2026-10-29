@@ -14,7 +14,10 @@
  * at a time while a movement key is held, to check the pixel camera; M
  * spends 1 of the player's MP, or restores them all at 0, to check the
  * stats window follows (game/components/mana.h); E puts the player up a
- * level and gives 10 gold (game/components/pc.h).
+ * level and gives 10 gold (game/components/pc.h); rats and goblins act
+ * half as often, speed 20 (game/gen/gen_creature_pdata.c), and look (x)
+ * names a monster's AI state, "You see a goblin (hunting)."
+ * (game/messages), to watch the AI (game/ai/ai.h).
  */
 
 #ifndef GAME_DEV_KIT

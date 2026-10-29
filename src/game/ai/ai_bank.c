@@ -1,7 +1,8 @@
 /*
- * The AI module: banked in page 130, with each entity's state and brain in
- * page 131 (ai_pdata.c). The component, the turn, the stimuli and the
- * capabilities; acting is in ai_act.c.
+ * The AI module: banked in page 130, with each entity's state, brain,
+ * target and goal in page 131 (ai_pdata.c). The component, the stimuli
+ * and the capabilities; the turn is in ai_think.c, sensing in ai_sense.c,
+ * acting in ai_act.c.
  */
 #ifdef __SDCC
 #pragma codeseg PAGE_130
@@ -11,6 +12,8 @@
 #include "game/ai/ai_internal.h"
 
 #include "core/nge_util.h"
+#include "ecs/components/nge_location.h"
+#include "map/nge_map.h"
 
 #include "game/components/attack.h"
 #include "game/components/inventory.h"
@@ -45,6 +48,10 @@ void ai_add(nge_entity_id_t id, const ai_kind_t *k) NGE_BANKED
     NGE_ENTITY_ADD_COMPONENT(id, COMPONENT_AI);
     ai_brain[id] = brain;
     ai_state[id] = state;
+    ai_target[id] = NGE_ENTITY_INVALID;
+    ai_goal_x[id] = NGE_MAP_X_INVALID;
+    ai_goal_y[id] = NGE_MAP_Y_INVALID;
+    ai_track[id] = 0;
 }
 
 void ai_remove(nge_entity_id_t id) NGE_BANKED
@@ -101,6 +108,20 @@ void ai_stimulus(nge_entity_id_t id, ai_stim_t stim, nge_entity_id_t source) NGE
     check_ai(id);
     nge_util_assert(stim < AI_STIM_COUNT);
 
+    /* The target and goal: whoever hurt it, where they are; lost, nowhere */
+    if (stim == AI_STIM_HURT && source != NGE_EVENT_NONE && NGE_ENTITY_IS_ALIVE(source) &&
+        NGE_ENTITY_HAS_COMPONENT(source, NGE_COMPONENT_LOCATION) &&
+        NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_LOCATION) && NGE_OWNER_OF(source) == NGE_OWNER_OF(id)) {
+        ai_target[id] = source;
+        ai_goal_x[id] = NGE_LOCATION_X(source);
+        ai_goal_y[id] = NGE_LOCATION_Y(source);
+        ai_track[id] = AI_TRACK;
+    } else if (stim == AI_STIM_LOST) {
+        ai_goal_x[id] = NGE_MAP_X_INVALID;
+        ai_goal_y[id] = NGE_MAP_Y_INVALID;
+        ai_track[id] = 0;
+    }
+
     old = ai_state[id];
     next = ai_brains[ai_brain[id]].next[old][stim];
     if (next == AI_STATE_NO_CHANGE || next == old) {
@@ -108,25 +129,4 @@ void ai_stimulus(nge_entity_id_t id, ai_stim_t stim, nge_entity_id_t source) NGE
     }
     ai_state[id] = next;
     nge_event_post(id, EV_AI_CHANGED, source, old, next);
-}
-
-/*
- * A state that acts gets a handler, think_<state>(id, can), returning a
- * stimulus (what it noticed: AI_STIM_NONE for nothing), which is passed to
- * ai_stimulus(id, stim, NGE_EVENT_NONE): the new state acts next turn.
- * Neither state does yet
- */
-void ai_on_turn(nge_entity_id_t id) NGE_BANKED
-{
-    check_ai(id);
-
-    switch (ai_state[id]) {
-    case AI_STATE_ASLEEP:
-        break;   /* sleeps until something wakes it (ai_on_event()) */
-    case AI_STATE_IDLE:
-        break;   /* waits (later: wanders, looks for the player) */
-    default:
-        nge_util_abort("bad ai state");
-        break;
-    }
 }

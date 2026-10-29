@@ -17,7 +17,11 @@
 #include "event/nge_event.h"
 #include "game/actions/act.h"
 
-/** @brief Add a message for the events the player should hear about. */
+/**
+ * @brief Add a message for the events the player should hear about. What a
+ *        monster with AI does (wakes, notices them, opens, picks up,
+ *        wields, drinks) is said only if they see it (ai_sees()).
+ */
 void messages_on_event(const nge_event_t *e) NGE_BANKED;
 
 /** @brief Tell the player why their action failed (a->reason, a on the caller's stack), if they need telling. */

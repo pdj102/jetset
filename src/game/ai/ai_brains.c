@@ -10,17 +10,28 @@
 
 #include "game/ai/ai_internal.h"
 
+#define SAME  AI_STATE_NO_CHANGE   /* short, to keep a row on a line */
+
 const ai_brain_def_t ai_brains[AI_BRAIN_COUNT] = {
     [AI_BRAIN_NONE] = {                 /* never an entity's: ai_add() refuses it */
         .next = {
-            [AI_STATE_ASLEEP] = { [AI_STIM_NONE] = AI_STATE_NO_CHANGE, [AI_STIM_HURT] = AI_STATE_NO_CHANGE },
-            [AI_STATE_IDLE]   = { [AI_STIM_NONE] = AI_STATE_NO_CHANGE, [AI_STIM_HURT] = AI_STATE_NO_CHANGE },
+            [AI_STATE_ASLEEP] = { [AI_STIM_NONE] = SAME, [AI_STIM_HURT] = SAME, [AI_STIM_NOISE] = SAME,
+                                  [AI_STIM_SEEN] = SAME, [AI_STIM_LOST] = SAME },
+            [AI_STATE_IDLE]   = { [AI_STIM_NONE] = SAME, [AI_STIM_HURT] = SAME, [AI_STIM_NOISE] = SAME,
+                                  [AI_STIM_SEEN] = SAME, [AI_STIM_LOST] = SAME },
+            [AI_STATE_HUNT]   = { [AI_STIM_NONE] = SAME, [AI_STIM_HURT] = SAME, [AI_STIM_NOISE] = SAME,
+                                  [AI_STIM_SEEN] = SAME, [AI_STIM_LOST] = SAME },
         },
     },
+    /* Wakes when it hears the player or is hurt; hunts what it sees or what hurt it; gives up when lost */
     [AI_BRAIN_DEFAULT] = {
         .next = {
-            [AI_STATE_ASLEEP] = { [AI_STIM_NONE] = AI_STATE_NO_CHANGE, [AI_STIM_HURT] = AI_STATE_IDLE },
-            [AI_STATE_IDLE]   = { [AI_STIM_NONE] = AI_STATE_NO_CHANGE, [AI_STIM_HURT] = AI_STATE_NO_CHANGE },
+            [AI_STATE_ASLEEP] = { [AI_STIM_NONE] = SAME, [AI_STIM_HURT] = AI_STATE_HUNT,
+                                  [AI_STIM_NOISE] = AI_STATE_IDLE, [AI_STIM_SEEN] = SAME, [AI_STIM_LOST] = SAME },
+            [AI_STATE_IDLE]   = { [AI_STIM_NONE] = SAME, [AI_STIM_HURT] = AI_STATE_HUNT,
+                                  [AI_STIM_NOISE] = SAME, [AI_STIM_SEEN] = AI_STATE_HUNT, [AI_STIM_LOST] = SAME },
+            [AI_STATE_HUNT]   = { [AI_STIM_NONE] = SAME, [AI_STIM_HURT] = SAME,
+                                  [AI_STIM_NOISE] = SAME, [AI_STIM_SEEN] = SAME, [AI_STIM_LOST] = AI_STATE_IDLE },
         },
     },
 };
