@@ -63,6 +63,8 @@ uint8_t act_do(uint8_t action, act_t *a, uint8_t mode)
         return act_ascend(a, mode);
     case ACT_DESCEND:
         return act_descend(a, mode);
+    case ACT_WAIT:
+        return act_wait(a, mode);
     default:
         nge_util_abort("bad action");
         return ACT_FAIL;

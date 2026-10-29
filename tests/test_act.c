@@ -749,6 +749,21 @@ int main(void)
     CHECK(depth == 0 && arrival == LEVEL_ARRIVE_DOWN_STAIRS);
     level_depth = 0;
 
+    /* ---- wait: always possible, uses the turn, changes and posts nothing ---- */
+    events();
+    a = ctx(player);
+    srand(9);
+    r1 = rand();
+    srand(9);
+    CHECK(act_wait(&a, ACT_CHECK) == ACT_SUCCESS && a.reason == ACT_R_NONE && a.used == 0);
+    CHECK(act_do(ACT_WAIT, &a, ACT_DO) == ACT_SUCCESS && a.reason == ACT_R_NONE && a.used == 1);
+    CHECK(rand() == r1 && events() == 0);
+    TEST_EXPECT_HALT(act_wait(&a, ACT_DO));                   /* checked: alive */
+    CHECK(test_halt_count == 0);
+    a.actor = NGE_ENTITY_MAX;
+    TEST_EXPECT_HALT(act_wait(&a, ACT_DO));
+    CHECK(test_halt_count == 1);
+
     /* ---- every reason is refused, but a miss ---- */
     ok = 1;
     for (r1 = 0; r1 < ACT_R_COUNT; r1++) {

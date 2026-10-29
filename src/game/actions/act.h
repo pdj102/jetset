@@ -95,7 +95,8 @@ typedef struct act {
 #define ACT_CLOSE   8
 #define ACT_ASCEND  9
 #define ACT_DESCEND 10
-#define ACT_COUNT   11
+#define ACT_WAIT    11
+#define ACT_COUNT   12
 
 /* Reasons (refused or attempted: the table in act.c) */
 #define ACT_R_NONE              0   /**< Succeeded. */
@@ -250,6 +251,13 @@ uint8_t act_ascend(act_t *a, uint8_t mode) NGE_BANKED;
 
 /** @brief Go down the stairs the actor stands on: as act_ascend(), for a feature that leads down (FCAN_DESCEND). */
 uint8_t act_descend(act_t *a, uint8_t mode) NGE_BANKED;
+
+/**
+ * @brief Wait: do nothing for one turn. In: actor (alive). Always succeeds
+ *        and uses the turn; posts no event. The player's wait key, and
+ *        what the AI does when nothing else applies (game/ai/ai.h).
+ */
+uint8_t act_wait(act_t *a, uint8_t mode) NGE_BANKED;
 
 /** @brief Call action (ACT_MOVE...) by number: for the AI and delayed actions. */
 uint8_t act_do(uint8_t action, act_t *a, uint8_t mode);

@@ -283,6 +283,12 @@ void player_command(nge_key_event_t ev) NGE_BANKED
     case '>':
         stairs(ACT_DESCEND);
         break;
+    case '.': {
+        act_t a = { 0 };
+
+        player_act(ACT_WAIT, &a);   /* let the monsters come */
+        break;
+    }
     case 'Q':
         screen_message("You quit.");
         game_over(GAME_OVER_QUIT);
