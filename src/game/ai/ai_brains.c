@@ -1,7 +1,7 @@
 /*
  * The brains: constant data in page 130, read by the AI's code there.
- * Each table is written out in full; an entry left out is AI_STATE_NONE,
- * no change.
+ * Each table is written out in full; an entry left out is 0,
+ * AI_STATE_NO_CHANGE.
  */
 #ifdef __SDCC
 #pragma codeseg PAGE_130
@@ -13,14 +13,14 @@
 const ai_brain_def_t ai_brains[AI_BRAIN_COUNT] = {
     [AI_BRAIN_NONE] = {                 /* never an entity's: ai_add() refuses it */
         .next = {
-            [AI_STATE_ASLEEP] = { [AI_STIM_NONE] = AI_STATE_NONE, [AI_STIM_HURT] = AI_STATE_NONE },
-            [AI_STATE_IDLE]   = { [AI_STIM_NONE] = AI_STATE_NONE, [AI_STIM_HURT] = AI_STATE_NONE },
+            [AI_STATE_ASLEEP] = { [AI_STIM_NONE] = AI_STATE_NO_CHANGE, [AI_STIM_HURT] = AI_STATE_NO_CHANGE },
+            [AI_STATE_IDLE]   = { [AI_STIM_NONE] = AI_STATE_NO_CHANGE, [AI_STIM_HURT] = AI_STATE_NO_CHANGE },
         },
     },
     [AI_BRAIN_DEFAULT] = {
         .next = {
-            [AI_STATE_ASLEEP] = { [AI_STIM_NONE] = AI_STATE_NONE, [AI_STIM_HURT] = AI_STATE_IDLE },
-            [AI_STATE_IDLE]   = { [AI_STIM_NONE] = AI_STATE_NONE, [AI_STIM_HURT] = AI_STATE_NONE },
+            [AI_STATE_ASLEEP] = { [AI_STIM_NONE] = AI_STATE_NO_CHANGE, [AI_STIM_HURT] = AI_STATE_IDLE },
+            [AI_STATE_IDLE]   = { [AI_STIM_NONE] = AI_STATE_NO_CHANGE, [AI_STIM_HURT] = AI_STATE_NO_CHANGE },
         },
     },
 };

@@ -103,7 +103,7 @@ void ai_stimulus(nge_entity_id_t id, ai_stim_t stim, nge_entity_id_t source) NGE
 
     old = ai_state[id];
     next = ai_brains[ai_brain[id]].next[old][stim];
-    if (next == AI_STATE_NONE || next == old) {
+    if (next == AI_STATE_NO_CHANGE || next == old) {
         return;
     }
     ai_state[id] = next;

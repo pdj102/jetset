@@ -49,10 +49,11 @@ typedef uint8_t ai_brain_t;   /**< AI_BRAIN_*. */
 typedef uint8_t ai_can_t;     /**< A mask of AI_CAN_*. */
 
 /* States */
-#define AI_STATE_NONE    0   /**< In a brain's table: no change. Never an entity's state. */
+#define AI_STATE_NONE    0   /**< No state: never an entity's. */
 #define AI_STATE_ASLEEP  1   /**< Does nothing; wakes when hurt. */
 #define AI_STATE_IDLE    2   /**< Awake with nothing to do: waits (later: wanders, looks). */
 #define AI_STATE_COUNT   3
+#define AI_STATE_NO_CHANGE  AI_STATE_NONE   /**< In a brain's table: stay in the current state. */
 
 /* Stimuli */
 #define AI_STIM_NONE   0   /**< Nothing new: from a state's handler. Changes no state. */

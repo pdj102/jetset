@@ -163,13 +163,13 @@ int main(void)
             for (t = 0; t < AI_STIM_COUNT; t++) {
                 ok = ok && ai_brains[k.brain].next[s][t] < AI_STATE_COUNT;
             }
-            ok = ok && ai_brains[k.brain].next[s][AI_STIM_NONE] == AI_STATE_NONE;
-            ok = ok && (k.brain != AI_BRAIN_NONE || ai_brains[k.brain].next[s][AI_STIM_HURT] == AI_STATE_NONE);
+            ok = ok && ai_brains[k.brain].next[s][AI_STIM_NONE] == AI_STATE_NO_CHANGE;
+            ok = ok && (k.brain != AI_BRAIN_NONE || ai_brains[k.brain].next[s][AI_STIM_HURT] == AI_STATE_NO_CHANGE);
         }
     }
     CHECK(ok);
     CHECK(ai_brains[AI_BRAIN_DEFAULT].next[AI_STATE_ASLEEP][AI_STIM_HURT] == AI_STATE_IDLE);
-    CHECK(ai_brains[AI_BRAIN_DEFAULT].next[AI_STATE_IDLE][AI_STIM_HURT] == AI_STATE_NONE);
+    CHECK(ai_brains[AI_BRAIN_DEFAULT].next[AI_STATE_IDLE][AI_STIM_HURT] == AI_STATE_NO_CHANGE);
 
     /* ---- ai_can(): from the components and the current abilities ---- */
     player = creature(CR_PLAYER, 4, 5);

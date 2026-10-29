@@ -19,7 +19,7 @@
 
 #include "game/actions/act.h"
 
-/* A brain: the next state for each state and stimulus; AI_STATE_NONE: no change */
+/* A brain: the next state for each state and stimulus; AI_STATE_NO_CHANGE: stay */
 typedef struct ai_brain_def {
     ai_state_t next[AI_STATE_COUNT][AI_STIM_COUNT];
 } ai_brain_def_t;

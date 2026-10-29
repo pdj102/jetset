@@ -644,7 +644,9 @@ All answered (2026-10-29):
   `AI_STIM_HURT` is 1. A brain's table has a row for `AI_STATE_NONE` and
   a column for `AI_STIM_NONE`, all no change (6 bytes a brain). An entry
   left out of a table is therefore "no change", not asleep: the risk in
-  6.4 is gone, though the tables are still written out in full.
+  6.4 is gone, though the tables are still written out in full. The
+  tables and `change()` name it `AI_STATE_NO_CHANGE`, defined as
+  `AI_STATE_NONE`, so an entry reads as "stay" rather than as a state.
 - **`ai_try()` is in a file of its own, `ai_act.c`** (page 130 too), so
   the tests linked with the generators (test_gen, test_inventory...) need
   the AI's component code but not the actions. `test_ai` links with the
