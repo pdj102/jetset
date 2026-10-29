@@ -268,7 +268,7 @@ art is compared with them:
 |---|---|
 | Medium creature | `player.idle` frame 0 (agreed 2026-10-29) |
 | Small creature | `rat.idle` frame 0 (agreed 2026-10-29) |
-| Item | to draw: `potion` |
+| Item | `potion` (agreed 2026-10-29) |
 
 ## 7. Workflow with Claude
 
