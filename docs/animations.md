@@ -424,6 +424,10 @@ CSpect and hardware checks:
 - **`nge_map_centre_camera_px()`** puts the pixel where
   `nge_map_centre_camera()` puts a tile's top-left, so the two agree on a
   tile.
+- **Lunges are 2 pixels a frame, 8 frames out and back** (from
+  2026-10-29, was 4 and 4 frames), so the player's 2-pattern attack
+  sequence (80 ms a pattern) shows its thrust at the lunge's peak. A melee
+  attack holds the world for 160 ms.
 - **The render system's page data grew by 9 bytes an entity,** not 7: the
   rest animation is three tables, the one-shot flag one, and the motion
   five. Page 53 now holds about 2.7K. Common memory lost 126 bytes

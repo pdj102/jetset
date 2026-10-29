@@ -21,58 +21,58 @@
 
 #define SPRITE_PALETTE_PAGE          135 /**< SECTION PAGE_135 in sprite_palette_data.asm. */
 #define SPRITE_PALETTE_ENTRIES       256 /**< Entries in sprite_palette: load them from entry 0. */
-#define SPRITE_PATTERNS              16  /**< 4-bit patterns, from pattern 0. */
+#define SPRITE_PATTERNS              14  /**< 4-bit patterns, from pattern 0. */
 #define SPRITE_PATTERN_PAGES         1   /**< Pages of patterns: SPRITE_PATTERNS_PAGE_0 on. */
 
-#define SPRITE_PATTERNS_PAGE_0       137 /**< Patterns 0-15: sprite_patterns_0. */
-#define SPRITE_PATTERNS_COUNT_0      16
+#define SPRITE_PATTERNS_PAGE_0       137 /**< Patterns 0-13: sprite_patterns_0. */
+#define SPRITE_PATTERNS_COUNT_0      14
 
 #define SPRITE_PLAYER_IDLE           0   /**< Tag player.idle: frames 0-1. */
 #define SPRITE_PLAYER_IDLE_COUNT     2
 #define SPRITE_PLAYER_IDLE_RATE      25
 #define SPRITE_PLAYER_IDLE_BANK      0
 
-#define SPRITE_PLAYER_MOVE           2   /**< Tag player.move: frames 2-5. */
-#define SPRITE_PLAYER_MOVE_COUNT     4
-#define SPRITE_PLAYER_MOVE_RATE      1
-#define SPRITE_PLAYER_MOVE_BANK      0
-
-#define SPRITE_PLAYER_ATTACK         6   /**< Tag player.attack: frame 6. */
-#define SPRITE_PLAYER_ATTACK_COUNT   1
+#define SPRITE_PLAYER_ATTACK         2   /**< Tag player.attack: frames 2-3. */
+#define SPRITE_PLAYER_ATTACK_COUNT   2
 #define SPRITE_PLAYER_ATTACK_RATE    4
 #define SPRITE_PLAYER_ATTACK_BANK    0
 
-#define SPRITE_RAT_IDLE              7   /**< Tag rat.idle: frames 7-8. */
+#define SPRITE_PLAYER_DEAD           4   /**< Tag player.dead: frame 4. */
+#define SPRITE_PLAYER_DEAD_COUNT     1
+#define SPRITE_PLAYER_DEAD_RATE      25
+#define SPRITE_PLAYER_DEAD_BANK      0
+
+#define SPRITE_RAT_IDLE              5   /**< Tag rat.idle: frames 5-6. */
 #define SPRITE_RAT_IDLE_COUNT        2
 #define SPRITE_RAT_IDLE_RATE         25
 #define SPRITE_RAT_IDLE_BANK         12
 
-#define SPRITE_GOBLIN_IDLE           9   /**< Tag goblin.idle: frames 9-10. */
+#define SPRITE_GOBLIN_IDLE           7   /**< Tag goblin.idle: frames 7-8. */
 #define SPRITE_GOBLIN_IDLE_COUNT     2
 #define SPRITE_GOBLIN_IDLE_RATE      25
 #define SPRITE_GOBLIN_IDLE_BANK      0
 
-#define SPRITE_POTION                11  /**< Tag potion: frame 11. */
+#define SPRITE_POTION                9   /**< Tag potion: frame 9. */
 #define SPRITE_POTION_COUNT          1
 #define SPRITE_POTION_RATE           5
 #define SPRITE_POTION_BANK           3
 
-#define SPRITE_SWORD                 12  /**< Tag sword: frame 12. */
+#define SPRITE_SWORD                 10  /**< Tag sword: frame 10. */
 #define SPRITE_SWORD_COUNT           1
 #define SPRITE_SWORD_RATE            5
 #define SPRITE_SWORD_BANK            13
 
-#define SPRITE_RING                  13  /**< Tag ring: frame 13. */
+#define SPRITE_RING                  11  /**< Tag ring: frame 11. */
 #define SPRITE_RING_COUNT            1
 #define SPRITE_RING_RATE             5
 #define SPRITE_RING_BANK             6
 
-#define SPRITE_CURSOR                14  /**< Tag cursor: frame 14. */
+#define SPRITE_CURSOR                12  /**< Tag cursor: frame 12. */
 #define SPRITE_CURSOR_COUNT          1
 #define SPRITE_CURSOR_RATE           5
 #define SPRITE_CURSOR_BANK           7
 
-#define SPRITE_RAT_DEAD              15  /**< Tag rat.dead: frame 15. */
+#define SPRITE_RAT_DEAD              13  /**< Tag rat.dead: frame 13. */
 #define SPRITE_RAT_DEAD_COUNT        1
 #define SPRITE_RAT_DEAD_RATE         5
 #define SPRITE_RAT_DEAD_BANK         12

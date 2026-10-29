@@ -38,7 +38,6 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .ai = { .brain = AI_BRAIN_NONE },               /* their turns wait for commands */
         .hooks = { [GEN_HOOK_INNATE] = EF_REGEN },
         .seqs = {
-            [GEN_SEQ_MOVE] = { SPRITE_PLAYER_MOVE, SPRITE_PLAYER_MOVE_COUNT, SPRITE_PLAYER_MOVE_RATE },
             [GEN_SEQ_ATTACK] = { SPRITE_PLAYER_ATTACK, SPRITE_PLAYER_ATTACK_COUNT, SPRITE_PLAYER_ATTACK_RATE },
         },
         .where = { .depth = 0, .rarity = 0 },          /* never at random */

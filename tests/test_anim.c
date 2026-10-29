@@ -81,11 +81,10 @@ int main(void)
     nge_event_flush();                                   /* the player's innate effect */
 
     /* ---- the kinds' sequences: copied from the kind records; the player's from the art ---- */
-    CHECK(anim_seqs[CR_PLAYER][GEN_SEQ_MOVE].first == SPRITE_PLAYER_MOVE &&
-          anim_seqs[CR_PLAYER][GEN_SEQ_MOVE].count == SPRITE_PLAYER_MOVE_COUNT &&
-          anim_seqs[CR_PLAYER][GEN_SEQ_MOVE].rate == SPRITE_PLAYER_MOVE_RATE);
+    CHECK(anim_seqs[CR_PLAYER][GEN_SEQ_MOVE].count == 0);   /* walking is the slide alone */
     CHECK(anim_seqs[CR_PLAYER][GEN_SEQ_ATTACK].first == SPRITE_PLAYER_ATTACK &&
-          anim_seqs[CR_PLAYER][GEN_SEQ_ATTACK].count == SPRITE_PLAYER_ATTACK_COUNT);
+          anim_seqs[CR_PLAYER][GEN_SEQ_ATTACK].count == SPRITE_PLAYER_ATTACK_COUNT &&
+          anim_seqs[CR_PLAYER][GEN_SEQ_ATTACK].rate == SPRITE_PLAYER_ATTACK_RATE);
     ok = 1;
     for (dx = CR_PLAYER + 1; dx < CR_COUNT; dx++) {
         for (dy = 0; dy < GEN_SEQ_COUNT; dy++) {
@@ -93,8 +92,8 @@ int main(void)
         }
     }
     CHECK(ok);
-    /* The move sequence ends with the slide, so it doesn't slow walking (the world waits for it) */
-    CHECK(SPRITE_PLAYER_MOVE_COUNT * SPRITE_PLAYER_MOVE_RATE <= NGE_MAP_TILE_PIXELS / ANIM_SLIDE_SPEED);
+    /* The attack sequence ends with the lunge, so it doesn't slow fighting (the world waits for it) */
+    CHECK(SPRITE_PLAYER_ATTACK_COUNT * SPRITE_PLAYER_ATTACK_RATE <= 2 * ANIM_LUNGE_PIXELS / ANIM_LUNGE_SPEED);
 
     /* The motions alone first: the player without its sequences */
     memset(anim_seqs[CR_PLAYER], 0, sizeof(anim_seqs[CR_PLAYER]));

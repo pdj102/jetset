@@ -30,7 +30,7 @@
 
 #define ANIM_SLIDE_SPEED   4   /**< Pixels a frame of a slide: 4 frames a tile, the key repeat rate. */
 #define ANIM_LUNGE_PIXELS  8   /**< How far a lunge goes towards the target: half a tile. */
-#define ANIM_LUNGE_SPEED   4   /**< Pixels a frame of a lunge: 4 frames out and back. */
+#define ANIM_LUNGE_SPEED   2   /**< Pixels a frame of a lunge: 8 frames out and back, time for a 2-pattern attack. */
 
 /** @brief Copy the creature kinds' sequences from their kind records: once, at start-up. */
 void anim_init(void) NGE_BANKED;

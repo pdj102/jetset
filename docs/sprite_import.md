@@ -433,8 +433,8 @@ CSpect and hardware checks (step 2):
    `{ SPRITE_<TAG>, SPRITE_<TAG>_COUNT, SPRITE_<TAG>_RATE }`. A renamed or
    removed tag is a compile error where it is used.
 4. A move sequence should last no longer than the slide (4 frames, 80
-   ms), and an attack sequence no longer than the lunge (4 frames): the
-   world waits for them.
+   ms), and an attack sequence no longer than the lunge (8 frames, 160
+   ms): the world waits for them.
 5. `make`. The script prints the patterns, tags and banks, or an error
    naming the frame, tag or pixel.
 6. Commit the `.aseprite` file and the three generated files in
