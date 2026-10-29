@@ -16,14 +16,15 @@
  * |               |                         | passes until a command uses it (player.h)   |
  * | TIMER_EFFECT  | an active effect, owned | effects_on_timer(): its op each period, and |
  * |               | by what it affects      | its end after its cycles (game/effects)     |
- * | TIMER_MONSTER | a monster               | none yet (no AI): it waits                  |
+ * | TIMER_AI      | an entity with the AI   | ai_on_turn(): its state's handler           |
+ * |               | component: a monster    | (game/ai/ai.h)                              |
  */
 
 #include "ecs/systems/nge_timer.h"
 
 #define TIMER_PLAYER   0   /**< The player's turn: wait for a command. */
 #define TIMER_EFFECT   1   /**< An active effect: its period's op; it ends on its last cycle. */
-#define TIMER_MONSTER  2   /**< A monster's turn (no AI yet: it waits a move). */
+#define TIMER_AI       2   /**< An AI entity's turn: the AI decides what it does. */
 #define TIMER_COUNT    3   /**< The number of timer kinds. */
 
 #endif

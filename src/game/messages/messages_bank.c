@@ -16,6 +16,7 @@
 #include "ecs/components/nge_location.h"
 
 #include "game/actors.h"
+#include "game/ai/ai.h"
 #include "game/components/components.h"
 #include "game/components/health.h"
 #include "game/components/kind.h"
@@ -240,6 +241,11 @@ void messages_on_event(const nge_event_t *e) NGE_BANKED
         break;
     case EV_LEFT_LEVEL:
         say_named("The ", target, p1 < level_depth ? " goes up and away." : " goes down and away.");
+        break;
+    case EV_AI_CHANGED:
+        if (p1 == AI_STATE_ASLEEP) {
+            say_named("The ", target, " wakes up.");
+        }
         break;
     default:
         break;

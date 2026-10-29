@@ -27,6 +27,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .inventory = { .capacity = 20, .slots = SLOTS_HUMANOID },
         .xp = 0,
         .flags = CREATURE_PLAYER,
+        .ai = { .brain = AI_BRAIN_NONE },               /* their turns wait for commands */
         .hooks = { [GEN_HOOK_INNATE] = EF_REGEN },
         .seqs = {
             [GEN_SEQ_MOVE] = { SPRITE_PLAYER_MOVE, SPRITE_PLAYER_MOVE_COUNT, SPRITE_PLAYER_MOVE_RATE },
@@ -45,6 +46,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .inventory = { .capacity = 0, .slots = 0 },     /* carries nothing */
         .xp = 5,                                        /* below 1 hit die */
         .flags = 0,
+        .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
         .hooks = { [GEN_HOOK_HIT] = EF_POISON },        /* a poisonous bite */
         .where = { .depth = 1, .rarity = 10 },
     },
@@ -59,6 +61,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .inventory = { .capacity = 4, .slots = SLOT_BIT(SLOT_WEAPON) },
         .xp = 5,                                        /* 1-1 hit dice */
         .flags = 0,
+        .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
         .where = { .depth = 1, .rarity = 6 },
     },
 };

@@ -38,8 +38,8 @@
  *         case TIMER_PLAYER:
  *             player_turn = 1;             // wait for a command
  *             break;
- *         case TIMER_MONSTER:
- *             monster_act(id);             // may be banked
+ *         case TIMER_AI:
+ *             ai_on_turn(id);              // may be banked
  *             break;
  *         ...
  *         }

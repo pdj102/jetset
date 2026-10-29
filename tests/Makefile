@@ -13,7 +13,7 @@
 #      headers.
 #   Game code (src/game) is linked only into the tests listed with it below
 #   (GEN_GAME_SRCS, with the components and effects, for test_gen, LEVEL_GAME_SRCS and those for test_level,
-#   ACT_GAME_SRCS and the level and gen ones for test_act, the gen ones for
+#   ACT_GAME_SRCS (with ai_act.c) and the level and gen ones for test_act and test_ai, the gen ones for
 #   test_inventory, UI_GAME_SRCS and the action ones for test_ui and test_target).
 #   Library files that only work on the Next (inline asm traps, Layer 2
 #   drawing by address) are listed in LIB_EXCLUDE and replaced by fakes in
@@ -47,7 +47,8 @@ GEN_GAME_SRCS := $(addprefix $(GAMEDIR)/,gen/gen.c gen/gen_shared_bank.c \
                  components/item.c components/item_cdata.c components/inventory.c \
                  components/inventory_cdata.c components/health.c components/health_cdata.c \
                  components/mana.c components/mana_cdata.c components/pc.c components/pc_cdata.c \
-                 components/attack.c components/attack_cdata.c components/ai.c \
+                 components/attack.c components/attack_cdata.c \
+                 ai/ai.c ai/ai_bank.c ai/ai_brains.c ai/ai_pdata.c \
                  components/feature.c components/feature_cdata.c \
                  gen/gen_feature_bank.c gen/gen_feature_pdata.c \
                  effects/effects_core.c effects/effects_game.c effects/effects_pdata.c)
@@ -60,7 +61,7 @@ LEVEL_ONLY_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(LEVEL_GAME_SRCS
                    $(BUILD)/data/tile_rules_data.o
 LEVEL_GAME_OBJS := $(LEVEL_ONLY_OBJS) $(GEN_GAME_OBJS)
 # The stairs actions send entities between levels: the actions need the level module
-ACT_GAME_SRCS := $(wildcard $(GAMEDIR)/actions/*.c)
+ACT_GAME_SRCS := $(wildcard $(GAMEDIR)/actions/*.c) $(GAMEDIR)/ai/ai_act.c
 ACT_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(ACT_GAME_SRCS)) $(LEVEL_GAME_OBJS)
 UI_GAME_SRCS := $(wildcard $(GAMEDIR)/ui/*.c) \
                 $(addprefix $(GAMEDIR)/,player/player.c player/player_bank.c messages/messages_bank.c \
@@ -139,7 +140,7 @@ $(BUILD)/test_health: $(BUILD)/test_health.o $(LIB_OBJS) $(SUPPORT_OBJS) $(GEN_G
 $(BUILD)/test_mana: $(BUILD)/test_mana.o $(LIB_OBJS) $(SUPPORT_OBJS) $(GEN_GAME_OBJS)
 	$(HOSTCC) $(CFLAGS) $^ -o $@
 
-$(BUILD)/test_ai: $(BUILD)/test_ai.o $(LIB_OBJS) $(SUPPORT_OBJS) $(GEN_GAME_OBJS)
+$(BUILD)/test_ai: $(BUILD)/test_ai.o $(LIB_OBJS) $(SUPPORT_OBJS) $(ACT_GAME_OBJS)
 	$(HOSTCC) $(CFLAGS) $^ -o $@
 
 $(BUILD)/test_pc: $(BUILD)/test_pc.o $(LIB_OBJS) $(SUPPORT_OBJS) $(GEN_GAME_OBJS)

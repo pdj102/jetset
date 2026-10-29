@@ -11,6 +11,7 @@
 #include "ecs/systems/nge_render_internal.h"
 #include "ecs/systems/nge_timer.h"
 
+#include "game/ai/ai_internal.h"
 #include "game/effects/effects_game.h"
 #include "game/gen/gen_internal.h"
 #include "game/level/level.h"
@@ -68,8 +69,9 @@ static int creature_ok(nge_entity_id_t id, nge_owner_t owner, uint8_t kind)
         stats_speed[id] != b->stats.speed || !melee_is(id, &b->melee)) {
         return 0;
     }
-    /* AI unless it is the player */
-    if (AI_IS(id) != !(b->flags & CREATURE_PLAYER)) {
+    /* AI unless it is the player: its kind's brain, in its start state */
+    if (AI_IS(id) != !(b->flags & CREATURE_PLAYER) || AI_IS(id) != AI_KIND_HAS(&b->ai) ||
+        (AI_IS(id) && (ai_brain[id] != b->ai.brain || ai_get_state(id) != b->ai.state))) {
         return 0;
     }
     /* Mana if its kind has some, full */
@@ -95,7 +97,7 @@ static int creature_ok(nge_entity_id_t id, nge_owner_t owner, uint8_t kind)
         return 0;
     }
     /* Its turns: every speed ticks, with no limit */
-    return nge_timer_kind[id] == ((b->flags & CREATURE_PLAYER) ? TIMER_PLAYER : TIMER_MONSTER) &&
+    return nge_timer_kind[id] == ((b->flags & CREATURE_PLAYER) ? TIMER_PLAYER : TIMER_AI) &&
            nge_timer_period[id] == b->stats.speed && nge_timer_count[id] == b->stats.speed &&
            nge_timer_cycles[id] == 0;
 }
@@ -237,6 +239,12 @@ int main(void)
     CHECK(gen_hook(id, GEN_HOOK_HIT) == EF_POISON && gen_hook(id, GEN_HOOK_INNATE) == EF_NONE);
     CHECK(!MANA_IS(id));                                       /* monsters have no mana yet */
     CHECK(!PC_IS(id) && AI_IS(id));                            /* a monster */
+    CHECK(ai_brain[id] == AI_BRAIN_DEFAULT && ai_get_state(id) == AI_STATE_ASLEEP);
+    id = gen_creature(CR_GOBLIN, AREA);
+    CHECK(AI_IS(id) && ai_brain[id] == AI_BRAIN_DEFAULT && ai_get_state(id) == AI_STATE_ASLEEP);
+    CHECK(ai_can(id) == (AI_CAN_MELEE | AI_CAN_PICKUP | AI_CAN_EQUIP | AI_CAN_USE | AI_CAN_OPEN));   /* Int 10, a weapon slot */
+    id = gen_creature(CR_RAT, AREA);
+    CHECK(ai_can(id) == AI_CAN_MELEE);                          /* Int 2, carries nothing: bites */
     CHECK(nge_owner_count(id) == 0);                           /* no innate effect */
     id = gen_creature(CR_PLAYER, AREA);
     CHECK(gen_hook(id, GEN_HOOK_INNATE) == EF_REGEN && nge_owner_count(id) == 1);   /* its innate effect */

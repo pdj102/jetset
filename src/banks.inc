@@ -59,6 +59,8 @@
 //                        126/127  anim: starting the action animations / the
 //                                 creature kinds' sequences
 //                        128/129  quest: the quest item's checks / (unused)
+//                        130/131  ai: the AI's component, states and brains / each
+//                                 AI entity's state and brain (the last game pair)
 //             132-223  game assets (maps, graphics, level data):
 //                        133  the map tiles' palette (slot 7, via nge_palette_load9();
 //                             src/data/tile_palette_data.asm, generated)
@@ -129,6 +131,9 @@
 
 // game quest: the quest item (game/quest)
 #pragma define CRT_ORG_PAGE_128 = 0x80C000
+
+// game ai: the AI (game/ai)
+#pragma define CRT_ORG_PAGE_130 = 0x82C000
 
 // nge map: set-up functions
 #pragma define CRT_ORG_PAGE_44 = 0x2CC000

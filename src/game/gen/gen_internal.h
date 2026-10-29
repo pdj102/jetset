@@ -23,7 +23,7 @@
 #include "game/gen/gen.h"
 
 #include "ecs/components/nge_block.h"
-#include "game/components/ai.h"
+#include "game/ai/ai.h"
 #include "game/components/attack.h"
 #include "game/components/feature.h"
 #include "game/components/health.h"
@@ -76,6 +76,7 @@ typedef struct gen_creature_kind {
     gen_inventory_t inventory;
     uint16_t     xp;      /* XP the player gains for killing one (classic B/X, by hit dice); 0 for the player */
     uint8_t      flags;   /* CREATURE_* */
+    ai_kind_t    ai;      /* its brain and start state; brain AI_BRAIN_NONE for none (the player) */
     uint8_t      hooks[GEN_HOOK_COUNT];   /* EF_* by GEN_HOOK_*: hit, innate */
     gen_seq_t    seqs[GEN_SEQ_COUNT];     /* by GEN_SEQ_*: count 0 for none */
     gen_where_t  where;

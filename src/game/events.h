@@ -34,6 +34,7 @@
  * | EV_LEVEL_GAINED   | the player          | -        | p1: the new level |
  * | EV_GOLD_CHANGED   | the player          | -        | -        |
  * | EV_QUEST_FOUND    | the quest item      | the player | -      |
+ * | EV_AI_CHANGED     | the AI entity       | the cause, or NGE_EVENT_NONE | p1: old state, p2: new state (AI_STATE_*) |
  */
 
 #include "event/nge_event.h"
@@ -63,5 +64,6 @@
 #define EV_LEVEL_GAINED   (NGE_EVENT_USER + 22)    /**< Went up to level p1. */
 #define EV_GOLD_CHANGED   (NGE_EVENT_USER + 23)    /**< Gold gained or spent: pc_gold is the new amount. */
 #define EV_QUEST_FOUND    (NGE_EVENT_USER + 24)    /**< Picked up by the player for the first time this game (game/quest/quest.h). */
+#define EV_AI_CHANGED     (NGE_EVENT_USER + 25)    /**< Its AI state went from p1 to p2 (game/ai/ai.h). */
 
 #endif

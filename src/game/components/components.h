@@ -19,14 +19,16 @@
  * - its tables, one per field and [NGE_ENTITY_MAX], in slot 0
  *   (components/<name>_cdata.c) when common code or several systems read
  *   them, or in its module's page data when only that module does (the
- *   active effects' kinds, game/effects). Read-only outside the component.
+ *   active effects' kinds, game/effects; each AI entity's state and brain,
+ *   game/ai). Read-only outside the component.
  *   A single component, which only one entity ever has (the player's,
  *   pc.h), has one variable per field instead;
  * - <name>_add(), which gives an entity the component, from its kind's
  *   kind record (game/gen) or a start state;
  * - functions that hold its rules (health_damage(), attack_hits()),
  *   called by every action and effect that needs them, banked in page 110
- *   (the component's .c file) and asserting on their entity;
+ *   (the component's .c file), or with its module when its tables are that
+ *   module's page data (game/ai), and asserting on their entity;
  * - a macro in its header that tests for it (ITEM_IS(), FEATURE_IS(),
  *   INV_HAS()), used by other code instead of the handle.
  *
@@ -49,7 +51,7 @@
 #define COMPONENT_FEATURE    NGE_COMPONENT(NGE_COMPONENT_USER + 8)   /**< A fixed, interactive part of a level (feature.h). */
 #define COMPONENT_MANA       NGE_COMPONENT(NGE_COMPONENT_USER + 9)   /**< Mana points, spent on spells (mana.h). */
 #define COMPONENT_PC         NGE_COMPONENT(NGE_COMPONENT_USER + 10)  /**< The player character: name, level, XP, gold (pc.h). */
-#define COMPONENT_AI         NGE_COMPONENT(NGE_COMPONENT_USER + 11)  /**< The game decides its turns: monsters (ai.h). */
+#define COMPONENT_AI         NGE_COMPONENT(NGE_COMPONENT_USER + 11)  /**< The game decides its turns: monsters (game/ai/ai.h). */
 #define COMPONENT_COUNT      12  /**< The game's components: the next is NGE_COMPONENT_USER + COMPONENT_COUNT. */
 
 /* Every game component has a number below NGE_COMPONENT_MAX */

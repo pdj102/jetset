@@ -20,6 +20,7 @@
 #include "map/nge_map.h"
 
 #include "game/actors.h"
+#include "game/ai/ai.h"
 #include "game/components/pc.h"
 #include "game/anim/anim.h"
 #include "game/dev.h"
@@ -66,6 +67,7 @@ static void game_on_event(const nge_event_t *e)
     anim_on_event(e);    /* first: the animations start in the frame the action happened */
     player_on_event(e);
     quest_on_event(e);
+    ai_on_event(e);      /* before the messages: its EV_AI_CHANGED comes after the attack's */
     messages_on_event(e);
     death_on_event(e);   /* last: the death message comes before "Game over" */
 }
@@ -89,8 +91,11 @@ static void game_on_timer(nge_entity_id_t id, uint8_t kind, uint8_t cycles)
             effects_on_timer(id, cycles);
         }
         break;
-    case TIMER_MONSTER:
-        break;              /* no AI yet: it waits (later: only if level_holds() it) */
+    case TIMER_AI:
+        if (level_holds(id) && AI_IS(id)) {   /* off the level, frozen; without AI (removed), it waits */
+            ai_on_turn(id);
+        }
+        break;
     default:
         nge_util_abort("bad timer kind");
         break;
