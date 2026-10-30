@@ -21,11 +21,11 @@
 
 #define SPRITE_PALETTE_PAGE          135 /**< SECTION PAGE_135 in sprite_palette_data.asm. */
 #define SPRITE_PALETTE_ENTRIES       256 /**< Entries in sprite_palette: load them from entry 0. */
-#define SPRITE_PATTERNS              40  /**< 4-bit patterns, from pattern 0. */
+#define SPRITE_PATTERNS              45  /**< 4-bit patterns, from pattern 0. */
 #define SPRITE_PATTERN_PAGES         1   /**< Pages of patterns: SPRITE_PATTERNS_PAGE_0 on. */
 
-#define SPRITE_PATTERNS_PAGE_0       137 /**< Patterns 0-39: sprite_patterns_0. */
-#define SPRITE_PATTERNS_COUNT_0      40
+#define SPRITE_PATTERNS_PAGE_0       137 /**< Patterns 0-44: sprite_patterns_0. */
+#define SPRITE_PATTERNS_COUNT_0      45
 
 #define SPRITE_PLAYER_IDLE           0   /**< Tag player.idle: frames 0-1. */
 #define SPRITE_PLAYER_IDLE_COUNT     2
@@ -206,6 +206,31 @@
 #define SPRITE_BOOTS_COUNT           1
 #define SPRITE_BOOTS_RATE            5
 #define SPRITE_BOOTS_BANK            12
+
+#define SPRITE_BREAD                 40  /**< Tag bread: frame 40. */
+#define SPRITE_BREAD_COUNT           1
+#define SPRITE_BREAD_RATE            5
+#define SPRITE_BREAD_BANK            12
+
+#define SPRITE_MEAT                  41  /**< Tag meat: frame 41. */
+#define SPRITE_MEAT_COUNT            1
+#define SPRITE_MEAT_RATE             5
+#define SPRITE_MEAT_BANK             3
+
+#define SPRITE_FRUIT                 42  /**< Tag fruit: frame 42. */
+#define SPRITE_FRUIT_COUNT           1
+#define SPRITE_FRUIT_RATE            5
+#define SPRITE_FRUIT_BANK            3
+
+#define SPRITE_FLASK                 43  /**< Tag flask: frame 43. */
+#define SPRITE_FLASK_COUNT           1
+#define SPRITE_FLASK_RATE            5
+#define SPRITE_FLASK_BANK            12
+
+#define SPRITE_LANTERN               44  /**< Tag lantern: frame 44. */
+#define SPRITE_LANTERN_COUNT         1
+#define SPRITE_LANTERN_RATE          5
+#define SPRITE_LANTERN_BANK          12
 
 extern const uint8_t sprite_patterns_0[];
 extern const nge_palette_entry_9_t sprite_palette[];

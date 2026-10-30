@@ -90,7 +90,7 @@ Banks: drawn bank first. Tick each batch off when applied.
 | x | 3 Ranged, small tools (6) | bow 12 6 10; crossbow 13 12; sling 12; shot 13 8; key 13 14 15 5 4; lock.pick 13 5 | Limbs or metal `P`, string 3 |
 | x | 4 Body (6) | armour.soft 12 8 6; armour.mail 13 12 6 10; armour.plate 13 5; cloak 12 4 10; shield 13 8 12; helmet 13 12 | All `P`. Soft, mail and plate must differ by surface as well as outline |
 | x | 5 Limbs (4) | vambraces 13 12; gauntlets 13 12 4; greaves 13 12; boots 12 9 13 | All `P`. The riskiest batch: paired forearm, hand, tall shin and L-shaped foot must read apart at 1x |
-| | 6 Food, containers (5) | bread 12 5; meat 3 12; fruit 3; flask 12 5 4; lantern 12 9 | Potion's proportions. Flask `P`; lantern frame 7-8, glass `P` |
+| x | 6 Food, containers (5) | bread 12 5; meat 3 12; fruit 3; flask 12 5 4; lantern 12 9 | Potion's proportions. Flask `P`; lantern frame 7-8, glass `P` |
 | | 7 Treasure, magic (5) | parchment 14 8 15 12 5 6 9 7 4 10; amulet 13 15 7 10 3; coins 5; gem 9 14 3; crown 10 | Parchment: paper 2-3-4, ribbon or seal `P`. Amulet: chain 6, stone `P`. Crown: gold 6, jewels `P` |
 
 ## Review log
@@ -102,3 +102,4 @@ What the artist corrected, batch by batch. Apply it to every later batch.
 - Batch 3: key teeth longer. A detail that identifies a sprite wants to be bold.
 - Batch 4: no corrections.
 - Batch 5: no corrections.
+- Batch 6: no corrections.
