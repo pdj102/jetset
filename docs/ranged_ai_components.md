@@ -76,7 +76,7 @@ monster's turn still waits (`TIMER_MONSTER`, game/timers.h).
   `COMPONENT_RANGED`.
 
 - **D3 No kind has a ranged attack yet (R5).** *Since superseded: launchers
-  and thrown ammo have one (docs/items.md D11), though no action fires it.* The creature and item kind
+  and thrown ammo have one (docs/items.md, "Attacks"), though no action fires it.* The creature and item kind
   records (`gen_creature_kind_t`, `gen_item_kind_t`) don't get a `ranged`
   field until a kind needs one: 6 bytes per kind for nothing. So
   `COMPONENT_RANGED`'s comment changes from "Reserved" to "No kind has one

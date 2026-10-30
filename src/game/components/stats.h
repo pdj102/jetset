@@ -71,8 +71,8 @@ typedef struct stats_kind {
 
 /* Statuses: bits of stats_status, granted by effects (game/effects/effects.h) */
 #define STATUS_POISONED     0x01
-#define STATUS_BLINDED      0x02   /**< Reserved: its rules come later (docs/attributes.md, R21). */
-#define STATUS_UNCONSCIOUS  0x04   /**< Reserved: its rules come later (docs/attributes.md, R21). */
+#define STATUS_BLINDED      0x02   /**< Granted, but no rule reads it yet (docs/attributes.md, "Not built yet"). */
+#define STATUS_UNCONSCIOUS  0x04   /**< Granted, but no rule reads it yet (docs/attributes.md, "Not built yet"). */
 
 /** The statuses that are conditions (impairments). */
 #define STATUS_CONDITIONS  (STATUS_POISONED | STATUS_BLINDED | STATUS_UNCONSCIOUS)

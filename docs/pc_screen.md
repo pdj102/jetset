@@ -21,7 +21,7 @@ value; statuses and conditions) and [mana.md](mana.md).
 
 ## 2. Terms
 
-As in [attributes.md](attributes.md), section 3:
+As in [attributes.md](attributes.md):
 
 | Term | Meaning |
 |---|---|
@@ -69,7 +69,7 @@ with the reason.
 - **R11** Mana points, if the player has the mana component: current,
   maximum and base. Maximum MP isn't an attribute yet (mana.md D2), so
   its base is shown as its maximum, never changed, until it becomes one
-  (attributes.md R12).
+  (attributes.md, "Not built yet").
 - **R12** Armour class: value and base.
 - **R13** Speed: value and base, with a word for what the number means
   (D4): fast, normal, slow.

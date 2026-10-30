@@ -449,7 +449,7 @@ int main(void)
         ok = ok && fits;
     }
     CHECK(ok);
-    /* Each depth has kinds, and no subclass passes a quarter of the weight (docs/items.md 8.2) */
+    /* Each depth has kinds, and no subclass passes a quarter of the weight (docs/items.md R4) */
     ok = 1;
     for (i = 1; i <= LEVEL_DEPTH_BOTTOM; i++) {
         int share[ITEM_COUNT] = { 0 };

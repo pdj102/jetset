@@ -65,7 +65,7 @@
  * Effects: rows of the definitions table; EF_NONE (0) is an empty hook. Amounts are
  * per power. Timed effects come first: only they can be active, and what counts
  * active effects by kind needs EF_TIMED_COUNT entries, not EF_COUNT. "Pending" rows
- * do nothing until their mechanic is built (docs/items.md D17)
+ * do nothing until their mechanic is built (docs/effects.md, "Pending effects")
  */
 #define EF_NONE              0
 #define EF_POISON            1    /**< Timed: 1 poison damage per power every 3 turns, 4 times; poisoned. */
@@ -92,7 +92,7 @@
 #define EF_RAISE_INT         21   /**< Instant: +1 per power base intelligence, for good. */
 #define EF_RAISE_WIS         22   /**< Instant: +1 per power base wisdom, for good. */
 #define EF_RAISE_CHA         23   /**< Instant: +1 per power base charisma, for good. */
-#define EF_NOURISH           24   /**< Instant: food heals 1 per power, until there is hunger (docs/items.md D18). */
+#define EF_NOURISH           24   /**< Instant: food heals 1 per power, until there is hunger (docs/items.md D11). */
 #define EF_BOLT_MAGIC        25   /**< Instant: 1 magic damage per power. */
 #define EF_BOLT_FIRE         26   /**< Instant: 1 fire damage per power. */
 #define EF_BOLT_COLD         27   /**< Instant: 1 cold damage per power. */

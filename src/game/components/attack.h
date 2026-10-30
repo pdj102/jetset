@@ -9,7 +9,7 @@
  * range 1) and a ranged attack (COMPONENT_RANGED, range 2 or more; later
  * the weapon's range, using the ammo in SLOT_AMMO). An entity can have
  * both. Launchers and thrown ammo have a ranged attack, but no action fires
- * one yet (docs/items.md D11). A creature's
+ * one yet (docs/items.md, "Attacks"). A creature's
  * own melee attack is its natural one (fists, a bite); a weapon (a sword)
  * has one too, and an attacker uses its wielded weapon's (SLOT_WEAPON)
  * before its own (game/actions/act_melee.c).

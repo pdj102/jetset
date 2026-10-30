@@ -2,7 +2,7 @@
 /*
  * The item kinds: one record per kind (gen_kinds.h), constant data in page
  * 109 with their names, read by the item generator in page 108. See
- * gen_internal.h for the record, docs/items.md for the catalogue and "Page
+ * gen_internal.h for the record, docs/items.md for the design and "Page
  * data" in docs/memory_map.md.
  */
 #ifdef __SDCC

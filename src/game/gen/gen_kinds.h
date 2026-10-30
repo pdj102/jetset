@@ -205,7 +205,7 @@
 #define ITEM_TREASURE   15
 #define ITEM_COUNT      16
 
-/* Item flags, in each item's kind record: stored now, their rules later (docs/items.md R25) */
+/* Item flags, in each item's kind record: stored now, their rules later (docs/items.md, "Not built yet") */
 #define ITEMF_TWO_HANDS  0x01   /* fills SLOT_SHIELD too */
 #define ITEMF_CURSED     0x02   /* can't be taken off */
 

@@ -17,7 +17,7 @@
  * A stack is one entity, as entities are few: its count is its missiles, or
  * a wand's charges, a lock pick's uses, a light's burn time or a treasure's
  * gold, by its subclass (game/gen/gen_kinds.h), 0 where it means nothing.
- * Merging and using up counts come later (docs/items.md R25).
+ * Merging and using up counts come later (docs/items.md, "Not built yet").
  *
  * Every entity gen_item() makes has it; effects, creatures and features
  * don't, so they can't be carried. The table is in slot 0 (item_cdata.c).
