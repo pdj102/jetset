@@ -33,6 +33,21 @@
 #define MESSAGE_MAX  41   /* a message window line, and its NUL */
 #define NAME_MAX     20   /* a kind's name, and its NUL */
 
+/* line[MESSAGE_MAX] ends in the word "a", and name is next: make it "an" ahead of a vowel */
+static void set_article(char *line, const char *name)
+{
+    uint8_t n = (uint8_t)strlen(line);
+    char c = name[0];
+
+    /* By hand: strcmp() would link into common memory, which has no room */
+    if (n >= 3 && n + 1 < MESSAGE_MAX && line[n - 3] == ' ' && line[n - 2] == 'a' && line[n - 1] == ' ' &&
+        (c == 'a' || c == 'e' || c == 'i' || c == 'o' || c == 'u')) {
+        line[n - 1] = 'n';
+        line[n] = ' ';
+        line[n + 1] = '\0';
+    }
+}
+
 /* Show before + the name of id's kind + after, cut to one message line */
 static void say_named(const char *before, nge_entity_id_t id, const char *after)
 {
@@ -42,6 +57,7 @@ static void say_named(const char *before, nge_entity_id_t id, const char *after)
     gen_name(id, name, sizeof(name));
     line[0] = '\0';
     strncat(line, before, sizeof(line) - 1);
+    set_article(line, name);
     strncat(line, name, sizeof(line) - 1 - strlen(line));
     strncat(line, after, sizeof(line) - 1 - strlen(line));
     screen_message(line);
@@ -135,9 +151,34 @@ static void say_did(nge_entity_id_t actor, const char *verb, nge_entity_id_t thi
     add(line, name);
     add(line, verb);
     gen_name(thing, name, sizeof(name));
+    set_article(line, name);
     add(line, name);
     add(line, ".");
     screen_message(line);
+}
+
+/* How an item is used, by what use_verb() says */
+#define USE_DRINK  0
+#define USE_EAT    1
+#define USE_READ   2
+#define USE_COUNT  3
+
+static const char *const use_you[USE_COUNT] = { "You drink the ", "You eat the ", "You read the " };
+static const char *const use_it[USE_COUNT] = { " drinks the ", " eats the ", " reads the " };
+
+/* How item is used (USE_*), from its subclass */
+static uint8_t use_verb(nge_entity_id_t item)
+{
+    uint8_t subclass;
+
+    if (!KIND_IS(item, CLASS_ITEM)) {
+        return USE_DRINK;
+    }
+    subclass = gen_item_subclass(kind_index[item]);
+    if (subclass == ITEM_FOOD) {
+        return USE_EAT;
+    }
+    return (subclass == ITEM_PARCHMENT) ? USE_READ : USE_DRINK;
 }
 
 #if GAME_DEV_KIT
@@ -256,14 +297,9 @@ void messages_on_event(const nge_event_t *e) NGE_BANKED
         break;
     case EV_USED:
         if (source == actor_player) {
-            say_named(KIND_IS(target, CLASS_ITEM) && gen_item_subclass(kind_index[target]) == ITEM_FOOD
-                          ? "You eat the " : "You drink the ",
-                      target, ".");
+            say_named(use_you[use_verb(target)], target, ".");
         } else if (seen_ai(source)) {
-            say_did(source,
-                    KIND_IS(target, CLASS_ITEM) && gen_item_subclass(kind_index[target]) == ITEM_FOOD
-                        ? " eats the " : " drinks the ",
-                    target);
+            say_did(source, use_it[use_verb(target)], target);
         }
         break;
     case EV_EFFECT_STARTED:

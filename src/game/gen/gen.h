@@ -20,7 +20,7 @@
  *
  * The owner is required: an area, an entity (a chest, the player's pack) or
  * NGE_OWNER_WORLD. A generator never sets a location. The _random versions
- * choose a kind that appears at the depth, weighted by its rarity.
+ * choose a kind whose band of depths holds the depth, weighted by its rarity.
  *
  * Kind data that never changes and isn't needed every turn stays in the
  * table: read it through functions like gen_name(), which copies into the
@@ -60,8 +60,8 @@ nge_entity_id_t gen_creature_random(uint8_t depth, nge_owner_t owner) NGE_BANKED
 
 /**
  * @brief Create an item of kind (IT_*), owned by owner: its sprite, the
- *        item component (not equipped) and, if its kind has hit points,
- *        health.
+ *        item component (not equipped, with its kind's count) and, if its
+ *        kind has an attack, a melee attack, or a ranged one at range 2 or more.
  * @return The entity, or NGE_ENTITY_INVALID if no entity is free.
  */
 nge_entity_id_t gen_item(uint8_t kind, nge_owner_t owner) NGE_BANKED;
@@ -134,11 +134,12 @@ void gen_creature_seqs(uint8_t kind, gen_seq_t *seq) NGE_BANKED;
 uint16_t gen_creature_xp(uint8_t kind) NGE_BANKED;
 
 /* Hooks: the effect (EF_*, game/effects/effects.h) and power a kind record names for each */
-#define GEN_HOOK_USE     0   /**< Items: applied to the user when used up (drunk, eaten: act_use()). */
-#define GEN_HOOK_HIT     1   /**< Weapons and creatures: applied to what a hit leaves alive (act_melee()). */
+#define GEN_HOOK_USE     0   /**< Items: applied to the user when used up (drunk, eaten, read: act_use()). */
+#define GEN_HOOK_HIT     1   /**< Weapons, ammo and creatures: applied to what a hit leaves alive (act_melee()). */
 #define GEN_HOOK_WORN    2   /**< Items: its modifiers and statuses count while equipped. */
 #define GEN_HOOK_INNATE  3   /**< Creatures: applied when generated. */
-#define GEN_HOOK_COUNT   4
+#define GEN_HOOK_AIM     4   /**< Items: sent at a chosen target (wands, staves, parchments): no action reads it yet. */
+#define GEN_HOOK_COUNT   5
 
 /* gen_hook_of()'s answer: the effect in the low byte, its power in the high byte */
 #define GEN_HOOK_PACK(ef, power)  ((uint16_t)(((uint16_t)(uint8_t)(power) << 8) | (uint8_t)(ef)))

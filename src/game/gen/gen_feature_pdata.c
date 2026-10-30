@@ -21,7 +21,7 @@ const gen_feature_kind_t gen_features[FT_COUNT] = {
             .block_shut = NGE_BLOCK_SOLID,   /* walkers and creatures; not ghosts */
         },
         .state = 0,                          /* closed (the level generator opens some) */
-        .where = { .depth = 0, .rarity = 0 },   /* placed in doorways, never at random */
+        .where = { .depth = 0, .depth_max = 0, .rarity = 0 },   /* placed in doorways, never at random */
     },
     [FT_STAIRS_UP] = {
         .name = "staircase up",
@@ -31,7 +31,7 @@ const gen_feature_kind_t gen_features[FT_COUNT] = {
             .block_shut = NGE_BLOCK_NONE,    /* stood on to climb: never in the way */
         },
         .state = 0,
-        .where = { .depth = 0, .rarity = 0 },   /* placed by the level generator, never at random */
+        .where = { .depth = 0, .depth_max = 0, .rarity = 0 },   /* placed by the level generator, never at random */
     },
     [FT_STAIRS_DOWN] = {
         .name = "staircase down",
@@ -41,6 +41,6 @@ const gen_feature_kind_t gen_features[FT_COUNT] = {
             .block_shut = NGE_BLOCK_NONE,
         },
         .state = 0,
-        .where = { .depth = 0, .rarity = 0 },
+        .where = { .depth = 0, .depth_max = 0, .rarity = 0 },
     },
 };

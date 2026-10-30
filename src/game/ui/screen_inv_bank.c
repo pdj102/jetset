@@ -93,6 +93,11 @@ static const char *const slot_words[SLOT_COUNT] = {
     [SLOT_RING_L] = " (left)",    /* short: "ring of health (right)" fits the list */
     [SLOT_RING_R] = " (right)",
     [SLOT_LIGHT]  = " (lit)",
+    [SLOT_RANGED] = " (ready)",
+    [SLOT_AMMO]   = " (quiver)",
+    [SLOT_ARMS]   = " (on arms)",
+    [SLOT_LEGS]   = " (on legs)",
+    [SLOT_CLOAK]  = " (on back)",
 };
 
 /* ---- The items ---- */

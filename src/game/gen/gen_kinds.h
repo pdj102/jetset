@@ -35,11 +35,43 @@
 #define FT_COUNT        3
 
 /* Item subclasses, in each item's kind record */
-#define ITEM_POTION  0
-#define ITEM_WEAPON  1
-#define ITEM_RING    2
-#define ITEM_FOOD    3
-#define ITEM_QUEST   4   /* the quest item (docs/winning.md) */
+#define ITEM_POTION     0
+#define ITEM_WEAPON     1    /* melee */
+#define ITEM_RING       2
+#define ITEM_FOOD       3
+#define ITEM_QUEST      4    /* the quest item (docs/winning.md) */
+#define ITEM_RANGED     5    /* a launcher */
+#define ITEM_AMMO       6    /* what a launcher shoots, or what is thrown */
+#define ITEM_ARMOUR     7    /* shields too */
+#define ITEM_DRINK      8
+#define ITEM_PARCHMENT  9
+#define ITEM_WAND       10   /* staves too */
+#define ITEM_AMULET     11
+#define ITEM_LIGHT      12
+#define ITEM_KEY        13
+#define ITEM_TOOL       14
+#define ITEM_TREASURE   15
+#define ITEM_COUNT      16
+
+/* Item flags, in each item's kind record: stored now, their rules later (docs/items.md R25) */
+#define ITEMF_TWO_HANDS  0x01   /* fills SLOT_SHIELD too */
+#define ITEMF_CURSED     0x02   /* can't be taken off */
+
+/* An item kind's group: what ammo works with what launcher (GROUP_*) */
+#define GROUP_NONE    0
+#define GROUP_ARROW   1
+#define GROUP_BOLT    2
+#define GROUP_STONE   3
+#define GROUP_THROWN  4   /* needs no launcher */
+#define GROUP_COUNT   5
+
+/* ...or which locks a key opens (KEY_*); a lock pick's group is its bonus */
+#define KEY_IRON    1
+#define KEY_BRASS   2
+#define KEY_SILVER  3
+#define KEY_GOLD    4
+#define KEY_ANY     5
+#define KEY_COUNT   6
 
 #define KIND_INVALID 0xFF /* Invalid kind */
 

@@ -7,9 +7,9 @@
  *
  * One layout with two uses (ATTACK_*): a melee attack (COMPONENT_MELEE,
  * range 1) and a ranged attack (COMPONENT_RANGED, range 2 or more; later
- * the weapon's range, using the ammo in the ammo slot). An entity can have
- * both. No kind has a ranged attack yet, and no action fires one
- * (docs/ranged_ai_components.md). A creature's
+ * the weapon's range, using the ammo in SLOT_AMMO). An entity can have
+ * both. Launchers and thrown ammo have a ranged attack, but no action fires
+ * one yet (docs/items.md D11). A creature's
  * own melee attack is its natural one (fists, a bite); a weapon (a sword)
  * has one too, and an attacker uses its wielded weapon's (SLOT_WEAPON)
  * before its own (game/actions/act_melee.c).
@@ -41,7 +41,7 @@
 #define ATTACK_ROLL_HIT   20
 #define ATTACK_ROLL_MISS  1
 
-/** Kind attack: the attack part of a creature's or an item's kind record (melee only, so far). */
+/** Kind attack: the attack part of a creature's (melee) or an item's kind record (its range says melee or ranged). */
 typedef struct attack_kind {
     int8_t  to_hit;   /**< Added to the d20 roll. */
     uint8_t dice;     /**< Damage dice, 0 for no attack. */

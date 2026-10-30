@@ -12,6 +12,8 @@
 
 #include <string.h>
 
+#include <stdlib.h>
+
 #include "core/nge_util.h"
 #include "ecs/systems/nge_timer.h"
 #include "game/timers.h"
@@ -71,13 +73,9 @@ void gen_creature_seqs(uint8_t kind, gen_seq_t *seq) NGE_BANKED
 
 nge_entity_id_t gen_creature_random(uint8_t depth, nge_owner_t owner) NGE_BANKED
 {
-    gen_where_t where[CR_COUNT];   /* copies on the stack, for gen_pick() */
     uint8_t kind;
 
-    for (kind = 0; kind < CR_COUNT; kind++) {
-        where[kind] = gen_creatures[kind].where;
-    }
-    kind = gen_pick(where, CR_COUNT, depth);
+    GEN_PICK(gen_creatures, CR_COUNT, depth, kind);
     return (kind == KIND_INVALID) ? NGE_ENTITY_INVALID : create(kind, owner);
 }
 

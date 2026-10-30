@@ -52,7 +52,7 @@ uint8_t screen_pc_ink(uint8_t value, uint8_t base, uint8_t lower_is_better);
 
 /* ---- The inventory's page data (screen_pdata.c) ---- */
 
-#define SCREEN_INV_MAX  30   /* items listed at most: a pack of 20, and 10 in use */
+#define SCREEN_INV_MAX  35   /* items listed at most: a pack of 20, and 15 in use */
 
 /* The inventory's panels, by number */
 #define SCREEN_INV_TITLE    0

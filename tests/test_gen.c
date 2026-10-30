@@ -102,16 +102,52 @@ static int creature_ok(nge_entity_id_t id, nge_owner_t owner, uint8_t kind)
            nge_timer_cycles[id] == 0;
 }
 
+/* A table for GEN_PICK() */
+typedef struct pick_kind {
+    gen_where_t where;
+} pick_kind_t;
+
+static uint8_t pick(const pick_kind_t *table, uint8_t count, uint8_t depth)
+{
+    uint8_t kind;
+
+    GEN_PICK(table, count, depth, kind);
+    return kind;
+}
+
 /* A packed hook holds what the record says */
 static int hook_is(uint16_t h, const gen_hook_t *hook)
 {
     return GEN_HOOK_EF(h) == hook->ef && GEN_HOOK_POWER(h) == hook->power;
 }
 
+/* A packed hook is what an item kind's record says for that hook: its one hook, or none */
+static int item_hook_is(uint16_t h, uint8_t kind, uint8_t hook)
+{
+    const gen_item_hook_t *k = &gen_items[kind].hook;
+
+    return (k->hook == hook) ? GEN_HOOK_EF(h) == k->ef && GEN_HOOK_POWER(h) == k->power : GEN_HOOK_EF(h) == EF_NONE;
+}
+
+/* An item's attack components match its record's attack part: melee, or ranged at range 2 or more */
+static int attack_ok(nge_entity_id_t id, const attack_kind_t *a)
+{
+    int ranged = ATTACK_KIND_HAS(a) && a->range > 1;
+
+    if (!ATTACK_HAS(id, ATTACK_RANGED) != !ranged) {
+        return 0;
+    }
+    if (!ranged) {
+        return melee_is(id, a);
+    }
+    return !ATTACK_HAS(id, ATTACK_MELEE) && attack_range[ATTACK_RANGED][id] == a->range &&
+           attack_dice[ATTACK_RANGED][id] == a->dice && attack_type[ATTACK_RANGED][id] == a->type;
+}
+
 static int item_ok(nge_entity_id_t id, nge_owner_t owner, uint8_t kind)
 {
     return made(id, owner, CLASS_ITEM, kind) && render_is(id, &gen_items[kind].render) &&
-           ITEM_IS(id) && item_slot[id] == SLOT_NONE && melee_is(id, &gen_items[kind].melee) &&
+           ITEM_IS(id) && item_slot[id] == SLOT_NONE && attack_ok(id, &gen_items[kind].attack) && item_count[id] == gen_items[kind].count &&
            !NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_BLOCK) && !NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_STATS) &&
            !NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_TIMER) && !NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_INVENTORY) &&
            !NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_HEALTH) && !AI_IS(id);
@@ -126,8 +162,9 @@ static void reset(void)
 
 int main(void)
 {
-    static const gen_where_t where[3] = { { 1, 1 }, { 5, 100 }, { 0, 0 } };
-    static const gen_where_t deep_first[2] = { { 5, 100 }, { 1, 1 } };
+    static const pick_kind_t where[3] = { { { 1, 9, 1 } }, { { 5, 9, 100 } }, { { 0, 9, 0 } } };
+    static const pick_kind_t deep_first[2] = { { { 5, 9, 100 } }, { { 1, 9, 1 } } };
+    static const pick_kind_t band[2] = { { { 1, 3, 1 } }, { { 4, 9, 1 } } };
     nge_entity_id_t id;
     nge_entity_id_t chest;
     char buf[20];
@@ -192,8 +229,8 @@ int main(void)
         id = gen_item(kind, AREA);
         ok = ok && gen_item_subclass(kind) == gen_items[kind].subclass;
         for (i = 0; i < GEN_HOOK_COUNT; i++) {
-            ok = ok && hook_is(gen_item_hook(kind, (uint8_t)i), &gen_items[kind].hooks[i]) &&
-                 hook_is(gen_hook_of(id, (uint8_t)i), &gen_items[kind].hooks[i]) && gen_items[kind].hooks[i].ef < EF_COUNT;
+            ok = ok && item_hook_is(gen_item_hook(kind, (uint8_t)i), kind, (uint8_t)i) &&
+                 item_hook_is(gen_hook_of(id, (uint8_t)i), kind, (uint8_t)i);
         }
     }
     for (kind = 0; kind < CR_COUNT; kind++) {
@@ -226,12 +263,11 @@ int main(void)
     /* A worn hook names a worn effect; the other hooks name effects that can be applied */
     ok = 1;
     for (kind = 0; kind < IT_COUNT; kind++) {
-        for (i = 0; i < GEN_HOOK_COUNT; i++) {
-            uint8_t ef = gen_items[kind].hooks[i].ef;
+        const gen_item_hook_t *h = &gen_items[kind].hook;
 
-            ok = ok && (ef == EF_NONE || ((effect_defs[ef].duration == EFFECT_WORN) == (i == GEN_HOOK_WORN) &&
-                                          gen_items[kind].hooks[i].power != 0));
-        }
+        ok = ok && h->ef < EF_COUNT && h->hook < GEN_HOOK_COUNT && h->hook != GEN_HOOK_INNATE;
+        ok = ok && (h->ef == EF_NONE || ((effect_defs[h->ef].duration == EFFECT_WORN) == (h->hook == GEN_HOOK_WORN) &&
+                                         h->power != 0));
     }
     for (kind = 0; kind < CR_COUNT; kind++) {
         for (i = 0; i < GEN_HOOK_COUNT; i++) {
@@ -354,24 +390,31 @@ int main(void)
     }
     CHECK(ok && nge_entity_free_count() == NGE_ENTITY_MAX);
 
-    /* gen_pick: the depth limit and the weights */
+    /* GEN_PICK: the depth limits and the weights */
     ok = 1;
     for (i = 0; i < 200 && ok; i++) {
-        ok = gen_pick(where, 3, 4) == 0;   /* kind 1 from depth 5; kind 2 rarity 0 */
+        ok = pick(where, 3, 4) == 0;   /* kind 1 from depth 5; kind 2 rarity 0 */
     }
     CHECK(ok);
     lo = 0;
     for (i = 0; i < 200; i++) {
-        lo += gen_pick(where, 3, 5) == 1;
+        lo += pick(where, 3, 5) == 1;
     }
     CHECK(lo > 180);                                                 /* 100 against 1 */
-    CHECK(gen_pick(where, 3, 0) == KIND_INVALID);
+    CHECK(pick(where, 3, 0) == KIND_INVALID);
     /* A kind too deep, ahead of the one that appears, is passed over */
     ok = 1;
     for (i = 0; i < 200 && ok; i++) {
-        ok = gen_pick(deep_first, 2, 4) == 1;
+        ok = pick(deep_first, 2, 4) == 1;
     }
     CHECK(ok);
+    /* A band ends at depth_max: past it, a kind is never picked */
+    ok = 1;
+    for (i = 0; i < 200 && ok; i++) {
+        ok = pick(band, 2, 3) == 0 && pick(band, 2, 4) == 1 && pick(band, 2, 9) == 1;
+    }
+    CHECK(ok);
+    CHECK(pick(band, 2, 10) == KIND_INVALID);
 
     /* ---- no free entity: nothing made ---- */
     reset();

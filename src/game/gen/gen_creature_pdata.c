@@ -13,6 +13,7 @@
 #include "data/sprite_data.h"
 #include "game/actors.h"
 #include "game/dev.h"
+#include "game/level/level.h"
 #include "sprite/nge_sprite.h"
 
 /* Development: the monsters act half as often, to watch the AI (game/dev.h) */
@@ -40,7 +41,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .seqs = {
             [GEN_SEQ_ATTACK] = { SPRITE_PLAYER_ATTACK, SPRITE_PLAYER_ATTACK_COUNT, SPRITE_PLAYER_ATTACK_RATE },
         },
-        .where = { .depth = 0, .rarity = 0 },          /* never at random */
+        .where = { .depth = 0, .depth_max = 0, .rarity = 0 },          /* never at random */
     },
     [CR_RAT] = {
         .name = "rat",
@@ -55,7 +56,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .flags = 0,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
         .hooks = { [GEN_HOOK_HIT] = { EF_POISON, 1 } },        /* a poisonous bite */
-        .where = { .depth = 1, .rarity = 10 },
+        .where = { .depth = 1, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 10 },
     },
     [CR_GOBLIN] = {
         .name = "goblin",
@@ -69,6 +70,6 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .xp = 5,                                        /* 1-1 hit dice */
         .flags = 0,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
-        .where = { .depth = 1, .rarity = 6 },
+        .where = { .depth = 1, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 6 },
     },
 };

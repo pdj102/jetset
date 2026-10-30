@@ -56,9 +56,10 @@ typedef struct gen_inventory {
     uint16_t slots;   /* SLOT_BIT() mask */
 } gen_inventory_t;
 
-/* Where a kind appears: from depth, chosen at random with weight rarity (0: never) */
+/* Where a kind appears: from depth to depth_max, chosen at random with weight rarity (0: never) */
 typedef struct gen_where {
     uint8_t depth;
+    uint8_t depth_max;
     uint8_t rarity;
 } gen_where_t;
 
@@ -88,15 +89,24 @@ typedef struct gen_creature_kind {
     gen_where_t  where;
 } gen_creature_kind_t;
 
+/* An item kind's one hook: when, what and how strong; ef EF_NONE for none */
+typedef struct gen_item_hook {
+    uint8_t hook;    /* GEN_HOOK_* */
+    uint8_t ef;      /* EF_* */
+    int8_t  power;   /* not 0 if ef is set */
+} gen_item_hook_t;
+
 typedef struct gen_item_kind {
-    const char  *name;    /* in the table's page */
-    gen_render_t render;
-    uint8_t      subclass;   /* ITEM_POTION, ITEM_WEAPON... (gen_kinds.h) */
-    uint16_t     fits;       /* the slots it can be equipped in (SLOT_BIT() mask), 0 for none */
-    health_kind_t health;    /* no hit points: it can't be damaged (no component) */
-    attack_kind_t melee;     /* as a melee weapon; dice 0 for none */
-    gen_hook_t   hooks[GEN_HOOK_COUNT];   /* by GEN_HOOK_*: use, hit, worn */
-    gen_where_t  where;
+    const char     *name;      /* in the table's page: 19 characters at most */
+    gen_render_t    render;
+    uint8_t         subclass;  /* ITEM_POTION, ITEM_WEAPON... (gen_kinds.h) */
+    uint8_t         group;     /* GROUP_* or KEY_*, or a lock pick's bonus */
+    uint8_t         flags;     /* ITEMF_* */
+    uint8_t         count;     /* item_count[] when made */
+    uint16_t        fits;      /* the slots it can be equipped in (SLOT_BIT() mask), 0 for none */
+    attack_kind_t   attack;    /* dice 0 for none; range 2 or more: a ranged attack, else melee */
+    gen_item_hook_t hook;
+    gen_where_t     where;
 } gen_item_kind_t;
 
 typedef struct gen_feature_kind {
@@ -120,13 +130,6 @@ nge_entity_id_t gen_begin(uint8_t c, uint8_t kind, nge_owner_t owner) NGE_BANKED
 /* Add the sprite component from a sprite part */
 void gen_render(nge_entity_id_t id, const gen_render_t *r) NGE_BANKED;
 
-/*
- * A random kind from 0 to count-1 appearing at depth, weighted by rarity:
- * where[kind] is each kind's where part, copied from the class's table
- * @return The kind, or KIND_INVALID if none appears there
- */
-uint8_t gen_pick(const gen_where_t *where, uint8_t count, uint8_t depth) NGE_BANKED;
-
 /* ---- Each class's name copy, banked with its table (called by gen_name()) ---- */
 
 void gen_creature_name(uint8_t kind, char *buf, uint8_t size) NGE_BANKED;
@@ -138,6 +141,40 @@ void gen_feature_name(uint8_t kind, char *buf, uint8_t size) NGE_BANKED;
 uint16_t gen_creature_hook(uint8_t kind, uint8_t hook) NGE_BANKED;
 uint16_t gen_item_hook(uint8_t kind, uint8_t hook) NGE_BANKED;
 uint16_t gen_feature_hook(uint8_t kind, uint8_t hook) NGE_BANKED;
+
+/*
+ * Set result to a random kind of table[count] whose band holds depth,
+ * weighted by rarity; KIND_INVALID if none has. A macro, so each class's
+ * page has its own copy, reading its own table: a copy of every kind's
+ * where part wouldn't fit on the stack
+ */
+#define GEN_PICK(table, count, depth, result)                         \
+    do {                                                              \
+        gen_where_t gen_w_;                                           \
+        uint16_t gen_total_ = 0;                                      \
+        uint8_t gen_d_ = (depth);                                     \
+        uint8_t gen_k_;                                               \
+        (result) = KIND_INVALID;                                      \
+        for (gen_k_ = 0; gen_k_ < (count); gen_k_++) {                \
+            gen_w_ = (table)[gen_k_].where;                           \
+            if (gen_d_ >= gen_w_.depth && gen_d_ <= gen_w_.depth_max) { \
+                gen_total_ += gen_w_.rarity;                          \
+            }                                                         \
+        }                                                             \
+        if (gen_total_ != 0) {                                        \
+            gen_total_ = (uint16_t)((unsigned int)rand() % gen_total_); \
+            for (gen_k_ = 0; gen_k_ < (count); gen_k_++) {            \
+                gen_w_ = (table)[gen_k_].where;                       \
+                if (gen_d_ >= gen_w_.depth && gen_d_ <= gen_w_.depth_max) { \
+                    if (gen_total_ < gen_w_.rarity) {                 \
+                        (result) = gen_k_;                            \
+                        break;                                        \
+                    }                                                 \
+                    gen_total_ -= gen_w_.rarity;                      \
+                }                                                     \
+            }                                                         \
+        }                                                             \
+    } while (0)
 
 /*
  * Copy a name into buf: at most size-1 characters and a NUL. A macro, so

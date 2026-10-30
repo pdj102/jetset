@@ -11,8 +11,6 @@
 
 #include "game/gen/gen_internal.h"
 
-#include <stdlib.h>
-
 #include "core/nge_util.h"
 #include "ecs/systems/nge_render.h"
 #include "sprite/nge_sprite.h"
@@ -35,31 +33,4 @@ void gen_render(nge_entity_id_t id, const gen_render_t *r) NGE_BANKED
     if (r->anim_count > 1) {
         nge_render_set_anim(id, r->pattern, r->anim_count, r->anim_rate);
     }
-}
-
-uint8_t gen_pick(const gen_where_t *where, uint8_t count, uint8_t depth) NGE_BANKED
-{
-    uint16_t total = 0;
-    uint16_t pick;
-    uint8_t kind;
-
-    for (kind = 0; kind < count; kind++) {
-        if (depth >= where[kind].depth) {
-            total += where[kind].rarity;
-        }
-    }
-    if (total == 0) {
-        return KIND_INVALID; 
-    }
-
-    pick = (uint16_t)((unsigned int)rand() % total);
-    for (kind = 0; kind < count; kind++) {
-        if (depth >= where[kind].depth) {
-            if (pick < where[kind].rarity) {
-                return kind;
-            }
-            pick -= where[kind].rarity;
-        }
-    }
-    return KIND_INVALID;   /* not reached */
 }

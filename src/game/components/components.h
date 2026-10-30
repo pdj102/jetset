@@ -46,7 +46,7 @@
 #define COMPONENT_INVENTORY  NGE_COMPONENT(NGE_COMPONENT_USER + 3)   /**< Can hold items (inventory.h). */
 #define COMPONENT_HEALTH     NGE_COMPONENT(NGE_COMPONENT_USER + 4)   /**< Hit points, armour class, damage masks (health.h). */
 #define COMPONENT_MELEE      NGE_COMPONENT(NGE_COMPONENT_USER + 5)   /**< A melee attack (attack.h). */
-#define COMPONENT_RANGED     NGE_COMPONENT(NGE_COMPONENT_USER + 6)   /**< A ranged attack (attack.h). No kind has one yet. */
+#define COMPONENT_RANGED     NGE_COMPONENT(NGE_COMPONENT_USER + 6)   /**< A ranged attack (attack.h): launchers and thrown ammo. */
 #define COMPONENT_EFFECT     NGE_COMPONENT(NGE_COMPONENT_USER + 7)   /**< An active effect (game/effects/effects.h). */
 #define COMPONENT_FEATURE    NGE_COMPONENT(NGE_COMPONENT_USER + 8)   /**< A fixed, interactive part of a level (feature.h). */
 #define COMPONENT_MANA       NGE_COMPONENT(NGE_COMPONENT_USER + 9)   /**< Mana points, spent on spells (mana.h). */

@@ -11,11 +11,12 @@
 
 #include "core/nge_util.h"
 
-void item_add(nge_entity_id_t id) NGE_BANKED
+void item_add(nge_entity_id_t id, uint8_t count) NGE_BANKED
 {
     nge_util_assert(id < NGE_ENTITY_MAX);
     nge_util_assert(NGE_ENTITY_STATE(id) != NGE_ENTITY_FREE);
 
     item_slot[id] = SLOT_NONE;
+    item_count[id] = count;
     NGE_ENTITY_ADD_COMPONENT(id, COMPONENT_ITEM);
 }
