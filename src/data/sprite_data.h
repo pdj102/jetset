@@ -21,11 +21,11 @@
 
 #define SPRITE_PALETTE_PAGE          135 /**< SECTION PAGE_135 in sprite_palette_data.asm. */
 #define SPRITE_PALETTE_ENTRIES       256 /**< Entries in sprite_palette: load them from entry 0. */
-#define SPRITE_PATTERNS              14  /**< 4-bit patterns, from pattern 0. */
+#define SPRITE_PATTERNS              19  /**< 4-bit patterns, from pattern 0. */
 #define SPRITE_PATTERN_PAGES         1   /**< Pages of patterns: SPRITE_PATTERNS_PAGE_0 on. */
 
-#define SPRITE_PATTERNS_PAGE_0       137 /**< Patterns 0-13: sprite_patterns_0. */
-#define SPRITE_PATTERNS_COUNT_0      14
+#define SPRITE_PATTERNS_PAGE_0       137 /**< Patterns 0-18: sprite_patterns_0. */
+#define SPRITE_PATTERNS_COUNT_0      19
 
 #define SPRITE_PLAYER_IDLE           0   /**< Tag player.idle: frames 0-1. */
 #define SPRITE_PLAYER_IDLE_COUNT     2
@@ -76,6 +76,31 @@
 #define SPRITE_RAT_DEAD_COUNT        1
 #define SPRITE_RAT_DEAD_RATE         5
 #define SPRITE_RAT_DEAD_BANK         12
+
+#define SPRITE_DAGGER                14  /**< Tag dagger: frame 14. */
+#define SPRITE_DAGGER_COUNT          1
+#define SPRITE_DAGGER_RATE           5
+#define SPRITE_DAGGER_BANK           13
+
+#define SPRITE_GREATSWORD            15  /**< Tag greatsword: frame 15. */
+#define SPRITE_GREATSWORD_COUNT      1
+#define SPRITE_GREATSWORD_RATE       5
+#define SPRITE_GREATSWORD_BANK       13
+
+#define SPRITE_SPEAR                 16  /**< Tag spear: frame 16. */
+#define SPRITE_SPEAR_COUNT           1
+#define SPRITE_SPEAR_RATE            5
+#define SPRITE_SPEAR_BANK            13
+
+#define SPRITE_ARROW                 17  /**< Tag arrow: frame 17. */
+#define SPRITE_ARROW_COUNT           1
+#define SPRITE_ARROW_RATE            5
+#define SPRITE_ARROW_BANK            12
+
+#define SPRITE_DART                  18  /**< Tag dart: frame 18. */
+#define SPRITE_DART_COUNT            1
+#define SPRITE_DART_RATE             5
+#define SPRITE_DART_BANK             13
 
 extern const uint8_t sprite_patterns_0[];
 extern const nge_palette_entry_9_t sprite_palette[];
