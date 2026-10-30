@@ -21,11 +21,11 @@
 
 #define SPRITE_PALETTE_PAGE          135 /**< SECTION PAGE_135 in sprite_palette_data.asm. */
 #define SPRITE_PALETTE_ENTRIES       256 /**< Entries in sprite_palette: load them from entry 0. */
-#define SPRITE_PATTERNS              30  /**< 4-bit patterns, from pattern 0. */
+#define SPRITE_PATTERNS              40  /**< 4-bit patterns, from pattern 0. */
 #define SPRITE_PATTERN_PAGES         1   /**< Pages of patterns: SPRITE_PATTERNS_PAGE_0 on. */
 
-#define SPRITE_PATTERNS_PAGE_0       137 /**< Patterns 0-29: sprite_patterns_0. */
-#define SPRITE_PATTERNS_COUNT_0      30
+#define SPRITE_PATTERNS_PAGE_0       137 /**< Patterns 0-39: sprite_patterns_0. */
+#define SPRITE_PATTERNS_COUNT_0      40
 
 #define SPRITE_PLAYER_IDLE           0   /**< Tag player.idle: frames 0-1. */
 #define SPRITE_PLAYER_IDLE_COUNT     2
@@ -156,6 +156,56 @@
 #define SPRITE_LOCK_PICK_COUNT       1
 #define SPRITE_LOCK_PICK_RATE        5
 #define SPRITE_LOCK_PICK_BANK        13
+
+#define SPRITE_ARMOUR_SOFT           30  /**< Tag armour.soft: frame 30. */
+#define SPRITE_ARMOUR_SOFT_COUNT     1
+#define SPRITE_ARMOUR_SOFT_RATE      5
+#define SPRITE_ARMOUR_SOFT_BANK      12
+
+#define SPRITE_ARMOUR_MAIL           31  /**< Tag armour.mail: frame 31. */
+#define SPRITE_ARMOUR_MAIL_COUNT     1
+#define SPRITE_ARMOUR_MAIL_RATE      5
+#define SPRITE_ARMOUR_MAIL_BANK      13
+
+#define SPRITE_ARMOUR_PLATE          32  /**< Tag armour.plate: frame 32. */
+#define SPRITE_ARMOUR_PLATE_COUNT    1
+#define SPRITE_ARMOUR_PLATE_RATE     5
+#define SPRITE_ARMOUR_PLATE_BANK     13
+
+#define SPRITE_CLOAK                 33  /**< Tag cloak: frame 33. */
+#define SPRITE_CLOAK_COUNT           1
+#define SPRITE_CLOAK_RATE            5
+#define SPRITE_CLOAK_BANK            12
+
+#define SPRITE_SHIELD                34  /**< Tag shield: frame 34. */
+#define SPRITE_SHIELD_COUNT          1
+#define SPRITE_SHIELD_RATE           5
+#define SPRITE_SHIELD_BANK           13
+
+#define SPRITE_HELMET                35  /**< Tag helmet: frame 35. */
+#define SPRITE_HELMET_COUNT          1
+#define SPRITE_HELMET_RATE           5
+#define SPRITE_HELMET_BANK           13
+
+#define SPRITE_VAMBRACES             36  /**< Tag vambraces: frame 36. */
+#define SPRITE_VAMBRACES_COUNT       1
+#define SPRITE_VAMBRACES_RATE        5
+#define SPRITE_VAMBRACES_BANK        13
+
+#define SPRITE_GAUNTLETS             37  /**< Tag gauntlets: frame 37. */
+#define SPRITE_GAUNTLETS_COUNT       1
+#define SPRITE_GAUNTLETS_RATE        5
+#define SPRITE_GAUNTLETS_BANK        13
+
+#define SPRITE_GREAVES               38  /**< Tag greaves: frame 38. */
+#define SPRITE_GREAVES_COUNT         1
+#define SPRITE_GREAVES_RATE          5
+#define SPRITE_GREAVES_BANK          13
+
+#define SPRITE_BOOTS                 39  /**< Tag boots: frame 39. */
+#define SPRITE_BOOTS_COUNT           1
+#define SPRITE_BOOTS_RATE            5
+#define SPRITE_BOOTS_BANK            12
 
 extern const uint8_t sprite_patterns_0[];
 extern const nge_palette_entry_9_t sprite_palette[];
