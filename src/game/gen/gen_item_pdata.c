@@ -13,7 +13,6 @@
 
 #include "data/sprite_data.h"
 #include "game/actors.h"
-#include "game/gen/gen_item_sprites.h"
 #include "game/level/level.h"
 #include "sprite/nge_sprite.h"
 

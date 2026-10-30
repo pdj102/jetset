@@ -503,8 +503,8 @@ void item_add(nge_entity_id_t id, uint8_t count) NGE_BANKED;
 
 ### 6.5 Placeholder sprites
 
-`src/game/gen/gen_item_sprites.h` holds the fallbacks (D15). Budget: 39 of 40
-patterns.
+`src/game/gen/gen_item_sprites.h` held the fallbacks (D15) until the 36 new
+sprites were drawn, and has gone. Budget: 39 of 40 patterns.
 
 | Have (3) | New (36), with the placeholder shown until drawn |
 |---|---|
