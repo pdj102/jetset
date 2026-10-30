@@ -102,9 +102,13 @@ sprites: $(SPRITE_DATA)
 # (--dataseg) instead of common memory. See "Page data" in docs/memory_map.md.
 dataseg = $(shell sed -n '1,5s|^/\* *nge-dataseg: *\(PAGE_[0-9]*\) *\*/.*|-Cs--dataseg\1|p' $(1))
 
+# A file without #pragma codeseg is common: its assert messages go in their
+# own page, out of common memory. See "Assert messages" in docs/memory_map.md.
+assert_paged = $(if $(shell grep -l '^ *\#pragma codeseg' $(1)),,-DNGE_UTIL_ASSERT_PAGED)
+
 $(OBJDIR)/%.o: src/%.c | $(TILE_DATA) $(SPRITE_DATA)
 	@mkdir -p $(dir $@)
-	$(ZCC) -c +zxn -clib=sdcc_iy $(INCLUDES) $(NGE_CONFIG) $(CFLAGS) $(call dataseg,$<) $< -o $@
+	$(ZCC) -c +zxn -clib=sdcc_iy $(INCLUDES) $(NGE_CONFIG) $(CFLAGS) $(call assert_paged,$<) $(call dataseg,$<) $< -o $@
 	@$(HOSTCC) $(DEPFLAGS) $(INCLUDES) $(NGE_CONFIG) $(CFLAGS) $<
 
 $(OBJDIR)/%.o: src/%.asm

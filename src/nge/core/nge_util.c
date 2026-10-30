@@ -11,6 +11,9 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#if defined(__SDCC) && !defined(NDEBUG)
+#include <arch/zxn.h>
+#endif
 
 /***************************************************
  * private defines
@@ -67,6 +70,20 @@ void nge_util_assert_f(const char *message, const char *file, unsigned line)
 {
     report_fatal("ASSERT FAIL", message, file, line);
 }
+
+#if defined(__SDCC) && !defined(NDEBUG)
+void nge_util_assert_paged(const char *site) __z88dk_fastcall
+{
+    if (!reporting) {
+        reporting = 1;
+        /* Over whatever slot 7 holds: this never returns */
+        ZXN_WRITE_REG(REG_MMU7, NGE_UTIL_ASSERT_PAGE);
+        nge_printf(debug_stream, "ASSERT FAIL: %s\n", site);
+        nge_flush(debug_stream);
+    }
+    NGE_UTIL_HALT();
+}
+#endif
 
 void nge_util_info_f(const char *message)
 {

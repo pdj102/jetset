@@ -78,10 +78,10 @@ The current CSpect build (`bin/main.map`) uses:
 
 | Address | Contents |
 |---|---|
-| `$6A00`-`$B9BC` | Code and constant data (`CODE`) |
-| `$B9BD`-`$B9D9` | Initialised data (`DATA`) |
-| `$B9DA`-`$BB46` | Uninitialised data (`BSS`) |
-| `$BB47`-`$BDFF` | Free, 697 bytes (about 7.2K in the hardware build, without asserts and their messages) |
+| `$6A00`-`$A996` | Code and constant data (`CODE`) |
+| `$A997`-`$A9B6` | Initialised data (`DATA`) |
+| `$A9B7`-`$AB6D` | Uninitialised data (`BSS`) |
+| `$AB6E`-`$BDFF` | Free, 4,754 bytes (about 7K in the hardware build, without asserts) |
 | `$BE00`-`$BFFF` | Stack, 512 bytes |
 
 The link step checks `__BSS_END_tail` in the map file and fails the build if
@@ -152,7 +152,7 @@ code pages.
 | 46/47 | nge `event` (reserved; the event queue and its processing run every turn and are in common memory) |
 | 48-87 | nge `ecs` (20 pairs): 48/49 `entity` and `owner` (lifecycle and ownership code / lifecycle bookkeeping); 50 ECS data, mapped permanently into slot 0 (see [ECS data in slot 0](#ecs-data-in-slot-0)); 51 map data, mapped permanently into slot 1 (see [Always-mapped data pages](#always-mapped-data-pages)); 52/53 `render` system; 54/55 `timer` system; 56/57 `block` component (the line test / unused) |
 | 88-99 | Further nge modules (6 pairs): 88/89 `input` (setup, ASCII tables and waiting / unused); 90/91 `layer2` (Layer 2 drawing / unused) |
-| 100-101 | Game: free (assets) |
+| 100-101 | 100: game, free (assets). 101: the assert messages of common files (see [Assert messages](#assert-messages)) |
 | 102-131 | Game code pairs (15), allocated from 102 up: 102/103 `level` (setting up the map, generating and decorating levels / the room list, the terrain and the decorator's tables); 104/105 `ui` (the player character screen / unused); 106/107 `gen` creatures (generator / creature kinds); 108/109 `gen` items (generator / item kinds); 110/111 `gen` shared (helpers and the game components' add functions / unused); 112/113 `actions` (the actions / unused); 114/115 `player` (commands and the firing screen / unused); 116/117 `ui` (the screens / the inventory's list); 118/119 `messages` (what the player is told / unused); 120/121 `effects` (the effect system / the effect definitions and active effects' kinds); 122/123 `gen` features (generator / feature kinds); 124/125 `target` (targeting / unused); 126/127 `anim` (starting the action animations / the kinds' sequences); 128/129 `quest` (the quest item's checks / unused); 130/131 `ai` (the AI's component, senses, states and brains / each AI entity's state, brain, target and goal). 130/131 is the last pair: the next module needs the range moved or extended |
 | 132-223 | Game assets: maps, graphics, level data. 133: the map tiles' palette (slot 7, through `nge_palette_load9()`), generated from the tileset. 135: the sprite palette, 137 and 139: the sprite patterns (slot 7, through the loaders), generated from the sprite file ([sprite_import.md](sprite_import.md)) |
 
@@ -298,7 +298,9 @@ or if a `#pragma codeseg` names an odd page.
   - `nge_mmu`, `nge_hw_init` and interrupt code.
 - **Literals and constants live in the module's page** (`constseg`, above).
   Without `constseg`, SDCC would put them in common memory: assert messages
-  alone cost about 45 bytes per assert site in CSpect builds.
+  alone cost about 45 bytes per assert site in CSpect builds. Common files
+  don't use `constseg`; their assert messages go in page 101 (see
+  [Assert messages](#assert-messages)).
 - Return values in HL and DE (up to 32 bits) and stack arguments, including
   variadic ones, work as normal.
 
@@ -396,6 +398,31 @@ page or overflowing it; data in an `.asm` file duplicates the C layout by
 hand (use it only for byte buffers or generated data, which can also have
 initial values loaded from the NEX file); writing to `const` data through a
 cast is undefined behaviour that SDCC's optimiser can break.
+
+### Assert messages
+
+Common files keep their assert messages out of common memory, in page 101
+(`NGE_UTIL_ASSERT_PAGE`, [core/nge_util.h](../src/nge/core/nge_util.h)). A
+literal can't be given a section from C, and `constseg` would move a file's
+real constants too, so `nge_util_assert()` writes the message in inline
+assembly: `section PAGE_101`, the message, then back to `code_compiler`. The
+site is `ld hl,message`, `call nge_util_assert_paged`: 6 bytes, not the 18 of
+three arguments, and the expression, file and line are one string.
+
+- **Which files:** the Makefile sets `NGE_UTIL_ASSERT_PAGED` for every `.c`
+  file without `#pragma codeseg`. Banked files keep the three-argument assert:
+  their literals are already in their own page, and the assembly could only
+  return to `code_compiler`.
+- **On failure:** `nge_util_assert_paged()` maps page 101 into slot 7 and
+  never returns, so it doesn't matter what slot 7 held.
+- **Limits:** one assert per source line (the label is the line number; two
+  stop the build). A `"` in the expression stops the build too, and a `\` in
+  it is read as an escape, which can cut the message short. Page 101 holds
+  8K: `scripts/check-banks.sh` fails the build if it overflows.
+- **Hardware builds:** `NDEBUG` removes the asserts, and page 101 is empty.
+  `nge_util_abort()` doesn't use it: its messages stay in their file's
+  sections in every build.
+- **On the PC tests** nothing changes: the macro is the three-argument one.
 
 ### Sprite and palette data: loaders that map their own page
 

@@ -19,6 +19,9 @@
 /***************************************************
  * public defines
  ***************************************************/
+/* The odd page, for slot 7, of the assert messages of common files: see
+   "Assert messages" in docs/memory_map.md */
+#define NGE_UTIL_ASSERT_PAGE 101
 
 /***************************************************
  * public types
@@ -51,6 +54,15 @@ NGE_FILE *nge_util_get_debug_stream(void);
  */
 void nge_util_assert_f(const char *message, const char *file, unsigned line);
 
+#if defined(__SDCC) && !defined(NDEBUG)
+/**
+ * @brief Report a failed assertion of a common file and halt.
+ * @param site The message, "<expression> FILE: <file> LINE: <line>", in
+ *             page NGE_UTIL_ASSERT_PAGE, which this maps into slot 7.
+ */
+void nge_util_assert_paged(const char *site) __z88dk_fastcall;
+#endif
+
 /**
  * @brief Write an information message to the debug stream.
  * @param message Message text.
@@ -74,11 +86,37 @@ void nge_util_abort_f(const char *message, const char *file, unsigned line);
     #define nge_util_info(message) ((void)0)
     #define nge_util_debugf(...) ((void)0)
 #else /* !defined (NDEBUG) */
-    #define nge_util_assert(_Expression) \
-        do { \
-            if (!(_Expression)) \
-                nge_util_assert_f(#_Expression, __FILE__, __LINE__); \
-        } while(0)
+    #if defined(__SDCC) && defined(NGE_UTIL_ASSERT_PAGED)
+        /*
+         * A common file (the Makefile sets NGE_UTIL_ASSERT_PAGED for every
+         * file without #pragma codeseg): the message goes in its page and
+         * the site is 6 bytes. Written in assembly because C can't choose a
+         * section for one literal. The label is the line number: two asserts
+         * on one line stop the build. A " in the expression does too.
+         */
+        #define NGE_UTIL_STR2(x) #x
+        #define NGE_UTIL_STR(x) NGE_UTIL_STR2(x)
+        #define NGE_UTIL_ASSERT_SITE2(text, line) \
+            __asm__("ld hl,l_nge_assert_" #line "\n" \
+                    "call _nge_util_assert_paged\n" \
+                    "section PAGE_" NGE_UTIL_STR(NGE_UTIL_ASSERT_PAGE) "\n" \
+                    "l_nge_assert_" #line ":\n" \
+                    "defm \"" text " FILE: " __FILE__ " LINE: " #line "\", 0\n" \
+                    "section code_compiler\n")
+        #define NGE_UTIL_ASSERT_SITE(text, line) NGE_UTIL_ASSERT_SITE2(text, line)
+        #define nge_util_assert(_Expression) \
+            do { \
+                if (!(_Expression)) { \
+                    NGE_UTIL_ASSERT_SITE(#_Expression, __LINE__); \
+                } \
+            } while(0)
+    #else
+        #define nge_util_assert(_Expression) \
+            do { \
+                if (!(_Expression)) \
+                    nge_util_assert_f(#_Expression, __FILE__, __LINE__); \
+            } while(0)
+    #endif
     #define nge_util_info(message) \
         do { \
             nge_util_info_f((message)); \
