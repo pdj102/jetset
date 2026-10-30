@@ -49,8 +49,8 @@ static nge_entity_id_t create(uint8_t kind, nge_owner_t owner)
     }
     /* Its turns, every speed ticks: the player's wait for a command (player_turn), a monster's are the AI's */
     nge_timer_add(id, (b.flags & CREATURE_PLAYER) ? TIMER_PLAYER : TIMER_AI, stats_speed[id], 0);
-    if (b.hooks[GEN_HOOK_INNATE] != EF_NONE) {
-        effect_apply(b.hooks[GEN_HOOK_INNATE], id, NGE_ENTITY_INVALID);   /* an entity of its own, owned by it */
+    if (b.hooks[GEN_HOOK_INNATE].ef != EF_NONE) {
+        effect_apply(b.hooks[GEN_HOOK_INNATE].ef, b.hooks[GEN_HOOK_INNATE].power, id, NGE_ENTITY_INVALID);   /* an entity of its own, owned by it */
     }
     return id;
 }
@@ -81,12 +81,15 @@ nge_entity_id_t gen_creature_random(uint8_t depth, nge_owner_t owner) NGE_BANKED
     return (kind == KIND_INVALID) ? NGE_ENTITY_INVALID : create(kind, owner);
 }
 
-uint8_t gen_creature_hook(uint8_t kind, uint8_t hook) NGE_BANKED
+uint16_t gen_creature_hook(uint8_t kind, uint8_t hook) NGE_BANKED
 {
+    gen_hook_t h;
+
     nge_util_assert(kind < CR_COUNT);
     nge_util_assert(hook < GEN_HOOK_COUNT);
 
-    return gen_creatures[kind].hooks[hook];
+    h = gen_creatures[kind].hooks[hook];
+    return GEN_HOOK_PACK(h.ef, h.power);
 }
 
 uint16_t gen_creature_xp(uint8_t kind) NGE_BANKED

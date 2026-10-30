@@ -33,9 +33,25 @@ static void check_effect(nge_entity_id_t effect)
     nge_util_assert(NGE_OWNER_IS_ENTITY(NGE_OWNER_OF(effect)));
 }
 
+/* amount x power, by adding: a multiply would link the library's routine into common memory, which has no room */
+static int16_t times(int8_t amount, int8_t power)
+{
+    int16_t v = 0;
+
+    while (power > 0) {
+        v += amount;
+        power--;
+    }
+    while (power < 0) {
+        v -= amount;
+        power++;
+    }
+    return v;
+}
+
 /* ---- Derived values ---- */
 
-void effects_add(effects_derived_t *d, uint8_t ef)
+void effects_add(effects_derived_t *d, uint8_t ef, int8_t power)
 {
     const effect_def_t *def;
     uint8_t i;
@@ -52,7 +68,7 @@ void effects_add(effects_derived_t *d, uint8_t ef)
         if (effects_game_attrs[attr].is_mask) {
             d->value[attr] |= (uint8_t)amount;
         } else {
-            d->value[attr] += amount;
+            d->value[attr] += times(amount, power);
         }
     }
 }
@@ -87,7 +103,7 @@ static void derive(nge_entity_id_t id, effects_derived_t *d)
     effects_game_sources(id, d);
     NGE_OWNER_FOR_EACH_OWNED(i, owned, id) {
         if (NGE_ENTITY_HAS_COMPONENT(owned, COMPONENT_EFFECT)) {
-            effects_add(d, effect_kind[owned]);
+            effects_add(d, effect_kind[owned], effect_power[owned]);
         }
     }
 }
@@ -129,12 +145,22 @@ void effects_set_base(nge_entity_id_t id, uint8_t attr, uint8_t value) NGE_BANKE
 
 /* ---- Ops ---- */
 
-/* Do an op to target, caused by source: the core's own, or the game's */
-static void run_op(const effect_op_t *op, nge_entity_id_t target, nge_entity_id_t source)
+/* An op's amount at power, within what an int8_t amount holds */
+static int8_t scaled(int8_t amount, int8_t power)
+{
+    int16_t v = times(amount, power);
+
+    return (v < -127) ? -127 : (v > 127) ? 127 : (int8_t)v;
+}
+
+/* Do an op at power to target, caused by source: the core's own, or the game's */
+static void run_op(const effect_op_t *op, int8_t power, nge_entity_id_t target, nge_entity_id_t source)
 {
     /* The fields in locals: see messages_on_event() (game/messages) */
     uint8_t what = op->op;
     uint8_t arg = op->arg;
+    int8_t amount = scaled(op->amount, power);
+    effect_op_t game_op;
     int16_t v;
 
     switch (what) {
@@ -144,11 +170,14 @@ static void run_op(const effect_op_t *op, nge_entity_id_t target, nge_entity_id_
         effect_cure(target, arg);
         break;
     case OP_RAISE_BASE:
-        v = (int16_t)base_of(target, arg)[target] + op->amount;   /* a base stays within 0-255 */
+        v = (int16_t)base_of(target, arg)[target] + amount;   /* a base stays within 0-255 */
         effects_set_base(target, arg, (v < 0) ? 0 : (v > 255) ? 255 : (uint8_t)v);
         break;
     default:
-        effects_game_op(op, target, source);
+        game_op.op = what;
+        game_op.arg = arg;
+        game_op.amount = amount;
+        effects_game_op(&game_op, target, source);
         break;
     }
 }
@@ -169,12 +198,13 @@ static nge_entity_id_t find(nge_entity_id_t target, uint8_t ef)
     return NGE_ENTITY_INVALID;
 }
 
-uint8_t effect_apply(uint8_t ef, nge_entity_id_t target, nge_entity_id_t source) NGE_BANKED
+uint8_t effect_apply(uint8_t ef, int8_t power, nge_entity_id_t target, nge_entity_id_t source) NGE_BANKED
 {
     effect_def_t def;   /* a copy: the calls below map other pages */
     nge_entity_id_t e;
 
     nge_util_assert(ef != EF_NONE && ef < EF_COUNT);
+    nge_util_assert(power != 0);
     nge_util_assert(target < NGE_ENTITY_MAX);
 
     memcpy(&def, &effect_defs[ef], sizeof(def));
@@ -185,7 +215,7 @@ uint8_t effect_apply(uint8_t ef, nge_entity_id_t target, nge_entity_id_t source)
     }
 
     if (def.duration == EFFECT_INSTANT) {
-        run_op(&def.on_start, target, source);
+        run_op(&def.on_start, power, target, source);
         nge_event_post(target, EV_EFFECT_STARTED, NGE_EVENT_NONE, ef, 0);
         return 1;
     }
@@ -195,6 +225,10 @@ uint8_t effect_apply(uint8_t ef, nge_entity_id_t target, nge_entity_id_t source)
         e = find(target, ef);
         if (e != NGE_ENTITY_INVALID) {
             nge_timer_add(e, effects_game_timer_kind, def.period, def.cycles);   /* refreshed: its full time again */
+            if (power > effect_power[e]) {
+                effect_power[e] = power;   /* a weaker one can't dilute it */
+                effects_recompute(target);
+            }
             nge_event_post(target, EV_EFFECT_STARTED, e, ef, 0);
             return 1;
         }
@@ -205,13 +239,14 @@ uint8_t effect_apply(uint8_t ef, nge_entity_id_t target, nge_entity_id_t source)
     }
     nge_owner_set(e, target);   /* it goes when its target goes */
     effect_kind[e] = ef;
+    effect_power[e] = power;
     NGE_ENTITY_ADD_COMPONENT(e, COMPONENT_EFFECT);
     nge_timer_add(e, effects_game_timer_kind, def.period, def.cycles);
     /*
      * Its on_start op now (a burst); its on_tick op comes from the timer, a
      * period from now. Its modifiers and statuses count from now on
      */
-    run_op(&def.on_start, target, e);
+    run_op(&def.on_start, power, target, e);
     effects_recompute(target);
     nge_event_post(target, EV_EFFECT_STARTED, e, ef, 0);
     return 1;
@@ -223,16 +258,18 @@ static void end(nge_entity_id_t effect, uint8_t reason)
     effect_op_t on_end;
     nge_entity_id_t target;
     uint8_t ef;
+    int8_t power;
 
     check_effect(effect);
     target = (nge_entity_id_t)NGE_OWNER_OF(effect);
     ef = effect_kind[effect];
+    power = effect_power[effect];
     on_end = effect_defs[ef].on_end;
 
     nge_timer_remove(effect);
     nge_entity_destroy(effect);   /* dying: no longer counted by effects_recompute() */
     if (effects_game_affectable(target)) {
-        run_op(&on_end, target, effect);
+        run_op(&on_end, power, target, effect);
         effects_recompute(target);
         nge_event_post(target, EV_EFFECT_ENDED, effect, ef, reason);
     }
@@ -268,17 +305,19 @@ void effects_on_timer(nge_entity_id_t effect, uint8_t cycles) NGE_BANKED
     uint8_t ef;
     uint8_t save_arg;
     uint8_t save_dc;
+    int8_t power;
 
     check_effect(effect);
     target = (nge_entity_id_t)NGE_OWNER_OF(effect);
     ef = effect_kind[effect];
+    power = effect_power[effect];
     on_tick = effect_defs[ef].on_tick;
     /* The fields in locals (T-ZSDCC-1) */
     save_arg = effect_defs[ef].save.arg;
     save_dc = effect_defs[ef].save.dc;
 
     if (effects_game_affectable(target)) {
-        run_op(&on_tick, target, effect);
+        run_op(&on_tick, power, target, effect);
     }
     /* Its op may have ended it, or killed its target */
     if (save_dc != 0 && NGE_ENTITY_IS_ALIVE(effect) && effects_game_affectable(target) &&

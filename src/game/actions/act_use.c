@@ -20,6 +20,7 @@ uint8_t act_use(act_t *a, uint8_t mode) NGE_BANKED
 {
     nge_entity_id_t actor = a->actor;
     nge_entity_id_t item = a->item;
+    uint16_t hook;
     uint8_t ef;
 
     /* 1. Context */
@@ -33,7 +34,8 @@ uint8_t act_use(act_t *a, uint8_t mode) NGE_BANKED
     if (item_slot[item] != SLOT_NONE) {
         return act_fail(a, ACT_R_EQUIPPED);
     }
-    ef = gen_hook(item, GEN_HOOK_USE);
+    hook = gen_hook_of(item, GEN_HOOK_USE);
+    ef = GEN_HOOK_EF(hook);
     if (ef == EF_NONE) {
         return act_fail(a, ACT_R_CANT_USE);
     }
@@ -47,6 +49,6 @@ uint8_t act_use(act_t *a, uint8_t mode) NGE_BANKED
     /* 4. Apply: used up, then its effect on the user (whose events follow) */
     nge_event_post(item, EV_USED, actor, 0, 0);
     nge_entity_destroy(item);
-    effect_apply(ef, actor, item);
+    effect_apply(ef, GEN_HOOK_POWER(hook), actor, item);
     return act_succeed(a);
 }

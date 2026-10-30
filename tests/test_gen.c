@@ -102,6 +102,12 @@ static int creature_ok(nge_entity_id_t id, nge_owner_t owner, uint8_t kind)
            nge_timer_cycles[id] == 0;
 }
 
+/* A packed hook holds what the record says */
+static int hook_is(uint16_t h, const gen_hook_t *hook)
+{
+    return GEN_HOOK_EF(h) == hook->ef && GEN_HOOK_POWER(h) == hook->power;
+}
+
 static int item_ok(nge_entity_id_t id, nge_owner_t owner, uint8_t kind)
 {
     return made(id, owner, CLASS_ITEM, kind) && render_is(id, &gen_items[kind].render) &&
@@ -175,6 +181,10 @@ int main(void)
     CHECK(gen_item_fits(IT_POTION) == 0 && gen_item_fits(IT_SWORD) == SLOT_BIT(SLOT_WEAPON) &&
           gen_item_fits(IT_RING) == (SLOT_BIT(SLOT_RING_L) | SLOT_BIT(SLOT_RING_R)));
 
+    /* ---- packed hooks: a negative power survives ---- */
+    CHECK(GEN_HOOK_EF(GEN_HOOK_PACK(EF_POISON, -3)) == EF_POISON && GEN_HOOK_POWER(GEN_HOOK_PACK(EF_POISON, -3)) == -3);
+    CHECK(GEN_HOOK_POWER(GEN_HOOK_PACK(EF_COUNT - 1, 127)) == 127 && GEN_HOOK_EF(GEN_HOOK_PACK(EF_COUNT - 1, -128)) == EF_COUNT - 1);
+
     /* ---- hooks and subclasses: what the records say, by kind and by entity ---- */
     reset();
     ok = 1;
@@ -182,14 +192,14 @@ int main(void)
         id = gen_item(kind, AREA);
         ok = ok && gen_item_subclass(kind) == gen_items[kind].subclass;
         for (i = 0; i < GEN_HOOK_COUNT; i++) {
-            ok = ok && gen_item_hook(kind, (uint8_t)i) == gen_items[kind].hooks[i] &&
-                 gen_hook(id, (uint8_t)i) == gen_items[kind].hooks[i] && gen_items[kind].hooks[i] < EF_COUNT;
+            ok = ok && hook_is(gen_item_hook(kind, (uint8_t)i), &gen_items[kind].hooks[i]) &&
+                 hook_is(gen_hook_of(id, (uint8_t)i), &gen_items[kind].hooks[i]) && gen_items[kind].hooks[i].ef < EF_COUNT;
         }
     }
     for (kind = 0; kind < CR_COUNT; kind++) {
         for (i = 0; i < GEN_HOOK_COUNT; i++) {
-            ok = ok && gen_creature_hook(kind, (uint8_t)i) == gen_creatures[kind].hooks[i] &&
-                 gen_creatures[kind].hooks[i] < EF_COUNT;
+            ok = ok && hook_is(gen_creature_hook(kind, (uint8_t)i), &gen_creatures[kind].hooks[i]) &&
+                 gen_creatures[kind].hooks[i].ef < EF_COUNT;
         }
     }
     CHECK(ok);
@@ -203,8 +213,8 @@ int main(void)
         ok = ok && !AI_IS(id) && strcmp(buf, gen_features[kind].name) == 0 && feature_state[id] == gen_features[kind].state &&
              memcmp(&info, &gen_features[kind].info, sizeof(info)) == 0;
         for (i = 0; i < GEN_HOOK_COUNT; i++) {
-            ok = ok && gen_feature_hook(kind, (uint8_t)i) == gen_features[kind].hooks[i] &&
-                 gen_hook(id, (uint8_t)i) == gen_features[kind].hooks[i];
+            ok = ok && hook_is(gen_feature_hook(kind, (uint8_t)i), &gen_features[kind].hooks[i]) &&
+                 hook_is(gen_hook_of(id, (uint8_t)i), &gen_features[kind].hooks[i]);
         }
     }
     CHECK(ok);
@@ -217,26 +227,27 @@ int main(void)
     ok = 1;
     for (kind = 0; kind < IT_COUNT; kind++) {
         for (i = 0; i < GEN_HOOK_COUNT; i++) {
-            uint8_t ef = gen_items[kind].hooks[i];
+            uint8_t ef = gen_items[kind].hooks[i].ef;
 
-            ok = ok && (ef == EF_NONE || (effect_defs[ef].duration == EFFECT_WORN) == (i == GEN_HOOK_WORN));
+            ok = ok && (ef == EF_NONE || ((effect_defs[ef].duration == EFFECT_WORN) == (i == GEN_HOOK_WORN) &&
+                                          gen_items[kind].hooks[i].power != 0));
         }
     }
     for (kind = 0; kind < CR_COUNT; kind++) {
         for (i = 0; i < GEN_HOOK_COUNT; i++) {
-            uint8_t ef = gen_creatures[kind].hooks[i];
+            uint8_t ef = gen_creatures[kind].hooks[i].ef;
 
             ok = ok && (ef == EF_NONE || (i != GEN_HOOK_WORN && i != GEN_HOOK_USE &&
-                                          effect_defs[ef].duration != EFFECT_WORN));
+                                          effect_defs[ef].duration != EFFECT_WORN && gen_creatures[kind].hooks[i].power != 0));
         }
     }
     CHECK(ok);
-    CHECK(gen_item_hook(IT_POTION, GEN_HOOK_USE) == EF_HEALING && gen_item_hook(IT_RING, GEN_HOOK_WORN) == EF_RING_HEALTH &&
-          gen_item_hook(IT_ANTIDOTE, GEN_HOOK_USE) == EF_CURE && gen_item_hook(IT_FOOD, GEN_HOOK_USE) == EF_POISON &&
-          gen_item_hook(IT_ELIXIR, GEN_HOOK_USE) == EF_VITALITY && gen_item_hook(IT_STRENGTH, GEN_HOOK_USE) == EF_STRENGTH && gen_item_hook(IT_SWORD, GEN_HOOK_HIT) == EF_NONE);
+    CHECK(GEN_HOOK_EF(gen_item_hook(IT_POTION, GEN_HOOK_USE)) == EF_HEALING && GEN_HOOK_EF(gen_item_hook(IT_RING, GEN_HOOK_WORN)) == EF_RING_HEALTH &&
+          GEN_HOOK_EF(gen_item_hook(IT_ANTIDOTE, GEN_HOOK_USE)) == EF_CURE && GEN_HOOK_EF(gen_item_hook(IT_FOOD, GEN_HOOK_USE)) == EF_POISON &&
+          GEN_HOOK_EF(gen_item_hook(IT_ELIXIR, GEN_HOOK_USE)) == EF_VITALITY && GEN_HOOK_EF(gen_item_hook(IT_STRENGTH, GEN_HOOK_USE)) == EF_STRENGTH && GEN_HOOK_EF(gen_item_hook(IT_SWORD, GEN_HOOK_HIT)) == EF_NONE);
     CHECK(gen_item_subclass(IT_FOOD) == ITEM_FOOD && gen_item_subclass(IT_ELIXIR) == ITEM_POTION);
     id = gen_creature(CR_RAT, AREA);
-    CHECK(gen_hook(id, GEN_HOOK_HIT) == EF_POISON && gen_hook(id, GEN_HOOK_INNATE) == EF_NONE);
+    CHECK(GEN_HOOK_EF(gen_hook_of(id, GEN_HOOK_HIT)) == EF_POISON && GEN_HOOK_EF(gen_hook_of(id, GEN_HOOK_INNATE)) == EF_NONE);
     CHECK(!MANA_IS(id));                                       /* monsters have no mana yet */
     CHECK(!PC_IS(id) && AI_IS(id));                            /* a monster */
     CHECK(ai_brain[id] == AI_BRAIN_DEFAULT && ai_get_state(id) == AI_STATE_ASLEEP);
@@ -247,15 +258,15 @@ int main(void)
     CHECK(ai_can(id) == AI_CAN_MELEE);                          /* Int 2, carries nothing: bites */
     CHECK(nge_owner_count(id) == 0);                           /* no innate effect */
     id = gen_creature(CR_PLAYER, AREA);
-    CHECK(gen_hook(id, GEN_HOOK_INNATE) == EF_REGEN && nge_owner_count(id) == 1);   /* its innate effect */
+    CHECK(GEN_HOOK_EF(gen_hook_of(id, GEN_HOOK_INNATE)) == EF_REGEN && nge_owner_count(id) == 1);   /* its innate effect */
     CHECK(MANA_IS(id) && mana_mp[id] == 5 && mana_mp_max[id] == 5);                 /* full */
     CHECK(PC_IS(id) && pc_level == 1 && pc_xp == 0 && pc_gold == 0);                 /* a new character */
     CHECK(!AI_IS(id));
     CHECK(strcmp(pc_name, "Rogue") == 0 && pc_class == PC_CLASS_FIGHTER && pc_depth_max == 1);
     CHECK(gen_creature_xp(CR_RAT) == 5 && gen_creature_xp(CR_GOBLIN) == 5 && gen_creature_xp(CR_PLAYER) == 0);
     chest = nge_entity_create();                               /* no kind: no hooks */
-    CHECK(gen_hook(chest, GEN_HOOK_USE) == EF_NONE);
-    TEST_EXPECT_HALT(gen_hook(id, GEN_HOOK_COUNT));
+    CHECK(GEN_HOOK_EF(gen_hook_of(chest, GEN_HOOK_USE)) == EF_NONE);
+    TEST_EXPECT_HALT(gen_hook_of(id, GEN_HOOK_COUNT));
     CHECK(test_halt_count == 1);
     TEST_EXPECT_HALT(gen_item_hook(IT_COUNT, GEN_HOOK_USE));
     CHECK(test_halt_count == 1);

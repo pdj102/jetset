@@ -104,7 +104,7 @@ static uint8_t listed(uint8_t list, nge_entity_id_t id)
     case LIST_EQUIPPABLE:
         return (gen_item_fits(kind_index[id]) & inv_slots[actor_player]) != 0;
     case LIST_USABLE:
-        return gen_hook(id, GEN_HOOK_USE) != EF_NONE;
+        return GEN_HOOK_EF(gen_hook_of(id, GEN_HOOK_USE)) != EF_NONE;
     default:
         return 1;
     }
@@ -314,7 +314,7 @@ static uint8_t obvious_action(void)
     if (item_slot[id] != SLOT_NONE) {
         return ACT_UNEQUIP;
     }
-    if (gen_hook(id, GEN_HOOK_USE) != EF_NONE) {
+    if (GEN_HOOK_EF(gen_hook_of(id, GEN_HOOK_USE)) != EF_NONE) {
         return ACT_USE;
     }
     return ACT_EQUIP;

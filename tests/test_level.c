@@ -654,8 +654,8 @@ int main(void)
     boss = placed_creature(CR_GOBLIN);
     CHECK(boss != NGE_ENTITY_INVALID);
     nge_entity_set_flags(boss, NGE_ENTITY_PERSISTENT);
-    CHECK(effect_apply(EF_POISON, boss, NGE_ENTITY_INVALID));
-    CHECK(effect_apply(EF_REGEN, boss, NGE_ENTITY_INVALID));
+    CHECK(effect_apply(EF_POISON, 1, boss, NGE_ENTITY_INVALID));
+    CHECK(effect_apply(EF_REGEN, 1, boss, NGE_ENTITY_INVALID));
     poison = NGE_ENTITY_INVALID;
     regen = NGE_ENTITY_INVALID;
     NGE_OWNER_FOR_EACH_OWNED(i, id, boss) {

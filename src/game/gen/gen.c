@@ -1,5 +1,5 @@
 /*
- * gen_name() and gen_hook(), in common memory: each class's table is in
+ * gen_name() and gen_hook_of(), in common memory: each class's table is in
  * its own page, mapped by that class's banked function.
  */
 #include "game/gen/gen_internal.h"
@@ -25,7 +25,7 @@ void gen_name(nge_entity_id_t id, char *buf, uint8_t size)
     }
 }
 
-uint8_t gen_hook(nge_entity_id_t id, uint8_t hook)
+uint16_t gen_hook_of(nge_entity_id_t id, uint8_t hook)
 {
     nge_util_assert(id < NGE_ENTITY_MAX);
     nge_util_assert(hook < GEN_HOOK_COUNT);
@@ -39,5 +39,5 @@ uint8_t gen_hook(nge_entity_id_t id, uint8_t hook)
     if (KIND_IS(id, CLASS_FEATURE)) {
         return gen_feature_hook(kind_index[id], hook);
     }
-    return EF_NONE;
+    return GEN_HOOK_PACK(EF_NONE, 0);
 }

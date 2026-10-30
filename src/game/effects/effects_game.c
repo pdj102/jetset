@@ -73,13 +73,13 @@ void effects_game_op(const effect_op_t *op, nge_entity_id_t target, nge_entity_i
 void effects_game_sources(nge_entity_id_t id, effects_derived_t *d)
 {
     nge_entity_id_t owned;
-    uint8_t ef;
+    uint16_t hook;
     uint8_t i;
 
     NGE_OWNER_FOR_EACH_OWNED(i, owned, id) {
         if (ITEM_IS(owned) && item_slot[owned] != SLOT_NONE) {
-            ef = gen_hook(owned, GEN_HOOK_WORN);   /* maps the item table's page, then this one again */
-            effects_add(d, ef);
+            hook = gen_hook_of(owned, GEN_HOOK_WORN);   /* maps the item table's page, then this one again */
+            effects_add(d, GEN_HOOK_EF(hook), GEN_HOOK_POWER(hook));
         }
     }
 }

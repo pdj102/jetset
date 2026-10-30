@@ -37,12 +37,15 @@ void gen_feature_info(uint8_t kind, gen_feature_info_t *info) NGE_BANKED
     *info = gen_features[kind].info;
 }
 
-uint8_t gen_feature_hook(uint8_t kind, uint8_t hook) NGE_BANKED
+uint16_t gen_feature_hook(uint8_t kind, uint8_t hook) NGE_BANKED
 {
+    gen_hook_t h;
+
     nge_util_assert(kind < FT_COUNT);
     nge_util_assert(hook < GEN_HOOK_COUNT);
 
-    return gen_features[kind].hooks[hook];
+    h = gen_features[kind].hooks[hook];
+    return GEN_HOOK_PACK(h.ef, h.power);
 }
 
 void gen_feature_name(uint8_t kind, char *buf, uint8_t size) NGE_BANKED

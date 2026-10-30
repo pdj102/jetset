@@ -207,28 +207,28 @@ int main(void)
     health_damage(g, NGE_ENTITY_INVALID, 4, DMG_SLASH);
     events();
     free_before = nge_entity_free_count();
-    CHECK(effect_apply(EF_HEALING, g, NGE_ENTITY_INVALID) == 1);
+    CHECK(effect_apply(EF_HEALING, 6, g, NGE_ENTITY_INVALID) == 1);
     CHECK(health_hp[g] == 6 && nge_entity_free_count() == free_before);   /* healed 4 (of 6), capped */
     CHECK(events() == 2 && is(0, g, EV_HEALED, NGE_EVENT_NONE, 4) &&
           is(1, g, EV_EFFECT_STARTED, NGE_EVENT_NONE, EF_HEALING));
 
     /* ---- refused: not alive, no health, dead ---- */
     e = nge_entity_create();                                       /* no health */
-    CHECK(effect_apply(EF_HEALING, e, NGE_ENTITY_INVALID) == 0);
-    CHECK(effect_apply(EF_POISON, e, NGE_ENTITY_INVALID) == 0 && count_effects(e, EF_POISON) == 0);
+    CHECK(effect_apply(EF_HEALING, 6, e, NGE_ENTITY_INVALID) == 0);
+    CHECK(effect_apply(EF_POISON, 1, e, NGE_ENTITY_INVALID) == 0 && count_effects(e, EF_POISON) == 0);
     health_damage(g, NGE_ENTITY_INVALID, 50, DMG_SLASH);           /* dying */
     events();
-    CHECK(effect_apply(EF_POISON, g, NGE_ENTITY_INVALID) == 0 && events() == 0);
+    CHECK(effect_apply(EF_POISON, 1, g, NGE_ENTITY_INVALID) == 0 && events() == 0);
     player = gen_creature(CR_PLAYER, AREA);                       /* persistent: alive at 0 hp */
     health_damage(player, NGE_ENTITY_INVALID, 50, DMG_SLASH);
     events();
-    CHECK(NGE_ENTITY_IS_ALIVE(player) && effect_apply(EF_HEALING, player, NGE_ENTITY_INVALID) == 0 &&
+    CHECK(NGE_ENTITY_IS_ALIVE(player) && effect_apply(EF_HEALING, 6, player, NGE_ENTITY_INVALID) == 0 &&
           health_hp[player] == 0);
 
     /* ---- timed: poison, an entity owned by the target with a timer ---- */
     reset();
     g = goblin();
-    CHECK(effect_apply(EF_POISON, g, NGE_ENTITY_INVALID) == 1);
+    CHECK(effect_apply(EF_POISON, 1, g, NGE_ENTITY_INVALID) == 1);
     e = effect_on(g, EF_POISON);
     CHECK(e != NGE_ENTITY_INVALID && NGE_OWNER_OF(e) == g && effect_kind_of(e) == EF_POISON);
     CHECK(NGE_ENTITY_HAS_COMPONENT(e, NGE_COMPONENT_TIMER) && nge_timer_kind[e] == TIMER_EFFECT &&
@@ -255,7 +255,7 @@ int main(void)
     /* ---- a saving throw passed: the firing's damage, then it ends early ---- */
     reset();
     g = goblin();
-    effect_apply(EF_POISON, g, NGE_ENTITY_INVALID);
+    effect_apply(EF_POISON, 1, g, NGE_ENTITY_INVALID);
     e = effect_on(g, EF_POISON);
     events();
     seed_for_rolls(1, 10, 10);                                     /* just reaches DC 10 */
@@ -294,7 +294,7 @@ int main(void)
     /* ---- no saving throw (DC 0): no roll ---- */
     reset();
     g = goblin();
-    effect_apply(EF_REGEN, g, NGE_ENTITY_INVALID);
+    effect_apply(EF_REGEN, 1, g, NGE_ENTITY_INVALID);
     srand(5);
     r = rand();
     srand(5);
@@ -304,14 +304,14 @@ int main(void)
     /* ---- refresh: poison again restarts the one there ---- */
     reset();
     g = goblin();
-    effect_apply(EF_POISON, g, NGE_ENTITY_INVALID);
+    effect_apply(EF_POISON, 1, g, NGE_ENTITY_INVALID);
     e = effect_on(g, EF_POISON);
     seed_for_rolls(2, 1, 9);                                       /* its saving throws fail */
     fire(2);
     events();
     free_before = nge_entity_free_count();
     CHECK(nge_timer_cycles[e] == 2);
-    CHECK(effect_apply(EF_POISON, g, NGE_ENTITY_INVALID) == 1);
+    CHECK(effect_apply(EF_POISON, 1, g, NGE_ENTITY_INVALID) == 1);
     CHECK(count_effects(g, EF_POISON) == 1 && nge_entity_free_count() == free_before);
     CHECK(nge_timer_cycles[e] == 4 && nge_timer_count[e] == 30);   /* its full time again */
     CHECK(events() == 1 && is(0, g, EV_EFFECT_STARTED, e, EF_POISON));
@@ -320,7 +320,7 @@ int main(void)
     reset();
     g = goblin();
     health_damage(g, NGE_ENTITY_INVALID, 5, DMG_SLASH);
-    CHECK(effect_apply(EF_REGEN, g, NGE_ENTITY_INVALID) == 1 && effect_apply(EF_REGEN, g, NGE_ENTITY_INVALID) == 1);
+    CHECK(effect_apply(EF_REGEN, 1, g, NGE_ENTITY_INVALID) == 1 && effect_apply(EF_REGEN, 1, g, NGE_ENTITY_INVALID) == 1);
     CHECK(count_effects(g, EF_REGEN) == 2);
     events();
     fire(2);
@@ -331,17 +331,17 @@ int main(void)
     /* ---- cure: ends the effects granting the status, then the cure's own event ---- */
     reset();
     g = goblin();
-    effect_apply(EF_POISON, g, NGE_ENTITY_INVALID);
-    effect_apply(EF_REGEN, g, NGE_ENTITY_INVALID);
+    effect_apply(EF_POISON, 1, g, NGE_ENTITY_INVALID);
+    effect_apply(EF_REGEN, 1, g, NGE_ENTITY_INVALID);
     e = effect_on(g, EF_POISON);
     events();
-    CHECK(effect_apply(EF_CURE, g, NGE_ENTITY_INVALID) == 1);
+    CHECK(effect_apply(EF_CURE, 1, g, NGE_ENTITY_INVALID) == 1);
     CHECK(!NGE_ENTITY_IS_ALIVE(e) && !STATUS_HAS(g, STATUS_POISONED) && count_effects(g, EF_REGEN) == 1);
     CHECK(events() == 3 && is(0, g, EV_ATTRS_CHANGED, NGE_EVENT_NONE, 0) &&
           is(1, g, EV_EFFECT_ENDED, e, EF_POISON) && seen[1].p2 == EFFECT_END_CURED &&
           is(2, g, EV_EFFECT_STARTED, NGE_EVENT_NONE, EF_CURE));
     CHECK(effect_cure(g, STATUS_POISONED) == 0);                   /* nothing left to cure */
-    effect_apply(EF_POISON, g, NGE_ENTITY_INVALID);
+    effect_apply(EF_POISON, 1, g, NGE_ENTITY_INVALID);
     CHECK(effect_cure(g, 0x80) == 0 && STATUS_HAS(g, STATUS_POISONED));   /* another status: kept */
     CHECK(effect_cure(g, STATUS_POISONED) == 1 && !STATUS_HAS(g, STATUS_POISONED));
     fire(3);
@@ -352,13 +352,13 @@ int main(void)
     g = goblin();
     health_damage(g, NGE_ENTITY_INVALID, 2, DMG_SLASH);
     events();
-    CHECK(effect_apply(EF_VITALITY, g, NGE_ENTITY_INVALID) == 1);
+    CHECK(effect_apply(EF_VITALITY, 1, g, NGE_ENTITY_INVALID) == 1);
     CHECK(health_hp_max_base[g] == 7 && health_hp_max[g] == 7 && health_hp[g] == 4);
     CHECK(events() == 2 && is(0, g, EV_ATTRS_CHANGED, NGE_EVENT_NONE, 0) &&
           is(1, g, EV_EFFECT_STARTED, NGE_EVENT_NONE, EF_VITALITY));
     CHECK(count_effects(g, EF_VITALITY) == 0);                     /* nothing left behind */
     effects_set_base(g, ATTR_HP_MAX, 255);
-    effect_apply(EF_VITALITY, g, NGE_ENTITY_INVALID);
+    effect_apply(EF_VITALITY, 1, g, NGE_ENTITY_INVALID);
     CHECK(health_hp_max_base[g] == 255 && health_hp_max[g] == 255);   /* at most 255 */
 
     /* ---- worn: an equipped ring counts, stowed or on the floor it doesn't ---- */
@@ -426,14 +426,14 @@ int main(void)
     effects_set_base(g, ATTR_CHA, 8);
     /* A potion of strength: +1 base strength, for good */
     events();
-    CHECK(effect_apply(EF_STRENGTH, g, NGE_ENTITY_INVALID) == 1);
+    CHECK(effect_apply(EF_STRENGTH, 1, g, NGE_ENTITY_INVALID) == 1);
     CHECK(stats_ability_base[ABIL_STR][g] == 9 && stats_ability[ABIL_STR][g] == 9 && stats_ability[ABIL_DEX][g] == 14);
     CHECK(events() == 2 && is(0, g, EV_ATTRS_CHANGED, NGE_EVENT_NONE, 0) &&
           is(1, g, EV_EFFECT_STARTED, NGE_EVENT_NONE, EF_STRENGTH));
     effect_text(EF_STRENGTH, EFFECT_TEXT_START, text, sizeof(text));
     CHECK_STR(text, "You feel strong!");
     stats_ability_base[ABIL_STR][g] = 30;
-    effect_apply(EF_STRENGTH, g, NGE_ENTITY_INVALID);
+    effect_apply(EF_STRENGTH, 1, g, NGE_ENTITY_INVALID);
     CHECK(stats_ability_base[ABIL_STR][g] == 31 && stats_ability[ABIL_STR][g] == 30);   /* the base may pass 30, the score can't */
     effects_set_base(g, ATTR_STR, 9);
     /* effects_check() notices every derived value out of step */
@@ -481,7 +481,7 @@ int main(void)
     reset();
     g = goblin();
     health_damage(g, NGE_ENTITY_INVALID, 5, DMG_SLASH);           /* 1 hp left */
-    effect_apply(EF_POISON, g, NGE_ENTITY_INVALID);
+    effect_apply(EF_POISON, 1, g, NGE_ENTITY_INVALID);
     e = effect_on(g, EF_POISON);
     events();
     fire(1);
@@ -502,12 +502,12 @@ int main(void)
     effects_recompute(g);
     CHECK(stats_ability[ABIL_STR][g] == 99 && stats_speed[g] == 99 && effects_check(g));
     events();
-    CHECK(effect_apply(EF_POISON, g, NGE_ENTITY_INVALID) == 1);
+    CHECK(effect_apply(EF_POISON, 1, g, NGE_ENTITY_INVALID) == 1);
     fire(1);
     CHECK(health_hp[g] == 5 && stats_status[g] == 0 && effects_check(g));   /* damaged; no status stored */
     TEST_EXPECT_HALT(effects_set_base(g, ATTR_STR, 1));
     CHECK(test_halt_count == 1);
-    TEST_EXPECT_HALT(effect_apply(EF_STRENGTH, g, NGE_ENTITY_INVALID));    /* raising a base it hasn't */
+    TEST_EXPECT_HALT(effect_apply(EF_STRENGTH, 1, g, NGE_ENTITY_INVALID));    /* raising a base it hasn't */
     CHECK(test_halt_count == 1);
 
     /* ---- the player: their innate regeneration ---- */
@@ -515,7 +515,7 @@ int main(void)
     player = gen_creature(CR_PLAYER, AREA);
     CHECK(count_effects(player, EF_REGEN) == 1);
     CHECK(events() == 1 && is(0, player, EV_EFFECT_STARTED, effect_on(player, EF_REGEN), EF_REGEN));
-    CHECK(gen_hook(player, GEN_HOOK_INNATE) == EF_REGEN);
+    CHECK(GEN_HOOK_EF(gen_hook_of(player, GEN_HOOK_INNATE)) == EF_REGEN);
 
     /* ---- no entity free: a timed effect is refused, an instant one isn't ---- */
     reset();
@@ -524,8 +524,8 @@ int main(void)
     while (nge_entity_create() != NGE_ENTITY_INVALID) {
     }
     events();
-    CHECK(effect_apply(EF_POISON, g, NGE_ENTITY_INVALID) == 0 && !STATUS_HAS(g, STATUS_POISONED) && events() == 0);
-    CHECK(effect_apply(EF_HEALING, g, NGE_ENTITY_INVALID) == 1 && health_hp[g] == 6);
+    CHECK(effect_apply(EF_POISON, 1, g, NGE_ENTITY_INVALID) == 0 && !STATUS_HAS(g, STATUS_POISONED) && events() == 0);
+    CHECK(effect_apply(EF_HEALING, 6, g, NGE_ENTITY_INVALID) == 1 && health_hp[g] == 6);
 
     /* ---- texts ---- */
     effect_text(EF_POISON, EFFECT_TEXT_START, text, sizeof(text));
@@ -562,16 +562,51 @@ int main(void)
         CHECK(effect_save_of(EF_REGEN, &ability) == 0);
     }
 
+    /* ---- power: instant, the amount scales ---- */
+    reset();
+    g = goblin();
+    health_damage(g, NGE_ENTITY_INVALID, 5, DMG_SLASH);
+    CHECK(effect_apply(EF_HEALING, 2, g, NGE_ENTITY_INVALID) == 1 && health_hp[g] == 3);
+    i = health_hp_max_base[g];
+    CHECK(effect_apply(EF_VITALITY, 3, g, NGE_ENTITY_INVALID) == 1 && health_hp_max_base[g] == i + 3);
+    CHECK(effect_apply(EF_VITALITY, -2, g, NGE_ENTITY_INVALID) == 1 && health_hp_max_base[g] == i + 1);
+    CHECK(effects_check(g));
+    /* Past what an int8_t amount holds: clamped, not wrapped */
+    health_damage(g, NGE_ENTITY_INVALID, 2, DMG_SLASH);
+    CHECK(effect_apply(EF_HEALING, 127, g, NGE_ENTITY_INVALID) == 1 && health_hp[g] == health_hp_max[g]);
+
+    /* ---- power: timed, kept for every firing, after what started it has gone ---- */
+    reset();
+    g = goblin();
+    effect_apply(EF_POISON, 2, g, NGE_ENTITY_INVALID);
+    e = effect_on(g, EF_POISON);
+    CHECK(effect_power[e] == 2);
+    srand(seed_for_rolls(1, 1, 1));
+    fire(1);
+    CHECK(health_hp[g] == 4);
+    /* Refreshed: the stronger power stays, the weaker can't dilute it */
+    CHECK(effect_apply(EF_POISON, 1, g, NGE_ENTITY_INVALID) == 1 && effect_power[e] == 2);
+    CHECK(effect_apply(EF_POISON, 3, g, NGE_ENTITY_INVALID) == 1 && effect_power[e] == 3 && count_effects(g, EF_POISON) == 1);
+    /* Stacked: each instance keeps its own */
+    reset();
+    g = goblin();
+    effect_apply(EF_REGEN, 1, g, NGE_ENTITY_INVALID);
+    e = effect_on(g, EF_REGEN);
+    effect_apply(EF_REGEN, 2, g, NGE_ENTITY_INVALID);
+    CHECK(count_effects(g, EF_REGEN) == 2 && effect_power[e] == 1);
+
     /* ---- asserts ---- */
     reset();
     g = goblin();
     e = nge_entity_create();
-    TEST_EXPECT_HALT(effect_apply(EF_NONE, g, NGE_ENTITY_INVALID));
+    TEST_EXPECT_HALT(effect_apply(EF_NONE, 1, g, NGE_ENTITY_INVALID));
     CHECK(test_halt_count == 1);
-    TEST_EXPECT_HALT(effect_apply(EF_COUNT, g, NGE_ENTITY_INVALID));
+    TEST_EXPECT_HALT(effect_apply(EF_COUNT, 1, g, NGE_ENTITY_INVALID));
+    CHECK(test_halt_count == 1);
+    TEST_EXPECT_HALT(effect_apply(EF_POISON, 0, g, NGE_ENTITY_INVALID));       /* a power of 0 does nothing: a slip */
     CHECK(test_halt_count == 1);
     free_before = nge_entity_free_count();
-    TEST_EXPECT_HALT(effect_apply(EF_RING_HEALTH, g, NGE_ENTITY_INVALID));   /* worn: never applied */
+    TEST_EXPECT_HALT(effect_apply(EF_RING_HEALTH, 1, g, NGE_ENTITY_INVALID));   /* worn: never applied */
     CHECK(test_halt_count == 1 && health_hp_max[g] == 6 && nge_entity_free_count() == free_before);
     TEST_EXPECT_HALT(effect_end(e));                               /* not an effect */
     CHECK(test_halt_count == 1);
@@ -581,7 +616,7 @@ int main(void)
     CHECK(test_halt_count == 1);
     TEST_EXPECT_HALT(effects_set_base(e, ATTR_AC, 1));             /* no health */
     CHECK(test_halt_count == 1);
-    effect_apply(EF_POISON, g, NGE_ENTITY_INVALID);
+    effect_apply(EF_POISON, 1, g, NGE_ENTITY_INVALID);
     e2 = effect_on(g, EF_POISON);
     effect_end(e2);
     TEST_EXPECT_HALT(effect_end(e2));                              /* ended already */

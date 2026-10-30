@@ -18,7 +18,7 @@
  *   effects_game.h), the sources that aren't active effects (equipped
  *   items), which entities effects act on;
  * - effects_pdata.c (page 121): the definitions and the active effects'
- *   kinds, in slot 7 only while the code in page 120 runs.
+ *   kinds and powers, in slot 7 only while the code in page 120 runs.
  *
  * The seam, below, is what the core calls on the game's side: plain
  * functions in the same page today, the callbacks of an nge API later.
@@ -48,10 +48,10 @@
 typedef struct effect_op {
     uint8_t op;       /* OP_* */
     uint8_t arg;      /* a damage type, statuses or an attribute */
-    int8_t  amount;
+    int8_t  amount;   /* per power */
 } effect_op_t;
 
-/* A modifier: added to a number attribute, ORed (as a uint8_t) into a mask; 0 changes nothing */
+/* A modifier: amount per power added to a number attribute, or ORed (as a uint8_t) into a mask; 0 changes nothing */
 typedef struct effect_mod {
     uint8_t attr;     /* ATTR_* */
     int8_t  amount;
@@ -88,11 +88,12 @@ typedef struct effects_derived {
 /* Page 121 */
 extern const effect_def_t effect_defs[EF_COUNT];
 extern uint8_t effect_kind[NGE_ENTITY_MAX];   /* EF_* of each active effect (COMPONENT_EFFECT) */
+extern int8_t  effect_power[NGE_ENTITY_MAX];  /* its power: what started it may be gone */
 
 /* ---- The core, for the game's side (page 120, plain calls) ---- */
 
-/* Add effect ef's modifiers and statuses to d (EF_NONE adds nothing) */
-void effects_add(effects_derived_t *d, uint8_t ef);
+/* Add effect ef's modifiers at power, and its statuses, to d (EF_NONE adds nothing) */
+void effects_add(effects_derived_t *d, uint8_t ef, int8_t power);
 
 /* ---- The seam: the game's side, called by the core (page 120, plain calls; data in page 121) ---- */
 
@@ -118,7 +119,7 @@ uint8_t effects_game_affectable(nge_entity_id_t id);
 /* 1 if target passes saving throw arg (effect_save_t) against dc (1 or more) */
 uint8_t effects_game_save(nge_entity_id_t target, uint8_t arg, uint8_t dc);
 
-/* Do a game op (OP_GAME and up) to target, caused by source */
+/* Do a game op (OP_GAME and up) to target, caused by source: its amount is already scaled by the power */
 void effects_game_op(const effect_op_t *op, nge_entity_id_t target, nge_entity_id_t source);
 
 /* Add the sources of modifiers that aren't active effects (worn items' effects) to d, with effects_add() */

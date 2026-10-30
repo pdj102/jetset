@@ -133,19 +133,26 @@ void gen_creature_seqs(uint8_t kind, gen_seq_t *seq) NGE_BANKED;
  */
 uint16_t gen_creature_xp(uint8_t kind) NGE_BANKED;
 
-/* Hooks: the effect (EF_*, game/effects/effects.h) a kind record names for each */
+/* Hooks: the effect (EF_*, game/effects/effects.h) and power a kind record names for each */
 #define GEN_HOOK_USE     0   /**< Items: applied to the user when used up (drunk, eaten: act_use()). */
 #define GEN_HOOK_HIT     1   /**< Weapons and creatures: applied to what a hit leaves alive (act_melee()). */
 #define GEN_HOOK_WORN    2   /**< Items: its modifiers and statuses count while equipped. */
 #define GEN_HOOK_INNATE  3   /**< Creatures: applied when generated. */
 #define GEN_HOOK_COUNT   4
 
+/* gen_hook_of()'s answer: the effect in the low byte, its power in the high byte */
+#define GEN_HOOK_PACK(ef, power)  ((uint16_t)(((uint16_t)(uint8_t)(power) << 8) | (uint8_t)(ef)))
+#define GEN_HOOK_EF(h)            ((uint8_t)(h))
+#define GEN_HOOK_POWER(h)         ((int8_t)(uint8_t)((h) >> 8))
+
 /**
- * @brief The effect an entity's kind names for hook (GEN_HOOK_*): EF_NONE
- *        (0) if none, or if the entity has no kind. In common memory: it
- *        calls its class's banked copy (pages 106, 108).
+ * @brief The effect and power an entity's kind names for hook (GEN_HOOK_*),
+ *        packed: read them with GEN_HOOK_EF() and GEN_HOOK_POWER(). The
+ *        effect is EF_NONE (0) if the kind names none, or the entity has no
+ *        kind. In common memory: it calls its class's banked copy (pages
+ *        106, 108, 122).
  */
-uint8_t gen_hook(nge_entity_id_t id, uint8_t hook);
+uint16_t gen_hook_of(nge_entity_id_t id, uint8_t hook);
 
 /** @brief An item kind's (IT_*) subclass (ITEM_POTION...). Banked with the item table (page 108). */
 uint8_t gen_item_subclass(uint8_t kind) NGE_BANKED;

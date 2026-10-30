@@ -36,7 +36,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .xp = 0,
         .flags = CREATURE_PLAYER,
         .ai = { .brain = AI_BRAIN_NONE },               /* their turns wait for commands */
-        .hooks = { [GEN_HOOK_INNATE] = EF_REGEN },
+        .hooks = { [GEN_HOOK_INNATE] = { EF_REGEN, 1 } },
         .seqs = {
             [GEN_SEQ_ATTACK] = { SPRITE_PLAYER_ATTACK, SPRITE_PLAYER_ATTACK_COUNT, SPRITE_PLAYER_ATTACK_RATE },
         },
@@ -54,7 +54,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .xp = 5,                                        /* below 1 hit die */
         .flags = 0,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
-        .hooks = { [GEN_HOOK_HIT] = EF_POISON },        /* a poisonous bite */
+        .hooks = { [GEN_HOOK_HIT] = { EF_POISON, 1 } },        /* a poisonous bite */
         .where = { .depth = 1, .rarity = 10 },
     },
     [CR_GOBLIN] = {

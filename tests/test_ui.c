@@ -291,7 +291,7 @@ int main(void)
     CHECK(strcmp(text, "XP        0 ") == 0);
     test_layer2_row(13, 28, 39, text);
     CHECK(strcmp(text, "Gold      0 ") == 0);
-    effect_apply(EF_STRENGTH, actor_player, NGE_ENTITY_INVALID);
+    effect_apply(EF_STRENGTH, 1, actor_player, NGE_ENTITY_INVALID);
     player_show_stats();
     test_layer2_row(5, 28, 39, text);
     CHECK(strcmp(text, "Str      17 ") == 0);
@@ -736,7 +736,7 @@ int main(void)
     CHECK(starts(OVER_ROW(30), "Cyan: better than base  Red: worse") && INK(30, 0) == L2_CYAN &&
           INK(30, 24) == L2_RED);
     /* Values away from their bases (as effects would set them, after the poison's recompute): better cyan, worse red */
-    CHECK(effect_apply(EF_POISON, actor_player, NGE_ENTITY_INVALID));
+    CHECK(effect_apply(EF_POISON, 1, actor_player, NGE_ENTITY_INVALID));
     nge_event_flush();
     stats_ability[ABIL_STR][actor_player] = (uint8_t)(stats_ability_base[ABIL_STR][actor_player] + 1);
     stats_ability[ABIL_INT][actor_player] = (uint8_t)(stats_ability_base[ABIL_INT][actor_player] - 2);
@@ -758,7 +758,7 @@ int main(void)
     CHECK(strcmp(seen_cols(1, 25, 0, 29), "Poison              12  Con 10") == 0);       /* 4 firings, 3 turns apart */
     CHECK(starts(OVER_ROW(26), "Regeneration  ") && starts(OVER_ROW(27), "    "));       /* in EF_* order */
     /* A second regeneration (it stacks): one row, counted */
-    CHECK(effect_apply(EF_REGEN, actor_player, NGE_ENTITY_INVALID));
+    CHECK(effect_apply(EF_REGEN, 1, actor_player, NGE_ENTITY_INVALID));
     nge_event_flush();
     fresh();
     press(EV(NGE_KEY_SPACE));

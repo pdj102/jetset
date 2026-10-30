@@ -21,7 +21,7 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .render = { SPRITE_POTION, 1, 0, NGE_SPRITE_PALETTE(BANK_RED), LAYER_OBJECTS },
         .subclass = ITEM_POTION,
         .fits = 0,
-        .hooks = { [GEN_HOOK_USE] = EF_HEALING },
+        .hooks = { [GEN_HOOK_USE] = { EF_HEALING, 6 } },
         .where = { .depth = 1, .rarity = 10 },
     },
     [IT_SWORD] = {
@@ -37,7 +37,7 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .render = { SPRITE_RING, 1, 0, NGE_SPRITE_PALETTE(BANK_GOLD), LAYER_OBJECTS },
         .subclass = ITEM_RING,
         .fits = SLOT_BIT(SLOT_RING_L) | SLOT_BIT(SLOT_RING_R),
-        .hooks = { [GEN_HOOK_WORN] = EF_RING_HEALTH },
+        .hooks = { [GEN_HOOK_WORN] = { EF_RING_HEALTH, 2 } },
         .where = { .depth = 1, .rarity = 3 },
     },
     /* Until they have sprites of their own: the potion recoloured, the rat upside down, the potion on its side or mirrored */
@@ -46,7 +46,7 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .render = { SPRITE_POTION, 1, 0, NGE_SPRITE_PALETTE(BANK_GREEN), LAYER_OBJECTS },
         .subclass = ITEM_POTION,
         .fits = 0,
-        .hooks = { [GEN_HOOK_USE] = EF_CURE },
+        .hooks = { [GEN_HOOK_USE] = { EF_CURE, 1 } },
         .where = { .depth = 1, .rarity = 4 },
     },
     [IT_FOOD] = {
@@ -54,7 +54,7 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .render = { SPRITE_RAT_DEAD, 1, 0, NGE_SPRITE_PALETTE(BANK_EARTH), LAYER_OBJECTS },
         .subclass = ITEM_FOOD,
         .fits = 0,
-        .hooks = { [GEN_HOOK_USE] = EF_POISON },
+        .hooks = { [GEN_HOOK_USE] = { EF_POISON, 1 } },
         .where = { .depth = 1, .rarity = 4 },
     },
     [IT_ELIXIR] = {
@@ -62,7 +62,7 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .render = { SPRITE_POTION, 1, 0, NGE_SPRITE_PALETTE(BANK_GOLD), LAYER_OBJECTS },
         .subclass = ITEM_POTION,
         .fits = 0,
-        .hooks = { [GEN_HOOK_USE] = EF_VITALITY },
+        .hooks = { [GEN_HOOK_USE] = { EF_VITALITY, 1 } },
         .where = { .depth = 1, .rarity = 1 },
     },
     [IT_STRENGTH] = {
@@ -70,7 +70,7 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .render = { SPRITE_POTION, 1, 0, NGE_SPRITE_PALETTE(BANK_ORANGE), LAYER_OBJECTS },
         .subclass = ITEM_POTION,
         .fits = 0,
-        .hooks = { [GEN_HOOK_USE] = EF_STRENGTH },
+        .hooks = { [GEN_HOOK_USE] = { EF_STRENGTH, 1 } },
         .where = { .depth = 1, .rarity = 1 },
     },
     /* The quest item (docs/winning.md): the ring's sprite until it has its own. Rarity 0: never at random */

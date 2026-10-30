@@ -52,7 +52,7 @@ static nge_entity_id_t carried_use(nge_entity_id_t id, uint8_t ef)
     nge_entity_id_t item;
 
     NGE_OWNER_FOR_EACH_OWNED(i, item, id) {
-        if (ITEM_IS(item) && item_slot[item] == SLOT_NONE && gen_hook(item, GEN_HOOK_USE) == ef) {
+        if (ITEM_IS(item) && item_slot[item] == SLOT_NONE && GEN_HOOK_EF(gen_hook_of(item, GEN_HOOK_USE)) == ef) {
             return item;
         }
     }

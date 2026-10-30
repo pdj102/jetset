@@ -62,6 +62,12 @@ typedef struct gen_where {
     uint8_t rarity;
 } gen_where_t;
 
+/* A hook: the effect, and the power that multiplies the amounts in its definition (not 0 if ef is set) */
+typedef struct gen_hook {
+    uint8_t ef;      /* EF_*, EF_NONE for none */
+    int8_t  power;
+} gen_hook_t;
+
 /* Creature flags */
 #define CREATURE_PLAYER  0x01   /* the player: its turns wait for commands */
 
@@ -77,7 +83,7 @@ typedef struct gen_creature_kind {
     uint16_t     xp;      /* XP the player gains for killing one (classic B/X, by hit dice); 0 for the player */
     uint8_t      flags;   /* CREATURE_* */
     ai_kind_t    ai;      /* its brain and start state; brain AI_BRAIN_NONE for none (the player) */
-    uint8_t      hooks[GEN_HOOK_COUNT];   /* EF_* by GEN_HOOK_*: hit, innate */
+    gen_hook_t   hooks[GEN_HOOK_COUNT];   /* by GEN_HOOK_*: hit, innate */
     gen_seq_t    seqs[GEN_SEQ_COUNT];     /* by GEN_SEQ_*: count 0 for none */
     gen_where_t  where;
 } gen_creature_kind_t;
@@ -89,7 +95,7 @@ typedef struct gen_item_kind {
     uint16_t     fits;       /* the slots it can be equipped in (SLOT_BIT() mask), 0 for none */
     health_kind_t health;    /* no hit points: it can't be damaged (no component) */
     attack_kind_t melee;     /* as a melee weapon; dice 0 for none */
-    uint8_t      hooks[GEN_HOOK_COUNT];   /* EF_* by GEN_HOOK_*: use, hit, worn */
+    gen_hook_t   hooks[GEN_HOOK_COUNT];   /* by GEN_HOOK_*: use, hit, worn */
     gen_where_t  where;
 } gen_item_kind_t;
 
@@ -97,7 +103,7 @@ typedef struct gen_feature_kind {
     const char        *name;   /* in the table's page */
     gen_feature_info_t info;   /* its looks, what it can do, what it blocks when closed */
     uint8_t            state;  /* FEAT_* it starts in */
-    uint8_t            hooks[GEN_HOOK_COUNT];   /* EF_* by GEN_HOOK_* (none yet) */
+    gen_hook_t         hooks[GEN_HOOK_COUNT];   /* by GEN_HOOK_* (none yet) */
     gen_where_t        where;  /* for random features, later (gen_feature_random()) */
 } gen_feature_kind_t;
 
@@ -127,11 +133,11 @@ void gen_creature_name(uint8_t kind, char *buf, uint8_t size) NGE_BANKED;
 void gen_item_name(uint8_t kind, char *buf, uint8_t size) NGE_BANKED;
 void gen_feature_name(uint8_t kind, char *buf, uint8_t size) NGE_BANKED;
 
-/* ---- Each class's hooks, banked with its table (called by gen_hook()) ---- */
+/* ---- Each class's hooks, packed (GEN_HOOK_PACK()), banked with its table (called by gen_hook_of()) ---- */
 
-uint8_t gen_creature_hook(uint8_t kind, uint8_t hook) NGE_BANKED;
-uint8_t gen_item_hook(uint8_t kind, uint8_t hook) NGE_BANKED;
-uint8_t gen_feature_hook(uint8_t kind, uint8_t hook) NGE_BANKED;
+uint16_t gen_creature_hook(uint8_t kind, uint8_t hook) NGE_BANKED;
+uint16_t gen_item_hook(uint8_t kind, uint8_t hook) NGE_BANKED;
+uint16_t gen_feature_hook(uint8_t kind, uint8_t hook) NGE_BANKED;
 
 /*
  * Copy a name into buf: at most size-1 characters and a NUL. A macro, so

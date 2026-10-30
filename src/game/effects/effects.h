@@ -14,19 +14,25 @@
  * - ops: what it does on_start (when applied), on_tick (each period) and
  *   on_end (when it ends): damage, heal, cure, raise a base for good,
  *   through the components' rules;
+ * - a power: what a use of the effect multiplies the amounts of its ops and
+ *   number modifiers by, from the hook that names it (game/gen/gen.h), so
+ *   one definition serves every strength of an item. Masks, statuses,
+ *   durations and saving throws don't scale. It may be negative;
  * - a duration:
  *   instant  its on_start op runs once; nothing is left behind (a healing
  *            potion; raising a base is how an effect is permanent);
  *   timed    an active effect: an entity owned by the target, with
  *            COMPONENT_EFFECT and a timer (TIMER_EFFECT, game/timers.h)
  *            that runs its on_tick op every period for its cycles (0: for
- *            ever), then ends it. Its definition may name a saving throw
+ *            ever), then ends it. It keeps its power, as what started it
+ *            may be gone. Its definition may name a saving throw
  *            the target tries at each firing, after the tick op: passed,
  *            it ends early. It goes when its target goes. Applied again,
- *            it is refreshed (its timer restarted) unless its definition
- *            stacks (another instance);
+ *            it is refreshed (its timer restarted, the stronger power
+ *            kept) unless its definition stacks (another instance);
  *   worn     an item's worn hook (game/gen/gen.h): its modifiers and
- *            statuses count while the item is equipped, with no instance.
+ *            statuses count while the item is equipped, with no instance,
+ *            at the power the item's hook names.
  *
  * An attribute's value (game/components/attrs.h: kind value, base,
  * value) is always its base plus the modifiers of the worn effects of
@@ -57,13 +63,13 @@
 
 /* Effects: rows of the definitions table; EF_NONE (0) is an empty hook */
 #define EF_NONE         0
-#define EF_HEALING      1   /**< Instant: heal 6. */
-#define EF_POISON       2   /**< Timed: 1 poison damage every 3 turns, 4 times; poisoned. */
+#define EF_HEALING      1   /**< Instant: heal 1 per power. */
+#define EF_POISON       2   /**< Timed: 1 poison damage per power every 3 turns, 4 times; poisoned. */
 #define EF_CURE         3   /**< Instant: ends poisoning. */
-#define EF_VITALITY     4   /**< Instant: +1 base maximum hit points, for good. */
-#define EF_RING_HEALTH  5   /**< Worn: +2 maximum hit points. */
-#define EF_REGEN        6   /**< Timed, for ever, stacking: heal 1 every 10 turns (the player's innate effect). */
-#define EF_STRENGTH     7   /**< Instant: +1 base strength, for good. */
+#define EF_VITALITY     4   /**< Instant: +1 per power base maximum hit points, for good. */
+#define EF_RING_HEALTH  5   /**< Worn: +1 per power maximum hit points. */
+#define EF_REGEN        6   /**< Timed, for ever, stacking: heal 1 per power every 10 turns (the player's innate effect). */
+#define EF_STRENGTH     7   /**< Instant: +1 per power base strength, for good. */
 #define EF_COUNT        8
 
 /* Why an effect ended: EV_EFFECT_ENDED's p2 */
@@ -86,12 +92,13 @@
  *        recomputing the target) or refreshes the one there. Posts
  *        EV_EFFECT_STARTED. A worn effect can't be applied: its
  *        modifiers count through equipment (asserts).
+ * @param power  Multiplies its amounts: not 0.
  * @param source What caused it, for its on_start op's events (damage), or
  *               NGE_ENTITY_INVALID.
  * @return 1, or 0 if refused: the target isn't alive, has no health or is
  *         at 0 hp, or no entity is free for an active effect.
  */
-uint8_t effect_apply(uint8_t ef, nge_entity_id_t target, nge_entity_id_t source) NGE_BANKED;
+uint8_t effect_apply(uint8_t ef, int8_t power, nge_entity_id_t target, nge_entity_id_t source) NGE_BANKED;
 
 /**
  * @brief End an active effect: destroy it, run its on_end op, recompute its

@@ -3,8 +3,8 @@
  * The effects' page data, in page 121 (slot 7 while the effects' code in
  * page 120 runs): the definitions, constant data with their texts, the
  * game's side's data for the core (effects_core.h: the attributes' tables,
- * the timer kind), and the kind of each active effect (uninitialised: set
- * when one starts). Tables are here, not in page 120, whose addresses carry
+ * the timer kind), and the kind and power of each active effect
+ * (uninitialised: set when one starts). Tables are here, not in page 120, whose addresses carry
  * the page in their high bits. See "Page data" in docs/memory_map.md.
  */
 #ifdef __SDCC
@@ -26,7 +26,7 @@ const effect_def_t effect_defs[EF_COUNT] = {
     [EF_HEALING] = {
         .duration = EFFECT_INSTANT,
         .start_text = "You feel much better.",
-        .on_start = { OP_HEAL, 0, 6 },
+        .on_start = { OP_HEAL, 0, 1 },
     },
     [EF_POISON] = {
         .name = "Poison",
@@ -50,7 +50,7 @@ const effect_def_t effect_defs[EF_COUNT] = {
     },
     [EF_RING_HEALTH] = {
         .duration = EFFECT_WORN,
-        .mod = { { ATTR_HP_MAX, 2 } },
+        .mod = { { ATTR_HP_MAX, 1 } },
     },
     [EF_STRENGTH] = {
         .duration = EFFECT_INSTANT,
@@ -87,3 +87,4 @@ const effects_attr_t effects_game_attrs[ATTR_COUNT] = {
 const uint8_t effects_game_timer_kind = TIMER_EFFECT;
 
 uint8_t effect_kind[NGE_ENTITY_MAX];
+int8_t effect_power[NGE_ENTITY_MAX];

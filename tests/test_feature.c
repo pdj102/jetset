@@ -72,7 +72,7 @@ int main(void)
           !NGE_ENTITY_HAS_COMPONENT(door, NGE_COMPONENT_SPRITE));
     gen_name(door, name, sizeof(name));
     CHECK_STR(name, "door");
-    CHECK(gen_hook(door, GEN_HOOK_USE) == EF_NONE && gen_feature_hook(FT_DOOR, GEN_HOOK_HIT) == EF_NONE);
+    CHECK(GEN_HOOK_EF(gen_hook_of(door, GEN_HOOK_USE)) == EF_NONE && GEN_HOOK_EF(gen_feature_hook(FT_DOOR, GEN_HOOK_HIT)) == EF_NONE);
 
     /* ---- placed: located, drawn closed, blocking ---- */
     feature_place(door, 3, 4);
