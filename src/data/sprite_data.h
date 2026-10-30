@@ -21,11 +21,11 @@
 
 #define SPRITE_PALETTE_PAGE          135 /**< SECTION PAGE_135 in sprite_palette_data.asm. */
 #define SPRITE_PALETTE_ENTRIES       256 /**< Entries in sprite_palette: load them from entry 0. */
-#define SPRITE_PATTERNS              45  /**< 4-bit patterns, from pattern 0. */
+#define SPRITE_PATTERNS              50  /**< 4-bit patterns, from pattern 0. */
 #define SPRITE_PATTERN_PAGES         1   /**< Pages of patterns: SPRITE_PATTERNS_PAGE_0 on. */
 
-#define SPRITE_PATTERNS_PAGE_0       137 /**< Patterns 0-44: sprite_patterns_0. */
-#define SPRITE_PATTERNS_COUNT_0      45
+#define SPRITE_PATTERNS_PAGE_0       137 /**< Patterns 0-49: sprite_patterns_0. */
+#define SPRITE_PATTERNS_COUNT_0      50
 
 #define SPRITE_PLAYER_IDLE           0   /**< Tag player.idle: frames 0-1. */
 #define SPRITE_PLAYER_IDLE_COUNT     2
@@ -231,6 +231,31 @@
 #define SPRITE_LANTERN_COUNT         1
 #define SPRITE_LANTERN_RATE          5
 #define SPRITE_LANTERN_BANK          12
+
+#define SPRITE_PARCHMENT             45  /**< Tag parchment: frame 45. */
+#define SPRITE_PARCHMENT_COUNT       1
+#define SPRITE_PARCHMENT_RATE        5
+#define SPRITE_PARCHMENT_BANK        14
+
+#define SPRITE_AMULET                46  /**< Tag amulet: frame 46. */
+#define SPRITE_AMULET_COUNT          1
+#define SPRITE_AMULET_RATE           5
+#define SPRITE_AMULET_BANK           13
+
+#define SPRITE_COINS                 47  /**< Tag coins: frame 47. */
+#define SPRITE_COINS_COUNT           1
+#define SPRITE_COINS_RATE            5
+#define SPRITE_COINS_BANK            5
+
+#define SPRITE_GEM                   48  /**< Tag gem: frame 48. */
+#define SPRITE_GEM_COUNT             1
+#define SPRITE_GEM_RATE              5
+#define SPRITE_GEM_BANK              9
+
+#define SPRITE_CROWN                 49  /**< Tag crown: frame 49. */
+#define SPRITE_CROWN_COUNT           1
+#define SPRITE_CROWN_RATE            5
+#define SPRITE_CROWN_BANK            10
 
 extern const uint8_t sprite_patterns_0[];
 extern const nge_palette_entry_9_t sprite_palette[];
