@@ -1,8 +1,9 @@
 # Items: requirements and design
 
 Status: implemented (2026-10-30); D1 to D20 and Q1 to Q6 agreed as proposed
-(section 13). `make` and `make test` pass. The CSpect checks in section 11 are
-not yet run. Section 14 lists where the build differs from the design.
+(section 13). `make` and `make test` pass, and the CSpect checks in section 11
+passed (2026-10-30). Not yet tried on hardware. Section 14 lists where the build
+differs from the design.
 
 This spec gives the game a classic roguelike's items: 160 kinds in 16
 subclasses, spread over depths 1 to 10 by rarity. It changes how effects get
