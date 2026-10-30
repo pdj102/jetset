@@ -21,11 +21,11 @@
 
 #define SPRITE_PALETTE_PAGE          135 /**< SECTION PAGE_135 in sprite_palette_data.asm. */
 #define SPRITE_PALETTE_ENTRIES       256 /**< Entries in sprite_palette: load them from entry 0. */
-#define SPRITE_PATTERNS              19  /**< 4-bit patterns, from pattern 0. */
+#define SPRITE_PATTERNS              30  /**< 4-bit patterns, from pattern 0. */
 #define SPRITE_PATTERN_PAGES         1   /**< Pages of patterns: SPRITE_PATTERNS_PAGE_0 on. */
 
-#define SPRITE_PATTERNS_PAGE_0       137 /**< Patterns 0-18: sprite_patterns_0. */
-#define SPRITE_PATTERNS_COUNT_0      19
+#define SPRITE_PATTERNS_PAGE_0       137 /**< Patterns 0-29: sprite_patterns_0. */
+#define SPRITE_PATTERNS_COUNT_0      30
 
 #define SPRITE_PLAYER_IDLE           0   /**< Tag player.idle: frames 0-1. */
 #define SPRITE_PLAYER_IDLE_COUNT     2
@@ -101,6 +101,61 @@
 #define SPRITE_DART_COUNT            1
 #define SPRITE_DART_RATE             5
 #define SPRITE_DART_BANK             13
+
+#define SPRITE_AXE                   19  /**< Tag axe: frame 19. */
+#define SPRITE_AXE_COUNT             1
+#define SPRITE_AXE_RATE              5
+#define SPRITE_AXE_BANK              13
+
+#define SPRITE_MACE                  20  /**< Tag mace: frame 20. */
+#define SPRITE_MACE_COUNT            1
+#define SPRITE_MACE_RATE             5
+#define SPRITE_MACE_BANK             13
+
+#define SPRITE_STAFF                 21  /**< Tag staff: frame 21. */
+#define SPRITE_STAFF_COUNT           1
+#define SPRITE_STAFF_RATE            5
+#define SPRITE_STAFF_BANK            12
+
+#define SPRITE_WAND                  22  /**< Tag wand: frame 22. */
+#define SPRITE_WAND_COUNT            1
+#define SPRITE_WAND_RATE             5
+#define SPRITE_WAND_BANK             12
+
+#define SPRITE_TORCH                 23  /**< Tag torch: frame 23. */
+#define SPRITE_TORCH_COUNT           1
+#define SPRITE_TORCH_RATE            5
+#define SPRITE_TORCH_BANK            12
+
+#define SPRITE_BOW                   24  /**< Tag bow: frame 24. */
+#define SPRITE_BOW_COUNT             1
+#define SPRITE_BOW_RATE              5
+#define SPRITE_BOW_BANK              12
+
+#define SPRITE_CROSSBOW              25  /**< Tag crossbow: frame 25. */
+#define SPRITE_CROSSBOW_COUNT        1
+#define SPRITE_CROSSBOW_RATE         5
+#define SPRITE_CROSSBOW_BANK         13
+
+#define SPRITE_SLING                 26  /**< Tag sling: frame 26. */
+#define SPRITE_SLING_COUNT           1
+#define SPRITE_SLING_RATE            5
+#define SPRITE_SLING_BANK            12
+
+#define SPRITE_SHOT                  27  /**< Tag shot: frame 27. */
+#define SPRITE_SHOT_COUNT            1
+#define SPRITE_SHOT_RATE             5
+#define SPRITE_SHOT_BANK             13
+
+#define SPRITE_KEY                   28  /**< Tag key: frame 28. */
+#define SPRITE_KEY_COUNT             1
+#define SPRITE_KEY_RATE              5
+#define SPRITE_KEY_BANK              13
+
+#define SPRITE_LOCK_PICK             29  /**< Tag lock.pick: frame 29. */
+#define SPRITE_LOCK_PICK_COUNT       1
+#define SPRITE_LOCK_PICK_RATE        5
+#define SPRITE_LOCK_PICK_BANK        13
 
 extern const uint8_t sprite_patterns_0[];
 extern const nge_palette_entry_9_t sprite_palette[];

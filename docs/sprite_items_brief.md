@@ -86,8 +86,8 @@ Banks: drawn bank first. Tick each batch off when applied.
 | Done | # | Sprites | Colour plan |
 |---|---|---|---|
 | x | 1 Blades (6) | sword (redraw, tag exists) 13 8 12 5 6 4 10; dagger 13 6 7; greatsword 13 10; spear 13 8 12; arrow 12 6 13; dart 13 | Blade or head `P`, hilt 6-7-8. Spear also stands for halberd and javelin, arrow for bolts: keep them generic |
-| | 2 Hafted (5) | axe 13 8 6 9; mace 13 8 12 6; staff 12 10 3; wand 12 14 5 9 4 10; torch 12 | Head `P`, haft 7-8. Mace also stands for war hammer and club. Torch: flame 6-5-2, `glow` |
-| | 3 Ranged, small tools (6) | bow 12 6 10; crossbow 13 12; sling 12; shot 13 8; key 13 14 15 5 4; lock.pick 13 5 | Limbs or metal `P`, string 3 |
+| x | 2 Hafted (5) | axe 13 8 6 9; mace 13 8 12 6; staff 12 10 3; wand 12 14 5 9 4 10; torch 12 | Head `P`, haft 7-8. Mace also stands for war hammer and club. Torch: flame 6-5-2, `glow` |
+| x | 3 Ranged, small tools (6) | bow 12 6 10; crossbow 13 12; sling 12; shot 13 8; key 13 14 15 5 4; lock.pick 13 5 | Limbs or metal `P`, string 3 |
 | | 4 Body (6) | armour.soft 12 8 6; armour.mail 13 12 6 10; armour.plate 13 5; cloak 12 4 10; shield 13 8 12; helmet 13 12 | All `P`. Soft, mail and plate must differ by surface as well as outline |
 | | 5 Limbs (4) | vambraces 13 12; gauntlets 13 12 4; greaves 13 12; boots 12 9 13 | All `P`. The riskiest batch: paired forearm, hand, tall shin and L-shaped foot must read apart at 1x |
 | | 6 Food, containers (5) | bread 12 5; meat 3 12; fruit 3; flask 12 5 4; lantern 12 9 | Potion's proportions. Flask `P`; lantern frame 7-8, glass `P` |
@@ -98,3 +98,5 @@ Banks: drawn bank first. Tick each batch off when applied.
 What the artist corrected, batch by batch. Apply it to every later batch.
 
 - Batch 1: no corrections.
+- Batch 2: no corrections.
+- Batch 3: key teeth longer. A detail that identifies a sprite wants to be bold.
