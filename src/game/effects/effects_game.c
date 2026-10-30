@@ -19,6 +19,7 @@
 #include "ecs/systems/nge_timer.h"
 #include "game/components/health.h"
 #include "game/components/item.h"
+#include "game/components/mana.h"
 #include "game/components/stats.h"
 #include "game/gen/gen.h"
 
@@ -63,6 +64,19 @@ void effects_game_op(const effect_op_t *op, nge_entity_id_t target, nge_entity_i
     case OP_HEAL:
         health_heal(target, amount);
         break;
+    case OP_MANA:
+        if (MANA_IS(target)) {
+            mana_restore(target, amount);
+        }
+        break;
+    case OP_LIGHT:
+    case OP_IDENTIFY:
+    case OP_MAP:
+    case OP_TELEPORT:
+    case OP_UNCURSE:
+    case OP_ENCHANT:
+    case OP_SUMMON:
+        break;   /* pending: their mechanics come later */
     default:
         nge_util_abort("bad effect op");
         break;

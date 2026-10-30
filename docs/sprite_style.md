@@ -253,8 +253,8 @@ The slot roles are sprite_import.md 5.2. In short:
 | Use | Patterns |
 |---|---|
 | Player | 6 (rest 2, attack 2, dead 1, spare 1) |
-| Monsters | 60 (12 families of up to 5; a family's recolours are free) |
-| Items | 30 (one each: potions, scrolls, weapons, armour, rings, wands, gold, food) |
+| Monsters | 50 (10 families of up to 5; a family's recolours are free) |
+| Items | 40 (39 planned, listed in items.md 6.5: one each, recolours free) |
 | Features | 12 (chest open and shut, torch 2, fountain 2...) |
 | Effects | 14 (sparks, fire, frost, poison, magic) |
 | UI | 6 (cursor, markers) |

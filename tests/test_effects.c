@@ -13,6 +13,7 @@
 #include "game/components/health.h"
 #include "game/components/inventory.h"
 #include "game/components/item.h"
+#include "game/components/mana.h"
 #include "game/components/stats.h"
 #include "game/effects/effects_game.h"
 #include "game/events.h"
@@ -190,7 +191,7 @@ int main(void)
             break;
         default:               /* worn: modifiers and statuses only */
             ok = ok && d->on_start.op == OP_NONE && d->on_tick.op == OP_NONE && d->on_end.op == OP_NONE &&
-                 (has_mods || d->status != 0) && d->flags == 0 && d->period == 0 && d->cycles == 0 &&
+                 (has_mods || d->status != 0 || i == EF_WORN_REGEN || i == EF_WORN_LIGHT) && d->flags == 0 && d->period == 0 && d->cycles == 0 &&
                  d->start_text == NULL && d->end_text == NULL;
             break;
         }
@@ -199,7 +200,14 @@ int main(void)
     CHECK(effect_defs[EF_NONE].duration == EFFECT_INSTANT && effect_defs[EF_NONE].flags == 0 &&
           effect_defs[EF_NONE].status == 0 && effect_defs[EF_NONE].on_start.op == OP_NONE &&
           effect_defs[EF_NONE].mod[0].amount == 0);
-    CHECK(effect_defs[EF_RING_HEALTH].duration == EFFECT_WORN && effect_defs[EF_POISON].duration == EFFECT_TIMED);
+    CHECK(effect_defs[EF_WORN_HP].duration == EFFECT_WORN && effect_defs[EF_POISON].duration == EFFECT_TIMED);
+
+    /* Timed effects come first (draw_effects() sizes by them) */
+    ok = 1;
+    for (i = 1; i < EF_COUNT; i++) {
+        ok = ok && (effect_defs[i].duration == EFFECT_TIMED) == (i < EF_TIMED_COUNT);
+    }
+    CHECK(ok);
 
     /* ---- instant: healing, no entity left behind ---- */
     reset();
@@ -364,7 +372,7 @@ int main(void)
     /* ---- worn: an equipped ring counts, stowed or on the floor it doesn't ---- */
     reset();
     g = goblin();
-    ring = gen_item(IT_RING, AREA);
+    ring = gen_item(IT_RING_HEALTH_2, AREA);
     effects_recompute(g);
     CHECK(health_hp_max[g] == 6 && events() == 0);                 /* nothing changed: no event */
     inv_stow(ring, g);
@@ -383,7 +391,7 @@ int main(void)
     effects_recompute(g);
     CHECK(health_hp_max[g] == 6 && health_hp[g] == 6);            /* hp kept within the lower maximum */
     item_slot[ring] = SLOT_RING_R;
-    e = gen_item(IT_RING, AREA);
+    e = gen_item(IT_RING_HEALTH_2, AREA);
     inv_stow(e, g);
     item_slot[e] = SLOT_RING_L;
     effects_recompute(g);
@@ -562,6 +570,53 @@ int main(void)
         CHECK(effect_save_of(EF_REGEN, &ability) == 0);
     }
 
+    /* ---- power: worn, by the item's hook ---- */
+    reset();
+    g = goblin();
+    ring = gen_item(IT_RING_HEALTH_2, g);
+    item_slot[ring] = SLOT_RING_L;
+    e = gen_item(IT_RING_FRAILTY, g);
+    item_slot[e] = SLOT_RING_R;
+    effects_recompute(g);
+    CHECK(health_hp_max[g] == 6 + 2 - 3 && health_hp[g] == 5 && effects_check(g));    /* two add up; a negative power */
+    e = gen_item(IT_PLATE_ARMOUR_2, g);
+    item_slot[e] = SLOT_BODY;
+    k = health_ac[g];
+    effects_recompute(g);
+    CHECK(health_ac[g] == k + 9);
+    e = gen_item(IT_RING_FIRE, g);
+    item_slot[ring] = SLOT_NONE;
+    item_slot[e] = SLOT_RING_L;
+    effects_recompute(g);
+    CHECK(health_resist[g] == (DMG_BIT(DMG_BLUNT) | DMG_BIT(DMG_FIRE)));   /* a mask, ORed on its own: not scaled */
+    /* Timed modifiers scale, and go with the effect */
+    reset();
+    g = goblin();
+    k = stats_speed[g];
+    effect_apply(EF_HASTE, 3, g, NGE_ENTITY_INVALID);
+    CHECK(stats_speed[g] == k - 3 && effects_check(g));
+    effect_end(effect_on(g, EF_HASTE));
+    CHECK(stats_speed[g] == k);
+    /* Refreshed stronger: the modifier follows at once */
+    effect_apply(EF_MIGHT, 1, g, NGE_ENTITY_INVALID);
+    k = stats_ability[ABIL_STR][g];
+    effect_apply(EF_MIGHT, 3, g, NGE_ENTITY_INVALID);
+    CHECK(stats_ability[ABIL_STR][g] == k + 2 && count_effects(g, EF_MIGHT) == 1);
+
+    /* ---- pending effects: safe to apply, doing nothing yet ---- */
+    reset();
+    g = goblin();
+    for (i = EF_LIGHT; i <= EF_SUMMON; i++) {
+        CHECK(effect_apply(i, 1, g, NGE_ENTITY_INVALID) == 1 && health_hp[g] == 6);
+    }
+    /* Mana: restored for what has it, nothing for what hasn't */
+    CHECK(effect_apply(EF_MANA, 3, g, NGE_ENTITY_INVALID) == 1);
+    player = gen_creature(CR_PLAYER, AREA);
+    if (MANA_IS(player)) {
+        mana_mp[player] = 0;
+        CHECK(effect_apply(EF_MANA, 2, player, NGE_ENTITY_INVALID) == 1 && mana_mp[player] == 2);
+    }
+
     /* ---- power: instant, the amount scales ---- */
     reset();
     g = goblin();
@@ -606,7 +661,7 @@ int main(void)
     TEST_EXPECT_HALT(effect_apply(EF_POISON, 0, g, NGE_ENTITY_INVALID));       /* a power of 0 does nothing: a slip */
     CHECK(test_halt_count == 1);
     free_before = nge_entity_free_count();
-    TEST_EXPECT_HALT(effect_apply(EF_RING_HEALTH, 1, g, NGE_ENTITY_INVALID));   /* worn: never applied */
+    TEST_EXPECT_HALT(effect_apply(EF_WORN_HP, 1, g, NGE_ENTITY_INVALID));   /* worn: never applied */
     CHECK(test_halt_count == 1 && health_hp_max[g] == 6 && nge_entity_free_count() == free_before);
     TEST_EXPECT_HALT(effect_end(e));                               /* not an effect */
     CHECK(test_halt_count == 1);

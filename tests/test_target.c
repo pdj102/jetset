@@ -261,20 +261,20 @@ int main(void)
     CHECK(test_halt_count == 1);
 
     /* ---- look: one message per entity with a kind, in ID order ---- */
-    ring = gen_item(IT_RING, LEVEL_AREA);
+    ring = gen_item(IT_RING_HEALTH_2, LEVEL_AREA);
     sword = gen_item(IT_SWORD, LEVEL_AREA);
     nge_location_set(ring, 10, 5);
     nge_location_set(sword, 10, 5);
     nge_event_flush();
     messages_look(10, 5);
-    CHECK(said(1, "You see a ring of health.") && said(0, "You see a sword."));
+    CHECK(said(1, "You see a ring of health +2.") && said(0, "You see a sword."));
     messages_look(11, 5);
     CHECK(said(0, "You see nothing there."));
     messages_look(30, 20);
     CHECK(said(0, "You see yourself."));
     nge_location_set(ring, 30, 20);
     messages_look(30, 20);
-    CHECK(said(1, "You see yourself.") && said(0, "You see a ring of health."));
+    CHECK(said(1, "You see yourself.") && said(0, "You see a ring of health +2."));
 
     return test_summary("target");
 }

@@ -345,6 +345,7 @@ int main(void)
     press(EV(NGE_KEY_SPACE));
     player_turn = 1;
     player_command(EV(NGE_KEY_I));
+    CHECK(SCREEN_INV_MAX == 20 + SLOT_COUNT - 1);   /* a full pack and every slot in use */
     CHECK(RAN_AND_CLOSED() && paused == 3);   /* a frame a key, and the frame that shows the main screen */
     CHECK(strcmp(OVER_ROW(0), "          Worldly Possessions           ") == 0);   /* centred */
     CHECK(starts(LIST_ROW(0), " You are carrying nothing."));
@@ -357,14 +358,14 @@ int main(void)
 
     /* ---- browse: what is in use (by slot), then the pack (by ID); the cursor highlighted ---- */
     sword = gen_item(IT_SWORD, actor_player);
-    ring1 = gen_item(IT_RING, actor_player);
-    ring2 = gen_item(IT_RING, actor_player);
+    ring1 = gen_item(IT_RING_HEALTH_2, actor_player);
+    ring2 = gen_item(IT_RING_HEALTH_2, actor_player);
     item_slot[ring1] = SLOT_RING_L;
     inv_capacity[actor_player] = 20;
     fresh();
     press(EV(NGE_KEY_SPACE));
     CHECK(screen_inv_run(SCREEN_INV_BROWSE, &chosen) == SCREEN_INV_BACK && RAN_AND_CLOSED());
-    CHECK(starts(LIST_ROW(0), " ring of health (left)"));
+    CHECK(starts(LIST_ROW(0), " ring of health +2 (left)"));
     CHECK(starts(LIST_ROW(1), " sword "));
     CHECK(starts(LIST_ROW(2), " ring of health "));
     CHECK(strcmp(LIST_ROW(3), "                            ") == 0);
@@ -450,7 +451,7 @@ int main(void)
     press(EV(NGE_KEY_ENTER));
     CHECK(screen_inv_run(ACT_DROP, &chosen) == ACT_DROP && chosen == ring1);
     /* A potion: it fits no slot */
-    ring2 = gen_item(IT_POTION, actor_player);
+    ring2 = gen_item(IT_HEAL_POTION, actor_player);
     fresh();
     player_turn = 1;
     press(EV(NGE_KEY_B));
@@ -470,7 +471,7 @@ int main(void)
     press(EV(NGE_KEY_B));
     player_command(EV(NGE_KEY_R));
     CHECK(starts(OVER_ROW(0), "                 Divest"));
-    CHECK(starts(LIST_ROW(0), " a) sword (in hand)") && starts(LIST_ROW(1), " b) ring of health (left)"));
+    CHECK(starts(LIST_ROW(0), " a) sword (in hand)") && starts(LIST_ROW(1), " b) ring of health +2 (left)"));
     CHECK(item_slot[ring1] == SLOT_NONE && item_slot[sword] == SLOT_WEAPON && !player_turn);
     /* Refused: why, on the status line; the screen stays, the turn kept */
     player_turn = 1;
@@ -498,7 +499,7 @@ int main(void)
     player_command(EV(NGE_KEY_U));
     CHECK(paused == 0 && said("You have nothing to use."));   /* not opened: no frame ran */
     /* Food: eaten; the poison's start text */
-    ring2 = gen_item(IT_FOOD, actor_player);
+    ring2 = gen_item(IT_DEAD_RAT, actor_player);
     fresh();
     press(EV(NGE_KEY_A));
     player_command(EV(NGE_KEY_U));
@@ -507,6 +508,18 @@ int main(void)
     effect_cure(actor_player, STATUS_POISONED);
     nge_event_process(messages_on_event);
     CHECK(said("The poison wears off."));
+    /* A parchment is read; "an" ahead of a vowel */
+    ring2 = gen_item(IT_SP_LIGHT, actor_player);
+    fresh();
+    press(EV(NGE_KEY_A));
+    player_command(EV(NGE_KEY_U));
+    nge_event_process(messages_on_event);
+    CHECK(shown("You read the light parchment.") && said("The room lights up."));
+    ring2 = gen_item(IT_APPLE, AREA);
+    nge_location_set(ring2, NGE_LOCATION_X(actor_player), NGE_LOCATION_Y(actor_player));
+    nge_event_post(ring2, EV_DROPPED, actor_player, 0, 0);
+    nge_event_process(messages_on_event);
+    CHECK(said("You drop an apple."));
     /* Healing says nothing itself: regeneration is silent (the effect's text speaks for a potion) */
     health_damage(actor_player, NGE_ENTITY_INVALID, 2, DMG_SLASH);
     health_heal(actor_player, 1);
@@ -528,7 +541,7 @@ int main(void)
     /* ---- a list longer than its panel (27 rows) scrolls with the cursor ---- */
     inv_capacity[actor_player] = 30;
     for (x = 0; x < 29; x++) {
-        many[x] = gen_item((x == 28) ? IT_POTION : IT_RING, actor_player);
+        many[x] = gen_item((x == 28) ? IT_HEAL_POTION : IT_RING_HEALTH_2, actor_player);
     }
     fresh();
     for (x = 0; x < 27; x++) {

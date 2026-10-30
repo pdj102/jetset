@@ -612,12 +612,12 @@ int main(void)
     go(5, LEVEL_ARRIVE_ANY);
     monster = first_of(CLASS_CREATURE);
     CHECK(monster != NGE_ENTITY_INVALID);
-    potion = gen_item(IT_POTION, NGE_OWNER_WORLD);
+    potion = gen_item(IT_HEAL_POTION, NGE_OWNER_WORLD);
     inv_stow(potion, monster);                        /* a monster's possession: goes with it */
-    ring = gen_item(IT_RING, NGE_OWNER_WORLD);
+    ring = gen_item(IT_RING_HEALTH_2, NGE_OWNER_WORLD);
     inv_stow(ring, monster);
     nge_entity_set_flags(ring, NGE_ENTITY_PERSISTENT);   /* a kept one held by an unkept one */
-    id = gen_item(IT_FOOD, NGE_OWNER_WORLD);
+    id = gen_item(IT_DEAD_RAT, NGE_OWNER_WORLD);
     inv_stow(id, player);                             /* the player's pack goes with them */
     sword = gen_item(IT_SWORD, NGE_OWNER_WORLD);
     inv_stow(sword, player);
@@ -681,7 +681,7 @@ int main(void)
           is_floor(NGE_LOCATION_X(boss), NGE_LOCATION_Y(boss)) && level_holds(boss));
 
     /* ---- a persistent boss killed: its persistent item survives, dropped where it died (R10, R10a) ---- */
-    ring = gen_item(IT_RING, NGE_OWNER_WORLD);
+    ring = gen_item(IT_RING_HEALTH_2, NGE_OWNER_WORLD);
     inv_stow(ring, boss);
     nge_entity_set_flags(ring, NGE_ENTITY_PERSISTENT);
     potion = gen_item(IT_SWORD, NGE_OWNER_WORLD);
@@ -727,9 +727,9 @@ int main(void)
     /* ---- entities sent away (R18) ---- */
     go(4, LEVEL_ARRIVE_ANY);
     monster = placed_creature(CR_GOBLIN);
-    potion = gen_item(IT_POTION, NGE_OWNER_WORLD);
+    potion = gen_item(IT_HEAL_POTION, NGE_OWNER_WORLD);
     inv_stow(potion, monster);
-    ring = gen_item(IT_RING, NGE_OWNER_WORLD);
+    ring = gen_item(IT_RING_HEALTH_2, NGE_OWNER_WORLD);
     inv_stow(ring, monster);
     nge_entity_set_flags(ring, NGE_ENTITY_PERSISTENT);
     CHECK(level_send(monster, 4) == 0 && NGE_ENTITY_IS_ALIVE(monster));   /* the same depth: nothing */
@@ -759,7 +759,7 @@ int main(void)
     go(5, LEVEL_ARRIVE_ANY);
     boss = placed_creature(CR_GOBLIN);
     nge_entity_set_flags(boss, NGE_ENTITY_PERSISTENT);
-    ring = gen_item(IT_RING, NGE_OWNER_WORLD);
+    ring = gen_item(IT_RING_HEALTH_2, NGE_OWNER_WORLD);
     inv_stow(ring, boss);                              /* not persistent itself: kept by its holder */
     sword = gen_item(IT_SWORD, NGE_OWNER_WORLD);
     inv_stow(sword, boss);
@@ -849,7 +849,7 @@ int main(void)
     level_rooms[level_room_cells[0]].y1 = 1;
     level_rooms[level_room_cells[0]].x2 = 4;
     level_rooms[level_room_cells[0]].y2 = 3;
-    potion = gen_item(IT_POTION, LEVEL_AREA);
+    potion = gen_item(IT_HEAL_POTION, LEVEL_AREA);
     nge_location_set(potion, 2, 2);
     level_free_floor(&d, &arrival);
     CHECK(d == 3 && arrival == 2);   /* the free one */

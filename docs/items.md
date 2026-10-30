@@ -1,7 +1,8 @@
 # Items: requirements and design
 
-Status: agreed (2026-10-30): D1 to D20 and Q1 to Q6 as proposed (section 13).
-Being built.
+Status: implemented (2026-10-30); D1 to D20 and Q1 to Q6 agreed as proposed
+(section 13). `make` and `make test` pass. The CSpect checks in section 11 are
+not yet run. Section 14 lists where the build differs from the design.
 
 This spec gives the game a classic roguelike's items: 160 kinds in 16
 subclasses, spread over depths 1 to 10 by rarity. It changes how effects get
@@ -991,3 +992,46 @@ The questions as asked:
   staves under `ITEM_WAND` the words you want?
 - **Q6 (R29)** Are the catalogue's numbers right enough as a first pass (proposed),
   or do you want to set any depths and rarities before it is built?
+
+## 14. As built: differences from the design
+
+Built in the order of section 10. The build and the PC tests pass. The zsdcc
+asm of `times()`, `scaled()`, the item pick, `gen_item_hook()` and the worn
+hook's call to `effects_add()` was read (T-ZSDCC-3).
+
+- **No multiply (6.3).** `amount * power` linked the library's `__mulint_callee`
+  into common memory, 28 bytes, taking the free space from 83 to 54 (R9).
+  `times()`, in page 120, adds in a loop instead. Powers are at most 127, and
+  this runs only when an effect is applied, ticks or is recomputed.
+- **No `strcmp()` for "a" and "an" (6.4).** It linked 23 bytes into common memory
+  for the same reason. `set_article()` compares the characters by hand. It is
+  called by `say_named()` and `say_did()`, so no message had to change, and it
+  corrects any name after " a ", creatures too.
+- **`GEN_HOOK_PACK()`** builds `gen_hook_of()`'s answer, with
+  `GEN_HOOK_EF()` and `GEN_HOOK_POWER()` to read it.
+- **`GEN_HOOK_COUNT` is 5,** so a creature or feature record's `hooks[]` grew from
+  4 to 10 bytes, as D7 says.
+- **The dev kit** holds 18 items to try (section 11), not one of each: the pack
+  holds 20, and 2 places stay free for the quest item and a find.
+- **Tests.**
+  - `on_end` at a stored power is in the code but untested: no definition has an
+    `on_end` op.
+  - The new slots are tested in `test_act` (a real equip), not `test_inventory`.
+  - "A full set of 15 and a pack of 20 all show" is a check of
+    `SCREEN_INV_MAX`, not a filled screen.
+  - `test_gen` now destroys each item in its all-kinds loops: there are more
+    kinds than entities.
+- **Known, not changed.** In the choosing lists, row letters run past "z" after
+  26 rows (`'a' + i` in `draw_row()`). A full list can reach that, as it already
+  could at 30 rows.
+
+Memory, debug build, against the design (section 6.6):
+
+| Where | Before | Built |
+|---|---|---|
+| Page 109 | 302 | 6,248, 76%, as computed |
+| Page 121 | 486 | 2,465 |
+| Page 120 | 4,816 | 5,166 |
+| Page 108 | 886 | 1,088 |
+| Slot 0 ends | `$19AF` | `$1A13` |
+| Free below the stack | 83 | 73: the longer dev kit is the 9 bytes |

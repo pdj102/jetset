@@ -348,8 +348,8 @@ static void draw_effect(uint8_t y, uint8_t ef, uint8_t count, uint16_t turns, NG
 /* The active effects, one row per kind (instances counted), in EF_* order; "and n more" past the rows */
 static void draw_effects(NGE_FILE *s)
 {
-    uint8_t count[EF_COUNT];
-    uint16_t turns[EF_COUNT];   /* the longest left, by kind */
+    uint8_t count[EF_TIMED_COUNT];    /* only timed effects are active: EF_COUNT would be too much for the stack */
+    uint16_t turns[EF_TIMED_COUNT];   /* the longest left, by kind */
     nge_entity_id_t id;
     uint16_t t;
     uint8_t kinds = 0;
@@ -361,6 +361,7 @@ static void draw_effects(NGE_FILE *s)
     NGE_OWNER_FOR_EACH_OWNED(i, id, actor_player) {
         if (NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_EFFECT)) {
             ef = effect_kind_of(id);
+            nge_util_assert(ef < EF_TIMED_COUNT);
             t = turns_left(id);
             if (count[ef]++ == 0) {
                 kinds++;
@@ -376,7 +377,7 @@ static void draw_effects(NGE_FILE *s)
         puts_at(y, 0, "None", NGE_INK_WHITE, s);
         return;
     }
-    for (ef = 0; ef < EF_COUNT; ef++) {
+    for (ef = 0; ef < EF_TIMED_COUNT; ef++) {
         if (count[ef] == 0) {
             continue;
         }

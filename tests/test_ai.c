@@ -635,7 +635,7 @@ int main(void)
     /* ---- hunting: a healing potion at half hit points or less, with the wit to use it ---- */
     scene(0, 5);
     goblin = hunter(CR_GOBLIN, 5, 5, 0, 5);
-    potion = gen_item(IT_POTION, AREA);
+    potion = gen_item(IT_HEAL_POTION, AREA);
     inv_stow(potion, goblin);
     health_hp[goblin] = (uint8_t)(health_hp_max[goblin] / 2 + 1);   /* above half: comes on */
     events();
@@ -653,7 +653,7 @@ int main(void)
     CHECK(at(goblin, 3, 5) && !NGE_ENTITY_IS_ALIVE(potion) && health_hp[goblin] > hp);
     CHECK(events() >= 1 && is(0, potion, EV_USED, goblin));
     /* A potion of strength: not for healing */
-    potion = gen_item(IT_STRENGTH, AREA);
+    potion = gen_item(IT_POTION_STR, AREA);
     inv_stow(potion, goblin);
     health_hp[goblin] = 1;
     ai_on_turn(goblin);

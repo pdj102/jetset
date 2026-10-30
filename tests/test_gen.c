@@ -144,6 +144,47 @@ static int attack_ok(nge_entity_id_t id, const attack_kind_t *a)
            attack_dice[ATTACK_RANGED][id] == a->dice && attack_type[ATTACK_RANGED][id] == a->type;
 }
 
+/* An item kind's record is well formed for its subclass */
+static int kind_ok(uint8_t kind)
+{
+    const gen_item_kind_t *k = &gen_items[kind];
+    const gen_item_hook_t *h = &k->hook;
+    uint8_t depth_max = k->where.depth_max;
+
+    if (strlen(k->name) > 19 || k->subclass >= ITEM_COUNT || depth_max > LEVEL_DEPTH_BOTTOM ||
+        k->where.depth < 1 || k->where.depth > depth_max || (k->fits & ~SLOTS_HUMANOID) != 0 ||
+        (k->where.rarity == 0) != (kind == IT_QUEST)) {
+        return 0;
+    }
+    switch (k->subclass) {
+    case ITEM_WAND:
+        return h->hook == GEN_HOOK_AIM && h->ef != EF_NONE && k->fits == 0 && k->count != 0;
+    case ITEM_RANGED:
+        return k->fits == SLOT_BIT(SLOT_RANGED) && k->attack.range >= 2 && k->attack.dice != 0 &&
+               k->group != GROUP_NONE && k->group != GROUP_THROWN && k->group < GROUP_COUNT;
+    case ITEM_AMMO:
+        if (k->fits != SLOT_BIT(SLOT_AMMO) || k->count == 0 || k->group == GROUP_NONE || k->group >= GROUP_COUNT) {
+            return 0;
+        }
+        return (k->group == GROUP_THROWN) ? k->attack.dice != 0 && k->attack.range >= 2 : k->attack.dice == 0;
+    case ITEM_KEY:
+        return k->group >= KEY_IRON && k->group < KEY_COUNT;
+    case ITEM_WEAPON:
+        return k->fits == SLOT_BIT(SLOT_WEAPON) && k->attack.dice != 0 && k->attack.range == 1;
+    case ITEM_POTION:
+    case ITEM_FOOD:
+    case ITEM_DRINK:
+        return h->hook == GEN_HOOK_USE && h->ef != EF_NONE;
+    case ITEM_RING:
+    case ITEM_AMULET:
+    case ITEM_ARMOUR:
+    case ITEM_LIGHT:
+        return h->hook == GEN_HOOK_WORN && h->ef != EF_NONE && k->fits != 0;
+    default:
+        return 1;
+    }
+}
+
 static int item_ok(nge_entity_id_t id, nge_owner_t owner, uint8_t kind)
 {
     return made(id, owner, CLASS_ITEM, kind) && render_is(id, &gen_items[kind].render) &&
@@ -213,10 +254,12 @@ int main(void)
     for (kind = 0; kind < IT_COUNT; kind++) {
         id = gen_item(kind, AREA);
         ok = ok && item_ok(id, AREA, kind) && gen_item_fits(kind) == gen_items[kind].fits;
+        nge_entity_destroy(id);                       /* more kinds than entities */
+        nge_entity_release(nge_entity_next_dying());
     }
     CHECK(ok);
-    CHECK(gen_item_fits(IT_POTION) == 0 && gen_item_fits(IT_SWORD) == SLOT_BIT(SLOT_WEAPON) &&
-          gen_item_fits(IT_RING) == (SLOT_BIT(SLOT_RING_L) | SLOT_BIT(SLOT_RING_R)));
+    CHECK(gen_item_fits(IT_HEAL_POTION) == 0 && gen_item_fits(IT_SWORD) == SLOT_BIT(SLOT_WEAPON) &&
+          gen_item_fits(IT_RING_HEALTH_2) == (SLOT_BIT(SLOT_RING_L) | SLOT_BIT(SLOT_RING_R)));
 
     /* ---- packed hooks: a negative power survives ---- */
     CHECK(GEN_HOOK_EF(GEN_HOOK_PACK(EF_POISON, -3)) == EF_POISON && GEN_HOOK_POWER(GEN_HOOK_PACK(EF_POISON, -3)) == -3);
@@ -232,6 +275,8 @@ int main(void)
             ok = ok && item_hook_is(gen_item_hook(kind, (uint8_t)i), kind, (uint8_t)i) &&
                  item_hook_is(gen_hook_of(id, (uint8_t)i), kind, (uint8_t)i);
         }
+        nge_entity_destroy(id);
+        nge_entity_release(nge_entity_next_dying());
     }
     for (kind = 0; kind < CR_COUNT; kind++) {
         for (i = 0; i < GEN_HOOK_COUNT; i++) {
@@ -278,10 +323,10 @@ int main(void)
         }
     }
     CHECK(ok);
-    CHECK(GEN_HOOK_EF(gen_item_hook(IT_POTION, GEN_HOOK_USE)) == EF_HEALING && GEN_HOOK_EF(gen_item_hook(IT_RING, GEN_HOOK_WORN)) == EF_RING_HEALTH &&
-          GEN_HOOK_EF(gen_item_hook(IT_ANTIDOTE, GEN_HOOK_USE)) == EF_CURE && GEN_HOOK_EF(gen_item_hook(IT_FOOD, GEN_HOOK_USE)) == EF_POISON &&
-          GEN_HOOK_EF(gen_item_hook(IT_ELIXIR, GEN_HOOK_USE)) == EF_VITALITY && GEN_HOOK_EF(gen_item_hook(IT_STRENGTH, GEN_HOOK_USE)) == EF_STRENGTH && GEN_HOOK_EF(gen_item_hook(IT_SWORD, GEN_HOOK_HIT)) == EF_NONE);
-    CHECK(gen_item_subclass(IT_FOOD) == ITEM_FOOD && gen_item_subclass(IT_ELIXIR) == ITEM_POTION);
+    CHECK(GEN_HOOK_EF(gen_item_hook(IT_HEAL_POTION, GEN_HOOK_USE)) == EF_HEALING && GEN_HOOK_EF(gen_item_hook(IT_RING_HEALTH_2, GEN_HOOK_WORN)) == EF_WORN_HP &&
+          GEN_HOOK_EF(gen_item_hook(IT_ANTIDOTE, GEN_HOOK_USE)) == EF_CURE && GEN_HOOK_EF(gen_item_hook(IT_DEAD_RAT, GEN_HOOK_USE)) == EF_POISON &&
+          GEN_HOOK_EF(gen_item_hook(IT_ELIXIR, GEN_HOOK_USE)) == EF_VITALITY && GEN_HOOK_EF(gen_item_hook(IT_POTION_STR, GEN_HOOK_USE)) == EF_STRENGTH && GEN_HOOK_EF(gen_item_hook(IT_SWORD, GEN_HOOK_HIT)) == EF_NONE);
+    CHECK(gen_item_subclass(IT_DEAD_RAT) == ITEM_FOOD && gen_item_subclass(IT_ELIXIR) == ITEM_POTION);
     id = gen_creature(CR_RAT, AREA);
     CHECK(GEN_HOOK_EF(gen_hook_of(id, GEN_HOOK_HIT)) == EF_POISON && GEN_HOOK_EF(gen_hook_of(id, GEN_HOOK_INNATE)) == EF_NONE);
     CHECK(!MANA_IS(id));                                       /* monsters have no mana yet */
@@ -311,8 +356,8 @@ int main(void)
 
     /* Any owner: an item in a chest, a creature not yet placed */
     chest = gen_item(IT_SWORD, AREA);
-    id = gen_item(IT_POTION, chest);
-    CHECK(item_ok(id, chest, IT_POTION));
+    id = gen_item(IT_HEAL_POTION, chest);
+    CHECK(item_ok(id, chest, IT_HEAL_POTION));
     id = gen_creature(CR_PLAYER, NGE_OWNER_WORLD);
     CHECK(creature_ok(id, NGE_OWNER_WORLD, CR_PLAYER));
 
@@ -362,7 +407,7 @@ int main(void)
     CHECK(seen[CR_PLAYER] == 0 && seen[CR_RAT] > 0 && seen[CR_GOBLIN] > 0);   /* rarity 0: never */
     CHECK(seen[CR_RAT] > seen[CR_GOBLIN]);                                      /* rarity 10 against 6 */
     memset(seen, 0, sizeof(seen));
-    for (i = 0; i < 300; i++) {
+    for (i = 0; i < 3000; i++) {
         id = gen_item_random(1, AREA);
         if (id != NGE_ENTITY_INVALID && item_ok(id, AREA, kind_index[id])) {
             seen[kind_index[id]]++;
@@ -370,12 +415,9 @@ int main(void)
             nge_entity_release(nge_entity_next_dying());
         }
     }
-    CHECK(seen[IT_POTION] + seen[IT_SWORD] + seen[IT_RING] + seen[IT_ANTIDOTE] + seen[IT_FOOD] +
-          seen[IT_ELIXIR] + seen[IT_STRENGTH] == 300);
-    /* Rarities 10, 5, 4 and 4, 3, 1 and 1 */
-    CHECK(seen[IT_POTION] > seen[IT_SWORD] && seen[IT_SWORD] > seen[IT_RING] && seen[IT_RING] > seen[IT_ELIXIR] &&
-          seen[IT_ELIXIR] > 0);
-    CHECK(seen[IT_ANTIDOTE] > seen[IT_ELIXIR] && seen[IT_FOOD] > seen[IT_ELIXIR] && seen[IT_STRENGTH] > 0);
+    /* Rarities 12, 6 and 3 */
+    CHECK(seen[IT_HEAL_DRAUGHT] > seen[IT_ARROWS] && seen[IT_ARROWS] > seen[IT_RING_HEALTH_1] && seen[IT_RING_HEALTH_1] > 0);
+    CHECK(seen[IT_ELIXIR] == 0 && seen[IT_SWORD_3] == 0);        /* too deep for depth 1 */
     /* Nothing appears at depth 0 */
     CHECK(gen_creature_random(0, AREA) == NGE_ENTITY_INVALID);
     CHECK(gen_item_random(0, AREA) == NGE_ENTITY_INVALID);
@@ -389,6 +431,53 @@ int main(void)
         nge_entity_release(nge_entity_next_dying());
     }
     CHECK(ok && nge_entity_free_count() == NGE_ENTITY_MAX);
+
+    /* ---- the catalogue: every kind well formed, every subclass as its mechanics will need ---- */
+    ok = 1;
+    for (kind = 0; kind < IT_COUNT; kind++) {
+        ok = ok && kind_ok(kind);
+    }
+    CHECK(ok);
+    /* Each equipment slot has a kind that fits */
+    ok = 1;
+    for (i = 1; i < SLOT_COUNT; i++) {
+        int fits = 0;
+
+        for (kind = 0; kind < IT_COUNT; kind++) {
+            fits = fits || (gen_items[kind].fits & SLOT_BIT(i)) != 0;
+        }
+        ok = ok && fits;
+    }
+    CHECK(ok);
+    /* Each depth has kinds, and no subclass passes a quarter of the weight (docs/items.md 8.2) */
+    ok = 1;
+    for (i = 1; i <= LEVEL_DEPTH_BOTTOM; i++) {
+        int share[ITEM_COUNT] = { 0 };
+        int total = 0;
+        int s;
+
+        for (kind = 0; kind < IT_COUNT; kind++) {
+            const gen_where_t *w = &gen_items[kind].where;
+
+            if (i >= w->depth && i <= w->depth_max) {
+                share[gen_items[kind].subclass] += w->rarity;
+                total += w->rarity;
+            }
+        }
+        ok = ok && total > 0;
+        for (s = 0; s < ITEM_COUNT; s++) {
+            ok = ok && share[s] * 4 <= total;
+        }
+    }
+    CHECK(ok);
+    /* A negative power and a ranged kind, as made */
+    CHECK((int8_t)gen_items[IT_RING_FRAILTY].hook.power == -3 && GEN_HOOK_POWER(gen_item_hook(IT_RING_FRAILTY, GEN_HOOK_WORN)) == -3);
+    id = gen_item(IT_LONG_BOW, AREA);
+    CHECK(ATTACK_HAS(id, ATTACK_RANGED) && !ATTACK_HAS(id, ATTACK_MELEE) && attack_range[ATTACK_RANGED][id] == 8);
+    id = gen_item(IT_ARROWS, AREA);
+    CHECK(!ATTACK_HAS(id, ATTACK_RANGED) && !ATTACK_HAS(id, ATTACK_MELEE) && item_count[id] == 15);
+    id = gen_item(IT_DARTS, AREA);
+    CHECK(ATTACK_HAS(id, ATTACK_RANGED) && item_count[id] == 8);
 
     /* GEN_PICK: the depth limits and the weights */
     ok = 1;
@@ -421,7 +510,7 @@ int main(void)
     while (nge_entity_create() != NGE_ENTITY_INVALID) {
     }
     CHECK(gen_creature(CR_RAT, AREA) == NGE_ENTITY_INVALID);
-    CHECK(gen_item(IT_POTION, AREA) == NGE_ENTITY_INVALID);
+    CHECK(gen_item(IT_HEAL_POTION, AREA) == NGE_ENTITY_INVALID);
     CHECK(gen_item_random(1, AREA) == NGE_ENTITY_INVALID);
 
     /* ---- asserts ---- */

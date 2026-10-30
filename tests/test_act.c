@@ -177,7 +177,7 @@ int main(void)
     nge_event_init();
     player = creature(CR_PLAYER, 4, 5);
     rat = creature(CR_RAT, 6, 5);
-    potion = gen_item(IT_POTION, AREA);
+    potion = gen_item(IT_HEAL_POTION, AREA);
     nge_location_set(potion, 5, 5);
     events();   /* the player's innate effect started */
 
@@ -271,7 +271,7 @@ int main(void)
     a.target = rat;
     CHECK(act_pickup(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_NOT_ITEM);
     /* Two items on a tile: the lowest ID first, or the one asked for */
-    i1 = gen_item(IT_POTION, AREA);
+    i1 = gen_item(IT_HEAL_POTION, AREA);
     i2 = gen_item(IT_SWORD, AREA);
     nge_location_set(i2, 4, 5);
     nge_location_set(i1, 4, 5);
@@ -335,7 +335,7 @@ int main(void)
     a.item = sw2;
     CHECK(act_equip(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_SLOT_TAKEN && a.target == i2 && a.used == 0);
     CHECK(item_slot[sw2] == SLOT_NONE && events() == 0);
-    i1 = gen_item(IT_POTION, AREA);
+    i1 = gen_item(IT_HEAL_POTION, AREA);
     inv_stow(i1, player);
     a = ctx(player);
     a.item = i1;
@@ -344,9 +344,9 @@ int main(void)
     a.item = sword;                                           /* on the floor */
     CHECK(act_equip(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_NOT_CARRIED);
     /* Rings: the left hand, then the right, then both are taken */
-    ring1 = gen_item(IT_RING, AREA);
-    ring2 = gen_item(IT_RING, AREA);
-    ring3 = gen_item(IT_RING, AREA);
+    ring1 = gen_item(IT_RING_HEALTH_2, AREA);
+    ring2 = gen_item(IT_RING_HEALTH_2, AREA);
+    ring3 = gen_item(IT_RING_HEALTH_2, AREA);
     inv_stow(ring1, player);
     inv_stow(ring2, player);
     inv_stow(ring3, player);
@@ -499,7 +499,7 @@ int main(void)
     a = ctx(player);
     a.target = far;
     CHECK(act_melee(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_OUT_OF_RANGE);
-    far = gen_item(IT_POTION, AREA);
+    far = gen_item(IT_HEAL_POTION, AREA);
     nge_location_set(far, 4, 4);                              /* only an item there: no target */
     a = ctx(player);
     a.dx = 0;
@@ -556,7 +556,7 @@ int main(void)
     /* ---- use: a stowed item with a use effect, used up ---- */
     effect_cure(player, STATUS_POISONED);
     health_hp[player] = 3;
-    thing = gen_item(IT_POTION, AREA);
+    thing = gen_item(IT_HEAL_POTION, AREA);
     inv_stow(thing, player);
     events();
     a = ctx(player);
@@ -571,8 +571,39 @@ int main(void)
     a = ctx(player);
     a.item = thing;
     CHECK(act_use(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_NOT_CARRIED && a.used == 0);
+    /* The hook's power goes to the effect: a draught heals half what a potion does */
+    health_hp[player] = 3;
+    thing = gen_item(IT_HEAL_DRAUGHT, AREA);
+    inv_stow(thing, player);
+    a = ctx(player);
+    a.item = thing;
+    CHECK(act_use(&a, ACT_DO) == ACT_SUCCESS && a.kind == EF_HEALING && health_hp[player] == 3 + 3);
+    events();
+    /* The new slots: a launcher, its ammo and more armour go where they fit */
+    thing = gen_item(IT_SHORT_BOW, AREA);
+    inv_stow(thing, player);
+    a = ctx(player);
+    a.item = thing;
+    CHECK(act_equip(&a, ACT_DO) == ACT_SUCCESS && item_slot[thing] == SLOT_RANGED && inv_equipped(player, SLOT_RANGED) == thing);
+    thing = gen_item(IT_ARROWS, AREA);
+    inv_stow(thing, player);
+    a = ctx(player);
+    a.item = thing;
+    CHECK(act_equip(&a, ACT_DO) == ACT_SUCCESS && item_slot[thing] == SLOT_AMMO);
+    thing = gen_item(IT_CLOAK, AREA);
+    inv_stow(thing, player);
+    a = ctx(player);
+    a.item = thing;
+    CHECK(act_equip(&a, ACT_DO) == ACT_SUCCESS && item_slot[thing] == SLOT_CLOAK);   /* the last slot: bit 15 */
+    /* A wand aims: it isn't used */
+    thing = gen_item(IT_WAND_FIRE, AREA);
+    inv_stow(thing, player);
+    a = ctx(player);
+    a.item = thing;
+    CHECK(act_use(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_CANT_USE);
+    events();
     /* Food, by number: poisoned */
-    thing = gen_item(IT_FOOD, AREA);
+    thing = gen_item(IT_DEAD_RAT, AREA);
     inv_stow(thing, player);
     a = ctx(player);
     a.item = thing;
@@ -628,7 +659,7 @@ int main(void)
     /* Back out; closing it with an item in the doorway: something is in the way */
     a = move(opener, -1, 0);
     act_move(&a, ACT_DO);
-    thing = gen_item(IT_POTION, AREA);
+    thing = gen_item(IT_HEAL_POTION, AREA);
     nge_location_set(thing, 8, 1);                            /* an item in the doorway */
     events();
     a = ctx(opener);

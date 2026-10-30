@@ -76,8 +76,8 @@ int main(void)
 
     /* ---- stow: owned by the holder, off the map, counted, walked in ID order ---- */
     a = floor_item(IT_SWORD, 1, 1);
-    b = floor_item(IT_POTION, 2, 1);
-    c = floor_item(IT_POTION, 3, 1);
+    b = floor_item(IT_HEAL_POTION, 2, 1);
+    c = floor_item(IT_HEAL_POTION, 3, 1);
     inv_stow(c, player);
     inv_stow(a, player);
     inv_stow(b, player);

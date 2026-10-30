@@ -19,9 +19,11 @@
 #include "sprite/nge_sprite.h"
 
 #if GAME_DEV_KIT
-/* The development kit's items, owned by the player: in their pack */
+/* The development kit's items, owned by the player: in their pack, which keeps 2 places free */
 static const uint8_t dev_kit[] = {
-    IT_SWORD, IT_RING, IT_RING, IT_RING, IT_POTION, IT_ANTIDOTE, IT_FOOD, IT_ELIXIR, IT_STRENGTH,
+    IT_SWORD, IT_HEAL_DRAUGHT, IT_HEAL_POTION, IT_RING_HEALTH_2, IT_RING_FRAILTY, IT_PLATE_ARMOUR_2, IT_HELMET,
+    IT_POTION_HASTE, IT_POTION_HASTE, IT_SHORT_BOW, IT_ARROWS, IT_CLOAK, IT_LEGGINGS, IT_WAND_FIRE, IT_LANTERN,
+    IT_SP_IDENTIFY, IT_BREAD, IT_WATERSKIN,
 };
 #endif
 
