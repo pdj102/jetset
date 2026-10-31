@@ -338,6 +338,17 @@ int main(void)
     id = gen_creature(CR_RAT, AREA);
     CHECK(ai_can(id) == AI_CAN_MELEE);                          /* Int 2, carries nothing: bites */
     CHECK(nge_owner_count(id) == 0);                           /* no innate effect */
+    reset();
+    id = gen_creature(CR_TROLL, AREA);
+    CHECK(GEN_HOOK_EF(gen_hook_of(id, GEN_HOOK_INNATE)) == EF_REGEN && nge_owner_count(id) == 1);   /* regenerates */
+    id = gen_creature(CR_GOBLIN_SHAMAN, AREA);
+    CHECK(MANA_IS(id) && mana_mp[id] == 6);                    /* the one monster with mana */
+    id = gen_creature(CR_SHRIEKER, AREA);
+    CHECK(ai_can(id) == 0);                                    /* Int 1, no attack, carries nothing */
+    id = gen_creature(CR_OGRE, AREA);
+    CHECK(ai_can(id) == (AI_CAN_MELEE | AI_CAN_PICKUP | AI_CAN_EQUIP | AI_CAN_USE | AI_CAN_OPEN));   /* Int 6 */
+    id = gen_creature(CR_SKELETON, AREA);
+    CHECK(ai_can(id) == (AI_CAN_MELEE | AI_CAN_PICKUP | AI_CAN_EQUIP));   /* Int 3: mindless at doors */
     id = gen_creature(CR_PLAYER, AREA);
     CHECK(GEN_HOOK_EF(gen_hook_of(id, GEN_HOOK_INNATE)) == EF_REGEN && nge_owner_count(id) == 1);   /* its innate effect */
     CHECK(MANA_IS(id) && mana_mp[id] == 5 && mana_mp_max[id] == 5);                 /* full */
@@ -395,17 +406,47 @@ int main(void)
     memset(seen, 0, sizeof(seen));
     ok = 1;
     for (i = 0; i < 300 && ok; i++) {
+        reset();                                               /* a kind may own an effect */
+        nge_event_init();
         id = gen_creature_random(1, AREA);
         ok = id != NGE_ENTITY_INVALID && creature_ok(id, AREA, kind_index[id]);
         if (ok) {
             seen[kind_index[id]]++;
-            nge_entity_destroy(id);
-            nge_entity_release(nge_entity_next_dying());
         }
     }
     CHECK(ok);
     CHECK(seen[CR_PLAYER] == 0 && seen[CR_RAT] > 0 && seen[CR_GOBLIN] > 0);   /* rarity 0: never */
     CHECK(seen[CR_RAT] > seen[CR_GOBLIN]);                                      /* rarity 10 against 6 */
+
+    /* ---- the creatures' bands: every depth has several kinds, and the weakest leave ---- */
+    ok = 1;
+    for (i = 1; i <= LEVEL_DEPTH_BOTTOM; i++) {
+        int kinds = 0;
+
+        for (kind = 0; kind < CR_COUNT; kind++) {
+            const gen_where_t *w = &gen_creatures[kind].where;
+
+            kinds += i >= w->depth && i <= w->depth_max && w->rarity != 0;
+            ok = ok && w->depth_max <= LEVEL_DEPTH_BOTTOM && (kind == CR_PLAYER || w->depth >= 1);
+        }
+        ok = ok && kinds >= 3;
+    }
+    CHECK(ok);
+    CHECK(gen_creatures[CR_RAT].where.depth_max == 4 && gen_creatures[CR_GOBLIN].where.depth_max == 6);
+    memset(seen, 0, sizeof(seen));
+    for (i = 0; i < 300; i++) {
+        reset();                                               /* a troll owns its regeneration too */
+        nge_event_init();                                      /* ...and posts its start */
+        id = gen_creature_random(LEVEL_DEPTH_BOTTOM, AREA);
+        if (id != NGE_ENTITY_INVALID) {
+            seen[kind_index[id]]++;
+        }
+    }
+    reset();
+    nge_event_init();
+    CHECK(seen[CR_WRAITH] > 0 && seen[CR_TROLL] > 0 && seen[CR_DRAGON] > 0);
+    CHECK(seen[CR_WRAITH] + seen[CR_TROLL] + seen[CR_DRAGON] == 300);           /* nothing else at the bottom */
+
     memset(seen, 0, sizeof(seen));
     for (i = 0; i < 3000; i++) {
         id = gen_item_random(1, AREA);

@@ -22,6 +22,37 @@
 #else
 #define MONSTER_SPEED  10
 #endif
+#define MONSTER_FAST   (MONSTER_SPEED / 2)
+#define MONSTER_SLOW   (MONSTER_SPEED * 2)
+
+/* What undead and spirits share: no poison in them; a spirit shrugs off weapons */
+#define IMMUNE_UNDEAD   DMG_BIT(DMG_POISON)
+#define RESIST_WEAPONS  (DMG_BIT(DMG_BLUNT) | DMG_BIT(DMG_SLASH) | DMG_BIT(DMG_PIERCE))
+
+/* What a humanoid can wield and wear */
+#define SLOTS_FIGHTER  (SLOT_BIT(SLOT_WEAPON) | SLOT_BIT(SLOT_SHIELD) | SLOT_BIT(SLOT_HEAD) | SLOT_BIT(SLOT_BODY))
+
+/* A kind's sprite part from its shape, in a bank */
+#define SHAPE_RAT(bank)     { SPRITE_RAT_IDLE, SPRITE_RAT_IDLE_COUNT, SPRITE_RAT_IDLE_RATE, \
+                              NGE_SPRITE_PALETTE(bank), LAYER_MONSTERS }
+#define SHAPE_GOBLIN(bank)  { SPRITE_GOBLIN_IDLE, SPRITE_GOBLIN_IDLE_COUNT, SPRITE_GOBLIN_IDLE_RATE, \
+                              NGE_SPRITE_PALETTE(bank), LAYER_MONSTERS }
+#define SHAPE_PLAYER(bank)  { SPRITE_PLAYER_IDLE, SPRITE_PLAYER_IDLE_COUNT, SPRITE_PLAYER_IDLE_RATE, \
+                              NGE_SPRITE_PALETTE(bank), LAYER_MONSTERS }
+#define SHAPE_COINS(bank)   { SPRITE_COINS, SPRITE_COINS_COUNT, SPRITE_COINS_RATE, \
+                              NGE_SPRITE_PALETTE(bank), LAYER_MONSTERS }
+
+/* Stand-ins until their art is drawn: a shape's own tag replaces these, one line each */
+#define SHAPE_BAT       SHAPE_RAT
+#define SHAPE_SNAKE     SHAPE_RAT
+#define SHAPE_FUNGUS    SHAPE_RAT
+#define SHAPE_SLIME     SHAPE_RAT
+#define SHAPE_SPIDER    SHAPE_RAT
+#define SHAPE_EYE       SHAPE_RAT
+#define SHAPE_SKELETON  SHAPE_GOBLIN
+#define SHAPE_GHOST     SHAPE_GOBLIN
+#define SHAPE_OGRE      SHAPE_GOBLIN
+#define SHAPE_DRAGON    SHAPE_GOBLIN
 
 const gen_creature_kind_t gen_creatures[CR_COUNT] = {
     [CR_PLAYER] = {
@@ -56,7 +87,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .flags = 0,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
         .hooks = { [GEN_HOOK_HIT] = { EF_POISON, 1 } },        /* a poisonous bite */
-        .where = { .depth = 1, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 10 },
+        .where = { .depth = 1, .depth_max = 4, .rarity = 10 },
     },
     [CR_GOBLIN] = {
         .name = "goblin",
@@ -70,6 +101,246 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .xp = 5,                                        /* 1-1 hit dice */
         .flags = 0,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
-        .where = { .depth = 1, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 6 },
+        .where = { .depth = 1, .depth_max = 6, .rarity = 6 },
+    },
+    [CR_BAT] = {                                        /* later: erratic flight */
+        .name = "bat",
+        .render = SHAPE_BAT(BANK_PURPLE),
+        .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
+        .stats = { .speed = MONSTER_FAST, .ability = { 4, 15, 8, 2, 12, 6 } },
+        .health = { .hp_max = 3, .ac = 13 },
+        .melee = { .to_hit = 0, .dice = 1, .sides = 2, .bonus = 0, .type = DMG_PIERCE, .range = 1 },  /* bite */
+        .inventory = { .capacity = 0, .slots = 0 },
+        .xp = 5,                                        /* below 1 hit die */
+        .flags = 0,
+        .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
+        .where = { .depth = 1, .depth_max = 4, .rarity = 8 },
+    },
+    [CR_GREEN_SNAKE] = {
+        .name = "green snake",
+        .render = SHAPE_SNAKE(BANK_GREEN),
+        .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
+        .stats = { .speed = MONSTER_SPEED, .ability = { 6, 14, 10, 1, 10, 3 } },
+        .health = { .hp_max = 5, .immune = DMG_BIT(DMG_POISON), .ac = 13 },
+        .melee = { .to_hit = 1, .dice = 1, .sides = 3, .bonus = 0, .type = DMG_PIERCE, .range = 1 },  /* bite */
+        .inventory = { .capacity = 0, .slots = 0 },
+        .xp = 13,                                       /* 1 hit die, special */
+        .flags = 0,
+        .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
+        .hooks = { [GEN_HOOK_HIT] = { EF_POISON, 1 } },
+        .where = { .depth = 1, .depth_max = 5, .rarity = 7 },
+    },
+    [CR_LICHEN] = {                                     /* later: rooted */
+        .name = "lichen",
+        .render = SHAPE_FUNGUS(BANK_BONE),
+        .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
+        .stats = { .speed = MONSTER_SLOW, .ability = { 2, 2, 10, 1, 6, 1 } },
+        .health = { .hp_max = 4, .immune = DMG_BIT(DMG_POISON), .vuln = DMG_BIT(DMG_FIRE), .ac = 9 },
+        .melee = { .to_hit = 1, .dice = 1, .sides = 1, .bonus = 0, .type = DMG_BLUNT, .range = 1 },   /* a sticky touch */
+        .inventory = { .capacity = 0, .slots = 0 },
+        .xp = 13,                                       /* 1 hit die, special */
+        .flags = 0,
+        .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
+        .hooks = { [GEN_HOOK_HIT] = { EF_SLOW, 2 } },
+        .where = { .depth = 1, .depth_max = 5, .rarity = 5 },
+    },
+    [CR_GREEN_SLIME] = {                                /* later: splits, corrodes gear */
+        .name = "green slime",
+        .render = SHAPE_SLIME(BANK_LIME),
+        .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
+        .stats = { .speed = MONSTER_SLOW, .ability = { 4, 4, 14, 1, 4, 1 } },
+        .health = { .hp_max = 9, .immune = DMG_BIT(DMG_POISON) | DMG_BIT(DMG_ACID),
+                    .resist = DMG_BIT(DMG_BLUNT) | DMG_BIT(DMG_PIERCE), .vuln = DMG_BIT(DMG_FIRE), .ac = 8 },
+        .melee = { .to_hit = 2, .dice = 1, .sides = 4, .bonus = 0, .type = DMG_ACID, .range = 1 },    /* a burning touch */
+        .inventory = { .capacity = 0, .slots = 0 },
+        .xp = 25,                                       /* 2 hit dice, special */
+        .flags = 0,
+        .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
+        .where = { .depth = 2, .depth_max = 6, .rarity = 6 },
+    },
+    [CR_SHRIEKER] = {                                   /* later: rooted, its shriek wakes the level */
+        .name = "shrieker",
+        .render = SHAPE_FUNGUS(BANK_PURPLE),
+        .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
+        .stats = { .speed = MONSTER_SLOW, .ability = { 1, 1, 8, 1, 8, 1 } },
+        .health = { .hp_max = 5, .immune = DMG_BIT(DMG_POISON), .vuln = DMG_BIT(DMG_FIRE), .ac = 7 },
+        .inventory = { .capacity = 0, .slots = 0 },     /* no attack */
+        .xp = 13,                                       /* 1 hit die, special */
+        .flags = 0,
+        .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
+        .where = { .depth = 2, .depth_max = 6, .rarity = 4 },
+    },
+    [CR_BANDIT] = {                                     /* later: steals and runs */
+        .name = "bandit",
+        .render = SHAPE_PLAYER(BANK_EARTH),
+        .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
+        .stats = { .speed = MONSTER_SPEED, .ability = { 11, 13, 11, 10, 9, 8 } },
+        .health = { .hp_max = 9, .ac = 12 },
+        .melee = { .to_hit = 1, .dice = 1, .sides = 4, .bonus = 0, .type = DMG_SLASH, .range = 1 },   /* a knife */
+        .inventory = { .capacity = 6, .slots = SLOTS_HUMANOID },
+        .xp = 20,                                       /* 2 hit dice */
+        .flags = 0,
+        .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
+        .where = { .depth = 2, .depth_max = 6, .rarity = 5 },
+    },
+    [CR_ORC] = {
+        .name = "orc",
+        .render = SHAPE_GOBLIN(BANK_IRON),
+        .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
+        .stats = { .speed = MONSTER_SPEED, .ability = { 13, 10, 12, 8, 8, 7 } },
+        .health = { .hp_max = 10, .ac = 13 },
+        .melee = { .to_hit = 2, .dice = 1, .sides = 6, .bonus = 0, .type = DMG_SLASH, .range = 1 },   /* claws */
+        .inventory = { .capacity = 4, .slots = SLOTS_FIGHTER },
+        .xp = 20,                                       /* 2 hit dice */
+        .flags = 0,
+        .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
+        .where = { .depth = 3, .depth_max = 7, .rarity = 8 },
+    },
+    [CR_GIANT_SPIDER] = {                               /* later: webs */
+        .name = "giant spider",
+        .render = SHAPE_SPIDER(BANK_DARK),
+        .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
+        .stats = { .speed = MONSTER_SPEED, .ability = { 8, 15, 10, 1, 10, 2 } },
+        .health = { .hp_max = 13, .immune = DMG_BIT(DMG_POISON), .ac = 14 },
+        .melee = { .to_hit = 3, .dice = 1, .sides = 6, .bonus = 0, .type = DMG_PIERCE, .range = 1 },  /* bite */
+        .inventory = { .capacity = 0, .slots = 0 },
+        .xp = 50,                                       /* 3 hit dice, special */
+        .flags = 0,
+        .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
+        .hooks = { [GEN_HOOK_HIT] = { EF_POISON, 2 } },
+        .where = { .depth = 3, .depth_max = 7, .rarity = 6 },
+    },
+    [CR_SKELETON] = {                                   /* later: never flees */
+        .name = "skeleton",
+        .render = SHAPE_SKELETON(BANK_BONE),
+        .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
+        .stats = { .speed = MONSTER_SPEED, .ability = { 10, 12, 10, 3, 8, 4 } },
+        .health = { .hp_max = 9, .immune = IMMUNE_UNDEAD, .resist = DMG_BIT(DMG_PIERCE), .vuln = DMG_BIT(DMG_BLUNT), .ac = 13 },
+        .melee = { .to_hit = 2, .dice = 1, .sides = 6, .bonus = 0, .type = DMG_SLASH, .range = 1 },   /* claws */
+        .inventory = { .capacity = 2, .slots = SLOT_BIT(SLOT_WEAPON) },
+        .xp = 20,                                       /* 2 hit dice */
+        .flags = 0,
+        .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
+        .where = { .depth = 3, .depth_max = 7, .rarity = 7 },
+    },
+    [CR_GOBLIN_SHAMAN] = {                              /* later: casts */
+        .name = "goblin shaman",
+        .render = SHAPE_GOBLIN(BANK_PURPLE),
+        .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
+        .stats = { .speed = MONSTER_SPEED, .ability = { 8, 12, 10, 13, 14, 10 } },
+        .health = { .hp_max = 9, .resist = DMG_BIT(DMG_BLUNT), .vuln = DMG_BIT(DMG_FIRE), .ac = 12 },
+        .mana = { .mp_max = 6 },
+        .melee = { .to_hit = 1, .dice = 1, .sides = 4, .bonus = 0, .type = DMG_BLUNT, .range = 1 },   /* a stick */
+        .inventory = { .capacity = 4, .slots = SLOT_BIT(SLOT_WEAPON) },
+        .xp = 25,                                       /* 2 hit dice, special */
+        .flags = 0,
+        .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
+        .where = { .depth = 3, .depth_max = 7, .rarity = 4 },
+    },
+    [CR_GOLD_SNAKE] = {                                 /* later: spits at range */
+        .name = "gold snake",
+        .render = SHAPE_SNAKE(BANK_GOLD),
+        .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
+        .stats = { .speed = MONSTER_SPEED, .ability = { 8, 16, 11, 1, 12, 4 } },
+        .health = { .hp_max = 13, .immune = DMG_BIT(DMG_POISON), .ac = 14 },
+        .melee = { .to_hit = 3, .dice = 1, .sides = 6, .bonus = 0, .type = DMG_PIERCE, .range = 1 },  /* bite */
+        .inventory = { .capacity = 0, .slots = 0 },
+        .xp = 50,                                       /* 3 hit dice, special */
+        .flags = 0,
+        .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
+        .hooks = { [GEN_HOOK_HIT] = { EF_BLIND, 1 } },
+        .where = { .depth = 4, .depth_max = 8, .rarity = 5 },
+    },
+    [CR_FLOATING_EYE] = {                               /* later: rooted, a paralysing gaze */
+        .name = "floating eye",
+        .render = SHAPE_EYE(BANK_BLUE),
+        .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
+        .stats = { .speed = MONSTER_SLOW, .ability = { 1, 3, 10, 8, 14, 1 } },
+        .health = { .hp_max = 13, .immune = DMG_BIT(DMG_POISON), .ac = 9 },
+        .inventory = { .capacity = 0, .slots = 0 },     /* no attack */
+        .xp = 75,                                       /* 3+ hit dice, special */
+        .flags = 0,
+        .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
+        .where = { .depth = 4, .depth_max = 8, .rarity = 3 },
+    },
+    [CR_MIMIC] = {                                      /* later: rooted, poses as treasure until touched */
+        .name = "mimic",
+        .render = SHAPE_COINS(BANK_GOLD),
+        .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
+        .stats = { .speed = MONSTER_SPEED, .ability = { 14, 8, 14, 3, 10, 1 } },
+        .health = { .hp_max = 18, .immune = DMG_BIT(DMG_ACID), .ac = 12 },
+        .melee = { .to_hit = 4, .dice = 2, .sides = 4, .bonus = 0, .type = DMG_BLUNT, .range = 1 },   /* a slam */
+        .inventory = { .capacity = 0, .slots = 0 },
+        .xp = 125,                                      /* 4 hit dice, special */
+        .flags = 0,
+        .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
+        .where = { .depth = 4, .depth_max = 9, .rarity = 3 },
+    },
+    [CR_OGRE] = {
+        .name = "ogre",
+        .render = SHAPE_OGRE(BANK_EARTH),
+        .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
+        .stats = { .speed = MONSTER_SPEED, .ability = { 17, 8, 15, 6, 8, 6 } },
+        .health = { .hp_max = 23, .ac = 14 },
+        .melee = { .to_hit = 5, .dice = 2, .sides = 6, .bonus = 0, .type = DMG_BLUNT, .range = 1 },   /* fists */
+        .inventory = { .capacity = 3, .slots = SLOT_BIT(SLOT_WEAPON) },
+        .xp = 175,                                      /* 5 hit dice */
+        .flags = 0,
+        .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
+        .where = { .depth = 5, .depth_max = 8, .rarity = 8 },
+    },
+    [CR_GHOST] = {                                      /* later: passes through walls */
+        .name = "ghost",
+        .render = SHAPE_GHOST(BANK_BONE),
+        .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
+        .stats = { .speed = MONSTER_SPEED, .ability = { 2, 14, 10, 10, 12, 12 } },
+        .health = { .hp_max = 20, .immune = IMMUNE_UNDEAD | DMG_BIT(DMG_COLD), .resist = RESIST_WEAPONS, .ac = 15 },
+        .melee = { .to_hit = 4, .dice = 1, .sides = 8, .bonus = 0, .type = DMG_COLD, .range = 1 },    /* a chill touch */
+        .inventory = { .capacity = 0, .slots = 0 },
+        .xp = 225,                                      /* 5 hit dice, special */
+        .flags = 0,
+        .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
+        .where = { .depth = 5, .depth_max = 9, .rarity = 5 },
+    },
+    [CR_WRAITH] = {
+        .name = "wraith",
+        .render = SHAPE_GHOST(BANK_DARK),
+        .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
+        .stats = { .speed = MONSTER_SPEED, .ability = { 10, 15, 10, 12, 13, 14 } },
+        .health = { .hp_max = 27, .immune = IMMUNE_UNDEAD | DMG_BIT(DMG_COLD), .resist = RESIST_WEAPONS, .ac = 16 },
+        .melee = { .to_hit = 6, .dice = 1, .sides = 10, .bonus = 0, .type = DMG_COLD, .range = 1 },   /* a draining touch */
+        .inventory = { .capacity = 0, .slots = 0 },
+        .xp = 500,                                      /* 6 hit dice, special */
+        .flags = 0,
+        .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
+        .hooks = { [GEN_HOOK_HIT] = { EF_WEAKNESS, 2 } },
+        .where = { .depth = 6, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 5 },
+    },
+    [CR_TROLL] = {
+        .name = "troll",
+        .render = SHAPE_OGRE(BANK_GREEN),
+        .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
+        .stats = { .speed = MONSTER_SPEED, .ability = { 20, 12, 18, 7, 9, 6 } },
+        .health = { .hp_max = 31, .vuln = DMG_BIT(DMG_FIRE) | DMG_BIT(DMG_ACID), .ac = 15 },
+        .melee = { .to_hit = 7, .dice = 2, .sides = 6, .bonus = 2, .type = DMG_SLASH, .range = 1 },   /* claws */
+        .inventory = { .capacity = 0, .slots = 0 },
+        .xp = 850,                                      /* 7 hit dice, special */
+        .flags = 0,
+        .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
+        .hooks = { [GEN_HOOK_INNATE] = { EF_REGEN, 1 } },
+        .where = { .depth = 7, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 6 },
+    },
+    [CR_DRAGON] = {                                     /* later: fire breath */
+        .name = "dragon",
+        .render = SHAPE_DRAGON(BANK_RED),
+        .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
+        .stats = { .speed = MONSTER_SPEED, .ability = { 22, 10, 20, 14, 14, 16 } },
+        .health = { .hp_max = 60, .immune = DMG_BIT(DMG_FIRE), .vuln = DMG_BIT(DMG_COLD), .ac = 18 },
+        .melee = { .to_hit = 9, .dice = 3, .sides = 6, .bonus = 3, .type = DMG_PIERCE, .range = 1 },  /* bite */
+        .inventory = { .capacity = 0, .slots = 0 },
+        .xp = 1750,                                     /* 10 hit dice, special */
+        .flags = 0,
+        .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
+        .where = { .depth = 9, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 2 },
     },
 };

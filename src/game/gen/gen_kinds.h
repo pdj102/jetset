@@ -12,10 +12,28 @@
  */
 
 /* Creatures (CLASS_CREATURE) */
-#define CR_PLAYER  0
-#define CR_RAT     1
-#define CR_GOBLIN  2
-#define CR_COUNT   3
+#define CR_PLAYER         0
+#define CR_RAT            1
+#define CR_GOBLIN         2
+#define CR_BAT            3
+#define CR_GREEN_SNAKE    4
+#define CR_LICHEN         5
+#define CR_GREEN_SLIME    6
+#define CR_SHRIEKER       7
+#define CR_BANDIT         8
+#define CR_ORC            9
+#define CR_GIANT_SPIDER   10
+#define CR_SKELETON       11
+#define CR_GOBLIN_SHAMAN  12
+#define CR_GOLD_SNAKE     13
+#define CR_FLOATING_EYE   14
+#define CR_MIMIC          15
+#define CR_OGRE           16
+#define CR_GHOST          17
+#define CR_WRAITH         18
+#define CR_TROLL          19
+#define CR_DRAGON         20
+#define CR_COUNT          21
 
 /* Items (CLASS_ITEM): IT_QUEST is one a game, made by game/actors.c, never at random */
 #define IT_CLUB              0

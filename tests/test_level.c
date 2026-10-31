@@ -588,7 +588,12 @@ int main(void)
     CHECK(check_level(4) && is_floor(NGE_LOCATION_X(player), NGE_LOCATION_Y(player)));
     go(LEVEL_DEPTH_BOTTOM, LEVEL_ARRIVE_DOWN_STAIRS);   /* no down stairs: free floor instead */
     CHECK(check_level(LEVEL_DEPTH_BOTTOM) && is_floor(NGE_LOCATION_X(player), NGE_LOCATION_Y(player)));
-    CHECK(seen_count == 0);   /* level_generate() posts nothing: EV_ARRIVED is the game's */
+    /* level_generate() posts only the monsters' innate effects: EV_ARRIVED is the game's */
+    ok = seen_count <= (int)(sizeof(seen) / sizeof(seen[0]));
+    for (n = 0; n < seen_count && ok; n++) {
+        ok = seen[n].id == EV_EFFECT_STARTED || seen[n].id == EV_ATTRS_CHANGED;
+    }
+    CHECK(ok);
 
     /* ---- debug seeding: a depth is the same whatever happened before, parked entities aside (R7, R7a) ---- */
     go(7, LEVEL_ARRIVE_ANY);
