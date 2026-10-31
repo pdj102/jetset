@@ -821,5 +821,33 @@ int main(void)
     TEST_EXPECT_HALT(act_attempted(ACT_R_COUNT));
     CHECK(test_halt_count == 1);
 
+    /* ---- a move onto a pile: 4 items are told about, and what isn't an item always (docs/events.md, R26) ---- */
+    nge_entity_init();
+    nge_render_init();
+    nge_timer_init();
+    nge_event_init();
+    player = creature(CR_PLAYER, 1, 1);
+    rat = creature(CR_RAT, 1, 2);
+    for (r1 = 0; r1 < 20; r1++) {
+        nge_location_set(gen_item(IT_HEAL_POTION, AREA), 2, 1);
+    }
+    stairs = gen_feature(FT_STAIRS_DOWN, AREA);
+    feature_place(stairs, 2, 1);
+    nge_event_init();                                         /* the peak, for the largest actions */
+    a = move(player, 1, 0);
+    CHECK(act_move(&a, ACT_DO) == ACT_SUCCESS);
+    CHECK(nge_event_peak() <= NGE_EVENT_QUEUE / 2);           /* R25 */
+    CHECK(events() == 6 && is(0, player, EV_MOVED, NGE_EVENT_NONE) && is(5, stairs, EV_STOOD_ON, player));
+
+    /* ---- the largest actions leave half the queue free (R25) ---- */
+    nge_event_init();
+    nge_location_set(rat, 2, 2);
+    a = ctx(rat);
+    a.target = player;
+    srand(seed_for_roll(20));
+    CHECK(act_melee(&a, ACT_DO) == ACT_SUCCESS);              /* a hit that poisons: 4 */
+    CHECK(nge_event_peak() == 4 && nge_event_peak() <= NGE_EVENT_QUEUE / 2);
+    events();
+
     return test_summary("act");
 }

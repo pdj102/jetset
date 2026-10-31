@@ -14,7 +14,11 @@
 #include "ecs/components/nge_location.h"
 #include "ecs/nge_owner.h"
 #include "event/nge_event.h"
+#include "game/components/item.h"
 #include "game/events.h"
+
+/* Items told about by one move: a pile has no limit but the inventory, and the queue has (docs/events.md, D13) */
+#define STOOD_ON_ITEMS_MAX  4
 
 uint8_t act_move(act_t *a, uint8_t mode) NGE_BANKED
 {
@@ -23,6 +27,7 @@ uint8_t act_move(act_t *a, uint8_t mode) NGE_BANKED
     nge_block_t pass;
     nge_entity_id_t blocker;
     nge_entity_id_t id;
+    uint8_t items = 0;
     uint8_t x;
     uint8_t y;
 
@@ -55,9 +60,16 @@ uint8_t act_move(act_t *a, uint8_t mode) NGE_BANKED
     nge_location_set(actor, x, y);
     nge_event_post(actor, EV_MOVED, NGE_EVENT_NONE, (uint8_t)a->dx, (uint8_t)a->dy);
     NGE_LOCATION_FOR_EACH_AT(id, area, x, y, 0) {
-        if (id != actor) {
-            nge_event_post(id, EV_STOOD_ON, actor, 0, 0);
+        if (id == actor) {
+            continue;
         }
+        if (ITEM_IS(id)) {
+            if (items == STOOD_ON_ITEMS_MAX) {
+                continue;
+            }
+            items++;
+        }
+        nge_event_post(id, EV_STOOD_ON, actor, 0, 0);
     }
     return act_succeed(a);
 }
