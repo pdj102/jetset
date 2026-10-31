@@ -8,21 +8,27 @@ root:
     python3 -I scripts/sprite_grids.py preview grids.txt sheet.png
     python3 -I scripts/sprite_grids.py apply grids.txt
 
-A grid file holds sprites, one frame each. A header line names the tag, the
-bank it is drawn in, any other banks it shows in, and "glow" if it may leave
-its outline off (6.6). 16 rows follow: . transparent, 1-9 and a-f the slot.
-Blank lines and lines starting # are skipped:
+A grid file holds frames. A header line names the tag, the bank it is drawn
+in, any other banks it shows in, and "glow" if it may leave its outline off
+(6.6). A creature adds its size class (tiny, small, medium, large) and "air"
+if it flies. 16 rows follow: . transparent, 1-9 and a-f the slot. Blank lines
+and lines starting # are skipped. Grids in a row with one tag are its frames:
 
     dagger 13 6 7
+    ................
+    ...
+    goblin.idle 6 13 10 medium
     ................
     ...
 
 The .aseprite file stays the source of the art: apply writes the sprites into
 it with Aseprite's command line, appending new tags and replacing the frame
-of a tag that has one. Add --file to work on another file. Set ASEPRITE to
-use another Aseprite. check knows the Item rules only (6.2).
+or frames of a tag that has them. Add --file to work on another file. Set
+ASEPRITE to use another Aseprite. check knows the Item and creature rules
+(6.2).
 """
 import argparse
+import itertools
 import os
 import re
 import struct
@@ -40,11 +46,16 @@ SPRITE_FILE = 'assets/Sprites.aseprite'
 SPRITE_LAYER = 'Sprites'
 ASEPRITE = '/mnt/d/SteamLibrary/steamapps/common/Aseprite/Aseprite.exe'
 ITEM_DURATION = 0.1           # seconds, the frames' duration in the file
+CREATURE_DURATION = 0.5       # a rest animation, rate 25 (6.7)
 
 ITEM_BOX = 12                 # the largest body box, each way
 ITEM_CENTRE = 7.5
 CENTRE_SLACK = 1              # how far a body box's centre may be from ITEM_CENTRE
 ITEM_LAST_ROW = 13
+CREATURE_BOX = {'tiny': (8, 7), 'small': (12, 9), 'medium': (12, 14), 'large': (14, 14)}   # the largest, w x h
+FEET_ROW = 14
+AIR_ROW = 11                  # the bottom of a flying creature, give or take its bob
+AIR_SLACK = 1
 NEAR_SILHOUETTES = 10         # pixels: fewer differing looks like the same shape
 
 BANK_FLASH = 1
@@ -62,12 +73,14 @@ class GridError(Exception):
 
 
 class Grid:
-    def __init__(self, tag, bank, others=(), glow=False, rows=()):
+    def __init__(self, tag, bank, others=(), glow=False, rows=(), size=None, air=False):
         self.tag = tag
         self.bank = bank
         self.others = list(others)
         self.glow = glow
         self.rows = list(rows)        # strings of . and hex digits
+        self.size = size              # a creature's class in CREATURE_BOX, None for an item
+        self.air = air
 
 
 def parse(text):
@@ -77,23 +90,27 @@ def parse(text):
     lines = [line for line in lines if line and not line.startswith('#')]
     for i in range(0, len(lines), SIZE + 1):
         parts = lines[i].split()
-        glow = 'glow' in parts[1:]
-        numbers = [p for p in parts[1:] if p != 'glow']
-        if not numbers or not all(n.isdigit() and int(n) < SIZE for n in numbers):
-            raise GridError(f'"{lines[i]}" is not a header: tag, bank, other banks, glow')
+        words = [p for p in parts[1:] if not p.isdigit()]
+        numbers = [p for p in parts[1:] if p.isdigit()]
+        sizes = [w for w in words if w in CREATURE_BOX]
+        if (not numbers or not all(int(n) < SIZE for n in numbers) or len(sizes) > 1
+                or set(words) - set(sizes) - {'glow', 'air'}):
+            raise GridError(f'"{lines[i]}" is not a header: tag, bank, other banks, glow, size, air')
         rows = lines[i + 1:i + 1 + SIZE]
         if len(rows) != SIZE:
             raise GridError(f'{parts[0]}: {len(rows)} rows, not {SIZE}')
         for y, row in enumerate(rows):
             if not re.fullmatch(r'[.1-9a-f]{%d}' % SIZE, row):
                 raise GridError(f'{parts[0]} row {y}: "{row}" is not {SIZE} of . 1-9 a-f')
-        grids.append(Grid(parts[0], int(numbers[0]), [int(n) for n in numbers[1:]], glow, rows))
+        grids.append(Grid(parts[0], int(numbers[0]), [int(n) for n in numbers[1:]], 'glow' in words, rows,
+                          sizes[0] if sizes else None, 'air' in words))
     return grids
 
 
 def format_grid(grid):
     header = [grid.tag, str(grid.bank)] + [str(b) for b in grid.others]
-    return '\n'.join([' '.join(header + ['glow'] * grid.glow)] + grid.rows) + '\n'
+    words = ['glow'] * grid.glow + [grid.size] * bool(grid.size) + ['air'] * grid.air
+    return '\n'.join([' '.join(header + words)] + grid.rows) + '\n'
 
 
 def frame_grid(sprite, frame, tag):
@@ -160,6 +177,12 @@ def check_item(grid):
     for name, low, high in (('columns', left, right), ('rows', top, bottom)):
         if abs((low + high) / 2 - ITEM_CENTRE) > CENTRE_SLACK:
             problems.append(f'{name} {low}-{high} are off centre')
+    return problems + _shape_problems(grid, opaque)
+
+
+def _shape_problems(grid, opaque):
+    """What breaks the rules items and creatures share (6.1, 6.3, 6.6)."""
+    problems = []
     if not _joined(opaque):
         problems.append('has pixels not joined to the shape')
     if not grid.glow:
@@ -171,11 +194,34 @@ def check_item(grid):
     return problems
 
 
+def check_creature(grid):
+    """What breaks the creature rules (sprite_style.md D2, 6.1-6.3), as messages."""
+    opaque = _opaque(grid)
+    if not opaque:
+        return ['is empty']
+    problems = []
+    xs = [x for x, _ in opaque]
+    ys = [y for _, y in opaque]
+    left, right, bottom = min(xs), max(xs), max(ys)
+    width, height = right - left + 1, bottom - min(ys) + 1
+    most_wide, most_high = CREATURE_BOX[grid.size]
+    if width > most_wide or height > most_high:
+        problems.append(f'body box {width} x {height}, the most for {grid.size} is {most_wide} x {most_high}')
+    if left == 0 or right == SIZE - 1:
+        problems.append('reaches column 0 or 15')
+    if grid.air:
+        if abs(bottom - AIR_ROW) > AIR_SLACK:
+            problems.append(f'in the air its bottom is on row {bottom}, not about {AIR_ROW}')
+    elif bottom != FEET_ROW:
+        problems.append(f'its feet are on row {bottom}, not {FEET_ROW}')
+    return problems + _shape_problems(grid, opaque)
+
+
 def near_silhouettes(grids, masters=()):
-    """Pairs that look alike: every pair of grids, and each grid against the masters."""
+    """Pairs that look alike: every pair of tags, and each grid against the masters."""
     pairs = []
     for i, a in enumerate(grids):
-        others = [g for g in grids[i + 1:]] + [m for m in masters if m.tag != a.tag]
+        others = [g for g in grids[i + 1:] if g.tag != a.tag] + [m for m in masters if m.tag != a.tag]
         for b in others:
             different = len(_opaque(a) ^ _opaque(b))
             if different < NEAR_SILHOUETTES:
@@ -232,10 +278,13 @@ def preview(grids, palette):
 def lua_script(grids):
     """The script that puts the grids in the active sprite and saves it."""
     data = []
-    for grid in grids:
-        pixels = ','.join(str(0 if c == '.' else grid.bank * SIZE + int(c, SIZE))
-                          for row in grid.rows for c in row)
-        data.append(f'  {{ tag = "{grid.tag}", pixels = {{ {pixels} }} }},')
+    for tag, frames in itertools.groupby(grids, lambda g: g.tag):
+        frames = list(frames)
+        pixels = [','.join(str(0 if c == '.' else g.bank * SIZE + int(c, SIZE)) for row in g.rows for c in row)
+                  for g in frames]
+        duration = CREATURE_DURATION if frames[0].size else ITEM_DURATION
+        data.append(f'  {{ tag = "{tag}", duration = {duration}, frames = {{ '
+                    + ', '.join(f'{{ {p} }}' for p in pixels) + ' } },')
     return f"""local spr = app.activeSprite
 local layer
 for _, l in ipairs(spr.layers) do
@@ -247,28 +296,37 @@ local grids = {{
 {chr(10).join(data)}
 }}
 for _, g in ipairs(grids) do
-  local img = Image(spr.spec)
-  for i, v in ipairs(g.pixels) do
-    img:drawPixel((i - 1) % {SIZE}, (i - 1) // {SIZE}, v)
-  end
   local t = tags[g.tag]
+  local first
   if t then
-    assert(t.frames == 1, g.tag .. " has several frames")
-    local cel = layer:cel(t.fromFrame.frameNumber)
-    if cel then
-      cel.image = img
-      cel.position = Point(0, 0)
-    else
-      spr:newCel(layer, t.fromFrame.frameNumber, img, Point(0, 0))
+    assert(t.frames == #g.frames, g.tag .. " has another number of frames")
+  end
+  for n, pixels in ipairs(g.frames) do
+    local img = Image(spr.spec)
+    for i, v in ipairs(pixels) do
+      img:drawPixel((i - 1) % {SIZE}, (i - 1) // {SIZE}, v)
     end
-  else
-    local ends = {{}}
-    for _, t2 in ipairs(spr.tags) do ends[t2] = t2.toFrame.frameNumber end
-    local frame = spr:newEmptyFrame()
-    for t2, last in pairs(ends) do t2.toFrame = last end
-    frame.duration = {ITEM_DURATION}
-    spr:newCel(layer, frame.frameNumber, img, Point(0, 0))
-    local tag = spr:newTag(frame.frameNumber, frame.frameNumber)
+    if t then
+      local number = t.fromFrame.frameNumber + n - 1
+      local cel = layer:cel(number)
+      if cel then
+        cel.image = img
+        cel.position = Point(0, 0)
+      else
+        spr:newCel(layer, number, img, Point(0, 0))
+      end
+    else
+      local ends = {{}}
+      for _, t2 in ipairs(spr.tags) do ends[t2] = t2.toFrame.frameNumber end
+      local frame = spr:newEmptyFrame()
+      for t2, last in pairs(ends) do t2.toFrame = last end
+      frame.duration = g.duration
+      spr:newCel(layer, frame.frameNumber, img, Point(0, 0))
+      first = first or frame.frameNumber
+    end
+  end
+  if not t then
+    local tag = spr:newTag(first, first + #g.frames - 1)
     tag.name = g.tag
   end
 end
@@ -309,8 +367,8 @@ def main(argv=None):
         with open(args.grids) as f:
             grids = parse(f.read())
         if args.command == 'check':
-            problems = [f'{g.tag}: {p}' for g in grids for p in check_item(g)]
-            problems += near_silhouettes(grids, dump(sprite, ['potion', 'sword', 'ring']))
+            problems = [f'{g.tag}: {p}' for g in grids for p in (check_creature(g) if g.size else check_item(g))]
+            problems += near_silhouettes(grids, dump(sprite, ['potion', 'sword', 'ring', 'player.idle', 'rat.idle']))
             print('\n'.join(problems or [f'{len(grids)} sprites: clean']))
             return 1 if problems else 0
         if args.command == 'preview':

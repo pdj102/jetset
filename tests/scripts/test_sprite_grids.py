@@ -53,11 +53,28 @@ def problems(grid):
     return ' '.join(sprite_grids.check_item(grid))
 
 
+def creature(size='medium', air=False, top=4, height=11):
+    """An outlined box 8 wide, on the feet row unless it starts elsewhere."""
+    rows = ['.' * 16] * 16
+    rows[top] = rows[top + height - 1] = '....11111111....'
+    for y in range(top + 1, top + height - 1):
+        rows[y] = '....1bbbbbb1....'
+    return sprite_grids.Grid('thing.idle', 6, rows=rows, size=size, air=air)
+
+
 class ParseTest(unittest.TestCase):
     def test_a_header_and_rows_round_trip(self):
         grid = sprite_grids.parse(sprite_grids.format_grid(block(others=[6, 7], glow=True)))[0]
         self.assertEqual((grid.tag, grid.bank, grid.others, grid.glow), ('block', 13, [6, 7], True))
         self.assertEqual(grid.rows, BLOCK)
+
+    def test_a_creatures_words_round_trip(self):
+        grid = sprite_grids.parse(sprite_grids.format_grid(creature('tiny', air=True)))[0]
+        self.assertEqual((grid.size, grid.air), ('tiny', True))
+
+    def test_an_unknown_word_is_an_error(self):
+        with self.assertRaisesRegex(sprite_grids.GridError, 'not a header'):
+            sprite_grids.parse('block 13 huge\n' + '\n'.join(BLOCK))
 
     def test_comments_and_blank_lines_are_skipped(self):
         text = '# a note\n\n' + sprite_grids.format_grid(block()) + '\n' + sprite_grids.format_grid(block('two'))
@@ -151,6 +168,30 @@ class CheckTest(unittest.TestCase):
         self.assertEqual(sprite_grids.near_silhouettes([block(), other]), [])
 
 
+    def test_frames_of_a_tag_are_not_near_each_other(self):
+        self.assertEqual(sprite_grids.near_silhouettes([block(), block()]), [])
+
+
+class CreatureCheckTest(unittest.TestCase):
+    def test_a_good_creature_is_clean(self):
+        self.assertEqual(sprite_grids.check_creature(creature()), [])
+
+    def test_the_box_is_the_classes(self):
+        self.assertIn('the most for tiny is 8 x 7', ' '.join(sprite_grids.check_creature(creature('tiny'))))
+
+    def test_feet_must_be_on_their_row(self):
+        self.assertIn('feet are on row 13', ' '.join(sprite_grids.check_creature(creature(top=3))))
+
+    def test_in_the_air_the_bottom_is_higher(self):
+        self.assertEqual(sprite_grids.check_creature(creature('tiny', True, top=5, height=7)), [])
+        self.assertIn('in the air', ' '.join(sprite_grids.check_creature(creature('tiny', True, top=8, height=7))))
+
+    def test_the_shared_rules_apply(self):
+        grid = creature()
+        grid.rows[4] = '....111b1111....'
+        self.assertIn('row 4 column 7', ' '.join(sprite_grids.check_creature(grid)))
+
+
 class PreviewTest(unittest.TestCase):
     def test_a_png_of_the_expected_size(self):
         palette = [(i, i, i, 255) for i in range(256)]
@@ -170,6 +211,14 @@ class LuaTest(unittest.TestCase):
         self.assertIn(f'{13 * 16 + 1},{13 * 16 + 1}', script)
         self.assertNotIn('{ 0,0,1', script)
         self.assertIn('spr:saveAs(spr.filename)', script)
+
+    def test_grids_of_one_tag_are_its_frames(self):
+        script = sprite_grids.lua_script([creature(), creature()])
+        self.assertEqual(script.count('tag = "thing.idle"'), 1)
+        self.assertIn('duration = 0.5', script)
+
+    def test_an_item_keeps_its_duration(self):
+        self.assertIn('duration = 0.1', sprite_grids.lua_script([block()]))
 
     def test_a_new_frame_does_not_stretch_the_last_tag(self):
         self.assertIn('t2.toFrame = last', sprite_grids.lua_script([block()]))
