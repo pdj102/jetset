@@ -551,8 +551,8 @@ in validation, so it has no randomness and a check gets the same answer.
 ```
 
 `nge_block_line()` answers only whether a line is clear, and aim needs the first tile
-that stops it. So page 56 gets a walk that gives each tile in turn, with
-`nge_block_line()` built on it. The line must stay Bresenham's from the shooter, the
+that stops it. So page 56 has a walk that gives each tile in turn,
+`nge_block_walk_start()` and `nge_block_walk_next()`, with `nge_block_line()` built on it. The line must stay Bresenham's from the shooter, the
 same as the AI's sight, so what a monster sees it can shoot. Passing over a pit doesn't
 stop a shot: only `NGE_BLOCK_SOLID` does.
 
@@ -763,7 +763,6 @@ Outside the section:
 | Where | What it needs |
 |---|---|
 | Common | A `case` in `act_do()` per action, and a byte per reason. 4,711 bytes are free in debug, so check after each |
-| Page 56 | The line walk |
 | Pages 108/109 | `gen_item_group()`, `gen_item_flags()`, `gen_item_attack()` |
 | Page 110 | The bonus in the attack functions and the lock rule. It has 460 bytes left |
 | Page 114, 116, 118, 124 | Commands, inventory modes, texts, target purposes |
@@ -795,7 +794,6 @@ To add with section 6:
   `target_in_range()`; ammo running out and its slot emptying; a wand at 0; a parchment
   destroyed; the actor as source, so a kill by wand gives XP; `ACT_R_LOCKED`, and each
   key and pick case.
-- **`test_block`:** the line walk, and `nge_block_line()` still the same.
 - **`test_event`:** the largest action is now fire, against R25.
 - **CSpect:** firing, aiming and the projectile, by the user, as animations can't be
   seen in the PC tests.
@@ -826,6 +824,11 @@ What differs from section 6 and [actions_plan.md](actions_plan.md).
 - **Step 1:** `check-banks.sh` also stops the build if a `BANK_n` section passes 16K. The
   plan didn't list this, but the script only checked `PAGE_n` sections, and the linker
   doesn't check `BANK_n` at all, so the move would have lost the guard the actions had.
+- **Step 4:** the walk is `nge_block_walk_t`, `nge_block_walk_start()` and
+  `nge_block_walk_next()`, in the plan `nge_line_start()` and `nge_line_next()`: the
+  `nge_line` names belong to the line editor (`io/nge_line.h`). `nge_block_line()` calls
+  the walk's two static functions, not the banked ones, so it nests no banked call. Page 56
+  grew by 355 bytes, to 651, where the plan said about 0.1K. The page has the room.
 - **Step 3:** `act_strike()` cost 195 bytes, where the plan said about the same: 311 in
   `act_shared.c`, and melee 116 smaller. Its arguments and a table indexed by `use` cost
   more than melee's constants did. The section has the room.

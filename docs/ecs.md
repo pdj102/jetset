@@ -195,7 +195,7 @@ and effects find their way out when it goes.
 | `nge_owner_set.c` | Page 48 | Set, owns, count, move all |
 | `nge_owner_cdata.c` | Page 50 | `nge_owner_of[]` |
 | `nge_ecs.c` | Common | `nge_ecs_init()`, the guard check |
-| `components/` | Common, tables in page 50 | Location and block; the line test is in page 56 |
+| `components/` | Common, tables in page 50 | Location and block; the line test and walk are in page 56 |
 | `systems/` | Pages 52-55 | The render and timer systems |
 
 `nge_ecs.c` is in common memory because `nge_ecs_init()` maps slot 0 and so can't

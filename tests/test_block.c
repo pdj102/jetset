@@ -1,4 +1,4 @@
-/* nge_block.c, nge_block_line.c: the block component, entering tiles (map and entities), and lines. */
+/* nge_block.c, nge_block_line.c: the block component, entering tiles (map and entities), lines and walks. */
 #include "test.h"
 
 #include <stdlib.h>
@@ -27,6 +27,50 @@ static const nge_rect_t window = { .x1 = 0, .x2 = 19, .y1 = 0, .y2 = 19 };   /* 
 static void tile(uint8_t x, uint8_t y, uint8_t id)
 {
     NGE_MAP_TILE(x, y).tile_id = id;
+}
+
+/* The walk from (x0, y0) gives exactly these n tiles (x, y pairs), then stops, and stays stopped */
+static int walks(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, const uint8_t *tiles, int n)
+{
+    nge_block_walk_t w;
+    int i;
+
+    nge_block_walk_start(&w, x0, y0, x1, y1);
+    for (i = 0; i < n; i++) {
+        if (!nge_block_walk_next(&w) || w.x != tiles[2 * i] || w.y != tiles[2 * i + 1]) {
+            return 0;
+        }
+    }
+    return !nge_block_walk_next(&w) && !nge_block_walk_next(&w);
+}
+
+/*
+ * The walk and nge_block_line() agree on the line (x0, y0) to (x1, y1): a
+ * wall on any tile of the 10 x 10 map blocks it only on the walk's tiles
+ * strictly between the ends. Expects a clear map, and leaves it clear
+ */
+static int same_tiles(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1)
+{
+    nge_block_walk_t w;
+    uint8_t on[10][10] = { { 0 } };
+    uint8_t x;
+    uint8_t y;
+    int ok = 1;
+
+    nge_block_walk_start(&w, x0, y0, x1, y1);
+    while (nge_block_walk_next(&w)) {
+        if (w.x != x1 || w.y != y1) {
+            on[w.y][w.x] = 1;
+        }
+    }
+    for (y = 0; y < 10; y++) {
+        for (x = 0; x < 10; x++) {
+            tile(x, y, WALL);
+            ok = ok && nge_block_line(AREA0, x0, y0, x1, y1, NGE_BLOCK_SOLID) == !on[y][x];
+            tile(x, y, FLOOR);
+        }
+    }
+    return ok;
 }
 
 /* An alive entity in area at (x, y) with the block component */
@@ -227,6 +271,49 @@ int main(void)
     /* The edge always blocks: a line through it, even asking for nothing */
     CHECK(nge_block_line(AREA0, 8, 0, 11, 0, NGE_BLOCK_NONE) == 0);
     CHECK(nge_block_line(AREA0, 8, 0, 10, 0, NGE_BLOCK_NONE) == 1);   /* only the end outside */
+
+    /* ---- the walk: each tile from the first after the start, to the end ---- */
+    {
+        static const uint8_t e[] = { 5, 4, 6, 4, 7, 4 };
+        static const uint8_t w_[] = { 3, 4, 2, 4, 1, 4 };
+        static const uint8_t s[] = { 4, 5, 4, 6, 4, 7 };
+        static const uint8_t n[] = { 4, 3, 4, 2, 4, 1 };
+        static const uint8_t se[] = { 5, 5, 6, 6, 7, 7 };
+        static const uint8_t sw[] = { 3, 5, 2, 6, 1, 7 };
+        static const uint8_t ne[] = { 5, 3, 6, 2, 7, 1 };
+        static const uint8_t nw[] = { 3, 3, 2, 2, 1, 1 };
+        static const uint8_t shallow[] = { 1, 0, 2, 1, 3, 1, 4, 2 };
+        static const uint8_t steep[] = { 0, 1, 1, 2, 1, 3, 2, 4 };
+        static const uint8_t shallow_back[] = { 3, 2, 2, 1, 1, 1, 0, 0 };
+        static const uint8_t one[] = { 5, 5 };
+        static const uint8_t past_edge[] = { 9, 0, 10, 0, 11, 0 };
+
+        CHECK(walks(4, 4, 7, 4, e, 3) && walks(4, 4, 1, 4, w_, 3));       /* the 8 directions */
+        CHECK(walks(4, 4, 4, 7, s, 3) && walks(4, 4, 4, 1, n, 3));
+        CHECK(walks(4, 4, 7, 7, se, 3) && walks(4, 4, 1, 7, sw, 3));
+        CHECK(walks(4, 4, 7, 1, ne, 3) && walks(4, 4, 1, 1, nw, 3));
+        CHECK(walks(0, 0, 4, 2, shallow, 4));
+        CHECK(walks(0, 0, 2, 4, steep, 4));
+        CHECK(walks(4, 2, 0, 0, shallow_back, 4));                        /* from the other end */
+        CHECK(walks(4, 4, 5, 5, one, 1));                                 /* one step */
+        CHECK(walks(4, 4, 4, 4, NULL, 0));                                /* the tile itself: no steps */
+        CHECK(walks(8, 0, 11, 0, past_edge, 3));                          /* tests nothing: past the edge */
+    }
+    /* The same tiles as nge_block_line(), on every line from these starts */
+    nge_entity_init();
+    for (y = 0; y < 10; y++) {
+        for (x = 0; x < 10; x++) {
+            tile((uint8_t)x, (uint8_t)y, FLOOR);
+        }
+    }
+    ok = 1;
+    for (y = 0; y < 10; y++) {
+        for (x = 0; x < 10; x++) {
+            ok = ok && same_tiles(0, 0, (uint8_t)x, (uint8_t)y) && same_tiles(4, 4, (uint8_t)x, (uint8_t)y) &&
+                 same_tiles(9, 2, (uint8_t)x, (uint8_t)y) && same_tiles(3, 9, (uint8_t)x, (uint8_t)y);
+        }
+    }
+    CHECK(ok);
 
     /* ---- asserts ---- */
     nge_entity_init();

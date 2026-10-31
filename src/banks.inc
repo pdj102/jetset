@@ -31,7 +31,7 @@
 //                    the map's state, tiles and block table (nge_map_cdata.c)
 //             52/53  render system: code / sprite component and working data
 //             54/55  timer system: code / (unused); its data is in page 50
-//             56/57  block component: the line test / (unused); its data
+//             56/57  block component: the line test and walk / (unused); its data
 //                    is in page 50
 //   88-99   further nge modules (6 pairs)
 //             88/89  input: setup, ASCII tables and waiting / (unused)
@@ -87,7 +87,7 @@
 // nge ecs timer system
 #pragma define CRT_ORG_PAGE_54 = 0x36C000
 
-// nge ecs block component: the line test
+// nge ecs block component: the line test and walk
 #pragma define CRT_ORG_PAGE_56 = 0x38C000
 
 // nge input: setup, ASCII tables and waiting

@@ -4,8 +4,8 @@ The steps that build what [actions.md](actions.md) section 6 specifies. The spec
 what each action does and why, and this file says in what order, what changes, and how
 each step is checked.
 
-Status: plan written 2026-10-31. D10 to D23 agreed. Steps 1 to 3 done: step 1 passed in
-CSpect and on hardware, steps 2 and 3 in CSpect. Step 4 is next.
+Status: plan written 2026-10-31. D10 to D23 agreed. Steps 1 to 4 done: step 1 passed in
+CSpect and on hardware, steps 2 to 4 in CSpect. Step 5 is next.
 
 ## 1. How the steps work
 
@@ -91,7 +91,7 @@ No change in behaviour (D21).
 A new engine function, with nothing in the game using it yet (spec, 6.2).
 
 - **Change:** in `nge_block_line.c`, a walk state on the caller's stack with
-  `nge_line_start()` and `nge_line_next()`, giving each tile from the first after the
+  `nge_block_walk_start()` and `nge_block_walk_next()`, giving each tile from the first after the
   start. `nge_block_line()` is rewritten on it.
 - **Why a state and not a callback:** a pointer to a banked function doesn't switch banks
   (N-BANK-6), and a walk can stop as soon as the action has its answer.
@@ -218,7 +218,7 @@ Each needs its own spec first: spells and who knows them, and fleeing (ai.md R18
 | 1 | The same | |
 | 2 | -49: 7,251 | |
 | 3 | +195: 7,446 | |
-| 4 | | Page 56: about 0.1K |
+| 4 | | Page 56: +355, to 651 |
 | 5 | +0.2K | Page 118: one text |
 | 6 | | Page 108: 0.1K. Page 110: about 50 bytes |
 | 7 | +0.9K | Common: `act_do()` case, and a byte for each reason. Pages 114, 118, 124 |

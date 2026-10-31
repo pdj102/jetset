@@ -26,7 +26,7 @@
  * An entity without this component blocks nothing. The tables are in slot 0
  * (the ECS data page): movement, monster AI and targeting read them every
  * turn. Everything here is in common memory, except the line test
- * nge_block_line(), banked (NGE_BANKED, page 56).
+ * nge_block_line() and the walk along a line, banked (NGE_BANKED, page 56).
  */
 
 #include <stdint.h>
@@ -90,5 +90,37 @@ uint8_t nge_block_can_enter(nge_owner_t area, uint8_t x, uint8_t y, nge_block_t 
  */
 uint8_t nge_block_line(nge_owner_t area, uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1,
                        nge_block_t block) NGE_BANKED;
+
+/**
+ * A walk along a line, kept by the caller, usually on its stack. For a
+ * caller that needs to know what is on each tile, or which stops it, where
+ * nge_block_line() would only say whether the line is clear. x and y are
+ * the tile reached; the other fields are private.
+ */
+typedef struct nge_block_walk {
+    uint8_t x;
+    uint8_t y;
+    uint8_t x1;
+    uint8_t y1;
+    uint8_t dx;
+    uint8_t dy;
+    int8_t  sx;
+    int8_t  sy;
+    int16_t err;
+} nge_block_walk_t;
+
+/** @brief Start a walk at (x0, y0), towards (x1, y1): nge_block_line()'s tiles. */
+void nge_block_walk_start(nge_block_walk_t *w, uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1) NGE_BANKED;
+
+/**
+ * @brief Step to the next tile of the line, in w->x and w->y: the first
+ *        step is the first tile after the start, and the last is (x1, y1).
+ *
+ * Tests nothing, so a caller can step beyond the map's edge if the line
+ * does: nge_map_block() answers for such a tile.
+ * @return 1 if it stepped, 0 if the walk had already reached (x1, y1), as
+ *         it has at once if the two ends are the same tile.
+ */
+uint8_t nge_block_walk_next(nge_block_walk_t *w) NGE_BANKED;
 
 #endif
