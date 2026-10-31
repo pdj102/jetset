@@ -153,7 +153,7 @@ code pages.
 | 48-87 | nge `ecs` (20 pairs): 48/49 `entity` and `owner` (lifecycle and ownership code / lifecycle bookkeeping); 50 ECS data, mapped permanently into slot 0 (see [ECS data in slot 0](#ecs-data-in-slot-0)); 51 map data, mapped permanently into slot 1 (see [Always-mapped data pages](#always-mapped-data-pages)); 52/53 `render` system; 54/55 `timer` system; 56/57 `block` component (the line test / unused) |
 | 88-99 | Further nge modules (6 pairs): 88/89 `input` (setup, ASCII tables and waiting / unused); 90/91 `layer2` (Layer 2 drawing / unused) |
 | 100-101 | 100: game, free (assets). 101: the assert messages of common files (see [Assert messages](#assert-messages)) |
-| 102-131 | Game code pairs (15), allocated from 102 up: 102/103 `level` (setting up the map, generating and decorating levels / the room list, the terrain and the decorator's tables); 104/105 `ui` (the player character screen / unused); 106/107 `gen` creatures (generator / creature kinds); 108/109 `gen` items (generator / item kinds); 110/111 `gen` shared (helpers and the game components' add functions / unused); 112/113 `actions` (the actions / unused); 114/115 `player` (commands and the firing screen / unused); 116/117 `ui` (the screens / the inventory's list); 118/119 `messages` (what the player is told / unused); 120/121 `effects` (the effect system / the effect definitions and active effects' kinds); 122/123 `gen` features (generator / feature kinds); 124/125 `target` (targeting / unused); 126/127 `anim` (starting the action animations / the kinds' sequences); 128/129 `quest` (the quest item's checks / unused); 130/131 `ai` (the AI's component, senses, states and brains / each AI entity's state, brain, target and goal). 130/131 is the last pair: the next module needs the range moved or extended |
+| 102-131 | Game code pairs (15), allocated from 102 up: 102/103 `level` (setting up the map, generating and decorating levels / the room list, the terrain and the decorator's tables); 104/105 `ui` (the player character screen / unused); 106/107 `gen` creatures (generator / creature kinds); 108/109 `gen` items (generator / item kinds); 110/111 `gen` shared (helpers and the game components' add functions / unused); 112/113 `actions` (the actions, in the 16K section `BANK_56`); 114/115 `player` (commands and the firing screen / unused); 116/117 `ui` (the screens / the inventory's list); 118/119 `messages` (what the player is told / unused); 120/121 `effects` (the effect system / the effect definitions and active effects' kinds); 122/123 `gen` features (generator / feature kinds); 124/125 `target` (targeting / unused); 126/127 `anim` (starting the action animations / the kinds' sequences); 128/129 `quest` (the quest item's checks / unused); 130/131 `ai` (the AI's component, senses, states and brains / each AI entity's state, brain, target and goal). 130/131 is the last pair: the next module needs the range moved or extended |
 | 132-223 | Game assets: maps, graphics, level data. 133: the map tiles' palette (slot 7, through `nge_palette_load9()`), generated from the tileset. 135: the sprite palette, 137 and 139: the sprite patterns (slot 7, through the loaders), generated from the sprite file ([sprite_import.md](sprite_import.md)) |
 
 - **Module code, string literals and constants:** the even page. A banked
@@ -202,7 +202,7 @@ Banked so far:
 | 106/107 | game `gen` creatures | the creature generator (`game/gen/gen_creature_bank.c`, about 0.6K) | the creature kinds: a `const` table and its names (`gen_creature_pdata.c`, with `constseg PAGE_107`) |
 | 108/109 | game `gen` items | the item generator (`gen_item_bank.c`, about 1.1K) | the item kinds with their names (`gen_item_pdata.c`, 6.2K: 25 bytes a kind, plus its name; see `docs/items.md`) |
 | 110/111 | game `gen` shared | helpers every generator calls, and the game components' functions (`gen_shared_bank.c`, `components/kind.c`, `stats.c`, `item.c`, `inventory.c`, `health.c`, `attack.c`, `mana.c`, `pc.c` and the level table; the AI component's are with the AI, page 130): they take copies of kind data on the stack, as the class's table is mapped out while they run | none |
-| 112/113 | game `actions` | what entities do, one file per action (`game/actions/act_move.c`, `act_pickup.c`, `act_drop.c`, `act_equip.c`, `act_melee.c`, `act_use.c`, `act_open.c`, `act_stairs.c`, `act_wait.c`) and their shared endings (`act_shared.c`), about 6.9K with asserts, 1.1K left; the dispatcher `act_do()` and the reason table are common (`act.c`) | none yet |
+| 112/113 | game `actions` | what entities do, one file per action (`game/actions/act_move.c`, `act_pickup.c`, `act_drop.c`, `act_equip.c`, `act_melee.c`, `act_use.c`, `act_open.c`, `act_stairs.c`, `act_wait.c`) and their shared endings (`act_shared.c`), 7,300 bytes with asserts, of the 16,384 of `BANK_56` (bank 56 is this pair, not page 56), so the code runs on into slot 7; the dispatcher `act_do()` and the reason table are common (`act.c`) | none: the code uses page 113 |
 | 114/115 | game `player` | the player's commands, the firing screen and the reasons for refused commands (`game/player/player_bank.c`); the handlers called for every event and timer firing are common (`player.c`) | none |
 | 118/119 | game `messages` | the message window's reactions to events and to refused commands, with their texts (`game/messages/messages_bank.c`) | none |
 | 120/121 | game `effects` | applying, ending and recomputing effects: the mechanism (`game/effects/effects_core.c`) and the game's side (`game/effects/effects_game.c`) | the effect definitions with their texts, and the kind and power of each active effect (`game/effects/effects_pdata.c`, 2.5K) |
@@ -232,9 +232,12 @@ How a module is banked:
 3. The page is listed in [src/banks.inc](../src/banks.inc) with its
    origin: `#pragma define CRT_ORG_PAGE_42 = 0x2AC000`.
 
-nge uses 8K `PAGE_n` sections rather than 16K `BANK_n` sections, so the odd
+Modules use 8K `PAGE_n` sections rather than 16K `BANK_n` sections, so the odd
 page is free for data. If a page's code grows past 8K, the linker stops the
-build ("Section PAGE_42 overlaps section PAGE_43").
+build ("Section PAGE_42 overlaps section PAGE_43"). The actions are the one
+exception: they outgrew 8K and had no data, so they are in `BANK_56`, whose
+origin is `(2n << 16) | $C000`. `check-banks.sh` stops the build if a `BANK_n`
+section passes 16K.
 
 **Why the origin carries the page.** After each `call banked_call`, SDCC
 stores the 32-bit address of the function, and `banked_call` uses bits 16-23
@@ -244,7 +247,8 @@ every call would map page 0 and jump into the wrong code. The origin
 and the NEX file is built from the section name, so nothing else changes.
 [scripts/check-banks.sh](../scripts/check-banks.sh) runs after every link and
 fails the build if banked C code or its literals don't carry their page,
-or if a `#pragma codeseg` names an odd page.
+if a section outgrows its 8K or 16K, or if a `#pragma codeseg` names an odd
+page.
 
 **Rules:**
 

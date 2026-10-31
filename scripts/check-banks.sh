@@ -26,7 +26,8 @@
 # pragma would silently put it in common memory instead.
 #
 # Every PAGE_n section must fit in its 8K page: the linker reports an even
-# page growing into a non-empty odd page, but not other overflows.
+# page growing into a non-empty odd page, but not other overflows. Every
+# BANK_n section must fit in its 16K, which the linker doesn't check at all.
 #
 # Always-mapped data pages: data only, no page in their addresses, no code:
 # - page 50, the ECS data, permanently in slot 0, assembled for $0100 (above
@@ -80,10 +81,10 @@ function hexval(h,    v, i) {
     return v
 }
 
-# __PAGE_n_head = $E000 ; const, ...   (and _tail): section bounds
-$1 ~ /^__PAGE_[0-9]+_(head|tail)$/ && $2 == "=" {
+# __PAGE_n_head = $E000 ; const, ...   (and _tail, and BANK_n): section bounds
+$1 ~ /^__(PAGE|BANK)_[0-9]+_(head|tail)$/ && $2 == "=" {
     name = $1; sub(/^__/, "", name)
-    end = name; sub(/^PAGE_[0-9]+_/, "", end)
+    end = name; sub(/^(PAGE|BANK)_[0-9]+_/, "", end)
     sub(/_(head|tail)$/, "", name)
     bound[name, end] = hexval(substr($3, 2))
     pages[name] = 1
@@ -155,8 +156,9 @@ $2 == "=" && $3 ~ /^\$/ && $5 == "addr," {
 END {
     for (p in pages) {
         size = bound[p, "tail"] - bound[p, "head"]
-        if (size > 8192) {
-            printf "error: %s holds %d bytes, more than its 8K page\n", p, size
+        limit = (p ~ /^BANK_/) ? 16384 : 8192
+        if (size > limit) {
+            printf "error: %s holds %d bytes, more than its %dK\n", p, size, limit / 1024
             bad = 1
         }
     }

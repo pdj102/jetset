@@ -13,7 +13,7 @@ commit.
 
 ### P-ACT-1 · must · Actions follow game/actions/act.h
 - One function `act_<verb>(act_t *a, uint8_t mode) NGE_BANKED`, in
-  `actions/act_<verb>.c` (page 112), with an `ACT_<VERB>` number and a case
+  `actions/act_<verb>.c` (`BANK_56`), with an `ACT_<VERB>` number and a case
   in `act_do()`.
 - Four steps in order: context, validate, resolve, apply. Check mode
   (`ACT_CHECK`) returns after validate. It changes nothing, posts nothing

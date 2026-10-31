@@ -4,9 +4,9 @@
 /*
  * Shared by the action files; not for use outside them:
  * - act.c (common memory): act_do(), act_attempted() and the reason table;
- * - act_shared.c (page 112): helpers for the actions, not banked: call them
- *   only from code in page 112;
- * - act_<action>.c (page 112): each action.
+ * - act_shared.c (BANK_56): helpers for the actions, not banked: call them
+ *   only from code in BANK_56;
+ * - act_<action>.c (BANK_56): each action.
  */
 
 #include "game/actions/act.h"
@@ -17,7 +17,7 @@
 extern const uint8_t act_reason_flags[ACT_R_COUNT];
 
 /*
- * The shared endings (act_shared.c, page 112). Functions, not macros of
+ * The shared endings (act_shared.c, BANK_56). Functions, not macros of
  * comma expressions: zsdcc (z88dk, Oct 2026) dropped the assignments in
  * `return (a->reason = r, a->cost = c, ACT_FAIL);`
  */

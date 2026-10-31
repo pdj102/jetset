@@ -1,6 +1,6 @@
 /*
  * Actions in common memory: the dispatcher and the reason table. The
- * actions themselves are banked in page 112.
+ * actions themselves are banked in BANK_56.
  */
 #include "game/actions/act_internal.h"
 

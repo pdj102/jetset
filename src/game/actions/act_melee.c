@@ -1,10 +1,10 @@
 /*
- * The melee action: banked in page 112 with the other actions (see act.h
+ * The melee action: banked in BANK_56 with the other actions (see act.h
  * for the pattern its steps follow).
  */
 #ifdef __SDCC
-#pragma codeseg PAGE_112
-#pragma constseg PAGE_112
+#pragma codeseg BANK_56
+#pragma constseg BANK_56
 #endif
 
 #include "game/actions/act_internal.h"

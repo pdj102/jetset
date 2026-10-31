@@ -48,7 +48,8 @@
 //                        108/109  gen item: item generator / item kinds
 //                        110/111  gen shared: generator helpers and game components'
 //                                 add functions / (unused)
-//                        112/113  actions: the actions / (unused)
+//                        112/113  actions: the actions, 16K section BANK_56
+//                                 (bank 56 is this pair, not page 56)
 //                        114/115  player: commands and the firing screen / (unused)
 //                        116/117  ui: the screens (the framework, the main
 //                                 screen's set-up and stats, the inventory, the
@@ -111,7 +112,7 @@
 #pragma define CRT_ORG_PAGE_110 = 0x6EC000
 
 // game actions: what entities do (game/actions)
-#pragma define CRT_ORG_PAGE_112 = 0x70C000
+#pragma define CRT_ORG_BANK_56 = 0x70C000
 
 // game player: the player's commands and the firing screen (game/player)
 #pragma define CRT_ORG_PAGE_114 = 0x72C000

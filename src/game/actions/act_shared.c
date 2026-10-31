@@ -1,10 +1,10 @@
 /*
- * Helpers shared by the actions: in page 112 with them, not banked, so
- * only code in page 112 may call them (directly, with no bank switch).
+ * Helpers shared by the actions: in BANK_56 with them, not banked, so
+ * only code in BANK_56 may call them (directly, with no bank switch).
  */
 #ifdef __SDCC
-#pragma codeseg PAGE_112
-#pragma constseg PAGE_112
+#pragma codeseg BANK_56
+#pragma constseg BANK_56
 #endif
 
 #include "game/actions/act_internal.h"

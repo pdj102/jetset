@@ -4,7 +4,8 @@ The steps that build what [actions.md](actions.md) section 6 specifies. The spec
 what each action does and why, and this file says in what order, what changes, and how
 each step is checked.
 
-Status: plan written 2026-10-31. D10 to D23 agreed. No step started.
+Status: plan written 2026-10-31. D10 to D23 agreed. Step 1 done: CSpect and hardware
+passed. Step 2 is next.
 
 ## 1. How the steps work
 
@@ -58,6 +59,10 @@ bytes in the NEX file were in page 113. That shows the build works, not that the
 runs: nothing was run past `$E000`. So the CSpect check isn't done until code past the
 8K line has run, which step 1 alone can't show. Add a temporary constant in the check
 build to push `act_wait()` over the line, press `.` and remove it.
+
+Done 2026-10-31. The normal build's NEX file was byte-identical to the one before, so the
+check ran a scratch build with 8K of padding in `act_drop.c`, which put nearly every action
+and the shared endings in page 113. It passed in CSpect and on hardware.
 
 ### Step 2: one distance rule
 

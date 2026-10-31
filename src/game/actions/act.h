@@ -49,8 +49,8 @@
  * delayed action is a timer whose handler fills a context and calls
  * act_do()).
  *
- * Banking: each action is banked in the actions page pair (NGE_BANKED, page
- * 112); act_do() and act_attempted() are in common memory.
+ * Banking: each action is banked in the 16K section BANK_56 (NGE_BANKED,
+ * pages 112/113); act_do() and act_attempted() are in common memory.
  */
 
 #include <stdint.h>

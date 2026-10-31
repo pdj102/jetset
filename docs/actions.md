@@ -181,19 +181,19 @@ a move that is refused, followed by a melee.
 | `act.h` | | The public interface | |
 | `act_internal.h` | | The endings and helpers, for the actions only | |
 | `act.c` | Common | `act_do()`, `act_attempted()`, `act_reason_flags[]` | |
-| `act_shared.c` | Page 112 | The endings, `act_rooted()`, `act_distance()` | 317 |
-| `act_move.c` | Page 112 | Move | 946 |
-| `act_pickup.c` | Page 112 | Pick up | 728 |
-| `act_drop.c` | Page 112 | Drop | 468 |
-| `act_equip.c` | Page 112 | Equip and unequip | 1,155 |
-| `act_melee.c` | Page 112 | Melee | 1,173 |
-| `act_use.c` | Page 112 | Use | 396 |
-| `act_open.c` | Page 112 | Open and close | 1,175 |
-| `act_stairs.c` | Page 112 | Ascend and descend | 781 |
-| `act_wait.c` | Page 112 | Wait | 161 |
+| `act_shared.c` | `BANK_56` | The endings, `act_rooted()`, `act_distance()` | 317 |
+| `act_move.c` | `BANK_56` | Move | 946 |
+| `act_pickup.c` | `BANK_56` | Pick up | 728 |
+| `act_drop.c` | `BANK_56` | Drop | 468 |
+| `act_equip.c` | `BANK_56` | Equip and unequip | 1,155 |
+| `act_melee.c` | `BANK_56` | Melee | 1,173 |
+| `act_use.c` | `BANK_56` | Use | 396 |
+| `act_open.c` | `BANK_56` | Open and close | 1,175 |
+| `act_stairs.c` | `BANK_56` | Ascend and descend | 781 |
+| `act_wait.c` | `BANK_56` | Wait | 161 |
 
-The sizes are from the debug build's map, with asserts, and total 7,300 bytes of the
-page's 8,192. That leaves 892 (section 6.11).
+The sizes are from the debug build's map, with asserts, and total 7,300 bytes of
+`BANK_56`'s 16,384 (pages 112 and 113, D22). That leaves 9,084 (section 6.11).
 
 ### 4.2 The context
 
@@ -755,12 +755,13 @@ a new action. A trap going off is a reaction to `EV_STOOD_ON` (G-ARCH-3), not an
 | `ACT_AIM` | 0.5K | Use is 396 bytes |
 | `ACT_UNLOCK` | 0.5K | Open and close share 758 bytes |
 | Equip's, unequip's and pickup's rules | 0.4K | |
-| **Total for what is needed** | **2.5K** | **892 bytes are free** |
+| **Total for what is needed** | **2.5K** | **9,084 bytes are free** |
 
-So the needed actions don't fit in page 112, even before `ACT_CAST` and the rest. These
-are estimates, and a release build is smaller, but the debug build must fit too (D22).
+The needed actions wouldn't have fit in page 112's 892 free bytes, even before `ACT_CAST`
+and the rest, so the actions moved to `BANK_56` (D22). These are estimates, and a release
+build is smaller, but the debug build must fit too.
 
-Outside the page:
+Outside the section:
 
 | Where | What it needs |
 |---|---|
@@ -814,16 +815,9 @@ To add with section 6:
   4.10). They agree at range 1, so the game is right today, and only a range above 1
   would show it. Removing the function closes the risk, so `ACT_FIRE` must not be built
   before it goes, and a new distance test must call `nge_map_within()` (R23).
-- **The page is nearly full.** 892 bytes are left, not the 1.1K in memory_map.md, and
-  the needed actions want about 2.5K. `check-banks.sh` stops the build if the page
-  passes 8K, so this fails safely, but only `BANK_56` or cuts will fix it.
-- **`BANK_56` hasn't run.** Nothing in the project uses a `BANK_n` section. A trial on a
-  scratch copy built, passed `check-banks.sh` and put code in page 113 of the NEX file,
-  but no code past `$E000` has run yet. Step 1 of the plan is alone so that any problem
-  shows there.
 - **`act_attempted()` has no callers outside the tests.** It costs common memory, and
   callers use `used` instead.
-- **Check-heavy AI.** Each check is banked calls into the actions' page, so an AI that
+- **Check-heavy AI.** Each check is banked calls into the actions' section, so an AI that
   checks many options has a real cost per turn ([ai.md](ai.md)). `ACT_FIRE`'s check walks
   a line, and `ai_try()` runs it twice for each shot, so a shooting monster's option should
   test sight first.
@@ -833,3 +827,13 @@ To add with section 6:
   melee tests for that. Delayed actions must test their actor too (section 6.10).
 - **zsdcc.** Don't return comma expressions from the endings (T-ZSDCC-2), and copy
   event and struct fields into locals before branching on them (T-ZSDCC-1).
+
+## 9. As built
+
+What differs from section 6 and [actions_plan.md](actions_plan.md).
+
+- **Step 1:** `check-banks.sh` also stops the build if a `BANK_n` section passes 16K. The
+  plan didn't list this, but the script only checked `PAGE_n` sections, and the linker
+  doesn't check `BANK_n` at all, so the move would have lost the guard the actions had.
+- **Step 1's check:** run on a build with 8K of padding, not with only `act_wait()` past
+  `$E000`, so nearly all the actions ran from page 113. CSpect and hardware passed.
