@@ -56,8 +56,9 @@ seam, so the mechanism could become an nge module.
                                              +-----------> clamp and store
 ```
 
-**Effects are called, not triggered.** Actions, generators and ops apply effects
-with direct calls. Events only report what happened, for messages and screens.
+**Effects are called, and may be triggered.** Actions, generators and ops apply
+their effects directly. Handlers may apply effects as reactions. Derived values
+are never recomputed by a handler (R17).
 
 ## 2. Terms
 
@@ -90,7 +91,10 @@ with direct calls. Events only report what happened, for messages and screens.
 
 ### Applying
 
-- **R5** Effects are applied by direct calls, never by event handlers.
+- **R5** An effect that is part of an action's own result is applied by a direct
+  call. An effect that is a reaction to something that happened may be applied by
+  an event handler (G-ARCH-3), and takes hold after the clock advance that caused
+  it.
 - **R6** Effects act on an entity that is alive, has health and isn't at 0 hit
   points. Anything else refuses the effect.
 - **R7** A worn effect can't be applied.
