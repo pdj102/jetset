@@ -100,6 +100,7 @@ static void game_on_timer(nge_entity_id_t id, uint8_t kind, uint8_t cycles)
         nge_util_abort("bad timer kind");
         break;
     }
+    nge_event_process(game_on_event);   /* this firing's consequences: the next timer fires settled */
 }
 
 /* ---- Frames ---- */
@@ -180,11 +181,11 @@ static uint8_t world_can_act(void)
  *    fires after the player's timer, so everything due at the same time
  *    acts before the player's turn.
  *
- * The events of each advance are handled before the next, so consequences
- * happen in order: once the player dies, game over stops the clock and
- * nothing after that acts. The animations those events start in view stop
- * the next advance (world_can_act()), so everything that acted at the same
- * tick animates together, and the world goes on when they end
+ * The events of each firing are handled before the next (game_on_timer()),
+ * so every actor sees the last one's reactions. Once the player dies, game
+ * over stops the clock after that tick. The animations those events start
+ * in view stop the next advance (world_can_act()), so everything that acted
+ * at the same tick animates together, and the world goes on when they end
  */
 static void pass_time(void)
 {
@@ -194,7 +195,6 @@ static void pass_time(void)
         if (!nge_timer_advance(game_on_timer)) {
             break;   /* the clock is stopped (game over), or no entity has a timer */
         }
-        nge_event_process(game_on_event);   /* this advance's consequences, before the next */
     }
 }
 

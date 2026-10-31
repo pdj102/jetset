@@ -43,10 +43,10 @@
  *             break;
  *         ...
  *         }
+ *         nge_event_process(game_on_event);   // this firing's consequences
  *     }
  *
  *     while (!player_turn && nge_timer_advance(game_on_timer)) {
- *         nge_event_process(game_on_event);
  *     }
  *     ...the player's command uses their turn: player_turn = 0...
  *

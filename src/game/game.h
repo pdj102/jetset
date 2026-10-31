@@ -62,14 +62,15 @@
  * (game/ui/screen_inv.h), player_ask_direction()
  * (game/player/player.h) and target_choose() (game/target/target.h).
  *
- * Events are handled in three places, each for a reason: after each
- * advance of the clock (consequences in time order), in the step (the
+ * Events are handled in three places, each for a reason: after each timer
+ * firing (every actor sees the last one's reactions), in the step (the
  * player's command), and after a change of level (the arrival, before the
  * clean-up releases what it names).
  *
- * A game ends only through game_over(): the clock stops, so nothing more
- * acts even in the frame's remaining advances, and the play loop ends at
- * the end of that frame, once its events (the death message) are handled.
+ * A game ends only through game_over(): the clock stops after the current
+ * tick, so nothing more acts in the frame's remaining advances, and the
+ * play loop ends at the end of that frame, once its events (the death
+ * message) are handled.
  */
 
 #include <stdint.h>
