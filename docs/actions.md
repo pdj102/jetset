@@ -15,7 +15,7 @@ whether an attack hits, belong to the components, and are in their headers. Sect
 is the list of actions to add, and none of it is built. Sections 1 to 5 describe the
 code as it stands, except the decisions under "Agreed, not built".
 
-Status: D10 to D23 agreed 2026-10-31, not implemented. The rest of section 6 is
+Status: D10 to D23 agreed 2026-10-31. D22 and D23 are built, the rest not yet. The rest of section 6 is
 proposed.
 
 ## 1. Overview
@@ -151,8 +151,7 @@ a move that is refused, followed by a melee.
 
 - **R23** Every range or distance test in the game uses `nge_map_within()`, so a range
   means the same tiles everywhere ([nge_map.h](../src/nge/map/nge_map.h)). No other code
-  works out a distance. Two calls to `act_distance()` break this today, harmlessly, as
-  they test only range 1 (section 4.10).
+  works out a distance (section 4.10).
 
 ### Actions to add
 
@@ -181,19 +180,19 @@ a move that is refused, followed by a melee.
 | `act.h` | | The public interface | |
 | `act_internal.h` | | The endings and helpers, for the actions only | |
 | `act.c` | Common | `act_do()`, `act_attempted()`, `act_reason_flags[]` | |
-| `act_shared.c` | `BANK_56` | The endings, `act_rooted()`, `act_distance()` | 317 |
+| `act_shared.c` | `BANK_56` | The endings, `act_rooted()` | 256 |
 | `act_move.c` | `BANK_56` | Move | 946 |
 | `act_pickup.c` | `BANK_56` | Pick up | 728 |
 | `act_drop.c` | `BANK_56` | Drop | 468 |
 | `act_equip.c` | `BANK_56` | Equip and unequip | 1,155 |
-| `act_melee.c` | `BANK_56` | Melee | 1,173 |
+| `act_melee.c` | `BANK_56` | Melee | 1,181 |
 | `act_use.c` | `BANK_56` | Use | 396 |
-| `act_open.c` | `BANK_56` | Open and close | 1,175 |
+| `act_open.c` | `BANK_56` | Open and close | 1,179 |
 | `act_stairs.c` | `BANK_56` | Ascend and descend | 781 |
 | `act_wait.c` | `BANK_56` | Wait | 161 |
 
-The sizes are from the debug build's map, with asserts, and total 7,300 bytes of
-`BANK_56`'s 16,384 (pages 112 and 113, D22). That leaves 9,084 (section 6.11).
+The sizes are from the debug build's map, with asserts, and total 7,251 bytes of
+`BANK_56`'s 16,384 (pages 112 and 113, D22). That leaves 9,133 (section 6.11).
 
 ### 4.2 The context
 
@@ -390,21 +389,19 @@ not, because that table is sized by `ACT_COUNT`.
 
 Every distance test in `src/`, from a search of the code on 2026-10-31:
 
-| Where | What it tests | Range | How, today | After D23 |
-|---|---|---|---|---|
-| `target_bank.c` | The cursor's tile is in range | The caller's | `nge_map_within()` | The same |
-| `ai_sense.c`, `hears()` | A sleeper hears the player | `AI_HEAR`, 4 | `nge_map_within()` | The same |
-| `ai_sense.c`, `ai_in_sight()` | A creature sees a tile | `AI_SIGHT`, 8 | `nge_map_within()` | The same |
-| `act_melee.c` | The target is in reach | 1 | `act_distance()` | `nge_map_within()`, and not the actor's own tile |
-| `act_open.c` | The feature is in reach | 1 | `act_distance()` | `nge_map_within()` |
+| Where | What it tests | Range | How |
+|---|---|---|---|
+| `target_bank.c` | The cursor's tile is in range | The caller's | `nge_map_within()` |
+| `ai_sense.c`, `hears()` | A sleeper hears the player | `AI_HEAR`, 4 | `nge_map_within()` |
+| `ai_sense.c`, `ai_in_sight()` | A creature sees a tile | `AI_SIGHT`, 8 | `nge_map_within()` |
+| `act_melee.c` | The target is in reach | The attack's, 1 today | `nge_map_within()`, and not the actor's own tile |
+| `act_open.c` | The feature is in reach | 1 | `nge_map_within()` |
 
-So the two rules differ in only those two calls, and level generation and decoration
-measure no distances. `nge_map_within()` is a circle and `act_distance()` a square, and
-both give the same 8 neighbours at range 1, so D23 changes no result.
+Level generation and decoration measure no distances.
 
-**The actor's own tile.** `nge_map_within()` at range 1 includes the tile itself, and
-`act_distance()` gave melee a 0 to refuse. Melee must keep refusing that case with a
-test that the tiles are different. Open allows it (section 4.5), so it needs nothing.
+**The actor's own tile.** `nge_map_within()` at range 1 includes the tile itself. Melee
+refuses that case with a test that the tiles are different. Open allows it (section 4.5),
+so it needs nothing.
 
 **Two things that look like distances and aren't.** `nge_block_line()` and
 `ai_step_toward()` follow a line, tile by tile, and test no range. Moving is the other:
@@ -506,7 +503,7 @@ All agreed 2026-10-31, for the actions in section 6.
 
 ## 6. Not built yet
 
-None of this is built. Its decisions are agreed (D10 to D23), and the details are
+None of this is built, apart from D22 and D23. Its decisions are agreed (D10 to D23), and the details are
 still proposals. Eight new actions are listed, and three of
 them are needed by items the game already generates:
 
@@ -755,7 +752,7 @@ a new action. A trap going off is a reaction to `EV_STOOD_ON` (G-ARCH-3), not an
 | `ACT_AIM` | 0.5K | Use is 396 bytes |
 | `ACT_UNLOCK` | 0.5K | Open and close share 758 bytes |
 | Equip's, unequip's and pickup's rules | 0.4K | |
-| **Total for what is needed** | **2.5K** | **9,084 bytes are free** |
+| **Total for what is needed** | **2.5K** | **9,133 bytes are free** |
 
 The needed actions wouldn't have fit in page 112's 892 free bytes, even before `ACT_CAST`
 and the rest, so the actions moved to `BANK_56` (D22). These are estimates, and a release
@@ -784,6 +781,8 @@ The order of work is in [actions_plan.md](actions_plan.md).
 - the rooted cases: a move and the stairs fail attempted, the check passes, a blocker
   still comes first;
 - that every reason is refused except `ACT_R_MISSED` and `ACT_R_ROOTED`;
+- reach: melee and open reach all 8 neighbours and nothing further, melee refuses a
+  target on the actor's own tile, and open allows it;
 - the asserts.
 
 `test_ai` covers `ai_try()` and the AI's use of actions, and `test_ui` covers
@@ -791,9 +790,6 @@ The order of work is in [actions_plan.md](actions_plan.md).
 
 To add with section 6:
 
-- **`test_act`, for D23:** melee and open reach all 8 neighbours and nothing further,
-  as they do now, and melee refuses a target on the actor's own tile. No test covers
-  that last case today, so add it before the change.
 - **`test_act`:** each row of the shooter table in section 6.3; a line stopped by a wall,
   a door and a creature; a shot at the last tile in range, and one past it, the same as
   `target_in_range()`; ammo running out and its slot emptying; a wand at 0; a parchment
@@ -810,11 +806,6 @@ To add with section 6:
   `effect_apply()`'s result, so if no entity is free for a timed effect the item is
   lost ([effects.md](effects.md), "Known risks"). This breaks R3, and `ACT_AIM` would
   share it, losing a charge.
-- **Two distance tests are out of step until D23 is built.** `act_melee.c` and
-  `act_open.c` use `act_distance()`'s square, and everything else uses the circle (section
-  4.10). They agree at range 1, so the game is right today, and only a range above 1
-  would show it. Removing the function closes the risk, so `ACT_FIRE` must not be built
-  before it goes, and a new distance test must call `nge_map_within()` (R23).
 - **`act_attempted()` has no callers outside the tests.** It costs common memory, and
   callers use `used` instead.
 - **Check-heavy AI.** Each check is banked calls into the actions' section, so an AI that

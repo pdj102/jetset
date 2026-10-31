@@ -38,7 +38,4 @@ uint8_t act_checked(act_t *a);
 /* 1 if id can't leave its tile (STATUS_ROOTED): an actor without stats has no statuses */
 uint8_t act_rooted(nge_entity_id_t id);
 
-/* The distance between two tiles, in moves: the larger of the x and y distances */
-uint8_t act_distance(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2);
-
 #endif

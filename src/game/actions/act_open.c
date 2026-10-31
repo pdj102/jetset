@@ -16,6 +16,7 @@
 #include "game/components/kind.h"
 #include "game/events.h"
 #include "game/gen/gen.h"
+#include "map/nge_map.h"
 
 /*
  * Steps 1 and 2 for both: the feature (a->target, or the one in direction
@@ -55,7 +56,7 @@ static uint8_t find_openable(act_t *a)
         return ACT_R_CANT_OPEN;
     }
     if (!NGE_ENTITY_HAS_COMPONENT(target, NGE_COMPONENT_LOCATION) || NGE_OWNER_OF(target) != area ||
-        act_distance(x, y, NGE_LOCATION_X(target), NGE_LOCATION_Y(target)) > 1) {
+        !nge_map_within(x, y, NGE_LOCATION_X(target), NGE_LOCATION_Y(target), 1)) {
         return ACT_R_OUT_OF_RANGE;
     }
     return ACT_R_NONE;

@@ -4,8 +4,8 @@ The steps that build what [actions.md](actions.md) section 6 specifies. The spec
 what each action does and why, and this file says in what order, what changes, and how
 each step is checked.
 
-Status: plan written 2026-10-31. D10 to D23 agreed. Step 1 done: CSpect and hardware
-passed. Step 2 is next.
+Status: plan written 2026-10-31. D10 to D23 agreed. Steps 1 and 2 done: step 1 passed in
+CSpect and on hardware, step 2 in CSpect. Step 3 is next.
 
 ## 1. How the steps work
 
@@ -216,7 +216,7 @@ Each needs its own spec first: spells and who knows them, and fleeing (ai.md R18
 |---|---|---|
 | Start | 7,300 of 16,384 | Common: 4,711 free. Page 110: 460 free |
 | 1 | The same | |
-| 2 | About -50 | |
+| 2 | -49: 7,251 | |
 | 3 | About the same | |
 | 4 | | Page 56: about 0.1K |
 | 5 | +0.2K | Page 118: one text |

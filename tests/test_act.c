@@ -499,6 +499,20 @@ int main(void)
     a = ctx(player);
     a.target = far;
     CHECK(act_melee(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_OUT_OF_RANGE);
+    /* Reach: the 8 neighbours and nothing further, and not the actor's own tile */
+    nge_owner_set(far, AREA);
+    for (x = 2; x <= 6; x++) {
+        for (y = 3; y <= 7; y++) {
+            nge_location_set(far, (uint8_t)x, (uint8_t)y);
+            a = ctx(player);
+            a.target = far;
+            r1 = abs(x - 4) <= 1 && abs(y - 5) <= 1 && !(x == 4 && y == 5);
+            CHECK((act_melee(&a, ACT_CHECK) == ACT_SUCCESS) == r1);
+            CHECK(r1 || a.reason == ACT_R_OUT_OF_RANGE);
+        }
+    }
+    nge_owner_set(far, NGE_OWNER_AREA(1));
+    nge_location_set(far, 4, 4);
     far = gen_item(IT_HEAL_POTION, AREA);
     nge_location_set(far, 4, 4);                              /* only an item there: no target */
     a = ctx(player);
@@ -735,6 +749,20 @@ int main(void)
     a = ctx(biter);
     a.target = door;
     CHECK(act_open(&a, ACT_CHECK) == ACT_FAIL && a.reason == ACT_R_OUT_OF_RANGE);
+    /* Reach: the door's tile and its neighbours, and nothing further (the door is open) */
+    nge_owner_set(biter, AREA);
+    for (x = 6; x <= 10; x++) {
+        for (y = 0; y <= 3; y++) {
+            nge_location_set(biter, (uint8_t)x, (uint8_t)y);
+            a = ctx(biter);
+            a.target = door;
+            r1 = abs(x - 8) <= 1 && abs(y - 1) <= 1;
+            CHECK(act_open(&a, ACT_CHECK) == ACT_FAIL);
+            CHECK(a.reason == (r1 ? ACT_R_ALREADY_OPEN : ACT_R_OUT_OF_RANGE));
+        }
+    }
+    nge_owner_set(biter, NGE_OWNER_AREA(1));
+    nge_location_set(biter, 7, 1);
     nge_location_set(opener, 8, 1);                           /* in the open doorway */
     a = ctx(opener);
     a.target = door;

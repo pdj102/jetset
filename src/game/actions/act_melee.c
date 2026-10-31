@@ -19,6 +19,7 @@
 #include "game/effects/effects.h"
 #include "game/gen/gen.h"
 #include "game/events.h"
+#include "map/nge_map.h"
 
 uint8_t act_melee(act_t *a, uint8_t mode) NGE_BANKED
 {
@@ -29,6 +30,8 @@ uint8_t act_melee(act_t *a, uint8_t mode) NGE_BANKED
     nge_owner_t area;
     uint8_t x;
     uint8_t y;
+    uint8_t tx;
+    uint8_t ty;
     uint8_t roll;
     uint8_t damage;
     uint16_t hook;
@@ -64,8 +67,9 @@ uint8_t act_melee(act_t *a, uint8_t mode) NGE_BANKED
     if (!NGE_ENTITY_HAS_COMPONENT(target, NGE_COMPONENT_LOCATION) || NGE_OWNER_OF(target) != area) {
         return act_fail(a, ACT_R_OUT_OF_RANGE);
     }
-    roll = act_distance(x, y, NGE_LOCATION_X(target), NGE_LOCATION_Y(target));
-    if (roll == 0 || roll > attack_range[ATTACK_MELEE][attacker]) {
+    tx = NGE_LOCATION_X(target);
+    ty = NGE_LOCATION_Y(target);
+    if ((tx == x && ty == y) || !nge_map_within(x, y, tx, ty, attack_range[ATTACK_MELEE][attacker])) {
         return act_fail(a, ACT_R_OUT_OF_RANGE);
     }
     if (mode == ACT_CHECK) {
