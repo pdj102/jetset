@@ -82,9 +82,9 @@ section 7.
   then releasing dying entities, then the guard check.
 - **R4** The world's time is spread over frames: at most
   `CLOCK_ADVANCES_MAX` advances of the clock a frame.
-- **R5** Consequences happen in order: events are handled after each advance
-  of the clock, after the player's command, and after an arrival on a new
-  level.
+- **R5** Consequences happen in order: events are handled after each timer
+  firing, after the player's command, and after an arrival on a new level
+  ([events.md](events.md), R14).
 - **R6** A game over (the player dies, quits or escapes) stops the world:
   nothing acts after it, even later in the same frame's advances. The play
   loop then ends at the end of that frame, after its events are handled, so
@@ -366,8 +366,9 @@ state's events are today (R5).
 - **Won:** `change_level()` with `LEVEL_DEPTH_SURFACE` calls
   `game_over(GAME_OVER_WON)` (was `GAME_OVER_ESCAPED`; only the player
   with the quest item gets there, docs/winning.md).
-- **Mid-advance:** the clock is stopped, so no further timer fires in that
-  advance, and `world_can_act()` stops the next one (R6).
+- **Mid-advance:** `nge_timer_stop()` takes effect after the tick, so the
+  rest of its timers still fire, and `world_can_act()` stops the next
+  advance (R6, events.md, D16).
 
 ### 6.9 Call depth and stack
 

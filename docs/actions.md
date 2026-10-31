@@ -152,7 +152,7 @@ wrongly. `ACT_R_MISSED` is the only attempted reason today.
 
 | Action | What it does | Events | Random |
 |---|---|---|---|
-| `ACT_MOVE` | Moves one tile, if the tile can be entered | `EV_MOVED`, `EV_STOOD_ON` for what is there | No |
+| `ACT_MOVE` | Moves one tile, if the tile can be entered | `EV_MOVED`, `EV_STOOD_ON` for what is there, at most 4 items (events.md, R26) | No |
 | `ACT_PICKUP` | Stows an item from the actor's tile | `EV_PICKED_UP` | No |
 | `ACT_DROP` | Puts a stowed item on the actor's tile | `EV_DROPPED` | No |
 | `ACT_EQUIP` | Puts a stowed item in a slot, and recomputes | `EV_EQUIPPED` | No |

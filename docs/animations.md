@@ -338,7 +338,8 @@ page 107 (D8). Items and features have none.
 - The deepest chain doesn't change: `anim_on_event()` is called from
   `game_on_event()` (common) and calls the render system: two banked
   levels, inside `nge_event_process()`, which is called from common
-  code.
+  code. Since events are handled after each timer firing (events.md, R14),
+  that call is inside the banked `nge_timer_advance()`: three levels.
 - `nge_render_update()` gains a few comparisons and two additions an
   entity in view. With 20 entities in view, well under 1 ms.
 - `nge_render_busy()`: one banked call an advance, at most

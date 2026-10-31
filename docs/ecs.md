@@ -258,13 +258,13 @@ later:
 ```text
  play_turn()                                     play_step()
  --------------------------------------------    --------------------------------
- a handler: health_damage()                      nge_event_process()
+ a timer's handler: health_damage()              nge_event_process()
    posts EV_DIED                                   handlers read the dying entity
    nge_entity_destroy(target)                    change_level(), if requested
      dying: the alive loops skip it              level_release_dying()
-   the tick's later timers skip it                 its ID is free from here on
- nge_event_process()                             nge_ecs_check_guard()
-   handlers read the dying entity
+ nge_event_process(), after the firing             its ID is free from here on
+   handlers read the dying entity                nge_ecs_check_guard()
+ the tick's later timers skip it
  ...up to 32 advances of the clock...
 ```
 

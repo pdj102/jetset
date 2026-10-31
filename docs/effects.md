@@ -91,10 +91,10 @@ are never recomputed by a handler (R17).
 
 ### Applying
 
-- **R5** An effect that is part of an action's own result is applied by a direct
-  call. An effect that is a reaction to something that happened may be applied by
-  an event handler (G-ARCH-3), and takes hold after the clock advance that caused
-  it.
+- **R5** An effect may be applied by a direct call or by an event handler
+  (G-ARCH-3). A direct call is needed only if the caller needs the result, or if the
+  rest of the action must see the change (events.md, R27). An effect applied by a
+  handler takes hold after the action that caused it, before any other actor acts.
 - **R6** Effects act on an entity that is alive, has health and isn't at 0 hit
   points. Anything else refuses the effect.
 - **R7** A worn effect can't be applied.
@@ -308,6 +308,7 @@ locals.
 | Start and end ops on timed effects | The code runs them, but no definition has one |
 | Aimed effects | An effect can be applied to any target, but no action reads the aim hook |
 | Worn effects that tick | A worn effect has no firings: `EF_WORN_REGEN` waits on this |
+| Hit and use effects as reactions | R5 allows it, and today they are direct calls (events.md, section 6) |
 | Pending ops | Teleport, mapping, identify, summon, enchant, uncurse, light |
 | An nge module | The seam's plain calls would become callbacks |
 | Messages by end reason | See [attributes.md](attributes.md), "Not built yet" |
