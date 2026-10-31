@@ -44,6 +44,16 @@ uint8_t act_checked(act_t *a);
  */
 uint8_t act_strike(act_t *a, nge_entity_id_t attacker, uint8_t use, nge_entity_id_t hooks);
 
+/*
+ * The line of fire, for validation: from the actor, placed in an area,
+ * towards (a->x, a->y) within range (nge_map_within()). Sets a->target to the
+ * first alive entity with health along it, or NGE_ENTITY_INVALID. No random
+ * numbers, so a check gets the same answer. Returns ACT_R_NONE, or why not:
+ * ACT_R_OUT_OF_RANGE, ACT_R_NO_LINE (something solid first, the chosen tile
+ * included), or ACT_R_NO_TARGET (nobody there, or the actor's own tile)
+ */
+uint8_t act_line(act_t *a, uint8_t range);
+
 /* 1 if id can't leave its tile (STATUS_ROOTED): an actor without stats has no statuses */
 uint8_t act_rooted(nge_entity_id_t id);
 

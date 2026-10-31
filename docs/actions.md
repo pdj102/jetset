@@ -15,8 +15,8 @@ whether an attack hits, belong to the components, and are in their headers. Sect
 is the list of actions to add, and none of it is built. Sections 1 to 5 describe the
 code as it stands, except the decisions under "Agreed, not built".
 
-Status: D10 to D23 agreed 2026-10-31. D22, D23 and `act_strike()` from D21 are built, and
-the rest not yet. The rest of section 6 is proposed.
+Status: D10 to D23 agreed 2026-10-31. D22, D23 and D21's `act_strike()` and `act_line()` are
+built, and the rest not yet. The rest of section 6 is proposed.
 
 ## 1. Overview
 
@@ -180,7 +180,7 @@ a move that is refused, followed by a melee.
 | `act.h` | | The public interface | |
 | `act_internal.h` | | The endings and helpers, for the actions only | |
 | `act.c` | Common | `act_do()`, `act_attempted()`, `act_reason_flags[]` | |
-| `act_shared.c` | `BANK_56` | The endings, `act_rooted()`, `act_strike()` | 567 |
+| `act_shared.c` | `BANK_56` | The endings, `act_rooted()`, `act_strike()`, `act_line()` | 903 |
 | `act_move.c` | `BANK_56` | Move | 946 |
 | `act_pickup.c` | `BANK_56` | Pick up | 728 |
 | `act_drop.c` | `BANK_56` | Drop | 468 |
@@ -191,8 +191,8 @@ a move that is refused, followed by a melee.
 | `act_stairs.c` | `BANK_56` | Ascend and descend | 781 |
 | `act_wait.c` | `BANK_56` | Wait | 161 |
 
-The sizes are from the debug build's map, with asserts, and total 7,446 bytes of
-`BANK_56`'s 16,384 (pages 112 and 113, D22). That leaves 8,938 (section 6.11).
+The sizes are from the debug build's map, with asserts, and total 7,782 bytes of
+`BANK_56`'s 16,384 (pages 112 and 113, D22). That leaves 8,602 (section 6.11).
 
 ### 4.2 The context
 
@@ -302,7 +302,7 @@ else leaves at once. Only the player, carrying the quest item, can leave the dun
 
 ### 4.6 Reasons
 
-There are 28 reasons, with `ACT_R_NONE`. Two are attempted:
+There are 29 reasons, with `ACT_R_NONE`. Two are attempted:
 
 | Attempted reason | Where | Event | What the player is told |
 |---|---|---|---|
@@ -503,7 +503,7 @@ All agreed 2026-10-31, for the actions in section 6.
 
 ## 6. Not built yet
 
-None of this is built, apart from D22, D23 and `act_strike()`. Its decisions are agreed
+None of this is built, apart from D22, D23, `act_strike()` and `act_line()`. Its decisions are agreed
 (D10 to D23), and the details are still proposals. Eight new actions are listed, and three of
 them are needed by items the game already generates:
 
@@ -527,7 +527,7 @@ form `act.h` will need.
 | Addition | Names |
 |---|---|
 | Actions | `ACT_FIRE` 12, `ACT_AIM` 13, `ACT_UNLOCK` 14, `ACT_CAST` 15, `ACT_STEAL` 16, `ACT_OPERATE` 17, `ACT_SEARCH` 18, `ACT_DISARM` 19 |
-| Refused reasons | `ACT_R_NO_AMMO`, `ACT_R_WRONG_AMMO`, `ACT_R_NO_LINE`, `ACT_R_CANT_AIM`, `ACT_R_NO_CHARGES`, `ACT_R_LOCKED`, `ACT_R_NOT_LOCKED`, `ACT_R_WRONG_KEY`, `ACT_R_NO_MANA`, `ACT_R_NO_SPELL`, `ACT_R_NOTHING_TO_STEAL`, `ACT_R_CURSED`, `ACT_R_CANT_OPERATE`, `ACT_R_SPENT` |
+| Refused reasons | `ACT_R_NO_AMMO`, `ACT_R_WRONG_AMMO`, `ACT_R_CANT_AIM`, `ACT_R_NO_CHARGES`, `ACT_R_LOCKED`, `ACT_R_NOT_LOCKED`, `ACT_R_WRONG_KEY`, `ACT_R_NO_MANA`, `ACT_R_NO_SPELL`, `ACT_R_NOTHING_TO_STEAL`, `ACT_R_CURSED`, `ACT_R_CANT_OPERATE`, `ACT_R_SPENT` |
 | Attempted reasons | `ACT_R_PICK_FAILED`, `ACT_R_CAUGHT` |
 | Events | `EV_FIRED`, `EV_AIMED`, `EV_UNLOCKED`, `EV_CAST`, `EV_STOLEN` |
 
@@ -552,8 +552,8 @@ in validation, so it has no randomness and a check gets the same answer.
 
 `nge_block_line()` answers only whether a line is clear, and aim needs the first tile
 that stops it. So page 56 has a walk that gives each tile in turn,
-`nge_block_walk_start()` and `nge_block_walk_next()`, with `nge_block_line()` built on it. The line must stay Bresenham's from the shooter, the
-same as the AI's sight, so what a monster sees it can shoot. Passing over a pit doesn't
+`nge_block_walk_start()` and `nge_block_walk_next()`, with `nge_block_line()` built on it.
+The line must stay Bresenham's from the shooter, the same as the AI's sight, so what a monster sees it can shoot. Passing over a pit doesn't
 stop a shot: only `NGE_BLOCK_SOLID` does.
 
 Range uses `nge_map_within()`, so the green cursor and the action agree (R23). The
@@ -747,12 +747,11 @@ a new action. A trap going off is a reaction to `EV_STOOD_ON` (G-ARCH-3), not an
 
 | Work | Estimate, with asserts | Source of the estimate |
 |---|---|---|
-| `act_line()` | 0.2K | |
 | `ACT_FIRE`, with `act_strike()` already built | 0.9K | Melee is 1,065 bytes |
 | `ACT_AIM` | 0.5K | Use is 396 bytes |
 | `ACT_UNLOCK` | 0.5K | Open and close share 758 bytes |
 | Equip's, unequip's and pickup's rules | 0.4K | |
-| **Total for what is needed** | **2.5K** | **8,938 bytes are free** |
+| **Total for what is needed** | **2.3K** | **8,602 bytes are free** |
 
 The needed actions wouldn't have fit in page 112's 892 free bytes, even before `ACT_CAST`
 and the rest, so the actions moved to `BANK_56` (D22). These are estimates, and a release
@@ -762,7 +761,7 @@ Outside the section:
 
 | Where | What it needs |
 |---|---|
-| Common | A `case` in `act_do()` per action, and a byte per reason. 4,711 bytes are free in debug, so check after each |
+| Common | A `case` in `act_do()` per action, and a byte per reason. 4,710 bytes are free in debug, so check after each |
 | Pages 108/109 | `gen_item_group()`, `gen_item_flags()`, `gen_item_attack()` |
 | Page 110 | The bonus in the attack functions and the lock rule. It has 460 bytes left |
 | Page 114, 116, 118, 124 | Commands, inventory modes, texts, target purposes |
@@ -780,6 +779,9 @@ The order of work is in [actions_plan.md](actions_plan.md).
 - the rooted cases: a move and the stairs fail attempted, the check passes, a blocker
   still comes first;
 - that every reason is refused except `ACT_R_MISSED` and `ACT_R_ROOTED`;
+- `act_line()`, called directly: range the same as `nge_map_within()` on every tile; stopped
+  by a wall, a closed door and the map's edge; not by an open door or a pit; the nearest
+  creature first; no random numbers;
 - reach: melee and open reach all 8 neighbours and nothing further, melee refuses a
   target on the actor's own tile, and open allows it;
 - the asserts.
@@ -789,9 +791,8 @@ The order of work is in [actions_plan.md](actions_plan.md).
 
 To add with section 6:
 
-- **`test_act`:** each row of the shooter table in section 6.3; a line stopped by a wall,
-  a door and a creature; a shot at the last tile in range, and one past it, the same as
-  `target_in_range()`; ammo running out and its slot emptying; a wand at 0; a parchment
+- **`test_act`:** each row of the shooter table in section 6.3; a shot at the last tile in
+  range, and one past it, the same as `target_in_range()`; ammo running out and its slot emptying; a wand at 0; a parchment
   destroyed; the actor as source, so a kill by wand gives XP; `ACT_R_LOCKED`, and each
   key and pick case.
 - **`test_event`:** the largest action is now fire, against R25.
@@ -824,6 +825,10 @@ What differs from section 6 and [actions_plan.md](actions_plan.md).
 - **Step 1:** `check-banks.sh` also stops the build if a `BANK_n` section passes 16K. The
   plan didn't list this, but the script only checked `PAGE_n` sections, and the linker
   doesn't check `BANK_n` at all, so the move would have lost the guard the actions had.
+- **Step 5:** `act_line()` is tested directly in `test_act`, not through `ACT_FIRE` as the
+  plan said: the PC tests can call a helper that isn't banked. It is 336 bytes, where the
+  plan said 0.2K. A corpse that stays, at 0 hit points, doesn't stop a shot. The text for
+  `ACT_R_NO_LINE` is "Something is in the way."
 - **Step 4:** the walk is `nge_block_walk_t`, `nge_block_walk_start()` and
   `nge_block_walk_next()`, in the plan `nge_line_start()` and `nge_line_next()`: the
   `nge_line` names belong to the line editor (`io/nge_line.h`). `nge_block_line()` calls

@@ -386,6 +386,9 @@ void messages_act_failed(const act_t *a) NGE_BANKED
     case ACT_R_OUT_OF_RANGE:
         screen_message("That is out of reach.");
         break;
+    case ACT_R_NO_LINE:
+        screen_message("Something is in the way.");
+        break;
     case ACT_R_CANT_USE:
         screen_message("You can't use that.");
         break;

@@ -127,7 +127,8 @@ typedef struct act {
 #define ACT_R_NO_STAIRS         25  /**< Refused: no stairs the right way on the actor's tile. */
 #define ACT_R_NO_QUEST          26  /**< Refused: out of the dungeon only by the player, with the quest item. */
 #define ACT_R_ROOTED            27  /**< Attempted: the actor struggled, rooted to its tile (the turn is used). */
-#define ACT_R_COUNT             28
+#define ACT_R_NO_LINE           28  /**< Refused: a wall, a closed door or the map's edge is in the way. */
+#define ACT_R_COUNT             29
 
 /**
  * @brief Move one tile.

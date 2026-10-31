@@ -15,6 +15,7 @@
 #include "data/tile_data.h"
 
 #include "game/actions/act.h"
+#include "game/actions/act_internal.h"
 #include "game/components/attack.h"
 #include "game/components/attrs.h"
 #include "game/components/health.h"
@@ -112,6 +113,21 @@ static unsigned int seed_for_roll(int r)
         }
     }
     return 0;
+}
+
+/* act_line() from actor towards (x, y): its reason, and the target in line_target */
+static nge_entity_id_t line_target;
+
+static uint8_t line(nge_entity_id_t actor, uint8_t x, uint8_t y, uint8_t range)
+{
+    act_t a = move(actor, 0, 0);
+    uint8_t reason;
+
+    a.x = x;
+    a.y = y;
+    reason = act_line(&a, range);
+    line_target = a.target;
+    return reason;
 }
 
 static int stowed(nge_entity_id_t id, nge_entity_id_t holder)
@@ -919,6 +935,71 @@ int main(void)
     CHECK(act_melee(&a, ACT_DO) == ACT_SUCCESS);              /* a hit that poisons: 4 */
     CHECK(nge_event_peak() == 4 && nge_event_peak() <= NGE_EVENT_QUEUE / 2);
     events();
+
+    /* ---- the line of fire: a goblin at (0, 2), looking along the row ---- */
+    nge_entity_init();
+    nge_render_init();
+    nge_timer_init();
+    nge_event_init();
+    nge_map_set_block('O', NGE_BLOCK_NO_FLOOR);
+    for (y = 0; y < 10; y++) {
+        for (x = 0; x < 10; x++) {
+            NGE_MAP_TILE(x, y).tile_id = FLOOR;
+        }
+    }
+    opener = creature(CR_GOBLIN, 0, 2);
+    rat = creature(CR_RAT, 6, 2);
+    srand(9);
+    r1 = rand();
+    srand(9);
+    CHECK(line(opener, 6, 2, 20) == ACT_R_NONE && line_target == rat);
+    CHECK(line(opener, 6, 2, 6) == ACT_R_NONE && line_target == rat);       /* the last tile in range */
+    CHECK(line(opener, 6, 2, 5) == ACT_R_OUT_OF_RANGE && line_target == NGE_ENTITY_INVALID);
+    CHECK(rand() == r1 && events() == 0);                                   /* no random numbers, no events */
+    CHECK(line(opener, 7, 2, 20) == ACT_R_NONE && line_target == rat);      /* first in line, short of the tile */
+    CHECK(line(opener, 3, 2, 20) == ACT_R_NO_TARGET && line_target == NGE_ENTITY_INVALID);
+    CHECK(line(opener, 0, 2, 20) == ACT_R_NO_TARGET);                       /* its own tile */
+    /* The same tiles as nge_map_within() on every tile, not a square */
+    ok = 1;
+    for (y = 0; y < 10; y++) {
+        for (x = 1; x < 10; x++) {
+            ok = ok && (line(opener, (uint8_t)x, (uint8_t)y, 5) == ACT_R_OUT_OF_RANGE) ==
+                       !nge_map_within(0, 2, (uint8_t)x, (uint8_t)y, 5);
+        }
+    }
+    CHECK(ok);
+    /* A nearer creature is hit first, and a corpse that stays doesn't stop a shot */
+    biter = creature(CR_RAT, 3, 2);
+    CHECK(line(opener, 6, 2, 20) == ACT_R_NONE && line_target == biter);
+    health_hp[biter] = 0;
+    CHECK(line(opener, 6, 2, 20) == ACT_R_NONE && line_target == rat);
+    /* An item isn't a target */
+    thing = gen_item(IT_HEAL_POTION, AREA);
+    nge_location_set(thing, 3, 2);
+    CHECK(line(opener, 3, 2, 20) == ACT_R_NO_TARGET);
+    /* A wall stops the line, as does a wall on the chosen tile, and a creature in front of it is hit */
+    NGE_MAP_TILE(4, 2).tile_id = WALL;
+    CHECK(line(opener, 6, 2, 20) == ACT_R_NO_LINE && line_target == NGE_ENTITY_INVALID);
+    CHECK(line(opener, 4, 2, 20) == ACT_R_NO_LINE);
+    health_hp[biter] = 1;
+    CHECK(line(opener, 6, 2, 20) == ACT_R_NONE && line_target == biter);
+    health_hp[biter] = 0;
+    NGE_MAP_TILE(4, 2).tile_id = FLOOR;
+    /* A closed door stops it, and an open one doesn't */
+    door = gen_feature(FT_DOOR, AREA);
+    feature_place(door, 4, 2);
+    events();
+    CHECK(line(opener, 6, 2, 20) == ACT_R_NO_LINE);
+    feature_open(door);
+    CHECK(line(opener, 6, 2, 20) == ACT_R_NONE && line_target == rat);
+    /* A pit doesn't: a shot passes over it */
+    NGE_MAP_TILE(5, 2).tile_id = 'O';
+    CHECK(line(opener, 6, 2, 20) == ACT_R_NONE && line_target == rat);
+    /* The map's edge stops it */
+    nge_location_set(rat, 8, 2);
+    CHECK(line(opener, 11, 2, 20) == ACT_R_NONE && line_target == rat);
+    nge_location_set(rat, 8, 3);
+    CHECK(line(opener, 11, 2, 20) == ACT_R_NO_LINE);
 
     return test_summary("act");
 }

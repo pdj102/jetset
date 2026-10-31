@@ -4,8 +4,9 @@ The steps that build what [actions.md](actions.md) section 6 specifies. The spec
 what each action does and why, and this file says in what order, what changes, and how
 each step is checked.
 
-Status: plan written 2026-10-31. D10 to D23 agreed. Steps 1 to 4 done: step 1 passed in
-CSpect and on hardware, steps 2 to 4 in CSpect. Step 5 is next.
+Status: plan written 2026-10-31. D10 to D23 agreed. Steps 1 to 5 done: step 1 passed in
+CSpect and on hardware, steps 2 to 4 in CSpect. Step 5 has no CSpect check, as nothing
+calls it until step 7. Step 6 is next.
 
 ## 1. How the steps work
 
@@ -105,9 +106,9 @@ Spec, 6.2. Nothing calls it until step 7.
 
 - **Change:** `act_line()` in `act_shared.c`, in validation style: no randomness, returns
   a reason. `ACT_R_NO_LINE`, with its row and text.
-- **Tests:** through step 7's action, since the helper isn't banked. Stopped by a wall, a
-  closed door, a creature first in line, an open door, a pit, the map's edge.
-- **Combined with step 7** if the commit would otherwise be dead code.
+- **Tests:** called directly in `test_act`. Stopped by a wall, a closed door, a creature
+  first in line, an open door, a pit, the map's edge.
+- **A commit of its own:** nothing in the game calls it until step 7, but the tests do.
 
 ### Step 6: the attack data
 
@@ -219,7 +220,7 @@ Each needs its own spec first: spells and who knows them, and fleeing (ai.md R18
 | 2 | -49: 7,251 | |
 | 3 | +195: 7,446 | |
 | 4 | | Page 56: +355, to 651 |
-| 5 | +0.2K | Page 118: one text |
+| 5 | +336: 7,782 | Page 118: +13. Common: +1 |
 | 6 | | Page 108: 0.1K. Page 110: about 50 bytes |
 | 7 | +0.9K | Common: `act_do()` case, and a byte for each reason. Pages 114, 118, 124 |
 | 8 | +0.2K | |

@@ -670,6 +670,9 @@ int main(void)
         a.reason = ACT_R_NO_QUEST;
         messages_act_failed(&a);
         CHECK(said("You can't leave without the crown."));
+        a.reason = ACT_R_NO_LINE;
+        messages_act_failed(&a);
+        CHECK(said("Something is in the way."));
     }
     messages_game_over(GAME_OVER_WON);
     CHECK(said("Press any key.") && shown("You escape with the crown. You win!"));

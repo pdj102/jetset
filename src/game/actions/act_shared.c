@@ -9,9 +9,12 @@
 
 #include "game/actions/act_internal.h"
 
+#include <stddef.h>
 #include <stdlib.h>
 
 #include "core/nge_util.h"
+#include "ecs/components/nge_block.h"
+#include "ecs/components/nge_location.h"
 #include "event/nge_event.h"
 #include "game/components/attack.h"
 #include "game/components/health.h"
@@ -19,6 +22,10 @@
 #include "game/effects/effects.h"
 #include "game/events.h"
 #include "game/gen/gen.h"
+#include "map/nge_map.h"
+
+/* What a line of fire passes: everything solid or outside the map stops it, and pits don't */
+#define LINE_PASS  ((nge_block_t)~(NGE_BLOCK_SOLID | NGE_BLOCK_EDGE))
 
 uint8_t act_strike(act_t *a, nge_entity_id_t attacker, uint8_t use, nge_entity_id_t hooks)
 {
@@ -47,6 +54,43 @@ uint8_t act_strike(act_t *a, nge_entity_id_t attacker, uint8_t use, nge_entity_i
         effect_apply(GEN_HOOK_EF(hook), GEN_HOOK_POWER(hook), target, actor);   /* refused if the hit killed it */
     }
     return act_succeed(a);
+}
+
+uint8_t act_line(act_t *a, uint8_t range)
+{
+    nge_block_walk_t w;
+    nge_entity_id_t actor = a->actor;
+    nge_entity_id_t id;
+    nge_owner_t area = NGE_OWNER_OF(actor);
+    uint8_t ax = NGE_LOCATION_X(actor);
+    uint8_t ay = NGE_LOCATION_Y(actor);
+    uint8_t tx = a->x;
+    uint8_t ty = a->y;
+    uint8_t x;
+    uint8_t y;
+
+    a->target = NGE_ENTITY_INVALID;
+    if (!nge_map_within(ax, ay, tx, ty, range)) {
+        return ACT_R_OUT_OF_RANGE;
+    }
+    if (ax == tx && ay == ty) {
+        return ACT_R_NO_TARGET;
+    }
+    nge_block_walk_start(&w, ax, ay, tx, ty);
+    while (nge_block_walk_next(&w)) {
+        x = w.x;
+        y = w.y;
+        if (!nge_block_can_enter(area, x, y, LINE_PASS, NGE_ENTITY_INVALID, NULL)) {
+            return ACT_R_NO_LINE;
+        }
+        NGE_LOCATION_FOR_EACH_AT(id, area, x, y, COMPONENT_HEALTH) {
+            if (health_hp[id] != 0) {
+                a->target = id;
+                return ACT_R_NONE;
+            }
+        }
+    }
+    return ACT_R_NO_TARGET;
 }
 
 uint8_t act_rooted(nge_entity_id_t id)
