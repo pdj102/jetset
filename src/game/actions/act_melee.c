@@ -9,16 +9,10 @@
 
 #include "game/actions/act_internal.h"
 
-#include <stdlib.h>
-
 #include "core/nge_util.h"
 #include "ecs/components/nge_location.h"
-#include "event/nge_event.h"
 #include "game/components/attack.h"
 #include "game/components/health.h"
-#include "game/effects/effects.h"
-#include "game/gen/gen.h"
-#include "game/events.h"
 #include "map/nge_map.h"
 
 uint8_t act_melee(act_t *a, uint8_t mode) NGE_BANKED
@@ -32,9 +26,6 @@ uint8_t act_melee(act_t *a, uint8_t mode) NGE_BANKED
     uint8_t y;
     uint8_t tx;
     uint8_t ty;
-    uint8_t roll;
-    uint8_t damage;
-    uint16_t hook;
 
     /* 1. Context: the attack used, and the target */
     nge_util_assert(actor < NGE_ENTITY_MAX && NGE_ENTITY_IS_ALIVE(actor));
@@ -76,22 +67,6 @@ uint8_t act_melee(act_t *a, uint8_t mode) NGE_BANKED
         return act_checked(a);
     }
 
-    /* 3. Resolve: the d20 roll, and on a hit the damage */
-    roll = (uint8_t)(1 + (unsigned int)rand() % 20);
-    if (!attack_hits(attacker, ATTACK_MELEE, target, roll)) {
-        /* 4. Apply: a miss is an attempt: the turn is used */
-        nge_event_post(target, EV_MISSED, actor, roll, weapon);
-        return act_fail(a, ACT_R_MISSED);
-    }
-    damage = attack_damage(attacker, ATTACK_MELEE);
-
-    /* 4. Apply: the hit, then the damage (its events follow), then the hit's effect */
-    nge_event_post(target, EV_HIT, actor, roll, weapon);
-    a->kind = attack_type[ATTACK_MELEE][attacker];
-    a->amount = health_damage(target, actor, damage, a->kind);
-    hook = gen_hook_of(attacker, GEN_HOOK_HIT);
-    if (GEN_HOOK_EF(hook) != EF_NONE) {
-        effect_apply(GEN_HOOK_EF(hook), GEN_HOOK_POWER(hook), target, actor);   /* refused if the hit killed it */
-    }
-    return act_succeed(a);
+    /* 3, 4. Resolve and apply: the attacker's roll, damage and hit effect */
+    return act_strike(a, attacker, ATTACK_MELEE, attacker);
 }

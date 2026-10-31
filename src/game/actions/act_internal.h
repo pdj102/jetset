@@ -35,6 +35,15 @@ uint8_t act_succeed(act_t *a);
 /* End a check (ACT_CHECK) that found the action possible: nothing used. Returns ACT_SUCCESS */
 uint8_t act_checked(act_t *a);
 
+/*
+ * Steps 3 and 4 of an attack, on a->target by a->actor, once validated: the
+ * d20 roll against attacker's attack of this use (ATTACK_MELEE, ATTACK_RANGED),
+ * then on a hit the damage (sets a->kind and a->amount) and the hit effect of
+ * hooks, the entity whose GEN_HOOK_HIT applies. The events carry a->item. A
+ * miss fails with ACT_R_MISSED. Returns ACT_SUCCESS or ACT_FAIL
+ */
+uint8_t act_strike(act_t *a, nge_entity_id_t attacker, uint8_t use, nge_entity_id_t hooks);
+
 /* 1 if id can't leave its tile (STATUS_ROOTED): an actor without stats has no statuses */
 uint8_t act_rooted(nge_entity_id_t id);
 

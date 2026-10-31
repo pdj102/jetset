@@ -15,8 +15,8 @@ whether an attack hits, belong to the components, and are in their headers. Sect
 is the list of actions to add, and none of it is built. Sections 1 to 5 describe the
 code as it stands, except the decisions under "Agreed, not built".
 
-Status: D10 to D23 agreed 2026-10-31. D22 and D23 are built, the rest not yet. The rest of section 6 is
-proposed.
+Status: D10 to D23 agreed 2026-10-31. D22, D23 and `act_strike()` from D21 are built, and
+the rest not yet. The rest of section 6 is proposed.
 
 ## 1. Overview
 
@@ -180,19 +180,19 @@ a move that is refused, followed by a melee.
 | `act.h` | | The public interface | |
 | `act_internal.h` | | The endings and helpers, for the actions only | |
 | `act.c` | Common | `act_do()`, `act_attempted()`, `act_reason_flags[]` | |
-| `act_shared.c` | `BANK_56` | The endings, `act_rooted()` | 256 |
+| `act_shared.c` | `BANK_56` | The endings, `act_rooted()`, `act_strike()` | 567 |
 | `act_move.c` | `BANK_56` | Move | 946 |
 | `act_pickup.c` | `BANK_56` | Pick up | 728 |
 | `act_drop.c` | `BANK_56` | Drop | 468 |
 | `act_equip.c` | `BANK_56` | Equip and unequip | 1,155 |
-| `act_melee.c` | `BANK_56` | Melee | 1,181 |
+| `act_melee.c` | `BANK_56` | Melee, as far as validation | 1,065 |
 | `act_use.c` | `BANK_56` | Use | 396 |
 | `act_open.c` | `BANK_56` | Open and close | 1,179 |
 | `act_stairs.c` | `BANK_56` | Ascend and descend | 781 |
 | `act_wait.c` | `BANK_56` | Wait | 161 |
 
-The sizes are from the debug build's map, with asserts, and total 7,251 bytes of
-`BANK_56`'s 16,384 (pages 112 and 113, D22). That leaves 9,133 (section 6.11).
+The sizes are from the debug build's map, with asserts, and total 7,446 bytes of
+`BANK_56`'s 16,384 (pages 112 and 113, D22). That leaves 8,938 (section 6.11).
 
 ### 4.2 The context
 
@@ -503,8 +503,8 @@ All agreed 2026-10-31, for the actions in section 6.
 
 ## 6. Not built yet
 
-None of this is built, apart from D22 and D23. Its decisions are agreed (D10 to D23), and the details are
-still proposals. Eight new actions are listed, and three of
+None of this is built, apart from D22, D23 and `act_strike()`. Its decisions are agreed
+(D10 to D23), and the details are still proposals. Eight new actions are listed, and three of
 them are needed by items the game already generates:
 
 | Action | Needed for | Priority | Blocked by |
@@ -703,7 +703,7 @@ These add no action, and need only the accessors and some reasons.
 | `ACT_UNEQUIP` | A cursed item stays on: `ACT_R_CURSED` | `ITEMF_CURSED`, 5 kinds |
 | `ACT_PICKUP` | Merges into a stowed stack of the same kind, which also needs no room. Treasure goes to the player's gold (player_character.md R20) | `item_count[]`, kind, subclass |
 | `ACT_USE` | Uses one of a count, where a subclass has one | `item_count[]` |
-| `ACT_MELEE` | Its end moves to `act_strike()` (D21). No change in behaviour | |
+| `ACT_MELEE` | Its end moved to `act_strike()` (D21). No change in behaviour | |
 | `ACT_MOVE`, `ACT_CLOSE`, `ACT_WAIT`, stairs, `ACT_DROP` | None needed | |
 
 The flags need a `gen_item_flags()`. Who may equip what is a rule, so it belongs in the
@@ -748,11 +748,11 @@ a new action. A trap going off is a reaction to `EV_STOOD_ON` (G-ARCH-3), not an
 | Work | Estimate, with asserts | Source of the estimate |
 |---|---|---|
 | `act_line()` | 0.2K | |
-| `ACT_FIRE`, less what moves to `act_strike()` | 0.9K | Melee is 1,173 bytes |
+| `ACT_FIRE`, with `act_strike()` already built | 0.9K | Melee is 1,065 bytes |
 | `ACT_AIM` | 0.5K | Use is 396 bytes |
 | `ACT_UNLOCK` | 0.5K | Open and close share 758 bytes |
 | Equip's, unequip's and pickup's rules | 0.4K | |
-| **Total for what is needed** | **2.5K** | **9,133 bytes are free** |
+| **Total for what is needed** | **2.5K** | **8,938 bytes are free** |
 
 The needed actions wouldn't have fit in page 112's 892 free bytes, even before `ACT_CAST`
 and the rest, so the actions moved to `BANK_56` (D22). These are estimates, and a release
@@ -826,5 +826,8 @@ What differs from section 6 and [actions_plan.md](actions_plan.md).
 - **Step 1:** `check-banks.sh` also stops the build if a `BANK_n` section passes 16K. The
   plan didn't list this, but the script only checked `PAGE_n` sections, and the linker
   doesn't check `BANK_n` at all, so the move would have lost the guard the actions had.
+- **Step 3:** `act_strike()` cost 195 bytes, where the plan said about the same: 311 in
+  `act_shared.c`, and melee 116 smaller. Its arguments and a table indexed by `use` cost
+  more than melee's constants did. The section has the room.
 - **Step 1's check:** run on a build with 8K of padding, not with only `act_wait()` past
   `$E000`, so nearly all the actions ran from page 113. CSpect and hardware passed.
