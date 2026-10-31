@@ -27,7 +27,7 @@
  * stats has none, though effects still act on it (poison damages a chest).
  *
  * A condition is a status that impairs a creature (STATUS_CONDITIONS):
- * poisoned; blinded and unconscious are reserved, their rules to come. It
+ * poisoned, rooted; blinded and unconscious are reserved, their rules to come. It
  * ends when the effects granting it end: their time runs out, a saving
  * throw is passed (1d20 + an ability's modifier against the effect's DC),
  * or a cure.
@@ -73,9 +73,10 @@ typedef struct stats_kind {
 #define STATUS_POISONED     0x01
 #define STATUS_BLINDED      0x02   /**< Granted, but no rule reads it yet (docs/attributes.md, "Not built yet"). */
 #define STATUS_UNCONSCIOUS  0x04   /**< Granted, but no rule reads it yet (docs/attributes.md, "Not built yet"). */
+#define STATUS_ROOTED       0x08   /**< Can't leave its tile (act_move(), the stairs): for ever or for a while. */
 
 /** The statuses that are conditions (impairments). */
-#define STATUS_CONDITIONS  (STATUS_POISONED | STATUS_BLINDED | STATUS_UNCONSCIOUS)
+#define STATUS_CONDITIONS  (STATUS_POISONED | STATUS_BLINDED | STATUS_UNCONSCIOUS | STATUS_ROOTED)
 
 /* Tables in slot 0 (stats_cdata.c): read-only for game code; meaningful only with COMPONENT_STATS */
 extern uint8_t stats_speed[NGE_ENTITY_MAX];                 /**< Ticks between turns: its timer's period. Derived (ATTR_SPEED). */

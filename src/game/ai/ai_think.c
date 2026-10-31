@@ -92,14 +92,19 @@ static uint8_t opt_drink(const ai_ctx_t *c)
     return ai_try(ACT_USE, &a);
 }
 
-/* Step towards the goal; there and the target not seen, or no way at all: lost */
+/* Step towards the goal; there and the target not seen, or no way at all: lost. Rooted, it watches what it sees */
 static uint8_t opt_approach(ai_ctx_t *c)
 {
     uint8_t gx = c->gx;
     uint8_t gy = c->gy;
+    uint8_t sees = c->sees;
+    ai_can_t can = c->can;
     uint8_t used;
 
-    if (gx == NGE_MAP_X_INVALID || (gx == c->x && gy == c->y && !c->sees)) {
+    if (sees && !(can & AI_CAN_MOVE)) {
+        return 0;
+    }
+    if (gx == NGE_MAP_X_INVALID || (gx == c->x && gy == c->y && !sees)) {
         c->stim = AI_STIM_LOST;
         return 0;
     }

@@ -96,7 +96,7 @@ static const char *const dmg_words[DMG_COUNT] = {
 static const char ability_names[ABIL_COUNT][4] = { "Str", "Dex", "Con", "Int", "Wis", "Cha" };
 
 /* The statuses' names, by bit (STATUS_*) */
-static const char *const status_names[3] = { "Poisoned", "Blinded", "Unconscious" };
+static const char *const status_names[4] = { "Poisoned", "Blinded", "Unconscious", "Rooted" };
 
 /* ---- Numbers ---- */
 

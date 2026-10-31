@@ -126,7 +126,8 @@ typedef struct act {
 #define ACT_R_OBSTRUCTED        24  /**< Refused: something (an item, a creature) is in the doorway. */
 #define ACT_R_NO_STAIRS         25  /**< Refused: no stairs the right way on the actor's tile. */
 #define ACT_R_NO_QUEST          26  /**< Refused: out of the dungeon only by the player, with the quest item. */
-#define ACT_R_COUNT             27
+#define ACT_R_ROOTED            27  /**< Attempted: the actor struggled, rooted to its tile (the turn is used). */
+#define ACT_R_COUNT             28
 
 /**
  * @brief Move one tile.
@@ -135,7 +136,9 @@ typedef struct act {
  * 0). Succeeds if the actor can enter the tile (nge_block_can_enter(),
  * with its pass flags): it moves there and posts EV_MOVED, and EV_STOOD_ON
  * for each entity on the tile. Refused
- * with ACT_R_BLOCKED or ACT_R_BLOCKED_ENTITY (a->target: the blocker).
+ * with ACT_R_BLOCKED or ACT_R_BLOCKED_ENTITY (a->target: the blocker). A
+ * rooted actor fails with ACT_R_ROOTED, using the turn, so time passes for
+ * a hold to end; a blocker comes first, so it can still bump to attack.
  */
 uint8_t act_move(act_t *a, uint8_t mode) NGE_BANKED;
 
@@ -245,7 +248,8 @@ uint8_t act_close(act_t *a, uint8_t mode) NGE_BANKED;
  * them there at the end of the frame, or out of the dungeon from depth
  * 1); anyone else leaves the level for it (level_send(): EV_LEFT_LEVEL).
  * Refused with ACT_R_NO_STAIRS, or ACT_R_NO_QUEST out of depth 1 unless the
- * actor is the player and carries the quest item (game/quest/quest.h).
+ * actor is the player and carries the quest item (game/quest/quest.h). A
+ * rooted actor fails with ACT_R_ROOTED, using the turn.
  */
 uint8_t act_ascend(act_t *a, uint8_t mode) NGE_BANKED;
 

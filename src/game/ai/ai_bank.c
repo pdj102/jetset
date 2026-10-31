@@ -74,11 +74,13 @@ ai_can_t ai_can(nge_entity_id_t id) NGE_BANKED
 {
     ai_can_t can = 0;
     uint8_t intel = 0;   /* no stats: none of the AI's rules that need a mind */
+    uint8_t rooted = 0;  /* ...and no statuses */
 
     nge_util_assert(id < NGE_ENTITY_MAX && NGE_ENTITY_IS_ALIVE(id));
 
     if (NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_STATS)) {
         intel = stats_ability[ABIL_INT][id];   /* the value: effects count */
+        rooted = STATUS_HAS(id, STATUS_ROOTED);
     }
     if (ATTACK_HAS(id, ATTACK_MELEE) || attack_weapon(id) != NGE_ENTITY_INVALID) {
         can |= AI_CAN_MELEE;
@@ -94,6 +96,9 @@ ai_can_t ai_can(nge_entity_id_t id) NGE_BANKED
     }
     if (intel >= AI_INT_OPEN) {
         can |= AI_CAN_OPEN;
+    }
+    if (!rooted) {
+        can |= AI_CAN_MOVE;
     }
     return can;
 }

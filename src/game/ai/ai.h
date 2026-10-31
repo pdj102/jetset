@@ -87,6 +87,7 @@ typedef uint8_t ai_can_t;     /**< A mask of AI_CAN_*. */
 #define AI_CAN_OPEN    0x10   /**< Opens and closes doors: Int AI_INT_OPEN. */
 #define AI_CAN_RANGED  0x20   /**< Reserved: a ranged attack (later). */
 #define AI_CAN_CAST    0x40   /**< Reserved: casts spells, with mana (later). */
+#define AI_CAN_MOVE    0x80   /**< Leaves its tile: not rooted (STATUS_ROOTED). */
 
 /* The least Intelligence for the AI's own rules (the player needs none) */
 #define AI_INT_USE   5

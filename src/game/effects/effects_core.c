@@ -289,7 +289,8 @@ uint8_t effect_cure(nge_entity_id_t target, uint8_t statuses) NGE_BANKED
     nge_util_assert(target < NGE_ENTITY_MAX);
 
     NGE_OWNER_FOR_EACH_OWNED(i, id, target) {
-        if (NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_EFFECT) && (effect_defs[effect_kind[id]].status & statuses)) {
+        if (NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_EFFECT) && (effect_defs[effect_kind[id]].status & statuses) &&
+            !(effect_defs[effect_kind[id]].flags & EFFECT_INNATE)) {
             end(id, EFFECT_END_CURED);
             n++;
         }

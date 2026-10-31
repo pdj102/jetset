@@ -20,6 +20,7 @@
 #include "game/components/inventory.h"
 #include "game/components/item.h"
 #include "game/components/stats.h"
+#include "game/effects/effects.h"
 #include "game/events.h"
 #include "game/gen/gen.h"
 
@@ -274,33 +275,33 @@ int main(void)
     gob2 = creature(CR_GOBLIN, 8, 8);
     events();                                               /* the player's innate effect started */
     a = nge_entity_create();                                /* no components */
-    CHECK(ai_can(a) == 0);
-    CHECK(ai_can(rat) == AI_CAN_MELEE);                     /* a bite; Int 2, no inventory */
-    CHECK(ai_can(goblin) == (AI_CAN_MELEE | AI_CAN_PICKUP | AI_CAN_EQUIP | AI_CAN_USE | AI_CAN_OPEN));
+    CHECK(ai_can(a) == AI_CAN_MOVE);
+    CHECK(ai_can(rat) == (AI_CAN_MOVE | AI_CAN_MELEE));                     /* a bite; Int 2, no inventory */
+    CHECK(ai_can(goblin) == (AI_CAN_MOVE | AI_CAN_MELEE | AI_CAN_PICKUP | AI_CAN_EQUIP | AI_CAN_USE | AI_CAN_OPEN));
     /* The thresholds, on the ability's value, as an effect would change it */
     stats_ability[ABIL_INT][goblin] = AI_INT_OPEN;
     CHECK(ai_can(goblin) & AI_CAN_OPEN);
     stats_ability[ABIL_INT][goblin] = AI_INT_OPEN - 1;
     CHECK(!(ai_can(goblin) & AI_CAN_OPEN) && (ai_can(goblin) & AI_CAN_USE));   /* 5: uses, can't open */
     stats_ability[ABIL_INT][goblin] = AI_INT_USE - 1;
-    CHECK(ai_can(goblin) == (AI_CAN_MELEE | AI_CAN_PICKUP | AI_CAN_EQUIP));    /* 4: neither */
+    CHECK(ai_can(goblin) == (AI_CAN_MOVE | AI_CAN_MELEE | AI_CAN_PICKUP | AI_CAN_EQUIP));    /* 4: neither */
     stats_ability[ABIL_INT][goblin] = 10;
     /* Int with no inventory: opens, but nothing to use */
     stats_ability[ABIL_INT][rat] = AI_INT_OPEN;
-    CHECK(ai_can(rat) == (AI_CAN_MELEE | AI_CAN_OPEN));
+    CHECK(ai_can(rat) == (AI_CAN_MOVE | AI_CAN_MELEE | AI_CAN_OPEN));
     stats_ability[ABIL_INT][rat] = 2;
     /* An inventory with no slots: picks up, can't equip; no stats: no Int */
     holder = nge_entity_create();
     nge_location_set(holder, 0, 9);
     inv_add(holder, 4, 0);
-    CHECK(ai_can(holder) == AI_CAN_PICKUP);
+    CHECK(ai_can(holder) == (AI_CAN_MOVE | AI_CAN_PICKUP));
     /* With a weapon slot, and melee only while a sword is wielded */
     nge_entity_destroy(holder);
     nge_entity_release(nge_entity_next_dying());
     holder = nge_entity_create();
     nge_location_set(holder, 0, 9);
     inv_add(holder, 4, SLOT_BIT(SLOT_WEAPON));
-    CHECK(ai_can(holder) == (AI_CAN_PICKUP | AI_CAN_EQUIP));
+    CHECK(ai_can(holder) == (AI_CAN_MOVE | AI_CAN_PICKUP | AI_CAN_EQUIP));
     sword = gen_item(IT_SWORD, AREA);
     inv_stow(sword, holder);
     CHECK(!(ai_can(holder) & AI_CAN_MELEE));                /* carried, not wielded */
@@ -308,7 +309,7 @@ int main(void)
     c.item = sword;
     c.kind = SLOT_NONE;
     CHECK(act_equip(&c, ACT_DO) == ACT_SUCCESS);
-    CHECK(ai_can(holder) == (AI_CAN_MELEE | AI_CAN_PICKUP | AI_CAN_EQUIP));
+    CHECK(ai_can(holder) == (AI_CAN_MOVE | AI_CAN_MELEE | AI_CAN_PICKUP | AI_CAN_EQUIP));
     c = ctx(holder);
     c.item = sword;
     CHECK(act_unequip(&c, ACT_DO) == ACT_SUCCESS);
@@ -598,6 +599,50 @@ int main(void)
     /* Lost: no tracking left to pick it up again */
     ai_stimulus(a, AI_STIM_LOST, NGE_EVENT_NONE);
     CHECK(ai_track[a] == 0 && ai_goal_x[a] == NGE_MAP_X_INVALID);
+
+    /* ---- rooted: stays on its tile, still fights, and hunts what it sees ---- */
+    scene(5, 5);
+    a = hunter(CR_LICHEN, 5, 6, 5, 5);
+    events();                                               /* its innate effect started */
+    CHECK(!(ai_can(a) & AI_CAN_MOVE));
+    ai_on_turn(a);
+    CHECK(at(a, 5, 6) && ai_state[a] == AI_STATE_HUNT);
+    CHECK(events() >= 1 && (seen[0].id == EV_HIT || seen[0].id == EV_MISSED));   /* next to the player: attacks */
+    scene(5, 5);
+    a = hunter(CR_LICHEN, 8, 5, 5, 5);                      /* in sight, out of reach: waits, and stays hunting */
+    for (s = 0; s < 5; s++) {
+        events();
+        ai_on_turn(a);
+    }
+    CHECK(at(a, 8, 5) && ai_state[a] == AI_STATE_HUNT);
+    scene(0, 0);
+    wall_column(3, 0, 9);
+    a = hunter(CR_LICHEN, 6, 5, 6, 2);                      /* nothing in sight: gives up */
+    events();
+    ai_on_turn(a);
+    CHECK(at(a, 6, 5) && ai_state[a] == AI_STATE_IDLE);
+    for (s = 0; s < 50; s++) {                              /* idle: never wanders */
+        events();
+        ai_on_turn(a);
+    }
+    CHECK(at(a, 6, 5));
+    events();
+    a = creature(CR_SHRIEKER, 8, 8);                        /* asleep: wakes as usual */
+    CHECK(ai_get_state(a) == AI_STATE_ASLEEP);
+    ai_stimulus(a, AI_STIM_HURT, NGE_EVENT_NONE);
+    CHECK(ai_get_state(a) == AI_STATE_HUNT);
+    /* A hold on a monster that can walk: the capability goes, and comes back */
+    scene(5, 5);
+    a = hunter(CR_GOBLIN, 8, 5, 5, 5);
+    effect_apply(EF_HOLD, 1, a, NGE_ENTITY_INVALID);
+    CHECK(!(ai_can(a) & AI_CAN_MOVE));
+    ai_on_turn(a);
+    CHECK(at(a, 8, 5) && ai_state[a] == AI_STATE_HUNT);
+    effect_cure(a, STATUS_ROOTED);
+    CHECK(ai_can(a) & AI_CAN_MOVE);
+    ai_on_turn(a);
+    CHECK(at(a, 7, 5));
+    events();
     events();
 
     /* ---- attack: next to its target, a rat bites ---- */

@@ -347,6 +347,9 @@ void messages_act_failed(const act_t *a) NGE_BANKED
     case ACT_R_BLOCKED_ENTITY:
         say_named("There is a ", target, " in the way.");
         break;
+    case ACT_R_ROOTED:
+        screen_message("You can't move!");
+        break;
     case ACT_R_NOTHING_HERE:
         screen_message("There is nothing here to pick up.");
         break;

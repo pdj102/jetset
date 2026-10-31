@@ -174,7 +174,8 @@ int main(void)
         int has_mods = 0;
         uint8_t m;
 
-        ok = ok && d->duration < EFFECT_DURATIONS && (d->flags & ~EFFECT_STACK) == 0;
+        ok = ok && d->duration < EFFECT_DURATIONS && (d->flags & ~(EFFECT_STACK | EFFECT_INNATE)) == 0;
+        ok = ok && (!(d->flags & EFFECT_INNATE) || (d->duration == EFFECT_TIMED && d->cycles == 0 && d->save.dc == 0));
         ok = ok && d->on_start.op < OP_COUNT && d->on_tick.op < OP_COUNT && d->on_end.op < OP_COUNT;
         for (m = 0; m < EFFECT_MODS; m++) {
             ok = ok && d->mod[m].attr < ATTR_COUNT;
@@ -354,6 +355,26 @@ int main(void)
     CHECK(effect_cure(g, STATUS_POISONED) == 1 && !STATUS_HAS(g, STATUS_POISONED));
     fire(3);
     CHECK(health_hp[g] == 6);                                      /* the ended poison never fires */
+
+    /* ---- innate: no cure ends it, and a cure still ends what else it has ---- */
+    reset();
+    g = goblin();
+    effect_apply(EF_ROOT, 1, g, NGE_ENTITY_INVALID);
+    effect_apply(EF_POISON, 1, g, NGE_ENTITY_INVALID);
+    CHECK(STATUS_HAS(g, STATUS_ROOTED));
+    CHECK(effect_cure(g, STATUS_ROOTED) == 0 && STATUS_HAS(g, STATUS_ROOTED));
+    CHECK(effect_apply(EF_CURE_ALL, 1, g, NGE_ENTITY_INVALID) == 1);
+    CHECK(!STATUS_HAS(g, STATUS_POISONED) && STATUS_HAS(g, STATUS_ROOTED) && count_effects(g, EF_ROOT) == 1);
+    /* A hold on the same status is cured; the roots stay */
+    effect_apply(EF_HOLD, 1, g, NGE_ENTITY_INVALID);
+    CHECK(effect_cure(g, STATUS_ROOTED) == 1 && count_effects(g, EF_HOLD) == 0 && STATUS_HAS(g, STATUS_ROOTED));
+    /* A hold alone: over with its time or its saving throw */
+    reset();
+    g = goblin();
+    effect_apply(EF_HOLD, 1, g, NGE_ENTITY_INVALID);
+    CHECK(STATUS_HAS(g, STATUS_ROOTED));
+    fire(6);
+    CHECK(!STATUS_HAS(g, STATUS_ROOTED) && count_effects(g, EF_HOLD) == 0);
 
     /* ---- permanent: raising a base, maximum only (no healing) ---- */
     reset();

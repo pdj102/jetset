@@ -320,6 +320,7 @@ int main(void)
 
             ok = ok && (ef == EF_NONE || (i != GEN_HOOK_WORN && i != GEN_HOOK_USE &&
                                           effect_defs[ef].duration != EFFECT_WORN && gen_creatures[kind].hooks[i].power != 0));
+            ok = ok && (ef == EF_NONE || (i == GEN_HOOK_INNATE) == ((effect_defs[ef].flags & EFFECT_INNATE) != 0));
         }
     }
     CHECK(ok);
@@ -334,10 +335,22 @@ int main(void)
     CHECK(ai_brain[id] == AI_BRAIN_DEFAULT && ai_get_state(id) == AI_STATE_ASLEEP);
     id = gen_creature(CR_GOBLIN, AREA);
     CHECK(AI_IS(id) && ai_brain[id] == AI_BRAIN_DEFAULT && ai_get_state(id) == AI_STATE_ASLEEP);
-    CHECK(ai_can(id) == (AI_CAN_MELEE | AI_CAN_PICKUP | AI_CAN_EQUIP | AI_CAN_USE | AI_CAN_OPEN));   /* Int 10, a weapon slot */
+    CHECK(ai_can(id) == (AI_CAN_MOVE | AI_CAN_MELEE | AI_CAN_PICKUP | AI_CAN_EQUIP | AI_CAN_USE | AI_CAN_OPEN));   /* Int 10, a weapon slot */
     id = gen_creature(CR_RAT, AREA);
-    CHECK(ai_can(id) == AI_CAN_MELEE);                          /* Int 2, carries nothing: bites */
+    CHECK(ai_can(id) == (AI_CAN_MOVE | AI_CAN_MELEE));                          /* Int 2, carries nothing: bites */
     CHECK(nge_owner_count(id) == 0);                           /* no innate effect */
+    /* Rooted when made: these four, and no other; a lichen's hold gets its save before its next hit */
+    ok = 1;
+    for (kind = 0; kind < CR_COUNT; kind++) {
+        reset();
+        nge_event_init();
+        id = gen_creature(kind, AREA);
+        ok = ok && STATUS_HAS(id, STATUS_ROOTED) == (kind == CR_LICHEN || kind == CR_SHRIEKER ||
+                                                     kind == CR_FLOATING_EYE || kind == CR_MIMIC);
+    }
+    CHECK(ok);
+    CHECK(effect_defs[EF_HOLD].period < gen_creatures[CR_LICHEN].stats.speed);
+    CHECK(GEN_HOOK_EF(gen_creature_hook(CR_LICHEN, GEN_HOOK_HIT)) == EF_HOLD);
     reset();
     id = gen_creature(CR_TROLL, AREA);
     CHECK(GEN_HOOK_EF(gen_hook_of(id, GEN_HOOK_INNATE)) == EF_REGEN && nge_owner_count(id) == 1);   /* regenerates */
@@ -346,9 +359,9 @@ int main(void)
     id = gen_creature(CR_SHRIEKER, AREA);
     CHECK(ai_can(id) == 0);                                    /* Int 1, no attack, carries nothing */
     id = gen_creature(CR_OGRE, AREA);
-    CHECK(ai_can(id) == (AI_CAN_MELEE | AI_CAN_PICKUP | AI_CAN_EQUIP | AI_CAN_USE | AI_CAN_OPEN));   /* Int 6 */
+    CHECK(ai_can(id) == (AI_CAN_MOVE | AI_CAN_MELEE | AI_CAN_PICKUP | AI_CAN_EQUIP | AI_CAN_USE | AI_CAN_OPEN));   /* Int 6 */
     id = gen_creature(CR_SKELETON, AREA);
-    CHECK(ai_can(id) == (AI_CAN_MELEE | AI_CAN_PICKUP | AI_CAN_EQUIP));   /* Int 3: mindless at doors */
+    CHECK(ai_can(id) == (AI_CAN_MOVE | AI_CAN_MELEE | AI_CAN_PICKUP | AI_CAN_EQUIP));   /* Int 3: mindless at doors */
     id = gen_creature(CR_PLAYER, AREA);
     CHECK(GEN_HOOK_EF(gen_hook_of(id, GEN_HOOK_INNATE)) == EF_REGEN && nge_owner_count(id) == 1);   /* its innate effect */
     CHECK(MANA_IS(id) && mana_mp[id] == 5 && mana_mp_max[id] == 5);                 /* full */
@@ -406,7 +419,7 @@ int main(void)
     memset(seen, 0, sizeof(seen));
     ok = 1;
     for (i = 0; i < 300 && ok; i++) {
-        reset();                                               /* a kind may own an effect */
+        reset();                                               /* a lichen owns its roots too */
         nge_event_init();
         id = gen_creature_random(1, AREA);
         ok = id != NGE_ENTITY_INVALID && creature_ok(id, AREA, kind_index[id]);

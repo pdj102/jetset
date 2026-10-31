@@ -33,6 +33,7 @@ const uint8_t act_reason_flags[ACT_R_COUNT] = {
     [ACT_R_ALREADY_OPEN]     = 0,
     [ACT_R_ALREADY_CLOSED]   = 0,
     [ACT_R_OBSTRUCTED]       = 0,
+    [ACT_R_ROOTED]           = ACT_RF_ATTEMPTED,   /* it struggled: the turn is used, so time passes and a hold can end */
     [ACT_R_NO_STAIRS]        = 0,
     [ACT_R_NO_QUEST]         = 0,
 };

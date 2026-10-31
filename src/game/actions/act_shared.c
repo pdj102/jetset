@@ -10,6 +10,7 @@
 #include "game/actions/act_internal.h"
 
 #include "core/nge_util.h"
+#include "game/components/stats.h"
 
 uint8_t act_distance(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2)
 {
@@ -17,6 +18,11 @@ uint8_t act_distance(uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2)
     uint8_t dy = (y1 > y2) ? (uint8_t)(y1 - y2) : (uint8_t)(y2 - y1);
 
     return (dx > dy) ? dx : dy;
+}
+
+uint8_t act_rooted(nge_entity_id_t id)
+{
+    return NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_STATS) && STATUS_HAS(id, STATUS_ROOTED);
 }
 
 uint8_t act_fail(act_t *a, uint8_t reason)

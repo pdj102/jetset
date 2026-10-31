@@ -101,7 +101,7 @@ is a resource that damage and healing change. Hit points are a pool.
 - **R13** A condition lasts while an effect grants it, and ends when every effect
   granting it has ended.
 - **R14** An effect ends when its time runs out, its saving throw is passed, or it
-  is cured.
+  is cured. An innate effect does none of these (effects.md, R15a).
 - **R15** An effect's definition may name a saving throw: an ability and a DC. The
   target rolls it each time the effect fires, after its tick.
 - **R16** `EV_EFFECT_ENDED` says why the effect ended.
@@ -176,6 +176,7 @@ of every active effect and every equipped item's worn effect.
 | `STATUS_POISONED` | Yes | Poison |
 | `STATUS_BLINDED` | Yes | Blindness |
 | `STATUS_UNCONSCIOUS` | Yes | Sleep |
+| `STATUS_ROOTED` | Yes | Roots (innate), a hold ([creatures.md](creatures.md)) |
 
 A status that isn't a condition would be a beneficial one. The difference matters
 only where a rule acts on conditions as a group: a cure-all
@@ -199,7 +200,7 @@ The core ends an effect through one internal function, with a reason in
 | Reason | When |
 |---|---|
 | `EFFECT_END_EXPIRED` | Its last firing, or `effect_end()` |
-| `EFFECT_END_CURED` | `effect_cure()` or `OP_CURE`, which end effects by the statuses they grant |
+| `EFFECT_END_CURED` | `effect_cure()` or `OP_CURE`, which end effects by the statuses they grant, except innate ones |
 | `EFFECT_END_SAVED` | Its saving throw was passed |
 
 ## 5. Decisions

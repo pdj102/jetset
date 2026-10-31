@@ -34,7 +34,8 @@
 #define EFFECT_DURATIONS  3
 
 /* Definition flags */
-#define EFFECT_STACK  0x01   /* timed, applied again: another instance; else the one there is refreshed */
+#define EFFECT_STACK   0x01  /* timed, applied again: another instance; else the one there is refreshed */
+#define EFFECT_INNATE  0x02  /* timed, for ever and no saving throw: what the creature is, so no cure ends it */
 
 /* Modifiers per definition */
 #define EFFECT_MODS  2
@@ -68,7 +69,7 @@ typedef struct effect_def {
     const char  *start_text;   /* in page 121, or NULL */
     const char  *end_text;
     uint8_t      duration;     /* EFFECT_INSTANT, EFFECT_TIMED or EFFECT_WORN */
-    uint8_t      flags;        /* EFFECT_STACK */
+    uint8_t      flags;        /* EFFECT_STACK, EFFECT_INNATE */
     uint8_t      period;       /* timed: ticks between firings, 1-255 */
     uint8_t      cycles;       /* timed: firings, 0 for ever */
     uint8_t      status;       /* statuses granted while it lasts: bits the game defines */

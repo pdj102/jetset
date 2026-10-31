@@ -25,6 +25,11 @@ adding a row. Only a new kind of op needs code.
 - **Worn:** it is never applied. Its modifiers and statuses simply count while
   the item naming it is equipped.
 
+A timed effect with 0 cycles lasts for ever, and is one of two things. A
+**permanent** effect is one a creature has gained, and a cure can end it. An
+**innate** effect is part of what the creature is (a plant's roots, a troll's
+regeneration), and ends only with the creature.
+
 **Strength comes from outside.** A definition's amounts are per **power**. The
 hook that names the effect gives the power, so one row serves every strength of
 an item, and an active effect keeps its power after what started it has gone.
@@ -72,6 +77,8 @@ are never recomputed by a handler (R17).
 | Power | What a use of the effect multiplies its amounts by, from the hook. Not 0, and may be negative |
 | Firing | One run of an active effect's timer, every period |
 | Period, cycles | The ticks between firings, and how many firings; 0 cycles lasts for ever |
+| Permanent | A timed effect with 0 cycles: a cure ends it |
+| Innate | A timed effect with 0 cycles marked `EFFECT_INNATE`: nothing ends it but its target going |
 | Refresh | Applying a timed effect that is already there, restarting its timer |
 | Stack | Applying a timed effect marked `EFFECT_STACK`, which adds another instance |
 | Seam | The functions and data in `effects_core.h` through which the core reaches the game |
@@ -114,6 +121,8 @@ are never recomputed by a handler (R17).
   an entity.
 - **R15** An ending runs its end op, recomputes its target and posts
   `EV_EFFECT_ENDED` with the reason. A dead target gets none of these.
+- **R15a** A cure ends a permanent effect, not an innate one. An innate effect is
+  timed, lasts for ever and has no saving throw.
 - **R16** An active effect doesn't fire while its target is off the level. One with
   a limited time ends when its target leaves, and one that lasts for ever waits.
 
@@ -145,7 +154,7 @@ are never recomputed by a handler (R17).
 | `name` | Shown while it lasts, 14 characters at most | Timed |
 | `start_text`, `end_text` | What the player is told, or none | Instant, timed |
 | `duration` | `EFFECT_INSTANT`, `EFFECT_TIMED` or `EFFECT_WORN` | All |
-| `flags` | `EFFECT_STACK` | Timed |
+| `flags` | `EFFECT_STACK`, `EFFECT_INNATE` | Timed |
 | `period`, `cycles` | Firings: ticks between them, how many | Timed |
 | `status` | Status bits granted while it lasts; the core doesn't know their meanings | Timed, worn |
 | `mod[]` | Two modifiers; an amount of 0 changes nothing | Timed, worn |
@@ -164,7 +173,7 @@ An op is a number, dispatched by a `switch` in the code that owns it:
 | Op | Owner | What it does |
 |---|---|---|
 | `OP_NONE` | Core | Nothing |
-| `OP_CURE` | Core | Ends the target's effects granting statuses `arg` |
+| `OP_CURE` | Core | Ends the target's effects granting statuses `arg`, except innate ones |
 | `OP_RAISE_BASE` | Core | Adds the amount to attribute `arg`'s base, for good, kept within 0-255 |
 | `OP_DAMAGE` | Game | Damage of type `arg`, through `health_damage()` |
 | `OP_HEAL` | Game | Healing, through `health_heal()` |
@@ -191,7 +200,7 @@ target that can't be affected (R6).
 
 The callers are `act_use()` (the use hook, before destroying the item),
 `act_melee()` (the hit hook, refused if the hit killed the target) and the creature
-generator (the innate hook).
+generator (the innate hook, which names only innate effects).
 
 ### 4.4 Active effects
 
@@ -208,7 +217,7 @@ At each firing:
 3. On the last cycle, if it hasn't ended, it ends as expired.
 
 `effect_cure()` walks the target's effects and ends those granting any of the
-given statuses. See [attributes.md](attributes.md), sections 4.5 to 4.7, for
+given statuses, unless they are innate. See [attributes.md](attributes.md), sections 4.5 to 4.7, for
 statuses, saving throws and end reasons.
 
 **Ending** (`end()`) destroys the effect first, so a recompute no longer counts it.
@@ -300,6 +309,12 @@ locals.
   effect would run out without ending and leave its modifiers behind. An effect that
   lasts for ever has no cycles to count, so it is safe to skip, and ending it would
   lose an innate ability ([level_transitions.md](level_transitions.md), D3).
+- **D10 Innate is a mark on the definition, `EFFECT_INNATE`** (creatures.md, D5).
+  An effect that lasts for ever may be something gained, which a cure should end, or
+  what a creature is, which it shouldn't. So rooted that can be cured is a row of its
+  own, with the same status and no mark. *Rejected:* 0 cycles alone deciding, which
+  can't tell the two apart; marking each active effect by how it was applied, which
+  needs a byte per entity and another argument to `effect_apply()`, to save a row.
 
 ## 6. Not built yet
 
@@ -320,6 +335,7 @@ locals.
 - the definitions: well formed, each duration with only what it uses, timed first;
 - instant effects, and refused targets;
 - timed effects: firings, refresh, stacking, cures, saving throws, and running out;
+- innate effects: well formed, and not ended by a cure;
 - power: instant, worn and timed, including after the source has gone;
 - worn effects, and every attribute's clamps;
 - a target that dies, an entity without stats, and no free entity;
@@ -339,7 +355,10 @@ locals.
   passed. No timed effect has an `on_start` yet.
 - **`on_end` is untested,** as no definition has one.
 - **Entities.** Each active effect takes one of the 100 entities, so a timed effect can
-  be refused when the game is busy, and the caller may not say so.
+  be refused when the game is busy, and the caller may not say so. For an innate
+  effect that shows: the generator ignores the result, so a lichen made with no entity
+  free would walk. Regeneration lost that way never mattered. Levels stay far below
+  100 entities, so this is accepted.
 - **zsdcc.** `run_op()` and `effects_on_timer()` read struct fields in code that
   branches, so they copy them into locals first (T-ZSDCC-1). Scaling depends on
   promotion and sign, and the PC tests can't catch a miscompile there.

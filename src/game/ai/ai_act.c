@@ -46,6 +46,9 @@ uint8_t ai_step(const ai_ctx_t *c, uint8_t d, uint8_t open)
 
     nge_util_assert(d < 8);
 
+    if (!(can & AI_CAN_MOVE)) {
+        return 0;
+    }
     a.actor = c->id;
     a.dx = dir_x(d);
     a.dy = dir_y(d);

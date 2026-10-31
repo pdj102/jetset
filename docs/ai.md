@@ -257,6 +257,7 @@ adds to it, with the reason.
   | `AI_CAN_EQUIP` | it has an inventory with an equipment slot | `act_equip()` |
   | `AI_CAN_USE` | it has an inventory and Int `AI_INT_USE` (5) or more | `act_use()`, plus the AI's rule |
   | `AI_CAN_OPEN` | it has stats and Int `AI_INT_OPEN` (6) or more | `act_open()`, plus the AI's rule |
+  | `AI_CAN_MOVE` | it isn't rooted ([creatures.md](creatures.md), D1) | `act_move()` |
 
   The scores come from the current ability values (`stats_ability[]`,
   slot 0), so effects count. The rat (Int 2, no inventory) can melee; the

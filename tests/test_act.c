@@ -553,6 +553,43 @@ int main(void)
     a.target = thing;
     CHECK(act_melee(&a, ACT_DO) == ACT_SUCCESS && a.item == i2 && events() == 2);
 
+    /* ---- rooted: a step is refused at no cost, but a blocker still gives bump to attack ---- */
+    {
+        nge_entity_id_t tile = gen_item(IT_CLUB, AREA);       /* no stats: no statuses, stale table or not */
+        uint8_t x;
+        nge_entity_id_t blocker = creature(CR_RAT, NGE_LOCATION_X(player), (uint8_t)(NGE_LOCATION_Y(player) + 1));
+
+        effect_apply(EF_HOLD, 1, player, NGE_ENTITY_INVALID);
+        events();
+        CHECK(STATUS_HAS(player, STATUS_ROOTED));
+        a = ctx(player);
+        a.dx = -1;
+        x = NGE_LOCATION_X(player);
+        CHECK(act_move(&a, ACT_CHECK) == ACT_SUCCESS && a.used == 0);
+        a = ctx(player);
+        a.dx = -1;
+        /* It struggles and the turn is used: a refused step would stop the clock, and a hold could never end */
+        CHECK(act_move(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_ROOTED && a.used == 1 && events() == 0);
+        CHECK(NGE_LOCATION_X(player) == x);
+        a = ctx(player);
+        a.dy = 1;
+        CHECK(act_move(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_BLOCKED_ENTITY && a.target == blocker);
+        effect_cure(player, STATUS_ROOTED);
+        events();
+        a = ctx(player);
+        a.dx = -1;
+        CHECK(act_move(&a, ACT_CHECK) == ACT_SUCCESS);
+        nge_location_set(tile, 8, 1);
+        stats_status[tile] = STATUS_ROOTED;
+        a = ctx(tile);
+        a.dx = -1;
+        CHECK(act_move(&a, ACT_CHECK) == ACT_SUCCESS);
+        stats_status[tile] = 0;
+        nge_entity_destroy(tile);
+        nge_entity_destroy(blocker);
+        events();
+    }
+
     /* ---- use: a stowed item with a use effect, used up ---- */
     effect_cure(player, STATUS_POISONED);
     health_hp[player] = 3;
@@ -741,6 +778,12 @@ int main(void)
     /* A monster on the stairs leaves the level: destroyed, not persistent */
     nge_location_set(player, 3, 8);
     climber = creature(CR_GOBLIN, 2, 8);
+    effect_apply(EF_HOLD, 1, climber, NGE_ENTITY_INVALID);    /* held: it can't take them */
+    a = ctx(climber);
+    CHECK(act_descend(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_ROOTED && a.used == 1);
+    CHECK(NGE_ENTITY_IS_ALIVE(climber) && !level_pending());
+    effect_cure(climber, STATUS_ROOTED);
+    events();
     a = ctx(climber);
     CHECK(act_descend(&a, ACT_DO) == ACT_SUCCESS && a.used == 1 && !level_pending());
     CHECK(NGE_ENTITY_STATE(climber) == NGE_ENTITY_DYING);
@@ -798,10 +841,10 @@ int main(void)
     TEST_EXPECT_HALT(act_wait(&a, ACT_DO));
     CHECK(test_halt_count == 1);
 
-    /* ---- every reason is refused, but a miss ---- */
+    /* ---- every reason is refused, but a miss and a struggle ---- */
     ok = 1;
     for (r1 = 0; r1 < ACT_R_COUNT; r1++) {
-        ok = ok && act_attempted((uint8_t)r1) == (r1 == ACT_R_MISSED);   /* includes ACT_R_CANT_USE */
+        ok = ok && act_attempted((uint8_t)r1) == (r1 == ACT_R_MISSED || r1 == ACT_R_ROOTED);   /* includes ACT_R_CANT_USE */
     }
     CHECK(ok);
 

@@ -54,7 +54,10 @@ uint8_t act_move(act_t *a, uint8_t mode) NGE_BANKED
         return act_checked(a);
     }
 
-    /* 3. Resolve: nothing to roll for a move */
+    /* 3. Resolve: nothing to roll for a move, but a rooted actor only struggles */
+    if (act_rooted(actor)) {
+        return act_fail(a, ACT_R_ROOTED);
+    }
 
     /* 4. Apply, then the events: what happened, for the systems to react to */
     nge_location_set(actor, x, y);

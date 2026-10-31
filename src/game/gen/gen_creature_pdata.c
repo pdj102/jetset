@@ -130,7 +130,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .hooks = { [GEN_HOOK_HIT] = { EF_POISON, 1 } },
         .where = { .depth = 1, .depth_max = 5, .rarity = 7 },
     },
-    [CR_LICHEN] = {                                     /* later: rooted */
+    [CR_LICHEN] = {
         .name = "lichen",
         .render = SHAPE_FUNGUS(BANK_BONE),
         .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
@@ -141,7 +141,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .xp = 13,                                       /* 1 hit die, special */
         .flags = 0,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
-        .hooks = { [GEN_HOOK_HIT] = { EF_SLOW, 2 } },
+        .hooks = { [GEN_HOOK_HIT] = { EF_HOLD, 1 }, [GEN_HOOK_INNATE] = { EF_ROOT, 1 } },
         .where = { .depth = 1, .depth_max = 5, .rarity = 5 },
     },
     [CR_GREEN_SLIME] = {                                /* later: splits, corrodes gear */
@@ -158,7 +158,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
         .where = { .depth = 2, .depth_max = 6, .rarity = 6 },
     },
-    [CR_SHRIEKER] = {                                   /* later: rooted, its shriek wakes the level */
+    [CR_SHRIEKER] = {                                   /* later: its shriek wakes the level */
         .name = "shrieker",
         .render = SHAPE_FUNGUS(BANK_PURPLE),
         .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
@@ -168,6 +168,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .xp = 13,                                       /* 1 hit die, special */
         .flags = 0,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
+        .hooks = { [GEN_HOOK_INNATE] = { EF_ROOT, 1 } },
         .where = { .depth = 2, .depth_max = 6, .rarity = 4 },
     },
     [CR_BANDIT] = {                                     /* later: steals and runs */
@@ -251,7 +252,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .hooks = { [GEN_HOOK_HIT] = { EF_BLIND, 1 } },
         .where = { .depth = 4, .depth_max = 8, .rarity = 5 },
     },
-    [CR_FLOATING_EYE] = {                               /* later: rooted, a paralysing gaze */
+    [CR_FLOATING_EYE] = {                               /* later: a paralysing gaze */
         .name = "floating eye",
         .render = SHAPE_EYE(BANK_BLUE),
         .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
@@ -261,9 +262,10 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .xp = 75,                                       /* 3+ hit dice, special */
         .flags = 0,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
+        .hooks = { [GEN_HOOK_INNATE] = { EF_ROOT, 1 } },
         .where = { .depth = 4, .depth_max = 8, .rarity = 3 },
     },
-    [CR_MIMIC] = {                                      /* later: rooted, poses as treasure until touched */
+    [CR_MIMIC] = {                                      /* later: poses as treasure until touched */
         .name = "mimic",
         .render = SHAPE_COINS(BANK_GOLD),
         .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
@@ -274,6 +276,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .xp = 125,                                      /* 4 hit dice, special */
         .flags = 0,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
+        .hooks = { [GEN_HOOK_INNATE] = { EF_ROOT, 1 } },
         .where = { .depth = 4, .depth_max = 9, .rarity = 3 },
     },
     [CR_OGRE] = {

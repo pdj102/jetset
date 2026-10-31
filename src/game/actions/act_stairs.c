@@ -56,7 +56,10 @@ static uint8_t take_stairs(act_t *a, uint8_t mode, uint8_t can, int8_t step)
         return act_checked(a);
     }
 
-    /* 3. Resolve: nothing to roll */
+    /* 3. Resolve: nothing to roll, but a rooted actor only struggles */
+    if (act_rooted(actor)) {
+        return act_fail(a, ACT_R_ROOTED);
+    }
 
     /* 4. Apply: the player at the end of the frame, anyone else now */
     if (PC_IS(actor)) {

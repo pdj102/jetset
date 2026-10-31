@@ -181,7 +181,7 @@ wider mask.
 | `GEN_HOOK_USE` | Items | When used up: drunk, eaten or read | The user |
 | `GEN_HOOK_HIT` | Weapons, ammo, creatures | A hit that leaves its target alive | The target |
 | `GEN_HOOK_WORN` | Equipment | Counts while equipped | The wearer |
-| `GEN_HOOK_INNATE` | Creatures | When generated | Itself |
+| `GEN_HOOK_INNATE` | Creatures | When generated: only `EFFECT_INNATE` effects | Itself |
 | `GEN_HOOK_AIM` | Wands, staves, parchments | At a chosen target; no action reads it yet | The target |
 
 `gen_hook_of()` answers for any class, with the effect and power packed in 16

@@ -37,7 +37,7 @@ const effect_def_t effect_defs[EF_COUNT] = {
     [EF_REGEN] = {
         .name = "Regeneration",
         .duration = EFFECT_TIMED,
-        .flags = EFFECT_STACK,   /* each source of regeneration counts */
+        .flags = EFFECT_STACK | EFFECT_INNATE,   /* each source of regeneration counts */
         .period = TURNS(10),
         .cycles = 0,             /* for ever */
         .on_tick = { OP_HEAL, 0, 1 },
@@ -135,6 +135,24 @@ const effect_def_t effect_defs[EF_COUNT] = {
         .save = { ABIL_WIS, 12 },
         .period = TURNS(2),
         .cycles = 4,
+    },
+    [EF_ROOT] = {
+        .name = "Rooted",
+        .duration = EFFECT_TIMED,
+        .flags = EFFECT_INNATE,
+        .status = STATUS_ROOTED,
+        .period = 255,           /* the longest: its firings do nothing */
+        .cycles = 0,             /* for ever */
+    },
+    [EF_HOLD] = {
+        .name = "Held",
+        .start_text = "You are stuck fast!",
+        .end_text = "You pull free.",
+        .duration = EFFECT_TIMED,
+        .status = STATUS_ROOTED,
+        .save = { ABIL_STR, 14 },
+        .period = TURNS(1),      /* less than a lichen's turn: a hit refreshes it, and each firing is a save */
+        .cycles = 6,
     },
     [EF_HEALING] = {
         .duration = EFFECT_INSTANT,
