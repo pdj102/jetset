@@ -259,6 +259,6 @@ CSpect checks:
 - **The asm was read** for `effect_cure()`, `act_rooted()`, `ai_can()`,
   `ai_step()` and `opt_approach()`: field offsets, the `EFFECT_INNATE` bit and
   the rooted and move bits are right.
-- **Tests:** `test_ai` 136 checks, `test_act` 201, `test_effects` 158,
+- **Tests:** `test_ai` 136 checks, `test_act` 203, `test_effects` 158,
   `test_gen` 78. The PC screen's "Rooted" and the "You can't move!" message
   have no PC test: CSpect check 3 covers the message.
