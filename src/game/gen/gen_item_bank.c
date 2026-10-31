@@ -60,6 +60,27 @@ uint8_t gen_item_subclass(uint8_t kind) NGE_BANKED
     return gen_items[kind].subclass;
 }
 
+uint8_t gen_item_group(uint8_t kind) NGE_BANKED
+{
+    nge_util_assert(kind < IT_COUNT);
+
+    return gen_items[kind].group;
+}
+
+uint8_t gen_item_flags(uint8_t kind) NGE_BANKED
+{
+    nge_util_assert(kind < IT_COUNT);
+
+    return gen_items[kind].flags;
+}
+
+void gen_item_attack(uint8_t kind, attack_kind_t *attack) NGE_BANKED
+{
+    nge_util_assert(kind < IT_COUNT);
+
+    *attack = gen_items[kind].attack;
+}
+
 uint16_t gen_item_hook(uint8_t kind, uint8_t hook) NGE_BANKED
 {
     gen_item_hook_t h;

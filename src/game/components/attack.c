@@ -47,7 +47,7 @@ void attack_remove(nge_entity_id_t id, uint8_t use) NGE_BANKED
     NGE_ENTITY_REMOVE_COMPONENT(id, ATTACK_COMPONENT(use));
 }
 
-uint8_t attack_hits(nge_entity_id_t id, uint8_t use, nge_entity_id_t target, uint8_t roll) NGE_BANKED
+uint8_t attack_hits(nge_entity_id_t id, uint8_t use, nge_entity_id_t target, uint8_t roll, int8_t to_hit) NGE_BANKED
 {
     check_entity(id, use);
     nge_util_assert(roll >= 1 && roll <= 20);
@@ -59,17 +59,17 @@ uint8_t attack_hits(nge_entity_id_t id, uint8_t use, nge_entity_id_t target, uin
     if (roll == ATTACK_ROLL_MISS) {
         return 0;
     }
-    return (int16_t)roll + attack_to_hit[use][id] >= (int16_t)health_ac[target];
+    return (int16_t)roll + attack_to_hit[use][id] + to_hit >= (int16_t)health_ac[target];
 }
 
-uint8_t attack_damage(nge_entity_id_t id, uint8_t use) NGE_BANKED
+uint8_t attack_damage(nge_entity_id_t id, uint8_t use, int8_t bonus) NGE_BANKED
 {
     int16_t damage;
     uint8_t i;
 
     check_entity(id, use);
 
-    damage = attack_bonus[use][id];
+    damage = (int16_t)attack_bonus[use][id] + bonus;
     for (i = 0; i < attack_dice[use][id]; i++) {
         damage += 1 + (int16_t)((unsigned int)rand() % attack_sides[use][id]);
     }

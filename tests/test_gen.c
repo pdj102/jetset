@@ -270,7 +270,12 @@ int main(void)
     ok = 1;
     for (kind = 0; kind < IT_COUNT; kind++) {
         id = gen_item(kind, AREA);
+        attack_kind_t attack;
+
         ok = ok && gen_item_subclass(kind) == gen_items[kind].subclass;
+        ok = ok && gen_item_group(kind) == gen_items[kind].group && gen_item_flags(kind) == gen_items[kind].flags;
+        gen_item_attack(kind, &attack);
+        ok = ok && memcmp(&attack, &gen_items[kind].attack, sizeof(attack)) == 0;
         for (i = 0; i < GEN_HOOK_COUNT; i++) {
             ok = ok && item_hook_is(gen_item_hook(kind, (uint8_t)i), kind, (uint8_t)i) &&
                  item_hook_is(gen_hook_of(id, (uint8_t)i), kind, (uint8_t)i);
@@ -327,6 +332,18 @@ int main(void)
     CHECK(GEN_HOOK_EF(gen_item_hook(IT_HEAL_POTION, GEN_HOOK_USE)) == EF_HEALING && GEN_HOOK_EF(gen_item_hook(IT_RING_HEALTH_2, GEN_HOOK_WORN)) == EF_WORN_HP &&
           GEN_HOOK_EF(gen_item_hook(IT_ANTIDOTE, GEN_HOOK_USE)) == EF_CURE && GEN_HOOK_EF(gen_item_hook(IT_DEAD_RAT, GEN_HOOK_USE)) == EF_POISON &&
           GEN_HOOK_EF(gen_item_hook(IT_ELIXIR, GEN_HOOK_USE)) == EF_VITALITY && GEN_HOOK_EF(gen_item_hook(IT_POTION_STR, GEN_HOOK_USE)) == EF_STRENGTH && GEN_HOOK_EF(gen_item_hook(IT_SWORD, GEN_HOOK_HIT)) == EF_NONE);
+    CHECK(gen_item_group(IT_SHORT_BOW) == GROUP_ARROW && gen_item_group(IT_DARTS) == GROUP_THROWN &&
+          gen_item_group(IT_SWORD) == GROUP_NONE);
+    CHECK(gen_item_flags(IT_QUARTERSTAFF) == ITEMF_TWO_HANDS && gen_item_flags(IT_RUSTY_SWORD) == ITEMF_CURSED &&
+          gen_item_flags(IT_SWORD) == 0);
+    {
+        attack_kind_t attack;
+
+        gen_item_attack(IT_LONG_BOW, &attack);
+        CHECK(attack.to_hit == 1 && attack.dice == 1 && attack.sides == 8 && attack.range == 8);
+        gen_item_attack(IT_HEAL_POTION, &attack);
+        CHECK(attack.dice == 0);
+    }
     CHECK(gen_item_subclass(IT_DEAD_RAT) == ITEM_FOOD && gen_item_subclass(IT_ELIXIR) == ITEM_POTION);
     id = gen_creature(CR_RAT, AREA);
     CHECK(GEN_HOOK_EF(gen_hook_of(id, GEN_HOOK_HIT)) == EF_POISON && GEN_HOOK_EF(gen_hook_of(id, GEN_HOOK_INNATE)) == EF_NONE);

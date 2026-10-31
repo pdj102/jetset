@@ -37,6 +37,7 @@
 #include "ecs/nge_entity.h"
 #include "ecs/components/nge_block.h"
 #include "ecs/nge_owner.h"
+#include "game/components/attack.h"
 #include "game/gen/gen_kinds.h"
 
 /**
@@ -157,6 +158,19 @@ uint16_t gen_hook_of(nge_entity_id_t id, uint8_t hook);
 
 /** @brief An item kind's (IT_*) subclass (ITEM_POTION...). Banked with the item table (page 108). */
 uint8_t gen_item_subclass(uint8_t kind) NGE_BANKED;
+
+/** @brief An item kind's group: GROUP_*, KEY_*, or a lock pick's bonus. Banked with the item table (page 108). */
+uint8_t gen_item_group(uint8_t kind) NGE_BANKED;
+
+/** @brief An item kind's ITEMF_* flags. Banked with the item table (page 108). */
+uint8_t gen_item_flags(uint8_t kind) NGE_BANKED;
+
+/**
+ * @brief Copy an item kind's attack part into *attack (in common memory: on
+ *        the caller's stack): dice 0 for none, as ammo that only adds its
+ *        bonuses has. Banked with the item table (page 108).
+ */
+void gen_item_attack(uint8_t kind, attack_kind_t *attack) NGE_BANKED;
 
 /**
  * @brief Copy the name of an entity's kind into buf: at most size-1

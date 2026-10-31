@@ -81,13 +81,13 @@ int main(void)
     target = nge_entity_create();
     health_add(target, &h);
     health_ac[target] = 10;
-    CHECK(attack_hits(id, ATTACK_RANGED, target, 7) && !attack_hits(id, ATTACK_RANGED, target, 6));   /* + 3 */
-    CHECK(!attack_hits(id, ATTACK_MELEE, target, 8));                                                 /* + 1 */
+    CHECK(attack_hits(id, ATTACK_RANGED, target, 7, 0) && !attack_hits(id, ATTACK_RANGED, target, 6, 0));   /* + 3 */
+    CHECK(!attack_hits(id, ATTACK_MELEE, target, 8, 0));                                                 /* + 1 */
     srand(5);
     lo = 255;
     hi = 0;
     for (i = 0; i < 500; i++) {
-        d = attack_damage(id, ATTACK_RANGED);                 /* 2d4 - 1: 1 to 7 */
+        d = attack_damage(id, ATTACK_RANGED, 0);                 /* 2d4 - 1: 1 to 7 */
         lo = d < lo ? d : lo;
         hi = d > hi ? d : hi;
     }
@@ -112,7 +112,7 @@ int main(void)
             for (roll = 1; roll <= 20 && ok; roll++) {
                 int want = roll == 20 || (roll != 1 && roll + to_hit >= ac);
 
-                ok = attack_hits(id, ATTACK_MELEE, target, (uint8_t)roll) == want;
+                ok = attack_hits(id, ATTACK_MELEE, target, (uint8_t)roll, 0) == want;
             }
         }
         nge_entity_destroy(id);
@@ -120,27 +120,49 @@ int main(void)
     }
     CHECK(ok);
 
+    /* The caller's bonus adds to the attack's: 20 and 1 still always hit and miss */
+    id = with_attack(2, 1, 4, 0);
+    health_ac[target] = 15;
+    CHECK(attack_hits(id, ATTACK_MELEE, target, 13, 0) && !attack_hits(id, ATTACK_MELEE, target, 12, 0));
+    CHECK(attack_hits(id, ATTACK_MELEE, target, 10, 3) && !attack_hits(id, ATTACK_MELEE, target, 9, 3));
+    CHECK(attack_hits(id, ATTACK_MELEE, target, 16, -3) && !attack_hits(id, ATTACK_MELEE, target, 15, -3));
+    health_ac[target] = 30;
+    CHECK(attack_hits(id, ATTACK_MELEE, target, 20, -128));
+    health_ac[target] = 0;
+    CHECK(!attack_hits(id, ATTACK_MELEE, target, 1, 127));
+    nge_entity_destroy(id);
+    nge_entity_release(nge_entity_next_dying());
+
     /* ---- damage: dice + bonus, the whole range, at least 1, at most 255 ---- */
     srand(4);
     id = with_attack(0, 3, 6, 2);                             /* 3d6 + 2: 5 to 20 */
     lo = 255;
     hi = 0;
     for (i = 0; i < 2000; i++) {
-        d = attack_damage(id, ATTACK_MELEE);
+        d = attack_damage(id, ATTACK_MELEE, 0);
         lo = d < lo ? d : lo;
         hi = d > hi ? d : hi;
     }
     CHECK(lo == 5 && hi == 20);
+    id = with_attack(0, 3, 6, 2);                             /* the caller's bonus adds to the attack's */
+    lo = 255;
+    hi = 0;
+    for (i = 0; i < 2000; i++) {
+        d = attack_damage(id, ATTACK_MELEE, -3);              /* 3d6 - 1: 2 to 17 */
+        lo = d < lo ? d : lo;
+        hi = d > hi ? d : hi;
+    }
+    CHECK(lo == 2 && hi == 17);
     id = with_attack(0, 2, 6, -20);                           /* always below 1 */
     ok = 1;
     for (i = 0; i < 100 && ok; i++) {
-        ok = attack_damage(id, ATTACK_MELEE) == 1;
+        ok = attack_damage(id, ATTACK_MELEE, 0) == 1;
     }
     CHECK(ok);
     id = with_attack(0, 200, 2, 100);                         /* always over 255 */
     ok = 1;
     for (i = 0; i < 20 && ok; i++) {
-        ok = attack_damage(id, ATTACK_MELEE) == 255;
+        ok = attack_damage(id, ATTACK_MELEE, 0) == 255;
     }
     CHECK(ok);
 
@@ -174,7 +196,7 @@ int main(void)
     CHECK(test_halt_count == 1);
     TEST_EXPECT_HALT(attack_add(id, ATTACK_USE_COUNT, &b));
     CHECK(test_halt_count == 1);
-    TEST_EXPECT_HALT(attack_hits(id, ATTACK_MELEE, target, 0));
+    TEST_EXPECT_HALT(attack_hits(id, ATTACK_MELEE, target, 0, 0));
     CHECK(test_halt_count == 1);
     TEST_EXPECT_HALT(attack_weapon(NGE_ENTITY_MAX));
     CHECK(test_halt_count == 1);

@@ -79,13 +79,19 @@ void attack_remove(nge_entity_id_t id, uint8_t use) NGE_BANKED;
 /**
  * @brief Does a d20 roll (1-20) with id's attack of this use hit target
  *        (with health)? 20 always hits, 1 always misses, otherwise roll +
- *        to_hit >= the target's AC. The one place for the hit rule: the
- *        attacker's own bonuses go here later.
+ *        the attack's to_hit + to_hit >= the target's AC. The one place for
+ *        the hit rule: the attacker's own bonuses go here later.
+ * @param to_hit Added to the attack's own: what isn't in id's row, such as
+ *               the ammo's. 0 for none.
  */
-uint8_t attack_hits(nge_entity_id_t id, uint8_t use, nge_entity_id_t target, uint8_t roll) NGE_BANKED;
+uint8_t attack_hits(nge_entity_id_t id, uint8_t use, nge_entity_id_t target, uint8_t roll, int8_t to_hit) NGE_BANKED;
 
-/** @brief Roll id's damage with its attack of this use: dice d sides + bonus, 1 to 255. */
-uint8_t attack_damage(nge_entity_id_t id, uint8_t use) NGE_BANKED;
+/**
+ * @brief Roll id's damage with its attack of this use: dice d sides + the
+ *        attack's bonus + bonus, 1 to 255.
+ * @param bonus As attack_hits()'s to_hit, for damage. 0 for none.
+ */
+uint8_t attack_damage(nge_entity_id_t id, uint8_t use, int8_t bonus) NGE_BANKED;
 
 /**
  * @brief The melee weapon id wields (SLOT_WEAPON, with a melee attack),

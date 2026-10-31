@@ -180,7 +180,7 @@ a move that is refused, followed by a melee.
 | `act.h` | | The public interface | |
 | `act_internal.h` | | The endings and helpers, for the actions only | |
 | `act.c` | Common | `act_do()`, `act_attempted()`, `act_reason_flags[]` | |
-| `act_shared.c` | `BANK_56` | The endings, `act_rooted()`, `act_strike()`, `act_line()` | 903 |
+| `act_shared.c` | `BANK_56` | The endings, `act_rooted()`, `act_strike()`, `act_line()` | 910 |
 | `act_move.c` | `BANK_56` | Move | 946 |
 | `act_pickup.c` | `BANK_56` | Pick up | 728 |
 | `act_drop.c` | `BANK_56` | Drop | 468 |
@@ -191,8 +191,8 @@ a move that is refused, followed by a melee.
 | `act_stairs.c` | `BANK_56` | Ascend and descend | 781 |
 | `act_wait.c` | `BANK_56` | Wait | 161 |
 
-The sizes are from the debug build's map, with asserts, and total 7,782 bytes of
-`BANK_56`'s 16,384 (pages 112 and 113, D22). That leaves 8,602 (section 6.11).
+The sizes are from the debug build's map, with asserts, and total 7,789 bytes of
+`BANK_56`'s 16,384 (pages 112 and 113, D22). That leaves 8,595 (section 6.11).
 
 ### 4.2 The context
 
@@ -590,14 +590,10 @@ R14): target the entity aimed at, source the actor, p1 the launcher or thrown it
 **The hit hook is the ammo's,** not the launcher's (items.md, section 4.6), so the
 flask of oil's fire applies on a hit. It is read before the ammo can go.
 
-**What the data still needs:**
-
-- `attack_hits()` and `attack_damage()` read one entity's row. Ammo with dice 0 has no
-  attack component, so its bonus is in its kind. They need to accept a bonus, keeping
-  the rule in the component (R12), and `gen_item_attack()` must read it, banked with the
-  item table.
-- A group accessor, `gen_item_group()`, in the same place. `gen_item_subclass()` and
-  `gen_item_fits()` are its model.
+**The data.** `attack_hits()` and `attack_damage()` read one entity's row, and ammo with
+dice 0 has no attack component, so its bonus is in its kind. They take a bonus, keeping
+the rule in the component (R12), and `gen_item_attack()` reads it, banked with the item
+table. `gen_item_group()` is in the same place.
 
 **Callers.** The `f` key uses `target_choose()` with a new `TARGET_FIRE` and the
 shooter's range, and `PLAYER_PROMPT_FIRE` goes. The AI gets `AI_CAN_RANGED` from
@@ -751,7 +747,7 @@ a new action. A trap going off is a reaction to `EV_STOOD_ON` (G-ARCH-3), not an
 | `ACT_AIM` | 0.5K | Use is 396 bytes |
 | `ACT_UNLOCK` | 0.5K | Open and close share 758 bytes |
 | Equip's, unequip's and pickup's rules | 0.4K | |
-| **Total for what is needed** | **2.3K** | **8,602 bytes are free** |
+| **Total for what is needed** | **2.3K** | **8,595 bytes are free** |
 
 The needed actions wouldn't have fit in page 112's 892 free bytes, even before `ACT_CAST`
 and the rest, so the actions moved to `BANK_56` (D22). These are estimates, and a release
@@ -762,8 +758,7 @@ Outside the section:
 | Where | What it needs |
 |---|---|
 | Common | A `case` in `act_do()` per action, and a byte per reason. 4,710 bytes are free in debug, so check after each |
-| Pages 108/109 | `gen_item_group()`, `gen_item_flags()`, `gen_item_attack()` |
-| Page 110 | The bonus in the attack functions and the lock rule. It has 460 bytes left |
+| Page 110 | The lock rule. It has 442 bytes left |
 | Page 114, 116, 118, 124 | Commands, inventory modes, texts, target purposes |
 
 The order of work is in [actions_plan.md](actions_plan.md).
@@ -825,6 +820,8 @@ What differs from section 6 and [actions_plan.md](actions_plan.md).
 - **Step 1:** `check-banks.sh` also stops the build if a `BANK_n` section passes 16K. The
   plan didn't list this, but the script only checked `PAGE_n` sections, and the linker
   doesn't check `BANK_n` at all, so the move would have lost the guard the actions had.
+- **Step 6:** the accessors cost page 108 303 bytes, where the plan said 0.1K, mostly the
+  debug build's asserts. Page 110 grew by 18 bytes, not 50, and has 442 left.
 - **Step 5:** `act_line()` is tested directly in `test_act`, not through `ACT_FIRE` as the
   plan said: the PC tests can call a helper that isn't banked. It is 336 bytes, where the
   plan said 0.2K. A corpse that stays, at 0 hit points, doesn't stop a shot. The text for
