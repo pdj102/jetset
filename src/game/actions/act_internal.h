@@ -39,10 +39,12 @@ uint8_t act_checked(act_t *a);
  * Steps 3 and 4 of an attack, on a->target by a->actor, once validated: the
  * d20 roll against attacker's attack of this use (ATTACK_MELEE, ATTACK_RANGED),
  * then on a hit the damage (sets a->kind and a->amount) and the hit effect of
- * hooks, the entity whose GEN_HOOK_HIT applies. The events carry a->item. A
- * miss fails with ACT_R_MISSED. Returns ACT_SUCCESS or ACT_FAIL
+ * hooks, the entity whose GEN_HOOK_HIT applies. to_hit and bonus add to the
+ * roll and the damage (attack_hits(), attack_damage()). The events carry
+ * a->item. A miss fails with ACT_R_MISSED. Returns ACT_SUCCESS or ACT_FAIL
  */
-uint8_t act_strike(act_t *a, nge_entity_id_t attacker, uint8_t use, nge_entity_id_t hooks);
+uint8_t act_strike(act_t *a, nge_entity_id_t attacker, uint8_t use, nge_entity_id_t hooks, int8_t to_hit,
+                   int8_t bonus);
 
 /*
  * The line of fire, for validation: from the actor, placed in an area,

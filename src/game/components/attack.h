@@ -6,10 +6,9 @@
  * @brief The attack component: how an entity, or a weapon, attacks.
  *
  * One layout with two uses (ATTACK_*): a melee attack (COMPONENT_MELEE,
- * range 1) and a ranged attack (COMPONENT_RANGED, range 2 or more; later
- * the weapon's range, using the ammo in SLOT_AMMO). An entity can have
- * both. Launchers and thrown ammo have a ranged attack, but no action fires
- * one yet (docs/items.md, "Attacks"). A creature's
+ * range 1) and a ranged attack (COMPONENT_RANGED, range 2 or more). An
+ * entity can have both. Launchers and thrown ammo have a ranged attack,
+ * which act_fire() makes (game/actions/act_fire.c). A creature's
  * own melee attack is its natural one (fists, a bite); a weapon (a sword)
  * has one too, and an attacker uses its wielded weapon's (SLOT_WEAPON)
  * before its own (game/actions/act_melee.c).

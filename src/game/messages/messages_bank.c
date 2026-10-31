@@ -235,6 +235,11 @@ void messages_on_event(const nge_event_t *e) NGE_BANKED
             say_named("The ", source, " hits you.");
         }
         break;
+    case EV_FIRED:
+        if (source == actor_player) {
+            screen_message("You fire.");
+        }
+        break;
     case EV_MISSED:
         if (source == actor_player) {
             say_named("You miss the ", target, ".");
@@ -375,7 +380,7 @@ void messages_act_failed(const act_t *a) NGE_BANKED
         screen_message("You aren't using that.");
         break;
     case ACT_R_NO_ATTACK:
-        screen_message("You have no way to attack.");
+        screen_message("You have nothing to attack with.");
         break;
     case ACT_R_NO_TARGET:
         screen_message("There is nothing there to attack.");
@@ -388,6 +393,12 @@ void messages_act_failed(const act_t *a) NGE_BANKED
         break;
     case ACT_R_NO_LINE:
         screen_message("Something is in the way.");
+        break;
+    case ACT_R_NO_AMMO:
+        screen_message("You have no ammunition ready.");
+        break;
+    case ACT_R_WRONG_AMMO:
+        screen_message("That ammunition doesn't fit.");
         break;
     case ACT_R_CANT_USE:
         screen_message("You can't use that.");

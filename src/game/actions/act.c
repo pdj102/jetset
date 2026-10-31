@@ -37,6 +37,8 @@ const uint8_t act_reason_flags[ACT_R_COUNT] = {
     [ACT_R_NO_STAIRS]        = 0,
     [ACT_R_NO_QUEST]         = 0,
     [ACT_R_NO_LINE]          = 0,
+    [ACT_R_NO_AMMO]          = 0,
+    [ACT_R_WRONG_AMMO]       = 0,
 };
 
 uint8_t act_do(uint8_t action, act_t *a, uint8_t mode)
@@ -67,6 +69,8 @@ uint8_t act_do(uint8_t action, act_t *a, uint8_t mode)
         return act_descend(a, mode);
     case ACT_WAIT:
         return act_wait(a, mode);
+    case ACT_FIRE:
+        return act_fire(a, mode);
     default:
         nge_util_abort("bad action");
         return ACT_FAIL;

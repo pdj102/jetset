@@ -22,6 +22,7 @@
  * | EV_DIED           | the entity killed   | killer   | -        |
  * | EV_HIT            | the entity hit      | attacker | p1: d20 roll, p2: weapon or NGE_EVENT_NONE |
  * | EV_MISSED         | the entity missed   | attacker | p1: d20 roll, p2: weapon or NGE_EVENT_NONE |
+ * | EV_FIRED          | the entity aimed at | shooter  | p1: launcher, thrown item or NGE_EVENT_NONE |
  * | EV_EFFECT_ENDED   | the entity affected | the effect (dying) | p1: EF_*, p2: EFFECT_END_* |
  * | EV_ATTRS_CHANGED  | the entity          | -        | -        |
  * | EV_OPENED         | the feature         | opener   | -        |
@@ -50,7 +51,7 @@
 #define EV_DAMAGED        (NGE_EVENT_USER + 8)     /**< Took p1 damage, maybe 0 (game/components/health.h). */
 #define EV_HEALED         (NGE_EVENT_USER + 9)     /**< Got p1 hit points back. */
 #define EV_DIED           (NGE_EVENT_USER + 10)    /**< Hit points reached 0: destroyed unless persistent. */
-#define EV_HIT            (NGE_EVENT_USER + 11)    /**< Hit by the source's attack (act_melee()); EV_DAMAGED follows. */
+#define EV_HIT            (NGE_EVENT_USER + 11)    /**< Hit by the source's attack (act_strike()); EV_DAMAGED follows. */
 #define EV_MISSED         (NGE_EVENT_USER + 12)    /**< Missed by the source's attack. */
 #define EV_EFFECT_ENDED   (NGE_EVENT_USER + 13)    /**< Effect p1 ended on the target: expired, cured or saved (p2). */
 #define EV_ATTRS_CHANGED  (NGE_EVENT_USER + 14)    /**< Derived attributes or statuses changed (effects_recompute()). */
@@ -65,5 +66,6 @@
 #define EV_GOLD_CHANGED   (NGE_EVENT_USER + 23)    /**< Gold gained or spent: pc_gold is the new amount. */
 #define EV_QUEST_FOUND    (NGE_EVENT_USER + 24)    /**< Picked up by the player for the first time this game (game/quest/quest.h). */
 #define EV_AI_CHANGED     (NGE_EVENT_USER + 25)    /**< Its AI state went from p1 to p2 (game/ai/ai.h). */
+#define EV_FIRED          (NGE_EVENT_USER + 26)    /**< A shot was fired at it by the source (act_fire()); EV_HIT or EV_MISSED follows. */
 
 #endif

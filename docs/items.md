@@ -316,7 +316,6 @@ mechanic is missing.
 
 | Mechanic | Waiting data |
 |---|---|
-| Firing and throwing | Launchers, ammo, groups; the fire command says there is nothing to fire |
 | Aiming and charges | Aim hooks and counts on wands, staves and parchments; they can't be used yet |
 | Merging and using up counts | `item_count[]` |
 | Locks | Keys, lock picks, their groups and counts |

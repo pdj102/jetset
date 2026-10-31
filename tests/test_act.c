@@ -130,6 +130,30 @@ static uint8_t line(nge_entity_id_t actor, uint8_t x, uint8_t y, uint8_t range)
     return reason;
 }
 
+/* act_fire() from actor at (x, y): its result, and the context in last */
+static act_t last;
+
+static uint8_t fire(nge_entity_id_t actor, uint8_t x, uint8_t y, uint8_t mode)
+{
+    uint8_t result;
+
+    last = move(actor, 0, 0);
+    last.x = x;
+    last.y = y;
+    last.item = NGE_ENTITY_INVALID;
+    result = act_fire(&last, mode);
+    return result;
+}
+
+/* An item of this kind made for holder and put straight in slot */
+static nge_entity_id_t equipped(uint8_t kind, nge_entity_id_t holder, uint8_t slot)
+{
+    nge_entity_id_t id = gen_item(kind, holder);
+
+    item_slot[id] = slot;
+    return id;
+}
+
 static int stowed(nge_entity_id_t id, nge_entity_id_t holder)
 {
     return NGE_OWNER_OF(id) == holder && !NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_LOCATION);
@@ -1000,6 +1024,122 @@ int main(void)
     CHECK(line(opener, 11, 2, 20) == ACT_R_NONE && line_target == rat);
     nge_location_set(rat, 8, 3);
     CHECK(line(opener, 11, 2, 20) == ACT_R_NO_LINE);
+
+    /* ---- fire: the player at (0, 2), who has nothing yet, and a rat along the row ---- */
+    nge_entity_init();
+    nge_render_init();
+    nge_timer_init();
+    nge_event_init();
+    for (y = 0; y < 10; y++) {
+        for (x = 0; x < 10; x++) {
+            NGE_MAP_TILE(x, y).tile_id = FLOOR;
+        }
+    }
+    player = creature(CR_PLAYER, 0, 2);
+    rat = creature(CR_RAT, 3, 2);
+    effects_set_base(rat, ATTR_HP_MAX, 200);
+    health_hp[rat] = 200;
+    events();
+    /* The shooter table: what is refused, nothing changing */
+    CHECK(fire(player, 3, 2, ACT_DO) == ACT_FAIL && last.reason == ACT_R_NO_ATTACK && last.used == 0);
+    i1 = equipped(IT_ARROWS, player, SLOT_AMMO);
+    CHECK(fire(player, 3, 2, ACT_DO) == ACT_FAIL && last.reason == ACT_R_NO_ATTACK);   /* arrows, no launcher */
+    nge_entity_destroy(i1);
+    i2 = equipped(IT_SHORT_BOW, player, SLOT_RANGED);
+    CHECK(fire(player, 3, 2, ACT_DO) == ACT_FAIL && last.reason == ACT_R_NO_AMMO);
+    i1 = equipped(IT_BOLTS, player, SLOT_AMMO);
+    r2 = item_count[i1];
+    CHECK(fire(player, 3, 2, ACT_DO) == ACT_FAIL && last.reason == ACT_R_WRONG_AMMO && last.used == 0);
+    CHECK(item_count[i1] == r2 && events() == 0);
+    nge_entity_destroy(i1);
+    /* A bow and arrows: a check changes nothing and draws no random numbers */
+    i1 = equipped(IT_ARROWS, player, SLOT_AMMO);
+    r2 = item_count[i1];
+    srand(9);
+    r1 = rand();
+    srand(9);
+    CHECK(fire(player, 3, 2, ACT_CHECK) == ACT_SUCCESS && last.used == 0 && last.target == rat && last.item == i2);
+    CHECK(rand() == r1 && item_count[i1] == r2 && health_hp[rat] == 200 && events() == 0);
+    /* The player's own tile: settled, the range for the cursor (act_fire()) */
+    CHECK(fire(player, 0, 2, ACT_CHECK) == ACT_FAIL && last.reason == ACT_R_NO_TARGET && last.amount == 6);
+    /* A hit: EV_FIRED first, the shot gone, the turn used, source the shooter, by act_do() */
+    srand(seed_for_roll(20));
+    a = ctx(player);
+    a.x = 3;
+    a.y = 2;
+    CHECK(act_do(ACT_FIRE, &a, ACT_DO) == ACT_SUCCESS && a.used == 1 && a.reason == ACT_R_NONE && a.kind == DMG_PIERCE);
+    CHECK(health_hp[rat] == 200 - a.amount && item_count[i1] == r2 - 1);
+    CHECK(events() == 3 && is(0, rat, EV_FIRED, player) && seen[0].p1 == i2 && is(1, rat, EV_HIT, player) &&
+          seen[1].p2 == i2 && is(2, rat, EV_DAMAGED, player));
+    /* A miss: attempted, the shot gone too */
+    srand(seed_for_roll(1));
+    CHECK(fire(player, 3, 2, ACT_DO) == ACT_FAIL && last.reason == ACT_R_MISSED && last.used == 1);
+    CHECK(item_count[i1] == r2 - 2 && health_hp[rat] == 200 - a.amount);
+    CHECK(events() == 2 && is(0, rat, EV_FIRED, player) && is(1, rat, EV_MISSED, player));
+    /* A shot past the chosen tile is a shot at what is in line first, a refused one uses nothing */
+    CHECK(fire(player, 5, 2, ACT_CHECK) == ACT_SUCCESS && last.target == rat);
+    CHECK(fire(player, 2, 2, ACT_DO) == ACT_FAIL && last.reason == ACT_R_NO_TARGET && last.used == 0);
+    CHECK(fire(player, 7, 2, ACT_DO) == ACT_FAIL && last.reason == ACT_R_OUT_OF_RANGE && last.used == 0);
+    NGE_MAP_TILE(1, 2).tile_id = WALL;
+    CHECK(fire(player, 3, 2, ACT_DO) == ACT_FAIL && last.reason == ACT_R_NO_LINE && last.used == 0);
+    NGE_MAP_TILE(1, 2).tile_id = FLOOR;
+    CHECK(item_count[i1] == r2 - 2 && events() == 0);
+    /* Ammo's bonuses add to the launcher's: AC 11 and a 10 misses without, hits with +1 */
+    health_ac[rat] = 11;
+    srand(seed_for_roll(10));
+    CHECK(fire(player, 3, 2, ACT_DO) == ACT_FAIL && last.reason == ACT_R_MISSED);
+    nge_entity_destroy(i1);
+    i1 = equipped(IT_ARROWS_1, player, SLOT_AMMO);
+    srand(seed_for_roll(10));
+    CHECK(fire(player, 3, 2, ACT_DO) == ACT_SUCCESS && last.amount >= 2);
+    ok = 1;
+    item_count[i1] = 20;
+    for (x = 0; x < 12; x++) {                                /* 1d6 + 1: at least 2 every time */
+        srand(seed_for_roll(20));
+        health_hp[rat] = 200;
+        ok = ok && fire(player, 3, 2, ACT_DO) == ACT_SUCCESS && last.amount >= 2;
+        events();
+    }
+    CHECK(ok);
+    /* The last of a stack: destroyed, and the slot empty */
+    item_count[i1] = 1;
+    events();
+    srand(seed_for_roll(1));
+    CHECK(fire(player, 3, 2, ACT_DO) == ACT_FAIL && last.reason == ACT_R_MISSED);
+    CHECK(!NGE_ENTITY_IS_ALIVE(i1) && inv_equipped(player, SLOT_AMMO) == NGE_ENTITY_INVALID);
+    CHECK(fire(player, 3, 2, ACT_CHECK) == ACT_FAIL && last.reason == ACT_R_NO_AMMO);
+    events();
+    /* Thrown: its own attack and range, with or without a launcher, one used up */
+    i1 = equipped(IT_DARTS, player, SLOT_AMMO);
+    CHECK(fire(player, 3, 2, ACT_CHECK) == ACT_SUCCESS && last.item == i1 && last.amount == 4);
+    CHECK(fire(player, 0, 2, ACT_CHECK) == ACT_FAIL && last.amount == 4);
+    nge_entity_destroy(i2);
+    srand(seed_for_roll(20));
+    r2 = item_count[i1];
+    CHECK(fire(player, 3, 2, ACT_DO) == ACT_SUCCESS && last.item == i1 && item_count[i1] == r2 - 1);
+    CHECK(events() == 3 && seen[0].p1 == i1 && seen[1].p2 == i1);
+    nge_entity_destroy(i1);
+    /* The ammo's hit effect: a flask of oil's fire, then it is gone. The most events a shot posts */
+    nge_location_set(rat, 2, 2);
+    i1 = equipped(IT_OIL, player, SLOT_AMMO);
+    events();
+    nge_event_init();                                         /* the peak */
+    srand(seed_for_roll(20));
+    health_hp[rat] = 2;
+    CHECK(fire(player, 2, 2, ACT_DO) == ACT_SUCCESS && !NGE_ENTITY_IS_ALIVE(i1));
+    r1 = nge_event_peak();
+    CHECK(r1 >= 3 && r1 <= NGE_EVENT_QUEUE / 2);
+    events();
+    /* A creature's own ranged attack: nothing used up, the event says so, no launcher */
+    {
+        static const attack_kind_t spit = { 0, 1, 4, 0, DMG_ACID, 5 };
+
+        attack_add(player, ATTACK_RANGED, &spit);
+        rat = creature(CR_RAT, 3, 2);
+        srand(seed_for_roll(20));
+        CHECK(fire(player, 3, 2, ACT_DO) == ACT_SUCCESS && last.item == NGE_ENTITY_INVALID && last.kind == DMG_ACID);
+        CHECK(events() >= 3 && seen[0].id == EV_FIRED && seen[0].p1 == NGE_EVENT_NONE);
+    }
 
     return test_summary("act");
 }

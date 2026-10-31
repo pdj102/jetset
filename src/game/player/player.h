@@ -96,9 +96,8 @@ uint8_t player_key_direction(nge_key_event_t ev, int8_t *dx, int8_t *dy) NGE_BAN
 void player_act(uint8_t action, act_t *a) NGE_BANKED;
 
 /* The direction prompt's questions: rows of a table (player_bank.c) */
-#define PLAYER_PROMPT_FIRE   0   /**< Fire in which direction? */
-#define PLAYER_PROMPT_CLOSE  1   /**< Close in which direction? */
-#define PLAYER_PROMPT_COUNT  2
+#define PLAYER_PROMPT_CLOSE  0   /**< Close in which direction? */
+#define PLAYER_PROMPT_COUNT  1
 
 /**
  * @brief The direction prompt, a chooser: ask the question, wait for a key

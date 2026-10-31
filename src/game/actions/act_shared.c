@@ -27,7 +27,8 @@
 /* What a line of fire passes: everything solid or outside the map stops it, and pits don't */
 #define LINE_PASS  ((nge_block_t)~(NGE_BLOCK_SOLID | NGE_BLOCK_EDGE))
 
-uint8_t act_strike(act_t *a, nge_entity_id_t attacker, uint8_t use, nge_entity_id_t hooks)
+uint8_t act_strike(act_t *a, nge_entity_id_t attacker, uint8_t use, nge_entity_id_t hooks, int8_t to_hit,
+                   int8_t bonus)
 {
     nge_entity_id_t actor = a->actor;
     nge_entity_id_t target = a->target;
@@ -38,12 +39,12 @@ uint8_t act_strike(act_t *a, nge_entity_id_t attacker, uint8_t use, nge_entity_i
 
     /* Resolve: the d20 roll, and on a hit the damage */
     roll = (uint8_t)(1 + (unsigned int)rand() % 20);
-    if (!attack_hits(attacker, use, target, roll, 0)) {
+    if (!attack_hits(attacker, use, target, roll, to_hit)) {
         /* A miss is an attempt: the turn is used */
         nge_event_post(target, EV_MISSED, actor, roll, item);
         return act_fail(a, ACT_R_MISSED);
     }
-    damage = attack_damage(attacker, use, 0);
+    damage = attack_damage(attacker, use, bonus);
 
     /* Apply: the hit, then the damage (its events follow), then the hit's effect */
     nge_event_post(target, EV_HIT, actor, roll, item);

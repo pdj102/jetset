@@ -617,9 +617,8 @@ int main(void)
     press(EV(NGE_KEY_A));                                          /* not a direction */
     player_command(EV(NGE_KEY_C));
     CHECK(said("Never mind.") && player_turn);
-    press(EV(NGE_KEY_L));
-    player_command(EV(NGE_KEY_F));
-    CHECK(said("You have nothing to fire.") && player_turn);
+    player_command(EV(NGE_KEY_F));                                 /* said at once, with no cursor */
+    CHECK(said("You have nothing to attack with.") && player_turn);
     {
         int8_t dx;
         int8_t dy;
@@ -673,6 +672,12 @@ int main(void)
         a.reason = ACT_R_NO_LINE;
         messages_act_failed(&a);
         CHECK(said("Something is in the way."));
+        a.reason = ACT_R_NO_AMMO;
+        messages_act_failed(&a);
+        CHECK(said("You have no ammunition ready."));
+        a.reason = ACT_R_WRONG_AMMO;
+        messages_act_failed(&a);
+        CHECK(said("That ammunition doesn't fit."));
     }
     messages_game_over(GAME_OVER_WON);
     CHECK(said("Press any key.") && shown("You escape with the crown. You win!"));

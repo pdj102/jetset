@@ -68,5 +68,5 @@ uint8_t act_melee(act_t *a, uint8_t mode) NGE_BANKED
     }
 
     /* 3, 4. Resolve and apply: the attacker's roll, damage and hit effect */
-    return act_strike(a, attacker, ATTACK_MELEE, attacker);
+    return act_strike(a, attacker, ATTACK_MELEE, attacker, 0, 0);
 }

@@ -96,7 +96,8 @@ typedef struct act {
 #define ACT_ASCEND  9
 #define ACT_DESCEND 10
 #define ACT_WAIT    11
-#define ACT_COUNT   12
+#define ACT_FIRE    12
+#define ACT_COUNT   13
 
 /* Reasons (refused or attempted: the table in act.c) */
 #define ACT_R_NONE              0   /**< Succeeded. */
@@ -128,7 +129,9 @@ typedef struct act {
 #define ACT_R_NO_QUEST          26  /**< Refused: out of the dungeon only by the player, with the quest item. */
 #define ACT_R_ROOTED            27  /**< Attempted: the actor struggled, rooted to its tile (the turn is used). */
 #define ACT_R_NO_LINE           28  /**< Refused: a wall, a closed door or the map's edge is in the way. */
-#define ACT_R_COUNT             29
+#define ACT_R_NO_AMMO           29  /**< Refused: a launcher, with nothing in SLOT_AMMO. */
+#define ACT_R_WRONG_AMMO        30  /**< Refused: the ammo doesn't fit the launcher. */
+#define ACT_R_COUNT             31
 
 /**
  * @brief Move one tile.
@@ -263,6 +266,26 @@ uint8_t act_descend(act_t *a, uint8_t mode) NGE_BANKED;
  *        what the AI does when nothing else applies (game/ai/ai.h).
  */
 uint8_t act_wait(act_t *a, uint8_t mode) NGE_BANKED;
+
+/**
+ * @brief Fire a shot at the first creature on the line towards the tile
+ *        (a->x, a->y), with the ammo in SLOT_AMMO: its own attack if it is
+ *        thrown, otherwise the launcher's in SLOT_RANGED, with its bonuses.
+ *        With neither, the actor's own ranged attack. The shot is used up,
+ *        hit or miss; when the stack runs out it is destroyed.
+ *
+ * Inputs: actor (alive, placed), x, y. Outputs: target; item, the launcher
+ * or thrown item, or NGE_ENTITY_INVALID; on a hit amount and kind. Posts
+ * EV_FIRED, then EV_HIT or EV_MISSED as act_melee() does, and the hook of
+ * the ammo applies. Fails with ACT_R_MISSED, attempted. Refused with
+ * ACT_R_NO_ATTACK, ACT_R_NO_AMMO, ACT_R_WRONG_AMMO, ACT_R_OUT_OF_RANGE,
+ * ACT_R_NO_LINE or ACT_R_NO_TARGET.
+ *
+ * The actor's own tile is always refused, with ACT_R_NO_TARGET and only
+ * after the shooter is settled, so a check on it asks whether the actor can
+ * fire at all: that reason means yes, with the range in a->amount.
+ */
+uint8_t act_fire(act_t *a, uint8_t mode) NGE_BANKED;
 
 /** @brief Call action (ACT_MOVE...) by number: for the AI and delayed actions. */
 uint8_t act_do(uint8_t action, act_t *a, uint8_t mode);

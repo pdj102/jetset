@@ -15,8 +15,8 @@ whether an attack hits, belong to the components, and are in their headers. Sect
 is the list of actions to add, and none of it is built. Sections 1 to 5 describe the
 code as it stands, except the decisions under "Agreed, not built".
 
-Status: D10 to D23 agreed 2026-10-31. D22, D23 and D21's `act_strike()` and `act_line()` are
-built, and the rest not yet. The rest of section 6 is proposed.
+Status: D10 to D23 agreed 2026-10-31. D21, D22, D23 and `ACT_FIRE` are built, and the rest
+not yet. The rest of section 6 is proposed.
 
 ## 1. Overview
 
@@ -180,19 +180,20 @@ a move that is refused, followed by a melee.
 | `act.h` | | The public interface | |
 | `act_internal.h` | | The endings and helpers, for the actions only | |
 | `act.c` | Common | `act_do()`, `act_attempted()`, `act_reason_flags[]` | |
-| `act_shared.c` | `BANK_56` | The endings, `act_rooted()`, `act_strike()`, `act_line()` | 910 |
+| `act_shared.c` | `BANK_56` | The endings, `act_rooted()`, `act_strike()`, `act_line()` | 914 |
 | `act_move.c` | `BANK_56` | Move | 946 |
 | `act_pickup.c` | `BANK_56` | Pick up | 728 |
 | `act_drop.c` | `BANK_56` | Drop | 468 |
 | `act_equip.c` | `BANK_56` | Equip and unequip | 1,155 |
-| `act_melee.c` | `BANK_56` | Melee, as far as validation | 1,065 |
+| `act_melee.c` | `BANK_56` | Melee, as far as validation | 1,072 |
+| `act_fire.c` | `BANK_56` | Fire | 830 |
 | `act_use.c` | `BANK_56` | Use | 396 |
 | `act_open.c` | `BANK_56` | Open and close | 1,179 |
 | `act_stairs.c` | `BANK_56` | Ascend and descend | 781 |
 | `act_wait.c` | `BANK_56` | Wait | 161 |
 
-The sizes are from the debug build's map, with asserts, and total 7,789 bytes of
-`BANK_56`'s 16,384 (pages 112 and 113, D22). That leaves 8,595 (section 6.11).
+The sizes are from the debug build's map, with asserts, and total 8,630 bytes of
+`BANK_56`'s 16,384 (pages 112 and 113, D22). That leaves 7,754 (section 6.11).
 
 ### 4.2 The context
 
@@ -207,9 +208,9 @@ and `item`: entity 0 is a real ID, so an action that accepts no target says so w
 | `target` | An entity acted on, or `NGE_ENTITY_INVALID` to find one | The entity found, or what blocked the action |
 | `item` | The item used | The weapon used |
 | `dx`, `dy` | A direction | |
-| `x`, `y` | A tile: nothing reads these yet | |
+| `x`, `y` | A tile: fire reads them | |
 | `kind` | A slot to equip in | The slot, damage type or effect used |
-| `amount` | | The damage taken |
+| `amount` | | The damage taken; in fire's check, its range |
 | `reason` | | `ACT_R_*` |
 | `used` | | 1 if the turn was used |
 
@@ -227,6 +228,7 @@ Who reads what:
 | Open, close | In or find; out | | If `target` is invalid | |
 | Ascend, descend | Out: the stairs | | | |
 | Wait | | | | |
+| Fire, with `x`, `y` | Out: the first in line | Out: the launcher or thrown item | | Out: damage type |
 
 A context can be passed straight to the next action. After a move is refused,
 `target` already holds the blocker, ready for a melee or an open. It can also be
@@ -274,6 +276,7 @@ Consequences are direct calls, because the rest of the action reads their result
 | `ACT_CLOSE` | Closes one with nothing else on its tile | `EV_CLOSED` | No |
 | `ACT_ASCEND`, `ACT_DESCEND` | Takes stairs on the actor's tile | `EV_LEFT_LEVEL` for anyone but the player | No |
 | `ACT_WAIT` | Nothing; it always succeeds | None | No |
+| `ACT_FIRE` | Shoots at the first creature in line towards a tile (section 6.3) | `EV_FIRED`, `EV_HIT` or `EV_MISSED`, then the damage's and hit effect's | Yes |
 
 **Move** takes the tile from the actor's location and `dx`, `dy`, each -1, 0 or 1,
 and asks `nge_block_can_enter()` with the actor's pass flags, so a ghost's walls are
@@ -302,11 +305,11 @@ else leaves at once. Only the player, carrying the quest item, can leave the dun
 
 ### 4.6 Reasons
 
-There are 29 reasons, with `ACT_R_NONE`. Two are attempted:
+There are 31 reasons, with `ACT_R_NONE`. Two are attempted:
 
 | Attempted reason | Where | Event | What the player is told |
 |---|---|---|---|
-| `ACT_R_MISSED` | Melee | `EV_MISSED` | The event's message |
+| `ACT_R_MISSED` | Melee, fire | `EV_MISSED` | The event's message |
 | `ACT_R_ROOTED` | Move, stairs | None | "You can't move!" from `messages_act_failed()` |
 
 Rooted is an attempted reason that posts nothing, unlike the rule `act.h` gives for
@@ -340,6 +343,7 @@ lists. P-ACT-1 asks for a text for each new reason, and these three are the exce
 | `ACT_CLOSE` | `c`, then a direction | No |
 | `ACT_ASCEND`, `ACT_DESCEND` | `<`, `>` | No |
 | `ACT_WAIT` | `.` | The end of an AI turn |
+| `ACT_FIRE` | `f`, then a tile | No |
 
 **Bumping** is the player's move command combining actions: it checks the move, and
 if the blocker has health it melees, and if it is a closed door it opens it. The AI
@@ -503,14 +507,13 @@ All agreed 2026-10-31, for the actions in section 6.
 
 ## 6. Not built yet
 
-None of this is built, apart from D22, D23, `act_strike()` and `act_line()`. Its decisions are agreed
-(D10 to D23), and the details are still proposals. Eight new actions are listed, and three of
-them are needed by items the game already generates:
+None of this is built, apart from D21 to D23 and `ACT_FIRE` (section 6.3). Its decisions are
+agreed (D10 to D23), and the details are still proposals. Seven new actions are listed, and
+two of them are needed by items the game already generates:
 
 | Action | Needed for | Priority | Blocked by |
 |---|---|---|---|
-| `ACT_FIRE` | 15 item kinds: launchers and ammo. The `f` key says "You have nothing to fire." | Needed | Line walk, `TARGET_FIRE`, reading ammo's data |
-| `ACT_AIM` | 13 item kinds: wands, staves, aimed parchments | Needed | As fire; `TARGET_AIM` |
+| `ACT_AIM` | 13 item kinds: wands, staves, aimed parchments | Needed | `TARGET_AIM` |
 | `ACT_UNLOCK` | 7 item kinds: keys and lock picks | Needed | No door is ever locked: level generation and a lock on the door |
 | `ACT_CAST` | Mana exists and nothing spends it; the goblin shaman | Wanted | Its own spec: what spells exist, who knows them |
 | `ACT_STEAL` | The bandit's "steals and runs" | Wanted | An AI that flees (ai.md R18) |
@@ -518,7 +521,7 @@ them are needed by items the game already generates:
 | `ACT_SEARCH` | Hidden features, `FEAT_HIDDEN` | If added | As above |
 | `ACT_DISARM` | Traps | If added | As above |
 
-Those 35 kinds are of 160, generated at their real rarity, and do nothing today
+Those kinds, 20 of 160 with firing done, generated at their real rarity, and do nothing today
 (items.md, "Inert finds"). The reasons, events and keys below are suggestions in the
 form `act.h` will need.
 
@@ -526,10 +529,10 @@ form `act.h` will need.
 
 | Addition | Names |
 |---|---|
-| Actions | `ACT_FIRE` 12, `ACT_AIM` 13, `ACT_UNLOCK` 14, `ACT_CAST` 15, `ACT_STEAL` 16, `ACT_OPERATE` 17, `ACT_SEARCH` 18, `ACT_DISARM` 19 |
-| Refused reasons | `ACT_R_NO_AMMO`, `ACT_R_WRONG_AMMO`, `ACT_R_CANT_AIM`, `ACT_R_NO_CHARGES`, `ACT_R_LOCKED`, `ACT_R_NOT_LOCKED`, `ACT_R_WRONG_KEY`, `ACT_R_NO_MANA`, `ACT_R_NO_SPELL`, `ACT_R_NOTHING_TO_STEAL`, `ACT_R_CURSED`, `ACT_R_CANT_OPERATE`, `ACT_R_SPENT` |
+| Actions | `ACT_AIM` 13, `ACT_UNLOCK` 14, `ACT_CAST` 15, `ACT_STEAL` 16, `ACT_OPERATE` 17, `ACT_SEARCH` 18, `ACT_DISARM` 19 |
+| Refused reasons | `ACT_R_CANT_AIM`, `ACT_R_NO_CHARGES`, `ACT_R_LOCKED`, `ACT_R_NOT_LOCKED`, `ACT_R_WRONG_KEY`, `ACT_R_NO_MANA`, `ACT_R_NO_SPELL`, `ACT_R_NOTHING_TO_STEAL`, `ACT_R_CURSED`, `ACT_R_CANT_OPERATE`, `ACT_R_SPENT` |
 | Attempted reasons | `ACT_R_PICK_FAILED`, `ACT_R_CAUGHT` |
-| Events | `EV_FIRED`, `EV_AIMED`, `EV_UNLOCKED`, `EV_CAST`, `EV_STOLEN` |
+| Events | `EV_AIMED`, `EV_UNLOCKED`, `EV_CAST`, `EV_STOLEN` |
 
 Numbers are given only for ordering: each gets its number when it is built, as
 `ACT_COUNT` sizes `modes[]`.
@@ -560,7 +563,7 @@ Range uses `nge_map_within()`, so the green cursor and the action agree (R23). T
 cursor can still be green on a tile the action refuses for another reason, such as a
 wall in the way, and `messages_act_failed()` then says why.
 
-### 6.3 `ACT_FIRE`
+### 6.3 `ACT_FIRE`, built
 
 **Fire a shot at a tile.** In: actor (alive, placed in an area), x, y. Out: target;
 item, the launcher or thrown item; on a hit amount and kind.
@@ -743,11 +746,10 @@ a new action. A trap going off is a reaction to `EV_STOOD_ON` (G-ARCH-3), not an
 
 | Work | Estimate, with asserts | Source of the estimate |
 |---|---|---|
-| `ACT_FIRE`, with `act_strike()` already built | 0.9K | Melee is 1,065 bytes |
 | `ACT_AIM` | 0.5K | Use is 396 bytes |
 | `ACT_UNLOCK` | 0.5K | Open and close share 758 bytes |
 | Equip's, unequip's and pickup's rules | 0.4K | |
-| **Total for what is needed** | **2.3K** | **8,595 bytes are free** |
+| **Total for what is needed** | **1.4K** | **7,754 bytes are free** |
 
 The needed actions wouldn't have fit in page 112's 892 free bytes, even before `ACT_CAST`
 and the rest, so the actions moved to `BANK_56` (D22). These are estimates, and a release
@@ -757,7 +759,7 @@ Outside the section:
 
 | Where | What it needs |
 |---|---|
-| Common | A `case` in `act_do()` per action, and a byte per reason. 4,710 bytes are free in debug, so check after each |
+| Common | A `case` in `act_do()` per action, and a byte per reason. 4,682 bytes are free in debug, so check after each |
 | Page 110 | The lock rule. It has 442 bytes left |
 | Page 114, 116, 118, 124 | Commands, inventory modes, texts, target purposes |
 
@@ -777,6 +779,9 @@ The order of work is in [actions_plan.md](actions_plan.md).
 - `act_line()`, called directly: range the same as `nge_map_within()` on every tile; stopped
   by a wall, a closed door and the map's edge; not by an open door or a pit; the nearest
   creature first; no random numbers;
+- fire: each row of the shooter table, a shot used up on a hit and a miss, ammo's bonuses
+  and hit effect, the last of a stack and its slot emptying, and `act_do()`. `test_target`
+  has the `f` key, and the same tiles in range as `target_in_range()`;
 - reach: melee and open reach all 8 neighbours and nothing further, melee refuses a
   target on the actor's own tile, and open allows it;
 - the asserts.
@@ -786,11 +791,8 @@ The order of work is in [actions_plan.md](actions_plan.md).
 
 To add with section 6:
 
-- **`test_act`:** each row of the shooter table in section 6.3; a shot at the last tile in
-  range, and one past it, the same as `target_in_range()`; ammo running out and its slot emptying; a wand at 0; a parchment
-  destroyed; the actor as source, so a kill by wand gives XP; `ACT_R_LOCKED`, and each
-  key and pick case.
-- **`test_event`:** the largest action is now fire, against R25.
+- **`test_act`:** a wand at 0; a parchment destroyed; the actor as source, so a kill by wand
+  gives XP; `ACT_R_LOCKED`, and each key and pick case.
 - **CSpect:** firing, aiming and the projectile, by the user, as animations can't be
   seen in the PC tests.
 
@@ -820,6 +822,19 @@ What differs from section 6 and [actions_plan.md](actions_plan.md).
 - **Step 1:** `check-banks.sh` also stops the build if a `BANK_n` section passes 16K. The
   plan didn't list this, but the script only checked `PAGE_n` sections, and the linker
   doesn't check `BANK_n` at all, so the move would have lost the guard the actions had.
+- **Step 7:**
+  - Arrows with no launcher aren't in section 6.3's table. They fall through to the actor's
+    own attack, so the player gets `ACT_R_NO_ATTACK`.
+  - The `f` key asks with a check on the player's own tile: `ACT_R_NO_TARGET` means they
+    can fire, with the range in `a->amount`. So no new function is needed for the cursor.
+  - `act_strike()` takes the ammo's two bonuses.
+  - `ACT_R_NO_ATTACK` now reads "You have nothing to attack with.", in place of "You have
+    no way to attack." and the `f` key's "You have nothing to fire.", so one text does for both.
+  - The dev kit already had the bow and arrows. Darts and oil replace the parchment of
+    identify and the waterskin, to keep 2 places free in the pack.
+  - `EV_HIT` and `EV_MISSED` still lunge the shooter towards the target, until the projectile
+    animation comes.
+  - With 8,630 bytes the actions pass `$E000` in the normal build: `act_wait()` is at `$E115`.
 - **Step 6:** the accessors cost page 108 303 bytes, where the plan said 0.1K, mostly the
   debug build's asserts. Page 110 grew by 18 bytes, not 50, and has 442 left.
 - **Step 5:** `act_line()` is tested directly in `test_act`, not through `ACT_FIRE` as the

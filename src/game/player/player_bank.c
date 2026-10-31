@@ -159,14 +159,34 @@ static void close_command(void)
     }
 }
 
-/* Fire: choose a direction; there is nothing to fire yet */
+/*
+ * Fire: a check on the player's own tile says whether they can, and the
+ * range (act_fire()), so having nothing to fire is said before the cursor
+ * appears. Then choose a tile within range, and fire at it
+ */
 static void fire_command(void)
 {
-    int8_t dx;
-    int8_t dy;
+    act_t a = { 0 };
+    target_t t;
 
-    if (player_ask_direction(PLAYER_PROMPT_FIRE, &dx, &dy)) {
-        screen_message("You have nothing to fire.");
+    a.actor = actor_player;
+    a.x = NGE_LOCATION_X(actor_player);
+    a.y = NGE_LOCATION_Y(actor_player);
+    act_fire(&a, ACT_CHECK);
+    if (a.reason != ACT_R_NO_TARGET) {
+        messages_act_failed(&a);
+        return;
+    }
+    t.purpose = TARGET_FIRE;
+    t.origin_x = a.x;
+    t.origin_y = a.y;
+    t.range = a.amount;
+    t.x = a.x;
+    t.y = a.y;
+    if (target_choose(&t)) {
+        a.x = t.x;
+        a.y = t.y;
+        player_act(ACT_FIRE, &a);
     }
 }
 
@@ -406,7 +426,6 @@ typedef struct player_prompt {
 } player_prompt_t;
 
 static const player_prompt_t prompts[PLAYER_PROMPT_COUNT] = {
-    [PLAYER_PROMPT_FIRE]  = { "Fire in which direction?", "Direction: fire   Other keys: back" },
     [PLAYER_PROMPT_CLOSE] = { "Close in which direction?", "Direction: close   Other keys: back" },
 };
 

@@ -12,10 +12,14 @@
 #include "input/nge_input_internal.h"
 #include "map/nge_map.h"
 
+#include "game/actions/act.h"
+#include "game/components/health.h"
+#include "game/components/item.h"
 #include "game/game.h"
 #include "game/gen/gen.h"
 #include "game/level/level.h"
 #include "game/messages/messages.h"
+#include "game/player/player.h"
 #include "game/ui/screen.h"
 #include "game/ui/screen_main.h"
 #include "game/target/target.h"
@@ -125,12 +129,17 @@ int main(void)
         EV(NGE_KEY_RIGHT), EV(NGE_KEY_L), EV(NGE_KEY_ENTER), NGE_KEY_NONE,
     };
     static const nge_key_event_t cancel[] = { EV(NGE_KEY_Q), NGE_KEY_NONE };
+    static const nge_key_event_t at_the_rat[] = {
+        EV(NGE_KEY_RIGHT), EV(NGE_KEY_RIGHT), EV(NGE_KEY_RIGHT), EV(NGE_KEY_ENTER), NGE_KEY_NONE,
+    };
     static const nge_key_event_t out_then_back[] = {
         EV(NGE_KEY_DOWN), EV(NGE_KEY_DOWN), EV(NGE_KEY_SPACE), EV(NGE_KEY_UP), EV(NGE_KEY_SPACE), NGE_KEY_NONE,
     };
     target_t t;
     nge_entity_id_t ring;
     nge_entity_id_t sword;
+    nge_entity_id_t id;
+    int ok;
     uint8_t x;
     uint8_t y;
 
@@ -275,6 +284,53 @@ int main(void)
     nge_location_set(ring, 30, 20);
     messages_look(30, 20);
     CHECK(said(1, "You see yourself.") && said(0, "You see a ring of health +2."));
+
+    /* ---- fire: no cursor with nothing to fire, then the shooter's range, the same tiles as the action ---- */
+    nge_entity_destroy(ring);
+    nge_entity_destroy(sword);
+    while ((id = nge_entity_next_dying()) != NGE_ENTITY_INVALID) {
+        nge_entity_release(id);
+    }
+    player_turn = 1;
+    script = NULL;
+    out_of_keys = 0;
+    waits = 0;
+    player_command(EV(NGE_KEY_F));
+    CHECK(said(0, "You have nothing to attack with.") && waits == 0 && player_turn);
+    item_slot[gen_item(IT_SHORT_BOW, actor_player)] = SLOT_RANGED;
+    player_command(EV(NGE_KEY_F));
+    CHECK(said(0, "You have no ammunition ready.") && waits == 0 && player_turn);
+    item_slot[gen_item(IT_ARROWS, actor_player)] = SLOT_AMMO;
+    context(&t, 30, 20, 6);
+    ok = 1;
+    for (y = 12; y <= 28; y++) {
+        for (x = 22; x <= 38; x++) {
+            act_t a = { 0 };
+
+            a.actor = actor_player;
+            a.x = x;
+            a.y = y;
+            t.x = x;
+            t.y = y;
+            act_fire(&a, ACT_CHECK);
+            ok = ok && (a.reason == ACT_R_OUT_OF_RANGE) == !target_in_range(&t);
+        }
+    }
+    CHECK(ok);
+    /* Cancelled: no turn, no shot */
+    script = cancel;
+    player_command(EV(NGE_KEY_F));
+    CHECK(said(1, "Fire at what?") && said(0, "Never mind.") && player_turn && !out_of_keys);
+    /* At a rat three tiles east: the turn used, and the player told */
+    id = gen_creature(CR_RAT, LEVEL_AREA);
+    nge_location_set(id, 33, 20);
+    health_ac[id] = 250;                                      /* only a 20 hits */
+    script = at_the_rat;
+    player_command(EV(NGE_KEY_F));
+    CHECK(said(0, "Fire at what?") && !player_turn && !out_of_keys);
+    nge_event_process(messages_on_event);
+    CHECK(said(0, "You fire.") || said(1, "You fire.") || said(2, "You fire."));
+    script = NULL;
 
     return test_summary("target");
 }
