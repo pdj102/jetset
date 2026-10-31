@@ -288,7 +288,6 @@ uint8_t effect_cure(nge_entity_id_t target, uint8_t statuses) NGE_BANKED
 
     nge_util_assert(target < NGE_ENTITY_MAX);
 
-    /* Ending the current entity is allowed while walking the alive list */
     NGE_OWNER_FOR_EACH_OWNED(i, id, target) {
         if (NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_EFFECT) && (effect_defs[effect_kind[id]].status & statuses)) {
             end(id, EFFECT_END_CURED);

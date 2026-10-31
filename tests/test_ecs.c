@@ -14,7 +14,7 @@ int main(void)
     /* ---- init: page 50 into slot 0, guard filled, entities free ---- */
     test_regs[0x50] = 0xFF;                                  /* the ROM */
     memset(nge_ecs_test_guard, 0, sizeof(nge_ecs_test_guard));
-    nge_entity_alive_count = 7;
+    nge_entity_used_count = 7;
     nge_ecs_init();
     CHECK(test_regs[0x50] == NGE_ECS_PAGE && NGE_ECS_PAGE == 50);
     ok = 1;
@@ -22,7 +22,7 @@ int main(void)
         ok = ok && nge_ecs_test_guard[i] == NGE_ECS_GUARD_BYTE(i);
     }
     CHECK(ok);
-    CHECK(nge_entity_alive_count == 0 && nge_entity_free_count() == NGE_ENTITY_MAX);
+    CHECK(nge_entity_used_count == 0 && nge_entity_free_count() == NGE_ENTITY_MAX);
 
     /* The pattern varies, so writing one value everywhere is caught */
     CHECK(NGE_ECS_GUARD_BYTE(0) != NGE_ECS_GUARD_BYTE(1));

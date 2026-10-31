@@ -35,7 +35,7 @@ void nge_entity_init(void) NGE_BANKED
         nge_entity_free_stack[i] = NGE_ENTITY_MAX - 1 - i;
     }
     nge_entity_free_top = NGE_ENTITY_MAX;
-    nge_entity_alive_count = 0;
+    nge_entity_used_count = 0;
     nge_entity_dying_top = 0;
 }
 
@@ -51,16 +51,13 @@ nge_entity_id_t nge_entity_create(void) NGE_BANKED
     nge_entity_flags[id] = NGE_ENTITY_ALIVE;
     clear_components(id);
     nge_owner_of[id] = NGE_OWNER_WORLD;
-    nge_entity_alive_pos[id] = nge_entity_alive_count;
-    nge_entity_alive[nge_entity_alive_count++] = id;
+    nge_entity_used_pos[id] = nge_entity_used_count;
+    nge_entity_used[nge_entity_used_count++] = id;
     return id;
 }
 
 uint8_t nge_entity_destroy(nge_entity_id_t id) NGE_BANKED
 {
-    uint8_t pos;
-    nge_entity_id_t last;
-
     nge_entity_check_in_use(id);
 
     if (NGE_ENTITY_STATE(id) != NGE_ENTITY_ALIVE ||
@@ -68,12 +65,7 @@ uint8_t nge_entity_destroy(nge_entity_id_t id) NGE_BANKED
         return 0;
     }
 
-    /* Remove from the alive list: the last entry moves into the gap */
-    pos = nge_entity_alive_pos[id];
-    last = nge_entity_alive[--nge_entity_alive_count];
-    nge_entity_alive[pos] = last;
-    nge_entity_alive_pos[last] = pos;
-
+    /* It stays in the used list until it is released, so loops can destroy anything */
     nge_entity_flags[id] = (nge_entity_flags[id] & NGE_ENTITY_FLAG_MASK) | NGE_ENTITY_DYING;
     nge_entity_dying_stack[nge_entity_dying_top++] = id;
     return 1;
@@ -89,9 +81,18 @@ nge_entity_id_t nge_entity_next_dying(void) NGE_BANKED
 
 void nge_entity_release(nge_entity_id_t id) NGE_BANKED
 {
+    uint8_t pos;
+    nge_entity_id_t last;
+
     nge_util_assert(id < NGE_ENTITY_MAX);
     nge_util_assert(NGE_ENTITY_STATE(id) == NGE_ENTITY_DYING);
     nge_util_assert(nge_owner_count(id) == 0);   /* see nge_owner.h */
+
+    /* Remove from the used list: the last entry moves into the gap */
+    pos = nge_entity_used_pos[id];
+    last = nge_entity_used[--nge_entity_used_count];
+    nge_entity_used[pos] = last;
+    nge_entity_used_pos[last] = pos;
 
     nge_entity_flags[id] = NGE_ENTITY_FREE;
     clear_components(id);

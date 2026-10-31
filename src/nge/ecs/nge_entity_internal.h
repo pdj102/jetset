@@ -16,7 +16,7 @@
  * Page data (page 49): used only by the lifecycle functions in page 48,
  * which have page 49 mapped in slot 7 while they run.
  */
-extern uint8_t         nge_entity_alive_pos[NGE_ENTITY_MAX];  /* index of each alive ID in nge_entity_alive */
+extern uint8_t         nge_entity_used_pos[NGE_ENTITY_MAX];   /* index of each ID in use in nge_entity_used */
 extern nge_entity_id_t nge_entity_free_stack[NGE_ENTITY_MAX];
 extern uint8_t         nge_entity_free_top;
 extern nge_entity_id_t nge_entity_dying_stack[NGE_ENTITY_MAX];

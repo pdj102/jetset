@@ -8,12 +8,13 @@
  * Lifecycle: FREE -> ALIVE -> DYING -> FREE.
  * - nge_entity_create() takes a free ID and makes it alive.
  * - nge_entity_destroy() makes an alive entity dying and pushes it onto the
- *   dying stack; systems no longer see it in the alive list.
- * - Clean-up pops dying IDs and releases them back to the free stack:
+ *   dying stack. It stays in the used list, but the alive loops skip it, so
+ *   systems no longer see it.
+ * - Clean-up empties the dying stack, releasing each ID to the free stack,
+ *   and only then does it leave the used list:
  *
- *       while ((id = nge_entity_next_dying()) != NGE_ENTITY_INVALID) {
+ *       NGE_ENTITY_RELEASE_EACH_DYING(id) {
  *           ...clean up; may destroy other entities...
- *           nge_entity_release(id);
  *       }
  *
  * Every entity has an owner (ecs/nge_owner.h): a new entity is owned by
@@ -23,9 +24,15 @@
  * that run every frame. The functions are the checked versions (asserts on
  * the ID and state).
  *
- * Iterate the alive list with NGE_ENTITY_FOR_EACH_ALIVE: it goes backwards,
- * so destroying the current entity and creating entities inside the loop
- * are both safe.
+ * Loops over the used list:
+ * - NGE_ENTITY_FOR_EACH_ALIVE: alive entities, what most loops want;
+ * - NGE_ENTITY_FOR_EACH_IN_USE: alive and dying entities.
+ *
+ * Only release moves entries in the used list, so inside these loops any
+ * entity may be destroyed and new ones created, and no entity is visited
+ * twice. Never release inside one: only clean-up releases, outside them.
+ * A body that calls something which may destroy the current entity tests
+ * NGE_ENTITY_IS_ALIVE(id) before going on with it.
  *
  * Banking: the lifecycle functions (init, create, destroy, next_dying,
  * release, free_count, dying_count) are banked (NGE_BANKED, page 48, with
@@ -80,8 +87,8 @@ typedef uint16_t nge_component_t;      /**< One component: its table (high byte)
 /* Tables in slot 0 (nge_entity_cdata.c): read-only for game code, written by the functions below */
 extern nge_entity_flags_t   nge_entity_flags[NGE_ENTITY_MAX];      /**< Per entity. */
 extern uint8_t              nge_entity_components[NGE_COMPONENT_TABLES][NGE_ENTITY_MAX]; /**< Per table, per entity: use the macros. */
-extern nge_entity_id_t      nge_entity_alive[NGE_ENTITY_MAX];      /**< Alive IDs, in no order. */
-extern uint8_t              nge_entity_alive_count;                /**< Entries in nge_entity_alive. */
+extern nge_entity_id_t      nge_entity_used[NGE_ENTITY_MAX];       /**< IDs in use (alive or dying), in no order. */
+extern uint8_t              nge_entity_used_count;                 /**< Entries in nge_entity_used. */
 
 /* ---- Unchecked macros ---- */
 
@@ -104,13 +111,31 @@ extern uint8_t              nge_entity_alive_count;                /**< Entries 
 #define NGE_ENTITY_REMOVE_COMPONENT(id, c)  (NGE_ENTITY_COMPONENT_BYTE(id, c) &= (uint8_t)~(c))
 
 /**
- * Loop over the alive entities, last to first: i is a uint8_t loop counter,
- * id receives each entity ID. Destroying the current entity moves the last
- * entry (already visited) into its place; entities created in the loop are
+ * Loop over the entities in use, alive and dying, last to first: i is a
+ * uint8_t loop counter, id receives each entity ID. Entries don't move during
+ * the loop, as only release moves them; entities created in the loop are
  * appended after the start point and first visited next time.
  */
+#define NGE_ENTITY_FOR_EACH_IN_USE(i, id) \
+    for ((i) = nge_entity_used_count; (i)-- > 0 && (((id) = nge_entity_used[i]), 1); )
+
+/**
+ * Loop over the alive entities, as NGE_ENTITY_FOR_EACH_IN_USE. An entity
+ * destroyed before the loop reaches it is not visited.
+ */
 #define NGE_ENTITY_FOR_EACH_ALIVE(i, id) \
-    for ((i) = nge_entity_alive_count; (i)-- > 0 && (((id) = nge_entity_alive[i]), 1); )
+    NGE_ENTITY_FOR_EACH_IN_USE(i, id) if (!NGE_ENTITY_IS_ALIVE(id)) {} else
+
+/**
+ * Clean-up: take each dying entity, run the body, and release it, until the
+ * dying stack is empty. id receives each entity ID, last destroyed first. The
+ * body may destroy entities, which this same loop then handles, and must
+ * leave id owning nothing. continue is fine: the release is in the loop. Don't
+ * break or return out of it, which would lose the entity taken.
+ */
+#define NGE_ENTITY_RELEASE_EACH_DYING(id) \
+    for ((id) = nge_entity_next_dying(); (id) != NGE_ENTITY_INVALID; \
+         nge_entity_release(id), (id) = nge_entity_next_dying())
 
 /* ---- Lifecycle ---- */
 
@@ -126,8 +151,8 @@ void nge_entity_init(void) NGE_BANKED;
 nge_entity_id_t nge_entity_create(void) NGE_BANKED;
 
 /**
- * @brief Request an alive entity's destruction: it becomes dying, leaves the
- *        alive list and waits on the dying stack for clean-up.
+ * @brief Request an alive entity's destruction: it becomes dying and waits on
+ *        the dying stack for clean-up. The used list doesn't change.
  * @return 1 if it became dying; 0 if it was already dying or is persistent
  *         (clear NGE_ENTITY_PERSISTENT first to destroy it).
  */
@@ -140,7 +165,8 @@ uint8_t nge_entity_destroy(nge_entity_id_t id) NGE_BANKED;
 nge_entity_id_t nge_entity_next_dying(void) NGE_BANKED;
 
 /**
- * @brief Return a dying entity, after clean-up, to the free stack.
+ * @brief Return a dying entity, after clean-up, to the free stack, taking it
+ *        off the used list: the last entry moves into its place.
  *
  * The entity must have been taken with nge_entity_next_dying() and must own
  * no entities (nge_owner_count() is 0).

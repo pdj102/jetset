@@ -8,5 +8,5 @@
 
 nge_entity_flags_t   nge_entity_flags[NGE_ENTITY_MAX];
 uint8_t              nge_entity_components[NGE_COMPONENT_TABLES][NGE_ENTITY_MAX];
-nge_entity_id_t      nge_entity_alive[NGE_ENTITY_MAX];
-uint8_t              nge_entity_alive_count;
+nge_entity_id_t      nge_entity_used[NGE_ENTITY_MAX];
+uint8_t              nge_entity_used_count;

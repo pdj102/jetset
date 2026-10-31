@@ -1,4 +1,4 @@
-/* nge_entity.c: lifecycle, alive list, stacks, flags and components. */
+/* nge_entity.c: lifecycle, used list, stacks, flags and components. */
 #include "test.h"
 
 #include <stdlib.h>
@@ -9,23 +9,36 @@
 #define F_USER0  NGE_ENTITY_FLAG_USER
 #define F_USER4  0x80
 
-/* Each alive entity appears exactly once in the alive list, and nothing else does */
-static int alive_list_ok(void)
+/* Each entity in use appears exactly once in the used list, and nothing else does */
+static int used_list_ok(void)
 {
     uint8_t seen[NGE_ENTITY_MAX] = {0};
-    int alive = 0;
+    int used = 0;
     int i;
 
-    for (i = 0; i < nge_entity_alive_count; i++) {
-        nge_entity_id_t id = nge_entity_alive[i];
-        if (id >= NGE_ENTITY_MAX || seen[id]++ || !NGE_ENTITY_IS_ALIVE(id)) {
+    for (i = 0; i < nge_entity_used_count; i++) {
+        nge_entity_id_t id = nge_entity_used[i];
+        if (id >= NGE_ENTITY_MAX || seen[id]++ || NGE_ENTITY_STATE(id) == NGE_ENTITY_FREE) {
             return 0;
         }
     }
     for (i = 0; i < NGE_ENTITY_MAX; i++) {
-        alive += NGE_ENTITY_IS_ALIVE(i);
+        used += NGE_ENTITY_STATE(i) != NGE_ENTITY_FREE;
     }
-    return alive == nge_entity_alive_count;
+    return used == nge_entity_used_count;
+}
+
+/* Entities the alive loop visits */
+static int alive_visited(void)
+{
+    nge_entity_id_t id;
+    uint8_t i;
+    int n = 0;
+
+    NGE_ENTITY_FOR_EACH_ALIVE(i, id) {
+        n++;
+    }
+    return n;
 }
 
 /* ---- Randomised comparison with a reference model ---- */
@@ -70,10 +83,10 @@ static int matches_model(void)
             return 0;
         }
     }
-    return alive_list_ok() &&
+    return used_list_ok() &&
            nge_entity_free_count() == model_count(NGE_ENTITY_FREE) &&
            nge_entity_dying_count() == model_dying_top &&
-           nge_entity_alive_count == model_count(NGE_ENTITY_ALIVE);
+           alive_visited() == model_count(NGE_ENTITY_ALIVE);
 }
 
 static void random_ops(void)
@@ -172,28 +185,29 @@ int main(void)
     uint8_t visits[NGE_ENTITY_MAX];
     int n;
     int ok;
+    uint8_t first;
 
     test_init();
 
     /* ---- init and create ---- */
     nge_entity_init();
     CHECK(nge_entity_free_count() == NGE_ENTITY_MAX);
-    CHECK(nge_entity_alive_count == 0 && nge_entity_dying_count() == 0);
+    CHECK(nge_entity_used_count == 0 && nge_entity_dying_count() == 0);
     a = nge_entity_create();
     b = nge_entity_create();
     c = nge_entity_create();
     CHECK(a == 0 && b == 1 && c == 2);                    /* handed out in order */
     CHECK(NGE_ENTITY_IS_ALIVE(a) && nge_entity_flags[a] == NGE_ENTITY_ALIVE);
     CHECK(comp_bits(a) == 0);
-    CHECK(nge_entity_alive_count == 3 && alive_list_ok());
+    CHECK(nge_entity_used_count == 3 && used_list_ok());
     CHECK(nge_entity_free_count() == NGE_ENTITY_MAX - 3);
 
     /* All used: INVALID */
     while (nge_entity_create() != NGE_ENTITY_INVALID) {
     }
-    CHECK(nge_entity_free_count() == 0 && nge_entity_alive_count == NGE_ENTITY_MAX);
+    CHECK(nge_entity_free_count() == 0 && nge_entity_used_count == NGE_ENTITY_MAX);
     CHECK(nge_entity_create() == NGE_ENTITY_INVALID);
-    CHECK(alive_list_ok());
+    CHECK(used_list_ok());
 
     /* ---- destroy: alive -> dying ---- */
     nge_entity_init();
@@ -204,10 +218,11 @@ int main(void)
     CHECK(nge_entity_destroy(a) == 1);
     CHECK(NGE_ENTITY_STATE(a) == NGE_ENTITY_DYING);
     CHECK(NGE_ENTITY_HAS_FLAGS(a, F_USER0));               /* flags kept until release */
-    CHECK(nge_entity_alive_count == 2 && alive_list_ok());
+    CHECK(nge_entity_used_count == 3 && used_list_ok());   /* listed until released */
+    CHECK(alive_visited() == 2);                           /* but not an alive one */
     CHECK(nge_entity_dying_count() == 1);
     CHECK(nge_entity_destroy(a) == 0);                     /* already dying: no-op */
-    CHECK(nge_entity_dying_count() == 1 && nge_entity_alive_count == 2);
+    CHECK(nge_entity_dying_count() == 1 && alive_visited() == 2);
 
     /* Persistent: not destroyed until the flag is cleared */
     nge_entity_set_flags(b, NGE_ENTITY_PERSISTENT);
@@ -223,6 +238,7 @@ int main(void)
     CHECK(nge_entity_next_dying() == NGE_ENTITY_INVALID);
     CHECK(NGE_ENTITY_STATE(a) == NGE_ENTITY_FREE && nge_entity_flags[a] == 0);
     CHECK(nge_entity_free_count() == NGE_ENTITY_MAX - 1);
+    CHECK(nge_entity_used_count == 1 && used_list_ok());   /* off the list once released */
     CHECK(nge_entity_create() == a);                        /* last released, first reused */
     CHECK(nge_entity_flags[a] == NGE_ENTITY_ALIVE && comp_bits(a) == 0);
 
@@ -280,7 +296,55 @@ int main(void)
     }
     CHECK(ok);
     CHECK(visits[20] == 0 && NGE_ENTITY_IS_ALIVE(20));
-    CHECK(nge_entity_alive_count == 20 - 7 + 1 && alive_list_ok());
+    CHECK(alive_visited() == 20 - 7 + 1 && used_list_ok());
+
+    /* Destroying others, ahead of the loop and behind it: none is visited twice */
+    for (first = 0; first < 20; first++) {
+        nge_entity_init();
+        for (n = 0; n < 20; n++) {
+            nge_entity_create();
+        }
+        memset(visits, 0, sizeof(visits));
+        NGE_ENTITY_FOR_EACH_ALIVE(i, id) {
+            CHECK(NGE_ENTITY_IS_ALIVE(id));
+            visits[id]++;
+            if (id == first) {
+                for (n = 0; n < 20; n += 2) {
+                    nge_entity_destroy((nge_entity_id_t)n);
+                }
+                nge_entity_destroy(first);                  /* itself too */
+            }
+        }
+        ok = 1;
+        for (n = 0; n < 20; n++) {
+            ok = ok && visits[n] <= 1;                      /* never twice */
+            ok = ok && (visits[n] == 1 || n % 2 == 0);      /* odd ones, alive, always */
+        }
+        CHECK(ok);
+    }
+
+    /* The in-use loop visits the dying as well, once each */
+    nge_entity_init();
+    for (n = 0; n < 6; n++) {
+        nge_entity_create();
+    }
+    nge_entity_destroy(1);
+    nge_entity_destroy(4);
+    memset(visits, 0, sizeof(visits));
+    NGE_ENTITY_FOR_EACH_IN_USE(i, id) {
+        visits[id]++;
+        nge_entity_destroy(2);                              /* seen, whenever it goes */
+    }
+    CHECK(visits[0] == 1 && visits[1] == 1 && visits[2] == 1 && visits[3] == 1);
+    CHECK(visits[4] == 1 && visits[5] == 1);
+
+    /* An if/else after the loop body is not captured by the macros */
+    n = 0;
+    if (1)
+        NGE_ENTITY_FOR_EACH_ALIVE(i, id) n++;
+    else
+        n = 100;
+    CHECK(n == 3);
 
     /* ---- clean-up that destroys more entities empties the dying stack ---- */
     nge_entity_init();
@@ -297,7 +361,32 @@ int main(void)
         n++;
     }
     CHECK(n == 10 && nge_entity_free_count() == NGE_ENTITY_MAX);
-    CHECK(nge_entity_alive_count == 0 && nge_entity_dying_count() == 0);
+    CHECK(nge_entity_used_count == 0 && nge_entity_dying_count() == 0);
+
+    /* The same with the loop macro: nothing is lost, even with continue */
+    nge_entity_init();
+    for (n = 0; n < 10; n++) {
+        nge_entity_create();
+    }
+    nge_entity_destroy(0);
+    n = 0;
+    NGE_ENTITY_RELEASE_EACH_DYING(id) {
+        n++;
+        CHECK(NGE_ENTITY_STATE(id) == NGE_ENTITY_DYING);    /* not released until the body ends */
+        if (id + 1 < 10) {
+            nge_entity_destroy(id + 1);
+        }
+        if (id % 2 == 0) {
+            continue;
+        }
+        nge_entity_set_flags(id, F_USER0);
+    }
+    CHECK(n == 10 && nge_entity_free_count() == NGE_ENTITY_MAX);
+    CHECK(nge_entity_used_count == 0 && nge_entity_dying_count() == 0);
+    NGE_ENTITY_RELEASE_EACH_DYING(id) {                     /* nothing dying: no body */
+        n++;
+    }
+    CHECK(n == 10);
 
     /* ---- asserts ---- */
     nge_entity_init();
@@ -324,7 +413,7 @@ int main(void)
     CHECK(test_halt_count == 1);
     TEST_EXPECT_HALT(nge_entity_clear_component(a, NGE_COMPONENT(8) | NGE_COMPONENT(16)));   /* table 3 */
     CHECK(test_halt_count == 1);
-    CHECK(NGE_ENTITY_IS_ALIVE(a) && alive_list_ok());
+    CHECK(NGE_ENTITY_IS_ALIVE(a) && used_list_ok());
 
     /* ---- randomised ---- */
     random_ops();

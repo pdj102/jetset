@@ -6,7 +6,7 @@
  * @brief The ECS data page in slot 0, and ECS start-up.
  *
  * The ECS tables read every frame by several systems (entity flags,
- * components and alive list, owners, locations) are in page NGE_ECS_PAGE,
+ * components and used list, owners, locations) are in page NGE_ECS_PAGE,
  * which nge_ecs_init() maps permanently into slot 0. They are declared in
  * the modules' slot 0 data files (nge_<module>_cdata.c, with the marker
  * nge-dataseg: PAGE_50) and start at $0100. See "ECS data in slot 0" in

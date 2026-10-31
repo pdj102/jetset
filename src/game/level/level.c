@@ -81,7 +81,7 @@ void level_release_dying(void)
     uint8_t i;
     uint8_t gone;
 
-    while ((id = nge_entity_next_dying()) != NGE_ENTITY_INVALID) {
+    NGE_ENTITY_RELEASE_EACH_DYING(id) {
         if (FEATURE_IS(id) && NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_LOCATION)) {
             level_redraw(NGE_LOCATION_X(id), NGE_LOCATION_Y(id));   /* a feature gone: its cell's look */
         }
@@ -95,6 +95,5 @@ void level_release_dying(void)
         }
         /* The rest (items it held off the map, dying effects) pass to its owner */
         nge_owner_move_all(id, NGE_OWNER_OF(id));
-        nge_entity_release(id);
     }
 }

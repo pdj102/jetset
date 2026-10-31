@@ -6,7 +6,7 @@
  */
 #include "ecs/nge_entity_internal.h"
 
-uint8_t         nge_entity_alive_pos[NGE_ENTITY_MAX];
+uint8_t         nge_entity_used_pos[NGE_ENTITY_MAX];
 nge_entity_id_t nge_entity_free_stack[NGE_ENTITY_MAX];
 uint8_t         nge_entity_free_top;
 nge_entity_id_t nge_entity_dying_stack[NGE_ENTITY_MAX];

@@ -529,14 +529,14 @@ data.
 | Address | Contents |
 |---|---|
 | `$0000`-`$00FF` | Guard area against null pointers |
-| `$0100`-`$1FFF` | ECS tables (`SECTION PAGE_50`, `CRT_ORG_PAGE_50 = 0x0100` in [banks.inc](../src/banks.inc)): entity flags, components and alive list, owners, locations, block flags, timers and the clock, and the game's components (`src/game/components/*_cdata.c`: kind, stats, item, inventory, health, attack (melee and ranged), mana, and the player character's single variables, pc) (about 6.3K at `NGE_ENTITY_MAX` 100) |
+| `$0100`-`$1FFF` | ECS tables (`SECTION PAGE_50`, `CRT_ORG_PAGE_50 = 0x0100` in [banks.inc](../src/banks.inc)): entity flags, components and used list, owners, locations, block flags, timers and the clock, and the game's components (`src/game/components/*_cdata.c`: kind, stats, item, inventory, health, attack (melee and ranged), mana, and the player character's single variables, pc) (about 6.3K at `NGE_ENTITY_MAX` 100) |
 
 ### Where component data goes
 
 - **Hot and shared:** in slot 0. Hot means read or written per entity, per
   frame, by more than one system, or by per-frame code in common memory
   (the `NGE_ENTITY_*`, `NGE_OWNER_*` and `NGE_LOCATION_*` macros). Examples:
-  the alive list, owner, location.
+  the used list, owner, location.
 - **Used by one system:** in that system's odd page, as page data. The
   system's update function is banked, so calling it maps its code into slot 6
   and its data into slot 7, and it runs a tight loop over its own data and

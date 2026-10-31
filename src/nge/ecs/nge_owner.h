@@ -14,7 +14,7 @@
  *
  * An owner may own any number of entities. Ownership is stored once, as the
  * owner of each entity: there are no lists of owned entities. Find them by
- * scanning the alive list with NGE_OWNER_FOR_EACH_OWNED, cheap for
+ * scanning the used list with NGE_OWNER_FOR_EACH_OWNED, cheap for
  * NGE_ENTITY_MAX entities and done only when something changes hands.
  *
  * Ownership never forms a cycle: nge_owner_set() and nge_owner_move_all()

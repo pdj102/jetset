@@ -6,7 +6,7 @@
  * Kept entities (level.h) survive a level: the persistent ones, and what
  * they own. Everything else a level's area owns, directly or through other
  * entities, is destroyed when the level is left. Ownership is stored only
- * as each entity's owner, so the alive list is scanned and each entity's
+ * as each entity's owner, so the used list is scanned and each entity's
  * owners walked up: at most a few steps for each of NGE_ENTITY_MAX
  * entities, once per change.
  */

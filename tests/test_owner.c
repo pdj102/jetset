@@ -13,9 +13,8 @@ static void clean_up(void)
 {
     nge_entity_id_t id;
 
-    while ((id = nge_entity_next_dying()) != NGE_ENTITY_INVALID) {
+    NGE_ENTITY_RELEASE_EACH_DYING(id) {
         nge_owner_move_all(id, NGE_OWNER_OF(id));
-        nge_entity_release(id);
     }
 }
 
@@ -179,7 +178,7 @@ int main(void)
     }
     nge_entity_destroy(chest);
     clean_up();
-    CHECK(nge_owner_count(AREA0) == 5 && nge_entity_alive_count == 5);
+    CHECK(nge_owner_count(AREA0) == 5 && nge_entity_used_count == 5);
 
     /* A chain: destroying every link leaves the last in the area, whatever the order */
     nge_entity_init();
@@ -194,7 +193,7 @@ int main(void)
         nge_entity_destroy((nge_entity_id_t)n);              /* owners first: released last */
     }
     clean_up();
-    CHECK(nge_entity_alive_count == 1 && NGE_OWNER_OF(NGE_ENTITY_MAX - 1) == AREA0);
+    CHECK(nge_entity_used_count == 1 && NGE_OWNER_OF(NGE_ENTITY_MAX - 1) == AREA0);
 
     nge_entity_init();
     id = AREA0;
@@ -207,7 +206,30 @@ int main(void)
         nge_entity_destroy((nge_entity_id_t)n);              /* owners last: released first */
     }
     clean_up();
-    CHECK(nge_entity_alive_count == 1 && NGE_OWNER_OF(NGE_ENTITY_MAX - 1) == AREA0);
+    CHECK(nge_entity_used_count == 1 && NGE_OWNER_OF(NGE_ENTITY_MAX - 1) == AREA0);
+
+    /* ---- the owned loop: destroying another entity it owns ---- */
+    nge_entity_init();
+    player = nge_entity_create();
+    monster = nge_entity_create();
+    nge_owner_set(player, AREA0);
+    nge_owner_set(monster, AREA0);
+    memset(visits, 0, sizeof(visits));
+    NGE_OWNER_FOR_EACH_OWNED(i, id, AREA0) {
+        visits[id]++;
+        nge_entity_destroy(id == player ? monster : player);
+    }
+    CHECK(visits[player] + visits[monster] == 1);            /* the other was gone first */
+    n = 0;
+    NGE_OWNER_FOR_EACH_OWNED(i, id, AREA0) {
+        n++;
+    }
+    CHECK(n == 1);
+    n = 0;
+    NGE_ENTITY_FOR_EACH_IN_USE(i, id) {
+        n += NGE_OWNER_OF(id) == AREA0;
+    }
+    CHECK(n == 2);                                           /* the dying one too */
 
     return test_summary("owner");
 }
