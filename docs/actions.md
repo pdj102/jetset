@@ -182,7 +182,7 @@ a move that is refused, followed by a melee.
 | `act.c` | Common | `act_do()`, `act_attempted()`, `act_reason_flags[]` | |
 | `act_shared.c` | `BANK_56` | The endings, `act_rooted()`, `act_strike()`, `act_line()` | 914 |
 | `act_move.c` | `BANK_56` | Move | 946 |
-| `act_pickup.c` | `BANK_56` | Pick up | 728 |
+| `act_pickup.c` | `BANK_56` | Pick up | 1,044 |
 | `act_drop.c` | `BANK_56` | Drop | 468 |
 | `act_equip.c` | `BANK_56` | Equip and unequip | 1,155 |
 | `act_melee.c` | `BANK_56` | Melee, as far as validation | 1,072 |
@@ -192,8 +192,8 @@ a move that is refused, followed by a melee.
 | `act_stairs.c` | `BANK_56` | Ascend and descend | 781 |
 | `act_wait.c` | `BANK_56` | Wait | 161 |
 
-The sizes are from the debug build's map, with asserts, and total 8,630 bytes of
-`BANK_56`'s 16,384 (pages 112 and 113, D22). That leaves 7,754 (section 6.11).
+The sizes are from the debug build's map, with asserts, and total 8,946 bytes of
+`BANK_56`'s 16,384 (pages 112 and 113, D22). That leaves 7,438 (section 6.11).
 
 ### 4.2 The context
 
@@ -266,7 +266,7 @@ Consequences are direct calls, because the rest of the action reads their result
 | Action | What it does | Events | Random |
 |---|---|---|---|
 | `ACT_MOVE` | Moves one tile, if the tile can be entered | `EV_MOVED`, `EV_STOOD_ON` for what is there, at most 4 items (events.md, R26) | No |
-| `ACT_PICKUP` | Stows an item from the actor's tile | `EV_PICKED_UP` | No |
+| `ACT_PICKUP` | Stows an item from the actor's tile, or merges ammo into a stack | `EV_PICKED_UP` | No |
 | `ACT_DROP` | Puts a stowed item on the actor's tile | `EV_DROPPED` | No |
 | `ACT_EQUIP` | Puts a stowed item in a slot, and recomputes | `EV_EQUIPPED` | No |
 | `ACT_UNEQUIP` | Stows an equipped item, and recomputes | `EV_UNEQUIPPED` | No |
@@ -700,7 +700,7 @@ These add no action, and need only the accessors and some reasons.
 | `ACT_OPEN` | Refused with `ACT_R_LOCKED` (section 6.5) | `FEAT_LOCKED` |
 | `ACT_EQUIP` | A two-handed item needs `SLOT_SHIELD` free as well, and a shield needs no two-handed item wielded: `ACT_R_SLOT_TAKEN`, with the item in the way as `target` | `ITEMF_TWO_HANDS`, 4 kinds |
 | `ACT_UNEQUIP` | A cursed item stays on: `ACT_R_CURSED` | `ITEMF_CURSED`, 5 kinds |
-| `ACT_PICKUP` | Merges into a stowed stack of the same kind, which also needs no room. Treasure goes to the player's gold (player_character.md R20) | `item_count[]`, kind, subclass |
+| `ACT_PICKUP` | Ammo merges into a stack of the same kind, built. Treasure goes to the player's gold (player_character.md R20) | `item_count[]`, kind, subclass |
 | `ACT_USE` | Uses one of a count, where a subclass has one | `item_count[]` |
 | `ACT_MELEE` | Its end moved to `act_strike()` (D21). No change in behaviour | |
 | `ACT_MOVE`, `ACT_CLOSE`, `ACT_WAIT`, stairs, `ACT_DROP` | None needed | |
@@ -749,7 +749,7 @@ a new action. A trap going off is a reaction to `EV_STOOD_ON` (G-ARCH-3), not an
 | `ACT_AIM` | 0.5K | Use is 396 bytes |
 | `ACT_UNLOCK` | 0.5K | Open and close share 758 bytes |
 | Equip's, unequip's and pickup's rules | 0.4K | |
-| **Total for what is needed** | **1.4K** | **7,754 bytes are free** |
+| **Total for what is needed** | **1.4K** | **7,438 bytes are free** |
 
 The needed actions wouldn't have fit in page 112's 892 free bytes, even before `ACT_CAST`
 and the rest, so the actions moved to `BANK_56` (D22). These are estimates, and a release
@@ -782,6 +782,8 @@ The order of work is in [actions_plan.md](actions_plan.md).
 - fire: each row of the shooter table, a shot used up on a hit and a miss, ammo's bonuses
   and hit effect, the last of a stack and its slot emptying, and `act_do()`. `test_target`
   has the `f` key, and the same tiles in range as `target_in_range()`;
+- stacks: a merge into a stowed or equipped stack with no room needed, exactly to 255 and
+  past it, a full stack, another kind, and a wand that doesn't merge;
 - reach: melee and open reach all 8 neighbours and nothing further, melee refuses a
   target on the actor's own tile, and open allows it;
 - the asserts.
@@ -822,6 +824,14 @@ What differs from section 6 and [actions_plan.md](actions_plan.md).
 - **Step 1:** `check-banks.sh` also stops the build if a `BANK_n` section passes 16K. The
   plan didn't list this, but the script only checked `PAGE_n` sections, and the linker
   doesn't check `BANK_n` at all, so the move would have lost the guard the actions had.
+- **Step 8:**
+  - Only ammo merges, where the plan said any stack of the same kind. A count means
+    charges on a wand, fuel on a light and uses on a pick (items.md, section 4.2), and
+    merging those would be wrong. Treasure is left to player_character.md R20.
+  - A stack at 255 takes no more, so another of that kind then needs room of its own.
+  - The merge is in `act_pickup.c`, where the plan put it, and not in the inventory
+    component that G-ARCH-2 and R12 would want: it cost 316 bytes, and page 110, where the
+    component is, has 442 left for steps 11 and 12. It can move if that page gets room.
 - **Step 7:**
   - Arrows with no launcher aren't in section 6.3's table. They fall through to the actor's
     own attack, so the player gets `ACT_R_NO_ATTACK`.

@@ -153,7 +153,10 @@ uint8_t act_move(act_t *a, uint8_t mode) NGE_BANKED;
  * In: actor (alive, placed in an area), target (the item, or
  * NGE_ENTITY_INVALID for the first item on the tile). Succeeds if the
  * actor has an inventory with room and the item is on its tile: posts
- * EV_PICKED_UP; a->target is the item. Refused with ACT_R_NO_INVENTORY,
+ * EV_PICKED_UP; a->target is the item. Ammo merges into a stack of the same
+ * kind that the actor has, stowed or equipped, up to 255, which needs no
+ * room: the merged item is destroyed, and the rest of it, if any, stays
+ * where it is. Refused with ACT_R_NO_INVENTORY,
  * ACT_R_NOTHING_HERE (no item there, or target isn't on the tile),
  * ACT_R_NOT_ITEM or ACT_R_FULL.
  */

@@ -145,6 +145,16 @@ static uint8_t fire(nge_entity_id_t actor, uint8_t x, uint8_t y, uint8_t mode)
     return result;
 }
 
+/* A stack of this kind on the floor of the area at (x, y) */
+static nge_entity_id_t floor_stack(uint8_t kind, uint8_t count, uint8_t x, uint8_t y)
+{
+    nge_entity_id_t id = gen_item(kind, AREA);
+
+    item_count[id] = count;
+    nge_location_set(id, x, y);
+    return id;
+}
+
 /* An item of this kind made for holder and put straight in slot */
 static nge_entity_id_t equipped(uint8_t kind, nge_entity_id_t holder, uint8_t slot)
 {
@@ -1140,6 +1150,67 @@ int main(void)
         CHECK(fire(player, 3, 2, ACT_DO) == ACT_SUCCESS && last.item == NGE_ENTITY_INVALID && last.kind == DMG_ACID);
         CHECK(events() >= 3 && seen[0].id == EV_FIRED && seen[0].p1 == NGE_EVENT_NONE);
     }
+
+    /* ---- stacks: the player at (0, 2), arrows stowed ---- */
+    nge_entity_init();
+    nge_render_init();
+    nge_timer_init();
+    nge_event_init();
+    player = creature(CR_PLAYER, 0, 2);
+    i1 = gen_item(IT_ARROWS, player);
+    /* Merged into the stack: gone from the floor, the event as ever, a check changing nothing */
+    i2 = floor_stack(IT_ARROWS, 7, 0, 2);
+    events();
+    a = ctx(player);
+    CHECK(act_pickup(&a, ACT_CHECK) == ACT_SUCCESS && a.target == i2 && item_count[i1] == 15 && at(i2, 0, 2));
+    r2 = item_count[i1];
+    a = ctx(player);
+    CHECK(act_pickup(&a, ACT_DO) == ACT_SUCCESS && a.used == 1 && a.target == i2);
+    CHECK(item_count[i1] == r2 + 7 && !NGE_ENTITY_IS_ALIVE(i2) && inv_count(player) == 1);
+    CHECK(events() == 1 && is(0, i2, EV_PICKED_UP, player));
+    /* A merge needs no room, a new stack does */
+    inv_capacity[player] = 1;
+    i2 = floor_stack(IT_ARROWS, 1, 0, 2);
+    a = ctx(player);
+    CHECK(act_pickup(&a, ACT_DO) == ACT_SUCCESS && !NGE_ENTITY_IS_ALIVE(i2));
+    i2 = floor_stack(IT_BOLTS, 12, 0, 2);
+    a = ctx(player);
+    CHECK(act_pickup(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_FULL && a.target == i2 && a.used == 0);
+    nge_entity_destroy(i2);
+    /* Into an equipped stack too */
+    item_slot[i1] = SLOT_AMMO;
+    r2 = item_count[i1];
+    i2 = floor_stack(IT_ARROWS, 3, 0, 2);
+    a = ctx(player);
+    CHECK(act_pickup(&a, ACT_DO) == ACT_SUCCESS && item_count[i1] == r2 + 3 && item_slot[i1] == SLOT_AMMO);
+    /* Exactly to 255: all of it fits */
+    item_count[i1] = 250;
+    i2 = floor_stack(IT_ARROWS, 5, 0, 2);
+    a = ctx(player);
+    CHECK(act_pickup(&a, ACT_DO) == ACT_SUCCESS && item_count[i1] == 255 && !NGE_ENTITY_IS_ALIVE(i2));
+    /* Past 255: the rest stays where it is, the turn used */
+    item_count[i1] = 250;
+    i2 = floor_stack(IT_ARROWS, 8, 0, 2);
+    a = ctx(player);
+    CHECK(act_pickup(&a, ACT_DO) == ACT_SUCCESS && a.used == 1 && a.target == i2);
+    CHECK(item_count[i1] == 255 && item_count[i2] == 3 && at(i2, 0, 2) && NGE_ENTITY_IS_ALIVE(i2));
+    /* A full stack takes no more: it takes room, so with none it is refused, with some a new stack */
+    item_slot[i1] = SLOT_NONE;
+    a = ctx(player);
+    CHECK(act_pickup(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_FULL);
+    inv_capacity[player] = 20;
+    a = ctx(player);
+    CHECK(act_pickup(&a, ACT_DO) == ACT_SUCCESS && stowed(i2, player) && item_count[i2] == 3);
+    events();
+    /* Not the same kind, and not ammo: a count that isn't a quantity doesn't merge */
+    i2 = floor_stack(IT_ARROWS_1, 10, 0, 2);
+    a = ctx(player);
+    CHECK(act_pickup(&a, ACT_DO) == ACT_SUCCESS && stowed(i2, player));
+    i1 = gen_item(IT_WAND_FIRE, player);
+    i2 = floor_stack(IT_WAND_FIRE, 5, 0, 2);
+    a = ctx(player);
+    CHECK(act_pickup(&a, ACT_DO) == ACT_SUCCESS && stowed(i2, player) && item_count[i1] == 5 && item_count[i2] == 5);
+    events();
 
     return test_summary("act");
 }

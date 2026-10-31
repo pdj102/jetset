@@ -4,8 +4,8 @@ The steps that build what [actions.md](actions.md) section 6 specifies. The spec
 what each action does and why, and this file says in what order, what changes, and how
 each step is checked.
 
-Status: plan written 2026-10-31. D10 to D23 agreed. Steps 1 to 7 done: step 1 passed in
-CSpect and on hardware, the others in CSpect, with step 5 checked through step 7. Step 8
+Status: plan written 2026-10-31. D10 to D23 agreed. Steps 1 to 8 done: step 1 passed in
+CSpect and on hardware, the others in CSpect, with step 5 checked through step 7. Step 9
 is next.
 
 ## 1. How the steps work
@@ -146,6 +146,7 @@ Ammo equips through the ordinary `w` screen, as it fits `SLOT_AMMO`.
 - **Why here:** with fire working, a second sheaf of arrows is otherwise a nuisance.
 - **Tests:** merge, no room but a merge, 255, the item destroyed, `EV_STOOD_ON` limits
   unchanged.
+- **CSpect:** pick up a second sheaf of arrows, stowed and equipped, then fire them.
 - **Treasure** going to gold is left to player_character.md R20, with its question Q3.
 
 ### Step 9: `ACT_AIM`
@@ -223,7 +224,7 @@ Each needs its own spec first: spells and who knows them, and fleeing (ai.md R18
 | 5 | +336: 7,782 | Page 118: +13. Common: +1 |
 | 6 | +7: 7,789 | Page 108: +303. Page 110: +18, 442 left |
 | 7 | +841: 8,630 | Common: +28, 4,682 free. Pages 114 +76, 116 +7, 118 +123, 124 +57 |
-| 8 | +0.2K | |
+| 8 | +316: 8,946 | |
 | 9 | +0.5K | Pages 116, 118, 124 |
 | 10 | | Page 130 |
 | 11 | +0.1K | Page 110: the risk |
