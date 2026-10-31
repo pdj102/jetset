@@ -47,3 +47,24 @@ the commit, and it stays listed so the number keeps its meaning.
   keeps the current one"). To fix: an empty name should set "Rogue",
   either in `ask_name()` or by resetting the buffer before each title.
   Update both comments.
+
+## B3 Poison doesn't tick while its source keeps hitting
+
+- **Seen:** 2026-10-31, found by reading the code during the review of
+  effects.md, dev branch at f540bb9. Not seen in play.
+- **Steps:** stand next to a rat, or anything else with a poison hit hook,
+  and let it keep biting.
+- **Seen:** by the code, each hit restarts poison's timer, so its 3-turn
+  period starts again. A rat acts every turn and hits about half the time, so
+  poison rarely reaches a firing until the bites stop. The damage comes after
+  the fight, not during it.
+- **Expected:** poison keeps ticking through further bites, which only add
+  to how long it lasts.
+- **Status:** open, not fixed.
+- **Notes:** `effect_apply()` in `effects/effects_core.c` refreshes with
+  `nge_timer_add()`, which restarts the period as well as the cycles
+  (effects.md R13). Any timed effect with a period longer than the gap between
+  refreshes has this: `EF_HOLD` avoids it only by having a 1-turn period, less
+  than a lichen's 20 ticks (creatures.md D6). To fix: a refresh keeps the time
+  to the next firing and only tops up the cycles, then effects.md R13 and
+  `test_effects` follow, and `EF_HOLD`'s period could be looked at again.
