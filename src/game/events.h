@@ -23,6 +23,7 @@
  * | EV_HIT            | the entity hit      | attacker | p1: d20 roll, p2: weapon or NGE_EVENT_NONE |
  * | EV_MISSED         | the entity missed   | attacker | p1: d20 roll, p2: weapon or NGE_EVENT_NONE |
  * | EV_FIRED          | the entity aimed at | shooter  | p1: launcher, thrown item or NGE_EVENT_NONE |
+ * | EV_AIMED          | the entity aimed at | aimer    | p1: the item |
  * | EV_EFFECT_ENDED   | the entity affected | the effect (dying) | p1: EF_*, p2: EFFECT_END_* |
  * | EV_ATTRS_CHANGED  | the entity          | -        | -        |
  * | EV_OPENED         | the feature         | opener   | -        |
@@ -67,5 +68,6 @@
 #define EV_QUEST_FOUND    (NGE_EVENT_USER + 24)    /**< Picked up by the player for the first time this game (game/quest/quest.h). */
 #define EV_AI_CHANGED     (NGE_EVENT_USER + 25)    /**< Its AI state went from p1 to p2 (game/ai/ai.h). */
 #define EV_FIRED          (NGE_EVENT_USER + 26)    /**< A shot was fired at it by the source (act_fire()); EV_HIT or EV_MISSED follows. */
+#define EV_AIMED          (NGE_EVENT_USER + 27)    /**< An item's effect was sent at it by the source (act_aim()); the effect's events follow. */
 
 #endif

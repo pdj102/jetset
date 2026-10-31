@@ -240,6 +240,11 @@ void messages_on_event(const nge_event_t *e) NGE_BANKED
             screen_message("You fire.");
         }
         break;
+    case EV_AIMED:
+        if (source == actor_player) {
+            say_named("You aim the ", p1, ".");
+        }
+        break;
     case EV_MISSED:
         if (source == actor_player) {
             say_named("You miss the ", target, ".");
@@ -399,6 +404,12 @@ void messages_act_failed(const act_t *a) NGE_BANKED
         break;
     case ACT_R_WRONG_AMMO:
         screen_message("That ammunition doesn't fit.");
+        break;
+    case ACT_R_CANT_AIM:
+        screen_message("You can't aim that.");
+        break;
+    case ACT_R_NO_CHARGES:
+        screen_message("It has no charges left.");
         break;
     case ACT_R_CANT_USE:
         screen_message("You can't use that.");

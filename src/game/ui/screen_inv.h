@@ -19,11 +19,11 @@
  * It opens in one of two modes:
  * - browse (SCREEN_INV_BROWSE, the i key): everything the player has. The
  *   cursor keys (or j and k) select; w wear, r take off, d drop, u use,
- *   ENTER the item's obvious action (take off what is in use, use what can
- *   be used, wear the rest). The help line lists the actions allowed for
+ *   a aim, ENTER the item's obvious action (take off what is in use, use
+ *   what can be used, aim what can be aimed, wear the rest). The help line lists the actions allowed for
  *   the selected item.
- * - choose, for an action (ACT_DROP, ACT_EQUIP, ACT_UNEQUIP, ACT_USE: the
- *   d, w, r and u keys): only the items it applies to, lettered; a letter,
+ * - choose, for an action (ACT_DROP, ACT_EQUIP, ACT_UNEQUIP, ACT_USE,
+ *   ACT_AIM: the d, w, r, u and a keys): only the items it applies to, lettered; a letter,
  *   or the cursor and ENTER, chooses. With nothing to list, it isn't opened:
  *   it says so in the message window.
  *
@@ -51,7 +51,7 @@
 /**
  * @brief Show the inventory, and wait for the player's choice.
  * @param mode SCREEN_INV_BROWSE, or the action to choose an item for:
- *             ACT_DROP, ACT_EQUIP, ACT_UNEQUIP or ACT_USE.
+ *             ACT_DROP, ACT_EQUIP, ACT_UNEQUIP, ACT_USE or ACT_AIM.
  * @param item Where the chosen item goes (on the caller's stack); left as
  *             it was when nothing is chosen.
  * @return The action to do with *item (ACT_*: in choose mode, mode

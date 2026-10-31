@@ -145,6 +145,16 @@ static uint8_t fire(nge_entity_id_t actor, uint8_t x, uint8_t y, uint8_t mode)
     return result;
 }
 
+/* act_aim() from actor with item at (x, y): its result, and the context in last */
+static uint8_t aim(nge_entity_id_t actor, nge_entity_id_t item, uint8_t x, uint8_t y, uint8_t mode)
+{
+    last = move(actor, 0, 0);
+    last.item = item;
+    last.x = x;
+    last.y = y;
+    return act_aim(&last, mode);
+}
+
 /* A stack of this kind on the floor of the area at (x, y) */
 static nge_entity_id_t floor_stack(uint8_t kind, uint8_t count, uint8_t x, uint8_t y)
 {
@@ -1210,6 +1220,90 @@ int main(void)
     i2 = floor_stack(IT_WAND_FIRE, 5, 0, 2);
     a = ctx(player);
     CHECK(act_pickup(&a, ACT_DO) == ACT_SUCCESS && stowed(i2, player) && item_count[i1] == 5 && item_count[i2] == 5);
+    events();
+
+    /* ---- aim: the player at (0, 2), a wand of fire stowed, a rat along the row ---- */
+    nge_entity_init();
+    nge_render_init();
+    nge_timer_init();
+    nge_event_init();
+    player = creature(CR_PLAYER, 0, 2);
+    rat = creature(CR_RAT, 3, 2);
+    effects_set_base(rat, ATTR_HP_MAX, 200);
+    health_hp[rat] = 200;
+    i1 = gen_item(IT_WAND_FIRE, player);
+    events();
+    /* Check mode: possible, the effect and target found, nothing changes, no random numbers */
+    r2 = item_count[i1];
+    srand(9);
+    r1 = rand();
+    srand(9);
+    CHECK(aim(player, i1, 3, 2, ACT_CHECK) == ACT_SUCCESS && last.used == 0 && last.target == rat &&
+          last.kind == EF_BOLT_FIRE);
+    CHECK(rand() == r1 && item_count[i1] == r2 && health_hp[rat] == 200 && events() == 0);
+    /* Done, by act_do(): a charge used, the event first, the effect's source the actor */
+    a = ctx(player);
+    a.item = i1;
+    a.x = 3;
+    a.y = 2;
+    CHECK(act_do(ACT_AIM, &a, ACT_DO) == ACT_SUCCESS && a.used == 1 && a.reason == ACT_R_NONE && a.target == rat);
+    CHECK(item_count[i1] == r2 - 1 && NGE_ENTITY_IS_ALIVE(i1) && health_hp[rat] < 200);
+    CHECK(events() >= 2 && is(0, rat, EV_AIMED, player) && seen[0].p1 == i1 && is(1, rat, EV_DAMAGED, player));
+    /* The line and the range, as a shot's; first in line takes it */
+    biter = creature(CR_RAT, 2, 2);
+    CHECK(aim(player, i1, 3, 2, ACT_CHECK) == ACT_SUCCESS && last.target == biter);
+    nge_entity_destroy(biter);
+    nge_entity_release(biter);
+    CHECK(aim(player, i1, 9, 2, ACT_DO) == ACT_FAIL && last.reason == ACT_R_OUT_OF_RANGE && last.used == 0);
+    CHECK(aim(player, i1, 1, 2, ACT_DO) == ACT_FAIL && last.reason == ACT_R_NO_TARGET);
+    NGE_MAP_TILE(1, 2).tile_id = WALL;
+    CHECK(aim(player, i1, 3, 2, ACT_DO) == ACT_FAIL && last.reason == ACT_R_NO_LINE);
+    NGE_MAP_TILE(1, 2).tile_id = FLOOR;
+    CHECK(item_count[i1] == r2 - 1 && events() == 0);
+    /* The range is ACT_AIM_RANGE exactly */
+    nge_location_set(rat, 8, 2);
+    CHECK(aim(player, i1, 8, 2, ACT_CHECK) == ACT_SUCCESS && last.target == rat);
+    nge_location_set(rat, 9, 2);
+    CHECK(aim(player, i1, 9, 2, ACT_CHECK) == ACT_FAIL && last.reason == ACT_R_OUT_OF_RANGE);
+    nge_location_set(rat, 3, 2);
+    /* A wand at 0 stays, refused; its own tile asks about the item alone */
+    item_count[i1] = 0;
+    CHECK(aim(player, i1, 3, 2, ACT_DO) == ACT_FAIL && last.reason == ACT_R_NO_CHARGES && last.used == 0);
+    CHECK(NGE_ENTITY_IS_ALIVE(i1) && events() == 0);
+    item_count[i1] = 1;
+    CHECK(aim(player, i1, 0, 2, ACT_CHECK) == ACT_SUCCESS && last.target == player);
+    /* The last charge: down to 0, and kept */
+    CHECK(aim(player, i1, 3, 2, ACT_DO) == ACT_SUCCESS && item_count[i1] == 0 && stowed(i1, player));
+    events();
+    /* A parchment: no count, destroyed, the effect still works */
+    i2 = gen_item(IT_SP_MISSILE, player);
+    health_hp[rat] = 200;
+    CHECK(aim(player, i2, 3, 2, ACT_DO) == ACT_SUCCESS && !NGE_ENTITY_IS_ALIVE(i2) && health_hp[rat] < 200);
+    CHECK(events() >= 2 && seen[0].id == EV_AIMED && seen[0].p1 == i2);
+    /* Own tile: a staff of healing on its holder */
+    i2 = gen_item(IT_STAFF_HEALING, player);
+    r2 = item_count[i2];
+    health_hp[player] = 1;
+    CHECK(aim(player, i2, 0, 2, ACT_DO) == ACT_SUCCESS && last.target == player && health_hp[player] > 1);
+    CHECK(item_count[i2] == r2 - 1 && events() >= 2 && is(0, player, EV_AIMED, player));
+    /* A kill names the actor, so its XP is earned */
+    i2 = gen_item(IT_STAFF_POWER, player);
+    health_hp[rat] = 1;
+    CHECK(aim(player, i2, 3, 2, ACT_DO) == ACT_SUCCESS && health_hp[rat] == 0);
+    ok = 0;
+    r1 = events();
+    for (x = 0; x < r1; x++) {
+        ok = ok || (seen[x].id == EV_DIED && seen[x].source == player);
+    }
+    CHECK(ok);
+    /* What can't be aimed, what isn't held and what is equipped */
+    i2 = gen_item(IT_HEAL_POTION, player);
+    rat = creature(CR_RAT, 3, 2);
+    CHECK(aim(player, i2, 3, 2, ACT_DO) == ACT_FAIL && last.reason == ACT_R_CANT_AIM && last.used == 0);
+    i2 = gen_item(IT_WAND_FIRE, AREA);
+    CHECK(aim(player, i2, 3, 2, ACT_DO) == ACT_FAIL && last.reason == ACT_R_NOT_CARRIED);
+    i2 = equipped(IT_WAND_FIRE, player, SLOT_NECK);
+    CHECK(aim(player, i2, 3, 2, ACT_DO) == ACT_FAIL && last.reason == ACT_R_EQUIPPED);
     events();
 
     return test_summary("act");

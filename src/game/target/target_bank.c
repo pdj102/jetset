@@ -36,6 +36,7 @@ typedef struct target_purpose {
 static const target_purpose_t purposes[TARGET_PURPOSE_COUNT] = {
     [TARGET_LOOK] = { "Look at what?", "Arrows: move  ENTER: look  Other: back" },
     [TARGET_FIRE] = { "Fire at what?", "Arrows: move  ENTER: fire  Other: back" },
+    [TARGET_AIM]  = { "Aim at what?", "Arrows: move  ENTER: aim  Other: back" },
 };
 
 uint8_t target_in_range(const target_t *t) NGE_BANKED

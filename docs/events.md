@@ -208,6 +208,7 @@ happened by the time a handler sees it:
 |---|---|---|
 | `act_strike()` | `EV_HIT`, the damage's events, the effect's | Reads as "hits you", then the damage (actions.md, 4.4) |
 | `act_fire()` | `EV_FIRED`, `act_strike()`'s, then the shot used up | The shot comes first, and a stack that runs out is dying when handlers see it |
+| `act_aim()` | `EV_AIMED`, the charge used or the parchment destroyed, the effect's | Reads as "you aim", then the effect |
 | `act_use()` | `EV_USED`, destroys the item, the effect's | Reads as "you drink", then the effect |
 | `health_damage()` | Takes the hit points, `EV_DAMAGED`, `EV_DIED`, destroys the entity | The target is dying when handlers see it |
 | `level_send()` | `EV_LEFT_LEVEL`, parks or destroys the entity | The target may be dying when handlers see it |
@@ -332,6 +333,7 @@ Reactions marked **rule** change the game's state. The rest only show something.
 | `EV_OPENED`, `EV_CLOSED` | `act_open()`, `act_close()` | messages |
 | `EV_HIT`, `EV_MISSED` | `act_strike()` | anim: a lunge; **rule** AI: hurt; messages |
 | `EV_FIRED` | `act_fire()` | messages; the projectile animation when it comes |
+| `EV_AIMED` | `act_aim()` | messages |
 | `EV_DAMAGED` | `health_damage()` | player: hit points; **rule** AI: hurt; messages |
 | `EV_HEALED` | `health_heal()` | player: hit points |
 | `EV_DIED` | `health_damage()` | **rule** player: XP, maybe a level; messages; **rule** death: game over |

@@ -678,11 +678,80 @@ int main(void)
         a.reason = ACT_R_WRONG_AMMO;
         messages_act_failed(&a);
         CHECK(said("That ammunition doesn't fit."));
+        a.reason = ACT_R_CANT_AIM;
+        messages_act_failed(&a);
+        CHECK(said("You can't aim that."));
+        a.reason = ACT_R_NO_CHARGES;
+        messages_act_failed(&a);
+        CHECK(said("It has no charges left."));
     }
     messages_game_over(GAME_OVER_WON);
     CHECK(said("Press any key.") && shown("You escape with the crown. You win!"));
     messages_game_over(GAME_OVER_DIED);
     CHECK(said("Game over. Press any key."));
+
+    /* ---- aim: an item from its list, then a tile; the player's own, here ---- */
+    {
+        nge_entity_id_t staff;
+        uint8_t charges;
+        int rows_to_staff;
+        int i;
+
+        fresh();
+        player_turn = 1;
+        player_command(EV(NGE_KEY_A));                             /* nothing listed: no screen */
+        CHECK(said("You have nothing to aim.") && player_turn);
+        staff = gen_item(IT_STAFF_HEALING, actor_player);
+        charges = item_count[staff];
+        press(EV(NGE_KEY_A));                                      /* the list's first */
+        press(EV(NGE_KEY_SPACE));                                  /* taken by the screen's closing frame */
+        press(EV(NGE_KEY_Q));                                      /* the cursor cancelled: no turn, no charge */
+        player_command(EV(NGE_KEY_A));
+        CHECK(player_turn && item_count[staff] == charges);
+        press(EV(NGE_KEY_A));
+        press(EV(NGE_KEY_SPACE));
+        press(EV(NGE_KEY_ENTER));                                  /* the cursor starts on the player */
+        player_command(EV(NGE_KEY_A));
+        CHECK(!player_turn && item_count[staff] == charges - 1);
+        nge_event_process(messages_on_event);
+        player_turn = 1;
+        /* The inventory's a key, and its ENTER: what can be aimed is aimed */
+        rows_to_staff = 0;
+        for (i = 0; i < NGE_ENTITY_MAX; i++) {                     /* in use first, then the pack by ID */
+            if (NGE_ENTITY_IS_ALIVE(i) && NGE_OWNER_OF(i) == actor_player &&
+                (item_slot[i] != SLOT_NONE || i < staff)) {
+                rows_to_staff++;
+            }
+        }
+        for (i = 0; i < rows_to_staff; i++) {
+            press(EV(NGE_KEY_DOWN));
+        }
+        press(EV(NGE_KEY_ENTER));
+        press(EV(NGE_KEY_SPACE));
+        press(EV(NGE_KEY_ENTER));
+        player_command(EV(NGE_KEY_I));
+        CHECK(!player_turn && item_count[staff] == charges - 2);
+        nge_event_flush();
+        player_turn = 1;
+        for (i = 0; i < rows_to_staff; i++) {
+            press(EV(NGE_KEY_DOWN));
+        }
+        press(EV(NGE_KEY_A));
+        press(EV(NGE_KEY_SPACE));
+        press(EV(NGE_KEY_ENTER));
+        player_command(EV(NGE_KEY_I));
+        CHECK(!player_turn && item_count[staff] == charges - 3);
+        nge_event_flush();
+        player_turn = 1;
+        /* A wand with no charges is listed, and refused with the screen open */
+        item_count[staff] = 0;
+        press(EV(NGE_KEY_A));
+        press(EV(NGE_KEY_SPACE));
+        player_command(EV(NGE_KEY_A));
+        CHECK(player_turn && item_count[staff] == 0);
+        nge_entity_destroy(staff);
+        nge_event_flush();
+    }
 
     /* ---- the player's turn: their timer starts it, a new game resets it ---- */
     player_init();

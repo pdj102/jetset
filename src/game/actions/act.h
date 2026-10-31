@@ -97,7 +97,11 @@ typedef struct act {
 #define ACT_DESCEND 10
 #define ACT_WAIT    11
 #define ACT_FIRE    12
-#define ACT_COUNT   13
+#define ACT_AIM     13
+#define ACT_COUNT   14
+
+/** How far an aimed item reaches (nge_map_within()): a kind has no range of its own. */
+#define ACT_AIM_RANGE  8
 
 /* Reasons (refused or attempted: the table in act.c) */
 #define ACT_R_NONE              0   /**< Succeeded. */
@@ -131,7 +135,9 @@ typedef struct act {
 #define ACT_R_NO_LINE           28  /**< Refused: a wall, a closed door or the map's edge is in the way. */
 #define ACT_R_NO_AMMO           29  /**< Refused: a launcher, with nothing in SLOT_AMMO. */
 #define ACT_R_WRONG_AMMO        30  /**< Refused: the ammo doesn't fit the launcher. */
-#define ACT_R_COUNT             31
+#define ACT_R_CANT_AIM          31  /**< Refused: the item has nothing to aim. */
+#define ACT_R_NO_CHARGES        32  /**< Refused: a wand or staff with none left. */
+#define ACT_R_COUNT             33
 
 /**
  * @brief Move one tile.
@@ -289,6 +295,22 @@ uint8_t act_wait(act_t *a, uint8_t mode) NGE_BANKED;
  * fire at all: that reason means yes, with the range in a->amount.
  */
 uint8_t act_fire(act_t *a, uint8_t mode) NGE_BANKED;
+
+/**
+ * @brief Send an item's aim hook (GEN_HOOK_AIM) at the first creature on
+ *        the line towards the tile (a->x, a->y), within ACT_AIM_RANGE, or
+ *        at the actor if it is the actor's own tile. A wand or staff uses a
+ *        charge and is kept at 0; a parchment is destroyed.
+ *
+ * Inputs: actor (alive, placed), item, x, y. Outputs: target; kind, the
+ * effect. Posts EV_AIMED, then the effect's events, with the actor as
+ * their source, so a kill earns its XP. Refused with ACT_R_NOT_CARRIED,
+ * ACT_R_EQUIPPED, ACT_R_CANT_AIM, ACT_R_NO_CHARGES, ACT_R_OUT_OF_RANGE,
+ * ACT_R_NO_LINE or ACT_R_NO_TARGET.
+ *
+ * A check on the actor's own tile asks about the item alone.
+ */
+uint8_t act_aim(act_t *a, uint8_t mode) NGE_BANKED;
 
 /** @brief Call action (ACT_MOVE...) by number: for the AI and delayed actions. */
 uint8_t act_do(uint8_t action, act_t *a, uint8_t mode);

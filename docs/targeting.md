@@ -27,8 +27,8 @@ tile, or "no tile". What the tile is used for is up to the command.
 |---|---|
 | Targeting | The mode in which the player moves the cursor and chooses a tile or cancels: one call, `target_choose()` |
 | Cursor | The sprite marking the tile being targeted |
-| Caller | The command that starts targeting (look, fire; later cast) |
-| Purpose | What the caller wants a tile for (`TARGET_LOOK`, `TARGET_FIRE`): it picks the prompt and the help text |
+| Caller | The command that starts targeting (look, fire, aim; later cast) |
+| Purpose | What the caller wants a tile for (`TARGET_LOOK`, `TARGET_FIRE`, `TARGET_AIM`): it picks the prompt and the help text |
 | Origin | The tile the range is measured from: usually the player's |
 | Start | The tile the cursor starts on: usually the origin. Later it might be the last target or the nearest monster |
 | Range | The furthest distance from the origin a tile can be chosen at, in tiles, or `TARGET_RANGE_ANY` |

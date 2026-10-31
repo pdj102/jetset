@@ -316,7 +316,6 @@ mechanic is missing.
 
 | Mechanic | Waiting data |
 |---|---|
-| Aiming and charges | Aim hooks and counts on wands, staves and parchments; they can't be used yet |
 | Using up counts | `item_count[]`, on what isn't ammo. Ammo merges and is used up |
 | Locks | Keys, lock picks, their groups and counts |
 | Two-handed weapons | `ITEMF_TWO_HANDS` |

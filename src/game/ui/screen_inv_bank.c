@@ -17,6 +17,7 @@
 #include "io/nge_print.h"
 #include "io/nge_text.h"
 #include "ui/nge_list.h"
+#include "ecs/components/nge_location.h"
 #include "ui/nge_panel.h"
 
 #include "game/actors.h"
@@ -51,7 +52,8 @@ static const nge_panel_t panels[SCREEN_INV_COUNT] = {
 #define LIST_EQUIPPED    2   /* in use, in slot order */
 #define LIST_ALL         3   /* what is in use, then the pack */
 #define LIST_USABLE      4   /* in the pack, doing something when used */
-#define LIST_COUNT       5   /* the number of lists */
+#define LIST_AIMABLE     5   /* in the pack, with something to aim */
+#define LIST_COUNT       6   /* the number of lists */
 
 /* A key's answer, besides an action (ACT_*) and SCREEN_INV_BACK: stay open */
 #define KEY_STAY  (ACT_COUNT + 1)
@@ -74,11 +76,13 @@ static const inv_mode_t modes[ACT_COUNT + 1] = {
                       LIST_EQUIPPED },
     [ACT_USE]     = { "Partake", "Letter/ENTER: use it  SPACE: back", "You have nothing to use.",
                       LIST_USABLE },
+    [ACT_AIM]     = { "Take Aim", "Letter/ENTER: aim it  SPACE: back", "You have nothing to aim.",
+                      LIST_AIMABLE },
 };
 
 /* The browse keys of the actions, as the help line lists them, in this order */
-static const uint8_t help_actions[4] = { ACT_EQUIP, ACT_UNEQUIP, ACT_DROP, ACT_USE };
-static const char *const help_words[4] = { " w:wear", " r:off", " d:drop", " u:use" };
+static const uint8_t help_actions[5] = { ACT_EQUIP, ACT_UNEQUIP, ACT_DROP, ACT_USE, ACT_AIM };
+static const char *const help_words[5] = { " w:wear", " r:off", " d:drop", " u:use", " a:aim" };
 
 /* Where an equipped item is, after its name */
 static const char *const slot_words[SLOT_COUNT] = {
@@ -110,6 +114,8 @@ static uint8_t listed(uint8_t list, nge_entity_id_t id)
         return (gen_item_fits(kind_index[id]) & inv_slots[actor_player]) != 0;
     case LIST_USABLE:
         return GEN_HOOK_EF(gen_hook_of(id, GEN_HOOK_USE)) != EF_NONE;
+    case LIST_AIMABLE:
+        return GEN_HOOK_EF(gen_hook_of(id, GEN_HOOK_AIM)) != EF_NONE;
     default:
         return 1;
     }
@@ -174,6 +180,8 @@ static uint8_t allowed(uint8_t action, uint8_t say)
     a.actor = actor_player;
     a.item = selected();
     a.kind = SLOT_NONE;   /* equip: the first free slot it fits */
+    a.x = NGE_LOCATION_X(actor_player);   /* aim: its own tile asks about the item alone (act_aim()) */
+    a.y = NGE_LOCATION_Y(actor_player);
     if (act_do(action, &a, ACT_CHECK) == ACT_SUCCESS) {
         return 1;
     }
@@ -322,6 +330,9 @@ static uint8_t obvious_action(void)
     if (GEN_HOOK_EF(gen_hook_of(id, GEN_HOOK_USE)) != EF_NONE) {
         return ACT_USE;
     }
+    if (GEN_HOOK_EF(gen_hook_of(id, GEN_HOOK_AIM)) != EF_NONE) {
+        return ACT_AIM;
+    }
     return ACT_EQUIP;
 }
 
@@ -379,6 +390,8 @@ static uint8_t key(uint8_t mode, nge_key_event_t ev)
         return try(ACT_DROP);
     case 'u':
         return try(ACT_USE);
+    case 'a':
+        return try(ACT_AIM);
     default:
         return KEY_STAY;
     }

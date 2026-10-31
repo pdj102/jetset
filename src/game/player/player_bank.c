@@ -133,19 +133,40 @@ static void look(void)
     }
 }
 
+/* Choose a tile from the player's, within range, for an action: 1 with it in a->x, a->y */
+static uint8_t choose_tile(uint8_t purpose, uint8_t range, act_t *a)
+{
+    target_t t;
+
+    t.purpose = purpose;
+    t.origin_x = NGE_LOCATION_X(actor_player);
+    t.origin_y = NGE_LOCATION_Y(actor_player);
+    t.range = range;
+    t.x = t.origin_x;
+    t.y = t.origin_y;
+    if (!target_choose(&t)) {
+        return 0;
+    }
+    a->x = t.x;
+    a->y = t.y;
+    return 1;
+}
+
 /*
  * Choose an item and an action on the inventory screen: browsing
- * (SCREEN_INV_BROWSE), or for an action (ACT_*). Then do the action with it
+ * (SCREEN_INV_BROWSE), or for an action (ACT_*). Then do the action with it,
+ * aiming it first if that is the action
  */
 static void item_command(uint8_t mode)
 {
     act_t a = { 0 };
     uint8_t action = screen_inv_run(mode, &a.item);
 
-    if (action != SCREEN_INV_BACK) {
-        a.kind = SLOT_NONE;   /* equip: the first free slot it fits */
-        player_act(action, &a);
+    if (action == SCREEN_INV_BACK || (action == ACT_AIM && !choose_tile(TARGET_AIM, ACT_AIM_RANGE, &a))) {
+        return;
     }
+    a.kind = SLOT_NONE;   /* equip: the first free slot it fits */
+    player_act(action, &a);
 }
 
 /* Close: choose a direction, then close the door that way */
@@ -167,7 +188,6 @@ static void close_command(void)
 static void fire_command(void)
 {
     act_t a = { 0 };
-    target_t t;
 
     a.actor = actor_player;
     a.x = NGE_LOCATION_X(actor_player);
@@ -177,15 +197,7 @@ static void fire_command(void)
         messages_act_failed(&a);
         return;
     }
-    t.purpose = TARGET_FIRE;
-    t.origin_x = a.x;
-    t.origin_y = a.y;
-    t.range = a.amount;
-    t.x = a.x;
-    t.y = a.y;
-    if (target_choose(&t)) {
-        a.x = t.x;
-        a.y = t.y;
+    if (choose_tile(TARGET_FIRE, a.amount, &a)) {
         player_act(ACT_FIRE, &a);
     }
 }
@@ -284,6 +296,9 @@ void player_command(nge_key_event_t ev) NGE_BANKED
         break;
     case 'u':
         item_command(ACT_USE);
+        break;
+    case 'a':
+        item_command(ACT_AIM);
         break;
     case 'f':
         fire_command();

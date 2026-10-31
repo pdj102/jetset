@@ -5,7 +5,7 @@
  * @file target.h
  * @brief Targeting: the player moves a cursor over the map and chooses a
  *        tile, or cancels. Used by commands that need a tile, not a
- *        direction (look and fire; later cast). See docs/targeting.md.
+ *        direction (look, fire and aim; later cast). See docs/targeting.md.
  *
  * The caller fills in a context (target_t, on its own stack) and calls
  * target_choose(), which returns when the player has chosen or cancelled:
@@ -42,7 +42,8 @@
 /* Purposes: what a tile is wanted for */
 #define TARGET_LOOK           0   /**< Look at what is on a tile (messages_look()). */
 #define TARGET_FIRE           1   /**< Fire at a tile (ACT_FIRE). */
-#define TARGET_PURPOSE_COUNT  2
+#define TARGET_AIM            2   /**< Aim an item at a tile (ACT_AIM). */
+#define TARGET_PURPOSE_COUNT  3
 
 /* target_key()'s answers */
 #define TARGET_STEP_MOVING     0   /**< Still targeting: the cursor moved, or a choice was refused. */
