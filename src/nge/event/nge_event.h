@@ -55,7 +55,7 @@
 #endif
 
 #ifndef NGE_EVENT_PROCESS_MAX
-/** Events handled by one nge_event_process() call at most: catches handlers that keep posting. */
+/** Events one nge_event_process() call handles before it asserts: catches handlers that keep posting. */
 #define NGE_EVENT_PROCESS_MAX  64
 #endif
 
@@ -95,13 +95,18 @@ void nge_event_post(uint8_t target, nge_event_id_t id, uint8_t source, uint8_t p
 /** @brief Number of events waiting. */
 uint8_t nge_event_count(void);
 
+#ifndef NDEBUG
+/** @brief The most events that have been waiting since nge_event_init(): debug builds only. */
+uint8_t nge_event_peak(void);
+#endif
+
 /**
  * @brief Handle the waiting events, oldest first: each is taken off the
  *        queue and passed, as a const copy, to dispatch.
  *
- * Events posted by the handlers are handled in the same call. At most
- * NGE_EVENT_PROCESS_MAX events are handled: more asserts (with NDEBUG, the
- * rest wait for the next call).
+ * Events posted by the handlers are handled in the same call, so the queue
+ * is empty afterwards. Handling more than NGE_EVENT_PROCESS_MAX asserts: a
+ * guard against handlers that keep posting (with NDEBUG, they hang).
  * @param dispatch The game's dispatch function, in common memory.
  * @return The number of events handled.
  */

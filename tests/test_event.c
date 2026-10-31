@@ -103,6 +103,17 @@ int main(void)
     }
     CHECK(ok);
 
+    /* ---- peak: the most waiting since init, not lowered by handling them ---- */
+    nge_event_init();
+    CHECK(nge_event_peak() == 0);
+    nge_event_post0(1, EV_A);
+    nge_event_post0(2, EV_A);
+    nge_event_process(record);
+    nge_event_post0(3, EV_A);
+    CHECK(nge_event_peak() == 2);
+    nge_event_init();
+    CHECK(nge_event_peak() == 0);
+
     /* ---- flush ---- */
     nge_event_post0(1, EV_A);
     nge_event_post0(2, EV_A);

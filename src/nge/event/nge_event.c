@@ -14,11 +14,17 @@ typedef char nge_event_queue_check[(NGE_EVENT_QUEUE & (NGE_EVENT_QUEUE - 1)) == 
 static nge_event_t queue[NGE_EVENT_QUEUE];
 static uint8_t head;    /* oldest event */
 static uint8_t count;   /* events waiting */
+#ifndef NDEBUG
+static uint8_t peak;    /* highest count since init */
+#endif
 
 void nge_event_init(void)
 {
     head = 0;
     count = 0;
+#ifndef NDEBUG
+    peak = 0;
+#endif
 }
 
 void nge_event_post(uint8_t target, nge_event_id_t id, uint8_t source, uint8_t p1, uint8_t p2)
@@ -36,12 +42,24 @@ void nge_event_post(uint8_t target, nge_event_id_t id, uint8_t source, uint8_t p
     e->p1 = p1;
     e->p2 = p2;
     count++;
+#ifndef NDEBUG
+    if (count > peak) {
+        peak = count;
+    }
+#endif
 }
 
 uint8_t nge_event_count(void)
 {
     return count;
 }
+
+#ifndef NDEBUG
+uint8_t nge_event_peak(void)
+{
+    return peak;
+}
+#endif
 
 uint8_t nge_event_process(nge_event_dispatch_fn dispatch)
 {
@@ -51,10 +69,7 @@ uint8_t nge_event_process(nge_event_dispatch_fn dispatch)
     nge_util_assert(dispatch != NULL);
 
     while (count != 0) {
-        if (n == NGE_EVENT_PROCESS_MAX) {
-            nge_util_assert(n < NGE_EVENT_PROCESS_MAX);   /* handlers keep posting events */
-            break;
-        }
+        nge_util_assert(n < NGE_EVENT_PROCESS_MAX);   /* handlers keep posting events */
         /* A copy, taken off the queue first: handlers may post more */
         e = queue[head];
         head = (head + 1) & (NGE_EVENT_QUEUE - 1);
