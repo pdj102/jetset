@@ -1,7 +1,8 @@
 # Sprite style guide
 
 Status: agreed (2026-10-29): D1 to D9 as proposed, and Q1 to Q5 answered
-as proposed. No masters are drawn yet (6.9).
+as proposed. Creature rest art drawn (2026-10-31): masters in 6.9. CSpect checks
+passed (2026-10-31), including the second pattern page; hardware not yet tried.
 
 The rules every sprite in `assets/Sprites.aseprite` follows, so sprites
 drawn at different times, by the artist or by Claude, look like one set.
@@ -149,10 +150,10 @@ ground shadow.
 
 | Class | Body box (w x h, with outline) | Placement | Examples |
 |---|---|---|---|
-| Tiny | up to 8 x 7 | feet on row 14, centred | bat (in the air: bottom on row 11), spider, slime |
-| Small | up to 12 x 9 | feet on row 14 | rat, dog, snake |
-| Medium | 9-12 x 12-14 | feet on row 14 | player, goblin, skeleton, zombie |
-| Large | 13-14 x 14 | feet on row 14, top on row 1 | ogre, troll, golem |
+| Tiny | up to 8 x 7 | feet on row 14, centred | bat and floating eye (in the air: bottom on row 11), slime |
+| Small | up to 12 x 9 | feet on row 14 | rat, dog, snake, giant spider, lichen, shrieker |
+| Medium | 9-12 x 12-14 | feet on row 14 | player, goblin, skeleton, ghost, zombie |
+| Large | 13-14 x 14 | feet on row 14, top on row 1 | ogre, troll, golem, dragon |
 | Item | up to 12 x 12 | centred on (7.5, 7.5), bottom no lower than row 13 | potion, sword, ring, scroll, coins |
 | Feature | up to 14 x 14 | on row 14, as a creature | chest, torch, fountain |
 | Effect | anything inside 14 x 14 | centred | sparks, fire, frost, poison cloud |
@@ -269,17 +270,20 @@ art is compared with them:
 | Medium creature | `player.idle` frame 0 (agreed 2026-10-29) |
 | Small creature | `rat.idle` frame 0 (agreed 2026-10-29) |
 | Item | `potion` (agreed 2026-10-29) |
+| Tiny creature | `slime.idle` frame 0 (agreed 2026-10-31) |
+| Large creature | `ogre.idle` frame 0 (agreed 2026-10-31) |
 
 ## 7. Workflow with Claude
 
 1. **The request** names the sprite, its tags, its bank, and this guide;
    it can name a master to match ("as the goblin, but bigger and in
    iron").
-2. **Grids.** Claude writes each frame as a grid (section 2) in the reply,
-   with notes on which rules decide each choice. Changing a grid is cheap:
-   "make the skull 1 pixel wider".
+2. **Grids.** Claude writes each frame as a grid (section 2) in a grid file
+   for `scripts/sprite_grids.py`, once, and doesn't repeat it in the reply.
+   Changing a grid is cheap: "make the skull 1 pixel wider".
 3. **Preview.** Claude renders the frames at 8x, next to the masters, on
-   the floor and wall colours, and in the flash and shadow banks.
+   the floor and wall colours, and in the flash and shadow banks. The
+   artist reviews this picture.
 4. **Into the file.** Once the artist agrees, Claude adds the frames and
    tags to `assets/Sprites.aseprite` with Aseprite's command line
    (`Aseprite.exe -b --script`, a Lua script), which keeps the layers,

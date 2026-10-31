@@ -21,11 +21,13 @@
 
 #define SPRITE_PALETTE_PAGE          135 /**< SECTION PAGE_135 in sprite_palette_data.asm. */
 #define SPRITE_PALETTE_ENTRIES       256 /**< Entries in sprite_palette: load them from entry 0. */
-#define SPRITE_PATTERNS              50  /**< 4-bit patterns, from pattern 0. */
-#define SPRITE_PATTERN_PAGES         1   /**< Pages of patterns: SPRITE_PATTERNS_PAGE_0 on. */
+#define SPRITE_PATTERNS              72  /**< 4-bit patterns, from pattern 0. */
+#define SPRITE_PATTERN_PAGES         2   /**< Pages of patterns: SPRITE_PATTERNS_PAGE_0 on. */
 
-#define SPRITE_PATTERNS_PAGE_0       137 /**< Patterns 0-49: sprite_patterns_0. */
-#define SPRITE_PATTERNS_COUNT_0      50
+#define SPRITE_PATTERNS_PAGE_0       137 /**< Patterns 0-63: sprite_patterns_0. */
+#define SPRITE_PATTERNS_COUNT_0      64
+#define SPRITE_PATTERNS_PAGE_1       139 /**< Patterns 64-71: sprite_patterns_1. */
+#define SPRITE_PATTERNS_COUNT_1      8
 
 #define SPRITE_PLAYER_IDLE           0   /**< Tag player.idle: frames 0-1. */
 #define SPRITE_PLAYER_IDLE_COUNT     2
@@ -50,7 +52,7 @@
 #define SPRITE_GOBLIN_IDLE           7   /**< Tag goblin.idle: frames 7-8. */
 #define SPRITE_GOBLIN_IDLE_COUNT     2
 #define SPRITE_GOBLIN_IDLE_RATE      25
-#define SPRITE_GOBLIN_IDLE_BANK      0
+#define SPRITE_GOBLIN_IDLE_BANK      6
 
 #define SPRITE_POTION                9   /**< Tag potion: frame 9. */
 #define SPRITE_POTION_COUNT          1
@@ -257,7 +259,63 @@
 #define SPRITE_CROWN_RATE            5
 #define SPRITE_CROWN_BANK            10
 
+#define SPRITE_OGRE_IDLE             50  /**< Tag ogre.idle: frames 50-51. */
+#define SPRITE_OGRE_IDLE_COUNT       2
+#define SPRITE_OGRE_IDLE_RATE        25
+#define SPRITE_OGRE_IDLE_BANK        12
+
+#define SPRITE_SPIDER_IDLE           52  /**< Tag spider.idle: frames 52-53. */
+#define SPRITE_SPIDER_IDLE_COUNT     2
+#define SPRITE_SPIDER_IDLE_RATE      25
+#define SPRITE_SPIDER_IDLE_BANK      15
+
+#define SPRITE_BAT_IDLE              54  /**< Tag bat.idle: frames 54-55. */
+#define SPRITE_BAT_IDLE_COUNT        2
+#define SPRITE_BAT_IDLE_RATE         25
+#define SPRITE_BAT_IDLE_BANK         10
+
+#define SPRITE_EYE_IDLE              56  /**< Tag eye.idle: frames 56-57. */
+#define SPRITE_EYE_IDLE_COUNT        2
+#define SPRITE_EYE_IDLE_RATE         25
+#define SPRITE_EYE_IDLE_BANK         8
+
+#define SPRITE_SLIME_IDLE            58  /**< Tag slime.idle: frames 58-59. */
+#define SPRITE_SLIME_IDLE_COUNT      2
+#define SPRITE_SLIME_IDLE_RATE       25
+#define SPRITE_SLIME_IDLE_BANK       7
+
+#define SPRITE_LICHEN_IDLE           60  /**< Tag lichen.idle: frames 60-61. */
+#define SPRITE_LICHEN_IDLE_COUNT     2
+#define SPRITE_LICHEN_IDLE_RATE      25
+#define SPRITE_LICHEN_IDLE_BANK      14
+
+#define SPRITE_SNAKE_IDLE            62  /**< Tag snake.idle: frames 62-63. */
+#define SPRITE_SNAKE_IDLE_COUNT      2
+#define SPRITE_SNAKE_IDLE_RATE       25
+#define SPRITE_SNAKE_IDLE_BANK       6
+
+#define SPRITE_SHRIEKER_IDLE         64  /**< Tag shrieker.idle: frames 64-65. */
+#define SPRITE_SHRIEKER_IDLE_COUNT   2
+#define SPRITE_SHRIEKER_IDLE_RATE    25
+#define SPRITE_SHRIEKER_IDLE_BANK    10
+
+#define SPRITE_SKELETON_IDLE         66  /**< Tag skeleton.idle: frames 66-67. */
+#define SPRITE_SKELETON_IDLE_COUNT   2
+#define SPRITE_SKELETON_IDLE_RATE    25
+#define SPRITE_SKELETON_IDLE_BANK    14
+
+#define SPRITE_GHOST_IDLE            68  /**< Tag ghost.idle: frames 68-69. */
+#define SPRITE_GHOST_IDLE_COUNT      2
+#define SPRITE_GHOST_IDLE_RATE       25
+#define SPRITE_GHOST_IDLE_BANK       14
+
+#define SPRITE_DRAGON_IDLE           70  /**< Tag dragon.idle: frames 70-71. */
+#define SPRITE_DRAGON_IDLE_COUNT     2
+#define SPRITE_DRAGON_IDLE_RATE      25
+#define SPRITE_DRAGON_IDLE_BANK      3
+
 extern const uint8_t sprite_patterns_0[];
+extern const uint8_t sprite_patterns_1[];
 extern const nge_palette_entry_9_t sprite_palette[];
 
 #endif

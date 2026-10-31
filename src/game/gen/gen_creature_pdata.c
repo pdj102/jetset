@@ -41,18 +41,28 @@
                               NGE_SPRITE_PALETTE(bank), LAYER_MONSTERS }
 #define SHAPE_COINS(bank)   { SPRITE_COINS, SPRITE_COINS_COUNT, SPRITE_COINS_RATE, \
                               NGE_SPRITE_PALETTE(bank), LAYER_MONSTERS }
-
-/* Stand-ins until their art is drawn: a shape's own tag replaces these, one line each */
-#define SHAPE_BAT       SHAPE_RAT
-#define SHAPE_SNAKE     SHAPE_RAT
-#define SHAPE_FUNGUS    SHAPE_RAT
-#define SHAPE_SLIME     SHAPE_RAT
-#define SHAPE_SPIDER    SHAPE_RAT
-#define SHAPE_EYE       SHAPE_RAT
-#define SHAPE_SKELETON  SHAPE_GOBLIN
-#define SHAPE_GHOST     SHAPE_GOBLIN
-#define SHAPE_OGRE      SHAPE_GOBLIN
-#define SHAPE_DRAGON    SHAPE_GOBLIN
+#define SHAPE_BAT(bank)     { SPRITE_BAT_IDLE, SPRITE_BAT_IDLE_COUNT, SPRITE_BAT_IDLE_RATE, \
+                              NGE_SPRITE_PALETTE(bank), LAYER_MONSTERS }
+#define SHAPE_SNAKE(bank)   { SPRITE_SNAKE_IDLE, SPRITE_SNAKE_IDLE_COUNT, SPRITE_SNAKE_IDLE_RATE, \
+                              NGE_SPRITE_PALETTE(bank), LAYER_MONSTERS }
+#define SHAPE_LICHEN(bank)  { SPRITE_LICHEN_IDLE, SPRITE_LICHEN_IDLE_COUNT, SPRITE_LICHEN_IDLE_RATE, \
+                              NGE_SPRITE_PALETTE(bank), LAYER_MONSTERS }
+#define SHAPE_SHRIEKER(bank) { SPRITE_SHRIEKER_IDLE, SPRITE_SHRIEKER_IDLE_COUNT, SPRITE_SHRIEKER_IDLE_RATE, \
+                              NGE_SPRITE_PALETTE(bank), LAYER_MONSTERS }
+#define SHAPE_SLIME(bank)   { SPRITE_SLIME_IDLE, SPRITE_SLIME_IDLE_COUNT, SPRITE_SLIME_IDLE_RATE, \
+                              NGE_SPRITE_PALETTE(bank), LAYER_MONSTERS }
+#define SHAPE_SPIDER(bank)  { SPRITE_SPIDER_IDLE, SPRITE_SPIDER_IDLE_COUNT, SPRITE_SPIDER_IDLE_RATE, \
+                              NGE_SPRITE_PALETTE(bank), LAYER_MONSTERS }
+#define SHAPE_EYE(bank)     { SPRITE_EYE_IDLE, SPRITE_EYE_IDLE_COUNT, SPRITE_EYE_IDLE_RATE, \
+                              NGE_SPRITE_PALETTE(bank), LAYER_MONSTERS }
+#define SHAPE_SKELETON(bank) { SPRITE_SKELETON_IDLE, SPRITE_SKELETON_IDLE_COUNT, SPRITE_SKELETON_IDLE_RATE, \
+                              NGE_SPRITE_PALETTE(bank), LAYER_MONSTERS }
+#define SHAPE_GHOST(bank)   { SPRITE_GHOST_IDLE, SPRITE_GHOST_IDLE_COUNT, SPRITE_GHOST_IDLE_RATE, \
+                              NGE_SPRITE_PALETTE(bank), LAYER_MONSTERS }
+#define SHAPE_OGRE(bank)    { SPRITE_OGRE_IDLE, SPRITE_OGRE_IDLE_COUNT, SPRITE_OGRE_IDLE_RATE, \
+                              NGE_SPRITE_PALETTE(bank), LAYER_MONSTERS }
+#define SHAPE_DRAGON(bank)  { SPRITE_DRAGON_IDLE, SPRITE_DRAGON_IDLE_COUNT, SPRITE_DRAGON_IDLE_RATE, \
+                              NGE_SPRITE_PALETTE(bank), LAYER_MONSTERS }
 
 const gen_creature_kind_t gen_creatures[CR_COUNT] = {
     [CR_PLAYER] = {
@@ -132,7 +142,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
     },
     [CR_LICHEN] = {
         .name = "lichen",
-        .render = SHAPE_FUNGUS(BANK_BONE),
+        .render = SHAPE_LICHEN(BANK_BONE),
         .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
         .stats = { .speed = MONSTER_SLOW, .ability = { 2, 2, 10, 1, 6, 1 } },
         .health = { .hp_max = 4, .immune = DMG_BIT(DMG_POISON), .vuln = DMG_BIT(DMG_FIRE), .ac = 9 },
@@ -160,7 +170,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
     },
     [CR_SHRIEKER] = {                                   /* later: its shriek wakes the level */
         .name = "shrieker",
-        .render = SHAPE_FUNGUS(BANK_PURPLE),
+        .render = SHAPE_SHRIEKER(BANK_PURPLE),
         .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
         .stats = { .speed = MONSTER_SLOW, .ability = { 1, 1, 8, 1, 8, 1 } },
         .health = { .hp_max = 5, .immune = DMG_BIT(DMG_POISON), .vuln = DMG_BIT(DMG_FIRE), .ac = 7 },

@@ -2,7 +2,7 @@
 
 Status: implemented (2026-10-31): 21 kinds in
 [gen_creature_pdata.c](../src/game/gen/gen_creature_pdata.c), the new kinds
-drawn with stand-in sprites, and rooted creatures. D1 to D6 and Q1, Q2 agreed
+drawn with their own rest sprites (section "Stand-ins"), and rooted creatures. D1 to D6 and Q1, Q2 agreed
 the same day. The CSpect checks in section 6 passed (2026-10-31), check 3
 after a fix (section 8), and the PC screen shows "Rooted" in red. Not yet tried
 on hardware. Section 8 lists where the build differs from the design.
@@ -23,9 +23,9 @@ goblin's, the player's and the coins' patterns are reused, in other banks.
 | 1-6 | 6 | goblin | goblin | green | 1-1 | Weak to fire, wields, opens doors | |
 | 1-4 | 8 | bat | bat (new) | purple | <1 | Fast | Erratic flight |
 | 1-5 | 7 | green snake | snake (new) | green | 1 | Poison bite | |
-| 1-5 | 5 | lichen | fungus (new) | bone | 1 | Rooted, a touch that holds, slow | |
+| 1-5 | 5 | lichen | lichen (new) | bone | 1 | Rooted, a touch that holds, slow | |
 | 2-6 | 6 | green slime | slime (new) | lime | 2 | Acid touch, resists blunt and pierce, slow | Splits, corrodes gear |
-| 2-6 | 4 | shrieker | fungus | purple | 1 | Rooted, no attack, slow | A shriek that wakes the level |
+| 2-6 | 4 | shrieker | shrieker (new) | purple | 1 | Rooted, no attack, slow | A shriek that wakes the level |
 | 2-6 | 5 | bandit | player | earth | 2 | Wears all it finds | Steals and runs |
 | 3-7 | 8 | orc | goblin | iron | 2 | Wields and wears, opens doors | |
 | 3-7 | 6 | giant spider | spider (new) | dark | 3 | Strong poison | Webs |
@@ -46,10 +46,12 @@ special ability. They have not been balanced by play.
 
 ### Stand-ins
 
-The table names a shape, not a tag: `SHAPE_FUNGUS(BANK_BONE)`. Until a shape
-is drawn, its macro is the rat (small kinds) or the goblin (medium and large
-kinds). Drawing a shape changes that one line, by the workflow in
-[sprite_style.md](sprite_style.md) section 7. The bandit in the player's
+The table names a shape, not a tag: `SHAPE_LICHEN(BANK_BONE)`. Every shape now
+has its own rest art (`<shape>.idle`, 2 frames, drawn 2026-10-31 by the
+workflow in [sprite_style.md](sprite_style.md) section 7), and lichen and
+shrieker, one shape when planned, became two. No shape has attack or dead
+frames yet. The orc and shaman are recolours of the redrawn goblin, the mimic
+borrows the coins. The bandit in the player's
 sprite has not been looked at: bank 0's layout is only a guide, so its colours
 in earth may need work.
 
