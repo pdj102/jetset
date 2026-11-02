@@ -24,13 +24,16 @@ A module that isn't banked is a single `src/game/<module>.{h,c}`. See
 "Banked game modules" in `docs/memory_map.md`.
 
 ### G-MOD-2 · must · A banked module's pages come from the game range
-The module takes the next free even/odd pair from 102-131 in
+The module takes the next free even/odd pair from 102-151 in
 `src/banks.inc`, with its origin, and gets a row in the page table in
 `docs/memory_map.md` and in `src/game/README.md`.
 
 ### G-MOD-3 · should · Game components are in components/
 A component is `components/<name>.{h,c}` (its functions, banked in page
 110) and `components/<name>_cdata.c` (its tables in slot 0). See P-COMP-1.
+When page 110 runs short, the component with the most still to come moves
+to a pair of its own from the game range, as `feature` did (page 132), and
+its callers don't change: its functions are banked anyway.
 
 ## Naming
 

@@ -344,8 +344,8 @@ adds to it, with the reason.
 
   `game/components/ai.{h,c}` are removed, and `components.h` points to
   `game/ai/ai.h` for `COMPONENT_AI`, as it does to effects.h for
-  `COMPONENT_EFFECT`. 130/131 is the **last game code pair** (102-131):
-  the next module needs the range moved or extended (Q2).
+  `COMPONENT_EFFECT`. 130/131 was the last game code pair of 102-131,
+  and the range has since been extended to 102-151 (Q2).
 
 - **D11 Asleep is a state, not the sleep effect.** A monster asleep
   because the level found it so is the AI's concern and wakes when hurt.
@@ -619,8 +619,6 @@ PC tests cover it.
 
 ## 9. Risks
 
-- **The last game code pair** (D10): the next banked game module has no
-  pair in 102-131. Q2.
 - **Banked calls from page 130** to the actions, the components and nge
   map other pages over slot 7: code must not hold pointers into page 131
   across them (D12; `ai_can()` calling `attack_weapon()` too). The tests
@@ -640,8 +638,8 @@ PC tests cover it.
 All answered (2026-10-29):
 
 - **Q1 (D3):** Int 5 to use items and Int 6 to open doors: agreed.
-- **Q2 (D10):** the AI takes 130/131, the last pair in 102-131; the game
-  code range is moved or extended when the next module needs a pair.
+- **Q2 (D10):** the AI takes 130/131, then the last pair in 102-131. The
+  game code range was extended to 102-151, and the assets moved to 152-223.
 - **Q3 (R11):** idle is the second state in this step: agreed.
 - **Q4 (R12):** every monster starts asleep for now; a chance per kind
   may come later.

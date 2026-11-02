@@ -52,7 +52,7 @@ in `game/components/components.h`.
   the component.
 - `<name>_add()` gives an entity the component from a kind record (or a
   start state). Its functions hold its rules (G-ARCH-1), are banked in page
-  110, and check their entity with asserts.
+  110 or a pair of its own (G-MOD-3), and check their entity with asserts.
 - Code outside the component tests for it with the macro in its header
   (`ITEM_IS()`, `FEATURE_IS()`, `INV_HAS()`), not the mask.
 Check: `grep -rn "NGE_COMPONENT(" src` finds masks only in the two lists

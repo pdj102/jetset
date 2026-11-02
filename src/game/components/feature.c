@@ -1,10 +1,11 @@
 /*
- * The feature component's functions: banked in page 110 with the other
- * component functions; its tables are in slot 0 (feature_cdata.c).
+ * The feature component's functions: banked in page 132, as features are
+ * the component with the most still to come; its tables are in slot 0
+ * (feature_cdata.c).
  */
 #ifdef __SDCC
-#pragma codeseg PAGE_110
-#pragma constseg PAGE_110
+#pragma codeseg PAGE_132
+#pragma constseg PAGE_132
 #endif
 
 #include "game/components/feature.h"

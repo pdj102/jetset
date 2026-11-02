@@ -19,14 +19,14 @@
 
 #include "hw/nge_palette.h"
 
-#define SPRITE_PALETTE_PAGE          135 /**< SECTION PAGE_135 in sprite_palette_data.asm. */
+#define SPRITE_PALETTE_PAGE          155 /**< SECTION PAGE_155 in sprite_palette_data.asm. */
 #define SPRITE_PALETTE_ENTRIES       256 /**< Entries in sprite_palette: load them from entry 0. */
 #define SPRITE_PATTERNS              72  /**< 4-bit patterns, from pattern 0. */
 #define SPRITE_PATTERN_PAGES         2   /**< Pages of patterns: SPRITE_PATTERNS_PAGE_0 on. */
 
-#define SPRITE_PATTERNS_PAGE_0       137 /**< Patterns 0-63: sprite_patterns_0. */
+#define SPRITE_PATTERNS_PAGE_0       157 /**< Patterns 0-63: sprite_patterns_0. */
 #define SPRITE_PATTERNS_COUNT_0      64
-#define SPRITE_PATTERNS_PAGE_1       139 /**< Patterns 64-71: sprite_patterns_1. */
+#define SPRITE_PATTERNS_PAGE_1       159 /**< Patterns 64-71: sprite_patterns_1. */
 #define SPRITE_PATTERNS_COUNT_1      8
 
 #define SPRITE_PLAYER_IDLE           0   /**< Tag player.idle: frames 0-1. */

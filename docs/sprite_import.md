@@ -83,11 +83,11 @@ colour conversion and output conventions.
 
 ### The output
 
-- **R11** Patterns, 64 to an 8K page (`SECTION PAGE_137`, `PAGE_139`: odd
+- **R11** Patterns, 64 to an 8K page (`SECTION PAGE_157`, `PAGE_159`: odd
   pages, assembled for slot 7), two pixels a byte, the left pixel in the
   high nibble.
 - **R12** The palette: every bank the sprite's palette has, 16 entries
-  each, as `nge_palette_entry_9_t`, in page 135. Entries past the end of
+  each, as `nge_palette_entry_9_t`, in page 155. Entries past the end of
   the Aseprite palette, in its last row, are black. A palette colour that
   isn't a Next colour is an error naming the entry.
 - **R13** A header, `sprite_data.h`: the pages and counts to load, and for
@@ -151,10 +151,10 @@ colour conversion and output conventions.
   patterns, so a frame used in two animations is two patterns, unless the
   tags overlap. **Rejected:** merging identical frames: it would break
   runs, and gain little when tags can overlap.
-- **D8 The palette in its own page (135), the patterns in 137 and 139.**
+- **D8 The palette in its own page (155), the patterns in 157 and 159.**
   64 4-bit patterns fill an 8K page exactly, so with the palette in a page
   of its own, each pattern page is one loader call. The game's asset range
-  (132-223) has room.
+  (152-223) has room.
 - **D9 Bank uses are fixed (5.2): 0 the player, 1 a white flash, 2 a
   shadow, 3-15 colourways.** The flash and the shadow give every sprite a
   hit flash and a silhouette with no art: switch the bank for a few frames
@@ -274,23 +274,23 @@ source (R15), and are the artist's to change.
 
 ### 5.4 Generated files
 
-- **`sprite_patterns_data.asm`**: `SECTION PAGE_137` with
-  `_sprite_patterns_0` and patterns 0-63, then `SECTION PAGE_139` with
+- **`sprite_patterns_data.asm`**: `SECTION PAGE_157` with
+  `_sprite_patterns_0` and patterns 0-63, then `SECTION PAGE_159` with
   `_sprite_patterns_1` and patterns 64 on, if there are any. Each pattern
   is headed `; pattern n: <tags>, bank b`.
-- **`sprite_palette_data.asm`**: `SECTION PAGE_135`, `_sprite_palette`,
+- **`sprite_palette_data.asm`**: `SECTION PAGE_155`, `_sprite_palette`,
   each bank headed `; bank b`.
 - **`sprite_data.h`**:
 
   ```c
-  #define SPRITE_PALETTE_PAGE     135  /**< SECTION PAGE_135 in sprite_palette_data.asm. */
+  #define SPRITE_PALETTE_PAGE     155  /**< SECTION PAGE_155 in sprite_palette_data.asm. */
   #define SPRITE_PALETTE_ENTRIES  256  /**< Entries in sprite_palette: load them from index 0. */
   #define SPRITE_PATTERNS         70   /**< 4-bit patterns, from pattern 0. */
   #define SPRITE_PATTERN_PAGES    2    /**< Pages of patterns: SPRITE_PATTERNS_PAGE_0 on. */
 
-  #define SPRITE_PATTERNS_PAGE_0   137  /**< Patterns 0-63: sprite_patterns_0. */
+  #define SPRITE_PATTERNS_PAGE_0   157  /**< Patterns 0-63: sprite_patterns_0. */
   #define SPRITE_PATTERNS_COUNT_0  64
-  #define SPRITE_PATTERNS_PAGE_1   139  /**< Patterns 64 on: sprite_patterns_1. */
+  #define SPRITE_PATTERNS_PAGE_1   159  /**< Patterns 64 on: sprite_patterns_1. */
   #define SPRITE_PATTERNS_COUNT_1  6
 
   #define SPRITE_RAT_WALK        5    /**< Tag rat.walk: frames 5-6. */
@@ -325,7 +325,7 @@ source (R15), and are the artist's to change.
 
 ### 5.6 Memory
 
-- **Pages 135, 137, 139:** the palette (512 bytes at most) and the
+- **Pages 155, 157, 159:** the palette (512 bytes at most) and the
   patterns (8K a page).
 - **Pattern memory:** all 16K for 128 4-bit patterns.
 - **Common memory:** unchanged in step 1. Step 2 adds nothing: the
@@ -338,7 +338,7 @@ In (step 1):
 - R1-R15, `make sprites` (R16's step 1);
 - the scripts' tests (section 7);
 - docs: this spec; `docs/memory_map.md` and `src/banks.inc` reserve pages
-  135, 137 and 139.
+  155, 157 and 159.
 
 Out, for later:
 

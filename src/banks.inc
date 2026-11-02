@@ -39,7 +39,7 @@
 //                    in pages 16-35
 //   100-223 game
 //             100-101  free (game assets)
-//             102-131  game code pairs (15), from 102 up:
+//             102-151  game code pairs (25), from 102 up:
 //                        102/103  level: setting up the map, generating levels and
 //                                 decorating them / the room list, the terrain and
 //                                 the decorator's tables
@@ -63,11 +63,14 @@
 //                                 creature kinds' sequences
 //                        128/129  quest: the quest item's checks / (unused)
 //                        130/131  ai: the AI's component, states and brains / each
-//                                 AI entity's state and brain (the last game pair)
-//             132-223  game assets (maps, graphics, level data):
-//                        133  the map tiles' palette (slot 7, via nge_palette_load9();
+//                                 AI entity's state and brain
+//                        132/133  feature: the feature component's functions /
+//                                 (unused)
+//                        134-151  free
+//             152-223  game assets (maps, graphics, level data):
+//                        153  the map tiles' palette (slot 7, via nge_palette_load9();
 //                             src/data/tile_palette_data.asm, generated)
-//                        135  the sprite palette, and 137, 139 the sprite patterns
+//                        155  the sprite palette, and 157, 159 the sprite patterns
 //                             (slot 7, via the loaders; src/data/sprite_*_data.asm,
 //                             generated)
 
@@ -140,6 +143,9 @@
 
 // game ai: the AI (game/ai)
 #pragma define CRT_ORG_PAGE_130 = 0x82C000
+
+// game feature: the feature component (game/components/feature.c)
+#pragma define CRT_ORG_PAGE_132 = 0x84C000
 
 // nge map: set-up functions
 #pragma define CRT_ORG_PAGE_44 = 0x2CC000

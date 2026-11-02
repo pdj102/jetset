@@ -17,7 +17,7 @@
 
 #include "hw/nge_palette.h"
 
-#define TILE_PALETTE_PAGE   133  /**< SECTION PAGE_133 in tile_palette_data.asm. */
+#define TILE_PALETTE_PAGE   153  /**< SECTION PAGE_153 in tile_palette_data.asm. */
 #define TILE_PALETTE_BANKS  1    /**< Banks in tile_palette, 16 entries each. */
 #define TILE_PALETTE_ENTRIES 16  /**< Entries in tile_palette: load them from index 0. */
 #define TILE_METATILES      28   /**< Metatiles in the tileset, tile 0 included. */

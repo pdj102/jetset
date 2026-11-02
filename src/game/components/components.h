@@ -27,8 +27,9 @@
  *   kind record (game/gen) or a start state;
  * - functions that hold its rules (health_damage(), attack_hits()),
  *   called by every action and effect that needs them, banked in page 110
- *   (the component's .c file), or with its module when its tables are that
- *   module's page data (game/ai), and asserting on their entity;
+ *   (the component's .c file), in a pair of its own once it has outgrown
+ *   that page (feature, page 132), or with its module when its tables are
+ *   that module's page data (game/ai), and asserting on their entity;
  * - a macro in its header that tests for it (ITEM_IS(), FEATURE_IS(),
  *   INV_HAS()), used by other code instead of the handle.
  *

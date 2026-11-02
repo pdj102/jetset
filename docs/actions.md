@@ -761,7 +761,7 @@ Outside the section:
 | Where | What it needs |
 |---|---|
 | Common | A `case` in `act_do()` per action, and a byte per reason. 4,653 bytes are free in debug, so check after each |
-| Page 110 | The lock rule. It has 442 bytes left |
+| Page 132 | The lock rule, with `feature.c`, in a pair of its own |
 | Page 114, 116, 118, 124 | Commands, inventory modes, texts, target purposes |
 
 The order of work is in [actions_plan.md](actions_plan.md).
@@ -824,8 +824,8 @@ What differs from section 6 and [actions_plan.md](actions_plan.md).
 
 - **Step 11:**
   - The rules are `inv_hands_taken()` and `inv_cursed()` in the inventory component, as
-    R12 wants. They cost page 110 186 bytes in debug, 256 left, so step 12's lock rule
-    won't fit there as it stands.
+    R12 wants. They cost page 110 186 bytes in debug. `feature.c` then moved to pair
+    132/133, for step 12's lock rule.
   - `OP_UNCURSE` was built here (Q2). A kind's `ITEMF_CURSED` can't change, so an item's
     lifted curse is an entity flag, `ITEM_UNCURSED`, `NGE_ENTITY_FLAG_USER`: no new table.
     It covers everything the reader has equipped. A stowed cursed item stays cursed, and
@@ -871,7 +871,7 @@ What differs from section 6 and [actions_plan.md](actions_plan.md).
   - A stack at 255 takes no more, so another of that kind then needs room of its own.
   - The merge is in `act_pickup.c`, where the plan put it, and not in the inventory
     component that G-ARCH-2 and R12 would want: it cost 316 bytes, and page 110, where the
-    component is, has 442 left for steps 11 and 12. It can move if that page gets room.
+    component is, had 442 left for steps 11 and 12. It can move now that page has room.
 - **Step 7:**
   - Arrows with no launcher aren't in section 6.3's table. They fall through to the actor's
     own attack, so the player gets `ACT_R_NO_ATTACK`.

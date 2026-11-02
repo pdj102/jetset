@@ -25,7 +25,7 @@
  * (act_open(), act_close(), game/actions/act.h) check the rules first.
  *
  * The tables are in slot 0 (feature_cdata.c). Banking: the functions are
- * banked (NGE_BANKED, page 110, with the other component functions).
+ * banked (NGE_BANKED, page 132, a pair of its own).
  * Features are drawn into the one map (nge_map): the current level's.
  */
 

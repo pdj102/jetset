@@ -211,9 +211,9 @@ class TestOutput(TempDir, unittest.TestCase):
         self.assertEqual(data[1:], [0] * 127)
 
     def test_64_patterns_a_page(self):
-        self.assertEqual(ase2sprites.pages(64), [(137, 0, 64)])
-        self.assertEqual(ase2sprites.pages(65), [(137, 0, 64), (139, 64, 1)])
-        self.assertEqual(ase2sprites.pages(128), [(137, 0, 64), (139, 64, 64)])
+        self.assertEqual(ase2sprites.pages(64), [(157, 0, 64)])
+        self.assertEqual(ase2sprites.pages(65), [(157, 0, 64), (159, 64, 1)])
+        self.assertEqual(ase2sprites.pages(128), [(157, 0, 64), (159, 64, 64)])
 
     def test_two_pages_written(self):
         data = ase_writer.sprite_file([dot(1)] * 65, [('a', 0, 64)])
@@ -221,8 +221,8 @@ class TestOutput(TempDir, unittest.TestCase):
         ase2sprites.run(self.write(data), out)
         with open(os.path.join(out, 'sprite_patterns_data.asm')) as f:
             text = f.read()
-        self.assertIn('SECTION PAGE_137', text)
-        self.assertIn('SECTION PAGE_139', text)
+        self.assertIn('SECTION PAGE_157', text)
+        self.assertIn('SECTION PAGE_159', text)
         self.assertEqual(text.count('; pattern '), 65)
         self.assertIn('\tdb $10, $00, $00, $00, $00, $00, $00, $00  ; 1...............', text)
         with open(os.path.join(out, 'sprite_data.h')) as f:
@@ -240,7 +240,7 @@ class TestOutput(TempDir, unittest.TestCase):
         self.assertEqual(banks[1][1], next_colour.to_next((0, 0, 255)))
         self.assertEqual(banks[1][2:], [0] * 14)                  # past the palette: black
         text = ase2sprites.palette_asm('x', banks)
-        self.assertIn('SECTION PAGE_135', text)
+        self.assertIn('SECTION PAGE_155', text)
         self.assertIn('\tdb $00, $00, $FF, $01, $03, $01', text)
 
     def test_header(self):

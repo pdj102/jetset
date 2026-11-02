@@ -140,8 +140,8 @@ are generated, so tilemaps (Aseprite's tilemap cels) are not imported.
   tile, not a moved one.
 - **D4 The palette is banked data, loaded by one palette loader for
   every palette.** It is up to 512 bytes, too much for common memory (605
-  bytes free in the debug build). It goes in page 133 (`SECTION
-  PAGE_133`, the first odd page of the game's asset range), and
+  bytes free in the debug build). It goes in page 153 (`SECTION
+  PAGE_153`, the first odd page of the game's asset range), and
   `nge_palette_load9()` (`hw/nge_palette`) maps it in for the upload
   (memory_map.md, "Sprite and palette data"), writing the banks from bank
   0 of tilemap palette 0. The loader takes the palette to write, so it
@@ -213,7 +213,7 @@ are generated, so tilemaps (Aseprite's tilemap cels) are not imported.
 - **`tile_palette_data.asm`**:
 
   ```
-  SECTION PAGE_133
+  SECTION PAGE_153
   PUBLIC _tile_palette
   ._tile_palette
   ; bank 0: metatiles 0, 1, 3
@@ -223,7 +223,7 @@ are generated, so tilemaps (Aseprite's tilemap cels) are not imported.
 - **`tile_data.h`**:
 
   ```c
-  #define TILE_PALETTE_PAGE   133  /**< SECTION PAGE_133 in tile_palette_data.asm. */
+  #define TILE_PALETTE_PAGE   153  /**< SECTION PAGE_153 in tile_palette_data.asm. */
   #define TILE_PALETTE_BANKS  2    /**< Banks in tile_palette, 16 entries each. */
   #define TILE_METATILES      6    /**< Metatiles in the tileset, tile 0 included. */
 
@@ -277,7 +277,7 @@ are generated, so tilemaps (Aseprite's tilemap cels) are not imported.
 ### 5.6 Memory
 
 - **Bank 5:** unchanged: the tile definitions' 8K at `$4A00`.
-- **Page 133:** the palette, 32 bytes a bank, 512 at most.
+- **Page 153:** the palette, 32 bytes a bank, 512 at most.
 - **Common memory:** the loader, about 140 bytes in the debug build
   (zsdcc's code for its five arguments, and its assert), less
   `tile_palette[]` (8 bytes) and the ink palette loader and its table,
@@ -290,9 +290,9 @@ In:
 - R1 to R15, R17, R18, in the two steps of D6;
 - tests (section 7);
 - docs:
-  - `docs/memory_map.md`: page 133, the palette loader, the tile
+  - `docs/memory_map.md`: page 153, the palette loader, the tile
     definitions generated;
-  - `src/banks.inc`: page 133 in the allocation comment;
+  - `src/banks.inc`: page 153 in the allocation comment;
   - `level.h`'s comment on the metatiles (no longer the glyphs);
   - `cells_16.md`: a note that R13's placeholders were replaced here;
   - how to add a metatile: draw it at the end of the tileset, name its

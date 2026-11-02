@@ -6,7 +6,7 @@ each step is checked.
 
 Status: plan written 2026-10-31. D10 to D23 agreed. Steps 1 to 11 done: step 1 passed in
 CSpect and on hardware, the others in CSpect, with step 5 checked through step 7. Step
-12 is next, and first needs room: page 110 has 256 bytes left.
+12 is next.
 
 ## 1. How the steps work
 
@@ -190,7 +190,7 @@ Everything that doesn't depend on Q1. Can be built before Q1 is answered. It cha
 nothing in play until step 13, as no door is locked.
 
 - **Change:** `FEAT_LOCKED` and the lock's `KEY_*` in `feature_state[]` (D19);
-  `feature_lock()`, `feature_unlock()` and the pick rule in the component; `ACT_OPEN`
+  `feature_lock()`, `feature_unlock()` and the pick rule in the component, in page 132; `ACT_OPEN`
   refuses with `ACT_R_LOCKED`; `act_unlock.c`; `EV_UNLOCKED`; bump to unlock; a list of
   tools on the inventory screen.
 - **Dev kit:** a key that locks the nearest door, with a key and a pick in `dev_kit[]`.
@@ -228,12 +228,14 @@ Each needs its own spec first: spells and who knows them, and fleeing (ai.md R18
 | 9 | +706: 9,652 | Common: +28, 4,653 free. Pages 114 +107, 116 +181, 118 +116, 124 +55 |
 | 10 | | Page 130 +275, page 118 +86 on hardware, with common unchanged. Debug: page 130 +284, page 102 +200 (the dev bandit), common +14, 4,640 free |
 | 11 | +76: 9,728 | Page 110: +186, 256 left. Page 120 +95, page 118 +46. Common +1, 4,639 free |
-| 12 | +0.6K | Page 110 or a new home for the lock rule |
+| Between 11 and 12 | | `feature.c` moved to its own pair, 132/133: page 110 -928, about 1,180 left |
+| 12 | +0.6K | Page 132: the lock rule, with about 7K free |
 
 The estimates come from the spec, 6.11. The actions end at about 9.9K of 16K, so the
-section has room. **Page 110 is the real limit:** the game's component functions are
-there, and steps 6, 11 and 12 all add to them. If it fills, the next component file moves
-to page 104, which has room, or to a section of its own, as ranged_ai_components.md warned.
+section has room. **Page 110 was the real limit:** the game's component functions are
+there. The game code range was extended to 102-151 and `feature.c`, which step 12 and the
+features after it add to, moved to pair 132/133. If page 110 fills again, the next component
+to move is the one with the most still to come (G-MOD-3).
 
 ## 4. Open questions
 
