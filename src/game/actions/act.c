@@ -42,6 +42,10 @@ const uint8_t act_reason_flags[ACT_R_COUNT] = {
     [ACT_R_CANT_AIM]         = 0,
     [ACT_R_NO_CHARGES]       = 0,
     [ACT_R_CURSED]           = 0,
+    [ACT_R_LOCKED]           = 0,
+    [ACT_R_NOT_LOCKED]       = 0,
+    [ACT_R_WRONG_KEY]        = 0,
+    [ACT_R_PICK_FAILED]      = ACT_RF_ATTEMPTED,   /* the pick was tried: the turn is used */
 };
 
 uint8_t act_do(uint8_t action, act_t *a, uint8_t mode)
@@ -76,6 +80,8 @@ uint8_t act_do(uint8_t action, act_t *a, uint8_t mode)
         return act_fire(a, mode);
     case ACT_AIM:
         return act_aim(a, mode);
+    case ACT_UNLOCK:
+        return act_unlock(a, mode);
     default:
         nge_util_abort("bad action");
         return ACT_FAIL;

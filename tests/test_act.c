@@ -195,6 +195,7 @@ int main(void)
     nge_entity_id_t biter;
     nge_entity_id_t thing;
     nge_entity_id_t door;
+    nge_entity_id_t thing2;
     nge_entity_id_t opener;
     nge_entity_id_t stairs;
     nge_entity_id_t climber;
@@ -882,6 +883,104 @@ int main(void)
     CHECK(act_close(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_ALREADY_CLOSED);
     CHECK(act_do(ACT_OPEN, &a, ACT_DO) == ACT_SUCCESS && FEATURE_IS_OPEN(door));   /* by number */
     events();
+    /* ---- locks: closed and locked it won't open; a key that fits turns, a pick rolls ---- */
+    {
+        nge_entity_id_t iron = gen_item(IT_KEY_IRON, opener);
+        nge_entity_id_t brass = gen_item(IT_KEY_BRASS, opener);
+        nge_entity_id_t skeleton = gen_item(IT_KEY_SKELETON, opener);
+        nge_entity_id_t sword = gen_item(IT_SWORD, opener);
+        nge_entity_id_t pick = gen_item(IT_LOCK_PICK, opener);
+        nge_entity_id_t theirs = gen_item(IT_KEY_IRON, player);
+        unsigned int low;
+        unsigned int high;
+
+        /* Dex 14, +2, against FEAT_PICK_DC: a 12 fails and a 13 works */
+        for (low = 1; 1; low++) {
+            srand(low);
+            if (1 + rand() % 20 == 12) {
+                break;
+            }
+        }
+        for (high = 1; 1; high++) {
+            srand(high);
+            if (1 + rand() % 20 == 13) {
+                break;
+            }
+        }
+        a = ctx(opener);
+        a.target = door;
+        CHECK(act_do(ACT_CLOSE, &a, ACT_DO) == ACT_SUCCESS);
+        events();
+        feature_lock(door, KEY_IRON);
+        a = ctx(opener);
+        a.target = door;
+        CHECK(act_open(&a, ACT_CHECK) == ACT_FAIL && a.reason == ACT_R_LOCKED);
+        a = ctx(opener);
+        a.dx = 1;                                             /* by direction: the door is found */
+        a.target = NGE_ENTITY_INVALID;
+        CHECK(act_do(ACT_OPEN, &a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_LOCKED && a.target == door && a.used == 0);
+        CHECK(!FEATURE_IS_OPEN(door) && events() == 0);
+        /* Locked is shut: closing it says so, and the lock stays */
+        a = ctx(opener);
+        a.target = door;
+        CHECK(act_close(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_ALREADY_CLOSED && FEATURE_IS_LOCKED(door));
+        /* Refused: another's key, the wrong key, what isn't a key, what isn't locked */
+        a = ctx(opener);
+        a.target = door;
+        a.item = theirs;
+        CHECK(act_unlock(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_NOT_CARRIED);
+        a.item = brass;
+        CHECK(act_unlock(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_WRONG_KEY && a.used == 0);
+        a.item = sword;
+        CHECK(act_unlock(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_WRONG_KEY);
+        /* The key: a check changes nothing; done, it is unlocked, shut, the key kept, the turn used */
+        a.item = iron;
+        CHECK(act_unlock(&a, ACT_CHECK) == ACT_SUCCESS && a.used == 0 && FEATURE_IS_LOCKED(door) && events() == 0);
+        CHECK(act_do(ACT_UNLOCK, &a, ACT_DO) == ACT_SUCCESS && a.used == 1);
+        CHECK(!FEATURE_IS_LOCKED(door) && !FEATURE_IS_OPEN(door) && NGE_ENTITY_IS_ALIVE(iron));
+        CHECK(events() == 1 && is(0, door, EV_UNLOCKED, opener));
+        CHECK(act_unlock(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_NOT_LOCKED);
+        /* The skeleton key fits any */
+        feature_lock(door, KEY_GOLD);
+        a.item = skeleton;
+        CHECK(act_unlock(&a, ACT_DO) == ACT_SUCCESS && !FEATURE_IS_LOCKED(door));
+        events();
+        /* The pick: lost, a use gone and the turn used, nothing posted; won, a use gone */
+        feature_lock(door, KEY_IRON);
+        a = ctx(opener);
+        a.target = door;
+        a.item = pick;
+        hp = item_count[pick];
+        srand(low);
+        CHECK(act_unlock(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_PICK_FAILED && a.used == 1);
+        CHECK(FEATURE_IS_LOCKED(door) && item_count[pick] == hp - 1 && events() == 0);
+        srand(9);
+        r1 = rand();
+        srand(9);
+        CHECK(act_unlock(&a, ACT_CHECK) == ACT_SUCCESS && rand() == r1 && item_count[pick] == hp - 1);   /* no roll */
+        srand(high);
+        CHECK(act_unlock(&a, ACT_DO) == ACT_SUCCESS && !FEATURE_IS_LOCKED(door) && item_count[pick] == hp - 2);
+        CHECK(events() == 1 && is(0, door, EV_UNLOCKED, opener));
+        /* Its last use goes, win or lose */
+        feature_lock(door, KEY_IRON);
+        item_count[pick] = 1;
+        srand(low);
+        CHECK(act_unlock(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_PICK_FAILED && !NGE_ENTITY_IS_ALIVE(pick));
+        CHECK(act_unlock(&a, ACT_CHECK) == ACT_FAIL && a.reason == ACT_R_NOT_CARRIED);
+        feature_unlock(door);
+        nge_entity_destroy(iron);
+        nge_entity_destroy(brass);
+        nge_entity_destroy(skeleton);
+        nge_entity_destroy(sword);
+        nge_entity_destroy(theirs);
+        NGE_ENTITY_RELEASE_EACH_DYING(thing2) {
+        }
+        a = ctx(opener);
+        a.target = door;
+        CHECK(act_do(ACT_OPEN, &a, ACT_DO) == ACT_SUCCESS);
+        events();
+    }
+
     /* Refused: nothing there, not a feature, too far */
     a = ctx(opener);
     a.dy = -1;                                                /* (7, 0): floor */
@@ -1022,10 +1121,11 @@ int main(void)
     TEST_EXPECT_HALT(act_wait(&a, ACT_DO));
     CHECK(test_halt_count == 1);
 
-    /* ---- every reason is refused, but a miss and a struggle ---- */
+    /* ---- every reason is refused, but a miss, a struggle and a failed pick ---- */
     ok = 1;
     for (r1 = 0; r1 < ACT_R_COUNT; r1++) {
-        ok = ok && act_attempted((uint8_t)r1) == (r1 == ACT_R_MISSED || r1 == ACT_R_ROOTED);   /* includes ACT_R_CANT_USE */
+        ok = ok && act_attempted((uint8_t)r1) == (r1 == ACT_R_MISSED || r1 == ACT_R_ROOTED ||
+                                                  r1 == ACT_R_PICK_FAILED);   /* includes ACT_R_CANT_USE */
     }
     CHECK(ok);
 

@@ -85,7 +85,8 @@ void player_act(uint8_t action, act_t *a) NGE_BANKED
 /*
  * The move command, bump to attack and bump to open: a move blocked by
  * something that can be damaged attacks it instead, and one blocked by a
- * closed door opens it (act_move()'s check mode finds the blocker)
+ * closed door opens it, or unlocks it with a key in the pack (act_move()'s
+ * check mode finds the blocker)
  */
 static void move(int8_t dx, int8_t dy)
 {
@@ -102,7 +103,15 @@ static void move(int8_t dx, int8_t dy)
             return;
         }
         if (FEATURE_IS(blocker) && !FEATURE_IS_OPEN(blocker)) {
-            player_act(ACT_OPEN, &a);    /* a.target: the door */
+            /* a.target: the door */
+            if (FEATURE_IS_LOCKED(blocker)) {
+                a.item = feature_fitting_key(blocker, actor_player);
+                if (a.item != NGE_ENTITY_INVALID) {
+                    player_act(ACT_UNLOCK, &a);
+                    return;
+                }
+            }
+            player_act(ACT_OPEN, &a);
             return;
         }
     }
@@ -155,7 +164,7 @@ static uint8_t choose_tile(uint8_t purpose, uint8_t range, act_t *a)
 /*
  * Choose an item and an action on the inventory screen: browsing
  * (SCREEN_INV_BROWSE), or for an action (ACT_*). Then do the action with it,
- * aiming it first if that is the action
+ * aiming it first, or choosing a direction, if that is the action
  */
 static void item_command(uint8_t mode)
 {
@@ -164,6 +173,12 @@ static void item_command(uint8_t mode)
 
     if (action == SCREEN_INV_BACK || (action == ACT_AIM && !choose_tile(TARGET_AIM, ACT_AIM_RANGE, &a))) {
         return;
+    }
+    if (action == ACT_UNLOCK) {
+        if (!player_ask_direction(PLAYER_PROMPT_UNLOCK, &a.dx, &a.dy)) {
+            return;
+        }
+        a.target = NGE_ENTITY_INVALID;   /* what is in that direction */
     }
     a.kind = SLOT_NONE;   /* equip: the first free slot it fits */
     player_act(action, &a);
@@ -218,6 +233,37 @@ static int8_t held_axis(uint8_t less, uint8_t less_caps, uint8_t less_key, uint8
         return 1;
     }
     return 0;
+}
+
+/* Development: lock the nearest closed door on the level, for the keys and picks to try, as no level locks any */
+static void lock_nearest(void)
+{
+    gen_feature_info_t info;
+    nge_entity_id_t id;
+    nge_entity_id_t door = NGE_ENTITY_INVALID;
+    nge_owner_t area = NGE_OWNER_OF(actor_player);
+    uint8_t px = NGE_LOCATION_X(actor_player);
+    uint8_t py = NGE_LOCATION_Y(actor_player);
+    uint8_t best = 255;
+    uint8_t dx;
+    uint8_t dy;
+
+    for (id = 0; id < NGE_ENTITY_MAX; id++) {
+        if (NGE_ENTITY_IS_ALIVE(id) && FEATURE_IS(id) && NGE_OWNER_OF(id) == area && !FEATURE_IS_OPEN(id) &&
+            !FEATURE_IS_LOCKED(id)) {
+            gen_feature_info(kind_index[id], &info);
+            dx = (uint8_t)((NGE_LOCATION_X(id) > px) ? NGE_LOCATION_X(id) - px : px - NGE_LOCATION_X(id));
+            dy = (uint8_t)((NGE_LOCATION_Y(id) > py) ? NGE_LOCATION_Y(id) - py : py - NGE_LOCATION_Y(id));
+            if ((info.can & FCAN_OPEN) && (uint8_t)(dx + dy) < best) {
+                best = (uint8_t)(dx + dy);
+                door = id;
+            }
+        }
+    }
+    if (door != NGE_ENTITY_INVALID) {
+        feature_lock(door, KEY_IRON);
+        screen_message("Development: the nearest door is locked.");
+    }
 }
 
 /*
@@ -300,6 +346,9 @@ void player_command(nge_key_event_t ev) NGE_BANKED
     case 'a':
         item_command(ACT_AIM);
         break;
+    case 'p':
+        item_command(ACT_UNLOCK);
+        break;
     case 'f':
         fire_command();
         break;
@@ -343,6 +392,9 @@ void player_command(nge_key_event_t ev) NGE_BANKED
         break;
     case 'V':
         pan_view();   /* development: pan the view a pixel at a time */
+        break;
+    case 'L':
+        lock_nearest();   /* development: no turn used */
         break;
     case 'M':
         /* Development: spend 1 MP, or restore them all at 0, to see the stats follow (no turn used) */
@@ -442,6 +494,7 @@ typedef struct player_prompt {
 
 static const player_prompt_t prompts[PLAYER_PROMPT_COUNT] = {
     [PLAYER_PROMPT_CLOSE] = { "Close in which direction?", "Direction: close   Other keys: back" },
+    [PLAYER_PROMPT_UNLOCK] = { "Unlock in which direction?", "Direction: unlock   Other keys: back" },
 };
 
 uint8_t player_direction_key(nge_key_event_t ev, int8_t *dx, int8_t *dy) NGE_BANKED

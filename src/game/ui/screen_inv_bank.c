@@ -53,7 +53,8 @@ static const nge_panel_t panels[SCREEN_INV_COUNT] = {
 #define LIST_ALL         3   /* what is in use, then the pack */
 #define LIST_USABLE      4   /* in the pack, doing something when used */
 #define LIST_AIMABLE     5   /* in the pack, with something to aim */
-#define LIST_COUNT       6   /* the number of lists */
+#define LIST_TOOLS       6   /* in the pack, a key or a lock pick */
+#define LIST_COUNT       7   /* the number of lists */
 
 /* A key's answer, besides an action (ACT_*) and SCREEN_INV_BACK: stay open */
 #define KEY_STAY  (ACT_COUNT + 1)
@@ -78,6 +79,7 @@ static const inv_mode_t modes[ACT_COUNT + 1] = {
                       LIST_USABLE },
     [ACT_AIM]     = { "Take Aim", "Letter/ENTER: aim it  SPACE: back", "You have nothing to aim.",
                       LIST_AIMABLE },
+    [ACT_UNLOCK]  = { "Try a Lock", "Letter/ENTER: try it  SPACE: back", "You have no key or pick.", LIST_TOOLS },
 };
 
 /* The browse keys of the actions, as the help line lists them, in this order */
@@ -109,6 +111,8 @@ static const char *const slot_words[SLOT_COUNT] = {
 /* An item in the pack belongs in list (LIST_STOWED, LIST_EQUIPPABLE or LIST_USABLE) */
 static uint8_t listed(uint8_t list, nge_entity_id_t id)
 {
+    uint8_t subclass;
+
     switch (list) {
     case LIST_EQUIPPABLE:
         return (gen_item_fits(kind_index[id]) & inv_slots[actor_player]) != 0;
@@ -116,6 +120,9 @@ static uint8_t listed(uint8_t list, nge_entity_id_t id)
         return GEN_HOOK_EF(gen_hook_of(id, GEN_HOOK_USE)) != EF_NONE;
     case LIST_AIMABLE:
         return GEN_HOOK_EF(gen_hook_of(id, GEN_HOOK_AIM)) != EF_NONE;
+    case LIST_TOOLS:
+        subclass = gen_item_subclass(kind_index[id]);
+        return subclass == ITEM_KEY || subclass == ITEM_TOOL;
     default:
         return 1;
     }
@@ -177,6 +184,9 @@ static uint8_t allowed(uint8_t action, uint8_t say)
 {
     act_t a = { 0 };
 
+    if (action == ACT_UNLOCK) {
+        return 1;   /* it needs a lock, which is chosen after the item */
+    }
     a.actor = actor_player;
     a.item = selected();
     a.kind = SLOT_NONE;   /* equip: the first free slot it fits */

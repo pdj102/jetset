@@ -24,6 +24,11 @@
  * the rules, keeping the block component and the tile in step: the actions
  * (act_open(), act_close(), game/actions/act.h) check the rules first.
  *
+ * A closed feature can be locked. The lock's kind (KEY_*) is in the state,
+ * and so are the rules of what opens it: a key that fits, or a pick that
+ * beats FEAT_PICK_DC. feature_lock() and feature_unlock() don't change how
+ * it looks, and a locked door looks like any closed door.
+ *
  * The tables are in slot 0 (feature_cdata.c). Banking: the functions are
  * banked (NGE_BANKED, page 132, a pair of its own).
  * Features are drawn into the one map (nge_map): the current level's.
@@ -38,7 +43,13 @@
 
 /* State: bits of feature_state */
 #define FEAT_OPEN    0x01   /**< Open (a door); else closed. */
-/* Reserved: FEAT_LOCKED 0x02, FEAT_HIDDEN 0x04, FEAT_SPENT 0x08 */
+#define FEAT_LOCKED  0x02   /**< Locked: it won't open. */
+/* Reserved: FEAT_HIDDEN 0x04, FEAT_SPENT 0x08 */
+#define FEAT_KEY_SHIFT  4      /**< The lock's KEY_*, while locked: 3 bits. */
+#define FEAT_KEY_MASK   0x70
+
+/* What a lock pick must reach: 1d20 + its bonus + the picker's Dexterity modifier */
+#define FEAT_PICK_DC  15
 
 /* What a kind can do: bits of its kind record's `can` */
 #define FCAN_OPEN    0x01   /**< Can be opened and closed. */
@@ -52,6 +63,8 @@ extern uint8_t feature_state[NGE_ENTITY_MAX];   /**< FEAT_* bits. */
 #define FEATURE_IS(id)       NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_FEATURE)
 /** A feature is open. */
 #define FEATURE_IS_OPEN(id)  ((feature_state[id] & FEAT_OPEN) != 0)
+/** A feature is locked. */
+#define FEATURE_IS_LOCKED(id)  ((feature_state[id] & FEAT_LOCKED) != 0)
 
 /** @brief Give an entity in use the feature component, in state (FEAT_*): not yet placed or drawn. */
 void feature_add(nge_entity_id_t id, uint8_t state) NGE_BANKED;
@@ -67,5 +80,20 @@ void feature_open(nge_entity_id_t id) NGE_BANKED;
 
 /** @brief Close a placed feature: it blocks what its kind blocks when closed, and is drawn closed. */
 void feature_close(nge_entity_id_t id) NGE_BANKED;
+
+/** @brief Lock a closed feature, with a lock of kind key (KEY_IRON to KEY_GOLD). */
+void feature_lock(nge_entity_id_t id, uint8_t key) NGE_BANKED;
+
+/** @brief Unlock a feature: it stays closed. */
+void feature_unlock(nge_entity_id_t id) NGE_BANKED;
+
+/** @brief 1 if item is a key that fits locked feature id: its KEY_*, or KEY_ANY. */
+uint8_t feature_key_fits(nge_entity_id_t id, nge_entity_id_t item) NGE_BANKED;
+
+/** @brief The first item holder has stowed that fits locked feature id, or NGE_ENTITY_INVALID. */
+nge_entity_id_t feature_fitting_key(nge_entity_id_t id, nge_entity_id_t holder) NGE_BANKED;
+
+/** @brief 1 if a lock pick with d20 roll beats a lock, for actor: its Dexterity modifier counts, if it has stats. */
+uint8_t feature_pick_works(nge_entity_id_t actor, nge_entity_id_t pick, uint8_t roll) NGE_BANKED;
 
 #endif

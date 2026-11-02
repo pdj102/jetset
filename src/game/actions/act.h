@@ -98,7 +98,8 @@ typedef struct act {
 #define ACT_WAIT    11
 #define ACT_FIRE    12
 #define ACT_AIM     13
-#define ACT_COUNT   14
+#define ACT_UNLOCK  14
+#define ACT_COUNT   15
 
 /** How far an aimed item reaches (nge_map_within()): a kind has no range of its own. */
 #define ACT_AIM_RANGE  8
@@ -138,7 +139,11 @@ typedef struct act {
 #define ACT_R_CANT_AIM          31  /**< Refused: the item has nothing to aim. */
 #define ACT_R_NO_CHARGES        32  /**< Refused: a wand or staff with none left. */
 #define ACT_R_CURSED            33  /**< Refused: a cursed item won't come off. */
-#define ACT_R_COUNT             34
+#define ACT_R_LOCKED            34  /**< Refused: it is locked. a->target: the feature. */
+#define ACT_R_NOT_LOCKED        35  /**< Refused: it isn't locked. */
+#define ACT_R_WRONG_KEY         36  /**< Refused: not a key that fits, or a lock pick. */
+#define ACT_R_PICK_FAILED       37  /**< Attempted: the lock pick lost its roll, and a use. */
+#define ACT_R_COUNT             38
 
 /**
  * @brief Move one tile.
@@ -315,6 +320,20 @@ uint8_t act_fire(act_t *a, uint8_t mode) NGE_BANKED;
  * A check on the actor's own tile asks about the item alone.
  */
 uint8_t act_aim(act_t *a, uint8_t mode) NGE_BANKED;
+
+/**
+ * @brief Unlock a feature next to the actor, or that it stands in. It stays
+ *        closed: opening it is another action, and another turn.
+ *
+ * In: actor (alive, placed in an area), item, and target or (with target
+ * NGE_ENTITY_INVALID) a direction dx, dy. Out: target. A key that fits
+ * (feature_key_fits()) always works and is kept. A lock pick rolls 1d20
+ * (feature_pick_works()) and uses one of its count, win or lose, gone at 0;
+ * failing is ACT_R_PICK_FAILED, attempted. Posts EV_UNLOCKED. Refused with
+ * ACT_R_NOT_CARRIED, ACT_R_NOTHING_THERE, ACT_R_CANT_OPEN,
+ * ACT_R_OUT_OF_RANGE, ACT_R_NOT_LOCKED or ACT_R_WRONG_KEY.
+ */
+uint8_t act_unlock(act_t *a, uint8_t mode) NGE_BANKED;
 
 /** @brief Call action (ACT_MOVE...) by number: for the AI and delayed actions. */
 uint8_t act_do(uint8_t action, act_t *a, uint8_t mode);

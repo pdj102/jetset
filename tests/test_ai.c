@@ -663,6 +663,21 @@ int main(void)
     events();
     events();
 
+    /* ---- a locked door: a goblin that could open it is refused, and gives up, not walking into it for ever ---- */
+    scene(0, 5);
+    wall_column(3, 0, 9);
+    NGE_MAP_TILE(3, 5).tile_id = FLOOR;
+    door = gen_feature(FT_DOOR, AREA);
+    feature_place(door, 3, 5);
+    feature_lock(door, KEY_IRON);
+    goblin = hunter(CR_GOBLIN, 4, 5, 2, 5);
+    CHECK(ai_can(goblin) & AI_CAN_OPEN);
+    events();
+    ai_on_turn(goblin);
+    CHECK(at(goblin, 4, 5) && !FEATURE_IS_OPEN(door) && FEATURE_IS_LOCKED(door) && ai_goal_x[goblin] == NGE_MAP_X_INVALID);
+    CHECK(ai_state[goblin] == AI_STATE_IDLE);
+    events();
+
     /* ---- attack: next to its target, a rat bites ---- */
     scene(4, 5);
     rat = hunter(CR_RAT, 5, 5, 4, 5);

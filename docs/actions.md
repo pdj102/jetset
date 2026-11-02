@@ -159,8 +159,8 @@ a move that is refused, followed by a melee.
   (`ACT_FIRE`).
 - **R25 (later)** Wands, staves and aimed parchments can be aimed at a chosen tile
   (`ACT_AIM`).
-- **R26 (later)** Doors can be locked, and keys and lock picks open them
-  (`ACT_UNLOCK`).
+- **R26** Doors can be locked, and keys and lock picks open them (`ACT_UNLOCK`). The
+  level generator doesn't lock any yet.
 - **R27 (later)** Spells and creature abilities are cast (`ACT_CAST`, mana.md R13,
   ai.md R22).
 - **R28 (later)** An actor can steal from a neighbour (`ACT_STEAL`, the bandit), and
@@ -347,6 +347,7 @@ lists. P-ACT-1 asks for a text for each new reason, and these three are the exce
 | `ACT_ASCEND`, `ACT_DESCEND` | `<`, `>` | No |
 | `ACT_WAIT` | `.` | The end of an AI turn |
 | `ACT_FIRE` | `f`, then a tile | `opt_shoot()` |
+| `ACT_UNLOCK` | Bump with a key that fits, or `p`, a key or a pick, then a direction | No |
 | `ACT_AIM` | `a`, or `a` or ENTER on the inventory screen, then a tile | No |
 
 **Bumping** is the player's move command combining actions: it checks the move, and
@@ -517,7 +518,7 @@ actions are listed, and one of them is needed by items the game already generate
 
 | Action | Needed for | Priority | Blocked by |
 |---|---|---|---|
-| `ACT_UNLOCK` | 7 item kinds: keys and lock picks | Needed | No door is ever locked: level generation and a lock on the door |
+| `ACT_UNLOCK`, built | 7 item kinds: keys and lock picks | Needed | No door is ever locked: level generation (Q1 in [actions_plan.md](actions_plan.md)) |
 | `ACT_CAST` | Mana exists and nothing spends it; the goblin shaman | Wanted | Its own spec: what spells exist, who knows them |
 | `ACT_STEAL` | The bandit's "steals and runs" | Wanted | An AI that flees (ai.md R18) |
 | `ACT_OPERATE` | Fountains and the like | If added | No such feature kind: there are only doors and stairs |
@@ -532,10 +533,10 @@ form `act.h` will need.
 
 | Addition | Names |
 |---|---|
-| Actions | `ACT_UNLOCK` 14, `ACT_CAST` 15, `ACT_STEAL` 16, `ACT_OPERATE` 17, `ACT_SEARCH` 18, `ACT_DISARM` 19 |
-| Refused reasons | `ACT_R_LOCKED`, `ACT_R_NOT_LOCKED`, `ACT_R_WRONG_KEY`, `ACT_R_NO_MANA`, `ACT_R_NO_SPELL`, `ACT_R_NOTHING_TO_STEAL`, `ACT_R_CANT_OPERATE`, `ACT_R_SPENT` |
-| Attempted reasons | `ACT_R_PICK_FAILED`, `ACT_R_CAUGHT` |
-| Events | `EV_UNLOCKED`, `EV_CAST`, `EV_STOLEN` |
+| Actions | `ACT_CAST` 15, `ACT_STEAL` 16, `ACT_OPERATE` 17, `ACT_SEARCH` 18, `ACT_DISARM` 19 |
+| Refused reasons | `ACT_R_NO_MANA`, `ACT_R_NO_SPELL`, `ACT_R_NOTHING_TO_STEAL`, `ACT_R_CANT_OPERATE`, `ACT_R_SPENT` |
+| Attempted reasons | `ACT_R_CAUGHT` |
+| Events | `EV_CAST`, `EV_STOLEN` |
 
 Numbers are given only for ordering: each gets its number when it is built, as
 `ACT_COUNT` sizes `modes[]`.
@@ -627,7 +628,7 @@ Out: target; kind, the effect.
 13 kinds use it: 8 wands and staves, and 5 parchments. A row with a pending op, such as
 the wand of teleport, uses its charge and does nothing yet (items.md R12).
 
-### 6.5 `ACT_UNLOCK`
+### 6.5 `ACT_UNLOCK`, built
 
 **Unlock a feature next to the actor.** In: actor, target or dx, dy, item (a key or a
 lock pick). Out: target. It reuses `find_openable()`.
@@ -699,7 +700,7 @@ These add no action, and need only the accessors and some reasons.
 
 | Action | Change | What it reads |
 |---|---|---|
-| `ACT_OPEN` | Refused with `ACT_R_LOCKED` (section 6.5) | `FEAT_LOCKED` |
+| `ACT_OPEN` | Refused with `ACT_R_LOCKED` (section 6.5), built | `FEAT_LOCKED` |
 | `ACT_EQUIP` | A two-handed item needs `SLOT_SHIELD` free as well, and a shield needs no two-handed item wielded: `ACT_R_SLOT_TAKEN`, with the item in the way as `target`, built | `ITEMF_TWO_HANDS`, 4 kinds |
 | `ACT_UNEQUIP` | A cursed item stays on, until uncursed: `ACT_R_CURSED`, built | `ITEMF_CURSED`, 5 kinds, and `ITEM_UNCURSED` |
 | `ACT_PICKUP` | Ammo merges into a stack of the same kind, built. Treasure goes to the player's gold (player_character.md R20) | `item_count[]`, kind, subclass |
@@ -822,6 +823,23 @@ To add with section 6:
 
 What differs from section 6 and [actions_plan.md](actions_plan.md).
 
+- **Step 12:**
+  - No door is locked in play until step 13. The `L` dev key locks the nearest closed door.
+  - `act_unlock()` is in `act_open.c`, not a new `act_unlock.c`, as it shares
+    `find_openable()`, which stays static.
+  - The rules are `feature_key_fits()`, `feature_fitting_key()` and `feature_pick_works()`,
+    in page 132. The roll is made in the action, as `attack_hits()` takes its roll (D3).
+  - The lock's kind is in bits 4 to 6 of `feature_state[]`. `FEAT_PICK_DC` is 15, one number
+    for every lock until Q1 says what a lock guards.
+  - An item that is neither a key nor a pick is `ACT_R_WRONG_KEY`, which the spec didn't
+    cover. The item is tested before the door.
+  - The `p` key is new, with the "Try a Lock" list of keys and picks, then a direction: 4
+    directions, as closing has. The list makes no check, as the lock is chosen after the
+    item, so any refusal comes after the direction.
+  - A failed pick posts no event: its message comes from the reason, "The lock holds."
+  - A locked door looks like any closed door, and look doesn't tell them apart.
+  - For the CSpect check the dev kit has an iron key, a brass key and a lock pick, in place
+    of the quarterstaff, the shield and the uncurse parchment.
 - **Step 11:**
   - The rules are `inv_hands_taken()` and `inv_cursed()` in the inventory component, as
     R12 wants. They cost page 110 186 bytes in debug. `feature.c` then moved to pair

@@ -4,9 +4,9 @@ The steps that build what [actions.md](actions.md) section 6 specifies. The spec
 what each action does and why, and this file says in what order, what changes, and how
 each step is checked.
 
-Status: plan written 2026-10-31. D10 to D23 agreed. Steps 1 to 11 done: step 1 passed in
+Status: plan written 2026-10-31. D10 to D23 agreed. Steps 1 to 12 done: step 1 passed in
 CSpect and on hardware, the others in CSpect, with step 5 checked through step 7. Step
-12 is next.
+13 is blocked on Q1, and step 14 needs its own specs first.
 
 ## 1. How the steps work
 
@@ -229,9 +229,9 @@ Each needs its own spec first: spells and who knows them, and fleeing (ai.md R18
 | 10 | | Page 130 +275, page 118 +86 on hardware, with common unchanged. Debug: page 130 +284, page 102 +200 (the dev bandit), common +14, 4,640 free |
 | 11 | +76: 9,728 | Page 110: +186, 256 left. Page 120 +95, page 118 +46. Common +1, 4,639 free |
 | Between 11 and 12 | | `feature.c` moved to its own pair, 132/133: page 110 -928, about 1,180 left |
-| 12 | +0.6K | Page 132: the lock rule, with about 7K free |
+| 12 | +498: 10,226 | Page 132 +462, 6,802 free. Page 118 +188, page 116 +133, page 114 +525 with the dev key. Common +30, 4,609 free |
 
-The estimates come from the spec, 6.11. The actions end at about 9.9K of 16K, so the
+The estimates come from the spec, 6.11. The actions ended at 10.2K of 16K, so the
 section has room. **Page 110 was the real limit:** the game's component functions are
 there. The game code range was extended to 102-151 and `feature.c`, which step 12 and the
 features after it add to, moved to pair 132/133. If page 110 fills again, the next component

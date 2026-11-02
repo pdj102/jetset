@@ -290,6 +290,11 @@ void messages_on_event(const nge_event_t *e) NGE_BANKED
             say_did(source, " opens the ", target);
         }
         break;
+    case EV_UNLOCKED:
+        if (source == actor_player) {
+            say_named("You unlock the ", target, ".");
+        }
+        break;
     case EV_CLOSED:
         if (source == actor_player) {
             say_named("You close the ", target, ".");
@@ -416,6 +421,18 @@ void messages_act_failed(const act_t *a) NGE_BANKED
         break;
     case ACT_R_CURSED:
         screen_message("It is cursed: it won't come off.");
+        break;
+    case ACT_R_LOCKED:
+        say_named("The ", target, " is locked.");
+        break;
+    case ACT_R_NOT_LOCKED:
+        say_named("The ", target, " isn't locked.");
+        break;
+    case ACT_R_WRONG_KEY:
+        screen_message("That doesn't fit the lock.");
+        break;
+    case ACT_R_PICK_FAILED:
+        screen_message("The lock holds.");
         break;
     case ACT_R_CANT_USE:
         screen_message("You can't use that.");

@@ -12,6 +12,7 @@
 
 #include "data/tile_data.h"
 #include "game/components/feature.h"
+#include "game/components/inventory.h"
 #include "game/components/kind.h"
 #include "game/gen/gen_internal.h"
 #include "game/level/level.h"
@@ -98,6 +99,52 @@ int main(void)
     other = nge_entity_create();
     feature_add(other, FEAT_OPEN);
     CHECK(FEATURE_IS(other) && FEATURE_IS_OPEN(other));
+
+    /* ---- locks: a closed door locked with a kind, its look unchanged; unlocked, shut ---- */
+    door = gen_feature(FT_DOOR, AREA);
+    feature_place(door, 7, 7);
+    CHECK(!FEATURE_IS_LOCKED(door));
+    feature_lock(door, KEY_BRASS);
+    CHECK(FEATURE_IS_LOCKED(door) && door_is(door, 7, 7, 0));
+    {
+        nge_entity_id_t iron = gen_item(IT_KEY_IRON, AREA);
+        nge_entity_id_t brass = gen_item(IT_KEY_BRASS, AREA);
+        nge_entity_id_t skeleton = gen_item(IT_KEY_SKELETON, AREA);
+        nge_entity_id_t sword = gen_item(IT_SWORD, AREA);
+        nge_entity_id_t pick = gen_item(IT_LOCK_PICK, AREA);
+        nge_entity_id_t fine = gen_item(IT_FINE_LOCK_PICK, AREA);
+        nge_entity_id_t goblin = gen_creature(CR_GOBLIN, AREA);   /* Dex 14: +2 */
+        nge_entity_id_t nobody = nge_entity_create();             /* no stats */
+
+        CHECK(feature_key_fits(door, brass) && feature_key_fits(door, skeleton));
+        CHECK(!feature_key_fits(door, iron) && !feature_key_fits(door, sword) && !feature_key_fits(door, pick));
+        /* A new lock replaces the old */
+        feature_lock(door, KEY_IRON);
+        CHECK(feature_key_fits(door, iron) && !feature_key_fits(door, brass));
+        /* The first that fits in the pack: not one on the floor, not a wrong one */
+        CHECK(feature_fitting_key(door, goblin) == NGE_ENTITY_INVALID);
+        inv_stow(sword, goblin);
+        inv_stow(brass, goblin);
+        CHECK(feature_fitting_key(door, goblin) == NGE_ENTITY_INVALID);
+        inv_stow(iron, goblin);
+        CHECK(feature_fitting_key(door, goblin) == iron);
+        /* The pick: the roll, its bonus, and the Dexterity modifier if it has one */
+        CHECK(!feature_pick_works(goblin, pick, FEAT_PICK_DC - 3) && feature_pick_works(goblin, pick, FEAT_PICK_DC - 2));
+        CHECK(!feature_pick_works(goblin, fine, FEAT_PICK_DC - 6) && feature_pick_works(goblin, fine, FEAT_PICK_DC - 5));
+        CHECK(!feature_pick_works(nobody, pick, FEAT_PICK_DC - 1) && feature_pick_works(nobody, pick, FEAT_PICK_DC));
+    }
+    feature_unlock(door);
+    CHECK(!FEATURE_IS_LOCKED(door) && door_is(door, 7, 7, 0));
+    feature_lock(door, KEY_IRON);                                  /* unlocking left no key behind */
+    feature_unlock(door);
+    CHECK(feature_state[door] == 0);
+    TEST_EXPECT_HALT(feature_lock(door, 0));
+    CHECK(test_halt_count == 1);
+    TEST_EXPECT_HALT(feature_lock(door, KEY_ANY));
+    CHECK(test_halt_count == 1);
+    feature_open(door);
+    TEST_EXPECT_HALT(feature_lock(door, KEY_IRON));                /* open */
+    CHECK(test_halt_count == 1);
 
     /* ---- asserts ---- */
     other = gen_feature(FT_DOOR, NGE_OWNER_WORLD);                 /* not in an area */

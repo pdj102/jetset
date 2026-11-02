@@ -331,6 +331,7 @@ Reactions marked **rule** change the game's state. The rest only show something.
 | `EV_DROPPED` | `act_drop()` | messages |
 | `EV_EQUIPPED`, `EV_UNEQUIPPED` | `act_equip()`, `act_unequip()` | messages |
 | `EV_OPENED`, `EV_CLOSED` | `act_open()`, `act_close()` | messages |
+| `EV_UNLOCKED` | `act_unlock()` | messages |
 | `EV_HIT`, `EV_MISSED` | `act_strike()` | anim: a lunge; **rule** AI: hurt; messages |
 | `EV_FIRED` | `act_fire()`, for the player and monsters | messages; the projectile animation when it comes |
 | `EV_AIMED` | `act_aim()` | messages |

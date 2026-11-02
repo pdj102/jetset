@@ -617,6 +617,48 @@ int main(void)
     press(EV(NGE_KEY_A));                                          /* not a direction */
     player_command(EV(NGE_KEY_C));
     CHECK(said("Never mind.") && player_turn);
+
+    /* ---- locks: bumped without a key it says so; with one it unlocks, and stays shut; p chooses a key or a pick ---- */
+    {
+        nge_entity_id_t key;
+
+        player_command(EV(NGE_KEY_P));                             /* nothing to choose: no screen */
+        CHECK(said("You have no key or pick.") && player_turn);
+        feature_lock(door, KEY_IRON);
+        player_command(EV(NGE_KEY_L));
+        CHECK(said("The door is locked.") && player_turn && FEATURE_IS_LOCKED(door) && NGE_LOCATION_X(actor_player) == 5);
+        key = gen_item(IT_KEY_BRASS, actor_player);
+        player_command(EV(NGE_KEY_L));                             /* it doesn't fit: not tried */
+        CHECK(said("The door is locked.") && player_turn && FEATURE_IS_LOCKED(door));
+        nge_entity_destroy(key);
+        key = gen_item(IT_KEY_IRON, actor_player);
+        player_command(EV(NGE_KEY_L));
+        CHECK(!FEATURE_IS_LOCKED(door) && !FEATURE_IS_OPEN(door) && !player_turn);
+        nge_event_process(messages_on_event);
+        CHECK(said("You unlock the door."));
+        /* p, a letter, a direction */
+        player_turn = 1;
+        feature_lock(door, KEY_IRON);
+        press(EV(NGE_KEY_A));
+        press(EV(NGE_KEY_SPACE));                                  /* taken by the screen's closing frame */
+        press(EV(NGE_KEY_L));
+        player_command(EV(NGE_KEY_P));
+        CHECK(said("Unlock in which direction?") && !FEATURE_IS_LOCKED(door) && !player_turn);
+        nge_event_process(messages_on_event);
+        /* On what isn't locked: told, the turn kept */
+        player_turn = 1;
+        press(EV(NGE_KEY_A));
+        press(EV(NGE_KEY_SPACE));                                  /* taken by the screen's closing frame */
+        press(EV(NGE_KEY_L));
+        player_command(EV(NGE_KEY_P));
+        CHECK(said("The door isn't locked.") && player_turn);
+        nge_entity_destroy(key);
+        level_release_dying();
+        /* L, the dev kit's: the nearest closed door is locked, and no turn used */
+        player_command(NGE_KEY_L | (NGE_MOD_CAPS << 8));
+        CHECK(FEATURE_IS_LOCKED(door) && player_turn);
+        feature_unlock(door);
+    }
     player_command(EV(NGE_KEY_F));                                 /* said at once, with no cursor */
     CHECK(said("You have nothing to attack with.") && player_turn);
     {
@@ -687,6 +729,12 @@ int main(void)
         a.reason = ACT_R_CURSED;
         messages_act_failed(&a);
         CHECK(said("It is cursed: it won't come off."));
+        a.reason = ACT_R_WRONG_KEY;
+        messages_act_failed(&a);
+        CHECK(said("That doesn't fit the lock."));
+        a.reason = ACT_R_PICK_FAILED;
+        messages_act_failed(&a);
+        CHECK(said("The lock holds."));
     }
     messages_game_over(GAME_OVER_WON);
     CHECK(said("Press any key.") && shown("You escape with the crown. You win!"));
