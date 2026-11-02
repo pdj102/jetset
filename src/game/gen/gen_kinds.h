@@ -223,9 +223,9 @@
 #define ITEM_TREASURE   15
 #define ITEM_COUNT      16
 
-/* Item flags, in each item's kind record: stored now, their rules later (docs/items.md, "Not built yet") */
+/* Item flags, in each item's kind record: their rules are in the inventory component */
 #define ITEMF_TWO_HANDS  0x01   /* fills SLOT_SHIELD too */
-#define ITEMF_CURSED     0x02   /* can't be taken off */
+#define ITEMF_CURSED     0x02   /* can't be taken off, until uncursed (ITEM_UNCURSED) */
 
 /* An item kind's group: what ammo works with what launcher (GROUP_*) */
 #define GROUP_NONE    0

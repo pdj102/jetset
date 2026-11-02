@@ -178,6 +178,7 @@ An op is a number, dispatched by a `switch` in the code that owns it:
 | `OP_DAMAGE` | Game | Damage of type `arg`, through `health_damage()` |
 | `OP_HEAL` | Game | Healing, through `health_heal()` |
 | `OP_MANA` | Game | MP back, through `mana_restore()`; nothing without mana |
+| `OP_UNCURSE` | Game | Lifts the curse of everything the target has equipped (`ITEM_UNCURSED`) |
 | The pending ops | Game | Nothing yet (section 4.8) |
 
 The core scales an op's amount by the power, clamped to -127 to 127, and passes the
@@ -324,7 +325,7 @@ locals.
 | Aimed effects | An effect can be applied to any target, but no action reads the aim hook |
 | Worn effects that tick | A worn effect has no firings: `EF_WORN_REGEN` waits on this |
 | Hit and use effects as reactions | R5 allows it, and today they are direct calls (events.md, section 6) |
-| Pending ops | Teleport, mapping, identify, summon, enchant, uncurse, light |
+| Pending ops | Teleport, mapping, identify, summon, enchant, light |
 | An nge module | The seam's plain calls would become callbacks |
 | Messages by end reason | See [attributes.md](attributes.md), "Not built yet" |
 

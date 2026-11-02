@@ -4,9 +4,9 @@ The steps that build what [actions.md](actions.md) section 6 specifies. The spec
 what each action does and why, and this file says in what order, what changes, and how
 each step is checked.
 
-Status: plan written 2026-10-31. D10 to D23 agreed. Steps 1 to 10 done: step 1 passed in
+Status: plan written 2026-10-31. D10 to D23 agreed. Steps 1 to 11 done: step 1 passed in
 CSpect and on hardware, the others in CSpect, with step 5 checked through step 7. Step
-11 is next.
+12 is next, and first needs room: page 110 has 256 bytes left.
 
 ## 1. How the steps work
 
@@ -179,8 +179,8 @@ Spec, 6.8.
   `ACT_EQUIP` and `ACT_UNEQUIP` call it; `ACT_R_CURSED`. Page 110 has the least room of
   anything here, so check it first. If it won't fit, the rule goes in `act_equip.c`, with
   a note against R12.
-- **`OP_UNCURSE` stays pending.** A cursed item then can't be removed at all, and an
-  uncurse is the way back. Build the op in this step, or accept that until it exists.
+- **`OP_UNCURSE` is built in this step** (Q2), as an uncurse is the only way back from a
+  cursed item.
 - **Tests:** both orders for a shield and a two-handed weapon, a cursed item staying on,
   dropped creatures' cursed gear (`inv_drop_all()` isn't an action, so it isn't refused).
 
@@ -227,7 +227,7 @@ Each needs its own spec first: spells and who knows them, and fleeing (ai.md R18
 | 8 | +316: 8,946 | |
 | 9 | +706: 9,652 | Common: +28, 4,653 free. Pages 114 +107, 116 +181, 118 +116, 124 +55 |
 | 10 | | Page 130 +275, page 118 +86 on hardware, with common unchanged. Debug: page 130 +284, page 102 +200 (the dev bandit), common +14, 4,640 free |
-| 11 | +0.1K | Page 110: the risk |
+| 11 | +76: 9,728 | Page 110: +186, 256 left. Page 120 +95, page 118 +46. Common +1, 4,639 free |
 | 12 | +0.6K | Page 110 or a new home for the lock rule |
 
 The estimates come from the spec, 6.11. The actions end at about 9.9K of 16K, so the
@@ -249,5 +249,5 @@ answer doesn't change steps 1 to 12. What the options are, as a start:
 Whichever is chosen must also handle: a monster picking up the key (`opt_pickup()`), a key
 left on another level, and keys that `gen_item_random()` makes with no lock to match.
 
-**Q2 Is a cursed item acceptable before `OP_UNCURSE` is built?** Step 11 asks. Doing the
-op there is the safer default.
+**Q2 Is a cursed item acceptable before `OP_UNCURSE` is built?** Answered: no, the op was
+built in step 11.

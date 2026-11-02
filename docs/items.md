@@ -238,7 +238,8 @@ The data is laid out for firing, which isn't built:
 - **`group`** is one byte whose meaning depends on the subclass. Ammo and
   launchers must share a `GROUP_*`. A key opens locks of its `KEY_*`, and
   `KEY_ANY` opens all.
-- **`flags`** hold `ITEMF_TWO_HANDS` and `ITEMF_CURSED`, stored for rules to come.
+- **`flags`** hold `ITEMF_TWO_HANDS` and `ITEMF_CURSED`. The rules are in the inventory
+  component, and an item's lifted curse is an entity flag, `ITEM_UNCURSED`.
 
 ### 4.8 Generation
 
@@ -318,12 +319,10 @@ mechanic is missing.
 |---|---|
 | Using up counts | `item_count[]`, on what isn't ammo. Ammo merges and is used up |
 | Locks | Keys, lock picks, their groups and counts |
-| Two-handed weapons | `ITEMF_TWO_HANDS` |
-| Sticky curses | `ITEMF_CURSED` (a cursed item's negative power already works) |
 | Hunger | `EF_NOURISH` (D11) |
 | Light | `EF_WORN_LIGHT`, with the radius as its power; a light's count as burn time |
 | Worn regeneration | `EF_WORN_REGEN`: a worn effect has no tick |
-| The pending ops | Teleport, mapping, identify, summon, enchant, uncurse, light: used up with their message, but nothing happens |
+| The pending ops | Teleport, mapping, identify, summon, enchant, light: used up with their message, but nothing happens |
 | Blindness and sleep | The statuses are granted, but no rule reads them |
 | Gold | Treasure's count: it is carried as an item, not added to the PC's gold |
 

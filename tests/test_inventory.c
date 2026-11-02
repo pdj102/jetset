@@ -124,9 +124,39 @@ int main(void)
     nge_location_remove(player);
     CHECK(inv_drop_all(player) == 0 && stowed(a, player));
 
+    /* ---- the hands: a two-handed item and a shield exclude each other ---- */
+    {
+        nge_entity_id_t staff = gen_item(IT_QUARTERSTAFF, player);
+        nge_entity_id_t sword = gen_item(IT_SWORD, player);
+        nge_entity_id_t shield = gen_item(IT_SHIELD, player);
+
+        CHECK(inv_hands_taken(player, staff, SLOT_WEAPON) == NGE_ENTITY_INVALID);
+        CHECK(inv_hands_taken(player, shield, SLOT_SHIELD) == NGE_ENTITY_INVALID);
+        item_slot[shield] = SLOT_SHIELD;
+        CHECK(inv_hands_taken(player, staff, SLOT_WEAPON) == shield);
+        CHECK(inv_hands_taken(player, sword, SLOT_WEAPON) == NGE_ENTITY_INVALID);   /* one hand */
+        item_slot[shield] = SLOT_NONE;
+        item_slot[staff] = SLOT_WEAPON;
+        CHECK(inv_hands_taken(player, shield, SLOT_SHIELD) == staff);
+        item_slot[staff] = SLOT_NONE;
+        item_slot[sword] = SLOT_WEAPON;
+        CHECK(inv_hands_taken(player, shield, SLOT_SHIELD) == NGE_ENTITY_INVALID);
+        item_slot[sword] = SLOT_NONE;
+    }
+
+    /* ---- curses: by kind, until lifted, wherever the item goes ---- */
+    a = gen_item(IT_RUSTY_SWORD, player);
+    CHECK(inv_cursed(a));
+    CHECK(!inv_cursed(gen_item(IT_SWORD, player)));
+    nge_entity_set_flags(a, ITEM_UNCURSED);
+    CHECK(!inv_cursed(a));
+    inv_place(a, AREA, 1, 1);
+    inv_stow(a, player);
+    CHECK(!inv_cursed(a));
+
     /* ---- add again: replaced ---- */
     inv_add(player, 5, 0);
-    CHECK(inv_capacity[player] == 5 && inv_slots[player] == 0 && inv_count(player) == 1);
+    CHECK(inv_capacity[player] == 5 && inv_slots[player] == 0 && inv_count(player) == 6);
 
     /* ---- asserts ---- */
     TEST_EXPECT_HALT(inv_add(player, 0, 0));                  /* no room */

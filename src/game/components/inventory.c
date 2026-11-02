@@ -12,6 +12,14 @@
 #include "core/nge_util.h"
 #include "ecs/components/nge_location.h"
 #include "game/components/item.h"
+#include "game/components/kind.h"
+#include "game/gen/gen.h"
+
+/* The flags of an item's kind */
+static uint8_t flags_of(nge_entity_id_t item)
+{
+    return gen_item_flags(kind_index[item]);
+}
 
 static void check_entity(nge_entity_id_t id)
 {
@@ -75,6 +83,26 @@ nge_entity_id_t inv_equipped(nge_entity_id_t holder, uint8_t slot) NGE_BANKED
         }
     }
     return NGE_ENTITY_INVALID;
+}
+
+nge_entity_id_t inv_hands_taken(nge_entity_id_t holder, nge_entity_id_t item, uint8_t slot) NGE_BANKED
+{
+    nge_entity_id_t weapon;
+
+    check_entity(item);
+
+    if (slot == SLOT_SHIELD) {
+        weapon = inv_equipped(holder, SLOT_WEAPON);
+        return (weapon != NGE_ENTITY_INVALID && (flags_of(weapon) & ITEMF_TWO_HANDS)) ? weapon : NGE_ENTITY_INVALID;
+    }
+    return (flags_of(item) & ITEMF_TWO_HANDS) ? inv_equipped(holder, SLOT_SHIELD) : NGE_ENTITY_INVALID;
+}
+
+uint8_t inv_cursed(nge_entity_id_t item) NGE_BANKED
+{
+    check_entity(item);
+
+    return (flags_of(item) & ITEMF_CURSED) != 0 && !NGE_ENTITY_HAS_FLAGS(item, ITEM_UNCURSED);
 }
 
 void inv_stow(nge_entity_id_t item, nge_entity_id_t holder) NGE_BANKED

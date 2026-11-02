@@ -414,6 +414,9 @@ void messages_act_failed(const act_t *a) NGE_BANKED
     case ACT_R_NO_CHARGES:
         screen_message("It has no charges left.");
         break;
+    case ACT_R_CURSED:
+        screen_message("It is cursed: it won't come off.");
+        break;
     case ACT_R_CANT_USE:
         screen_message("You can't use that.");
         break;

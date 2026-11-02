@@ -50,6 +50,19 @@ uint8_t effects_game_affectable(nge_entity_id_t id)
     return NGE_ENTITY_IS_ALIVE(id) && effects_game_has_attrs(id) && health_hp[id] != 0;
 }
 
+/* The curse of everything id has equipped: a flag on any that isn't cursed means nothing */
+static void uncurse(nge_entity_id_t id)
+{
+    nge_entity_id_t owned;
+    uint8_t i;
+
+    NGE_OWNER_FOR_EACH_OWNED(i, owned, id) {
+        if (ITEM_IS(owned) && item_slot[owned] != SLOT_NONE) {
+            nge_entity_set_flags(owned, ITEM_UNCURSED);
+        }
+    }
+}
+
 void effects_game_op(const effect_op_t *op, nge_entity_id_t target, nge_entity_id_t source)
 {
     /* The fields in locals: see messages_on_event() (game/messages) */
@@ -69,11 +82,13 @@ void effects_game_op(const effect_op_t *op, nge_entity_id_t target, nge_entity_i
             mana_restore(target, amount);
         }
         break;
+    case OP_UNCURSE:
+        uncurse(target);
+        break;
     case OP_LIGHT:
     case OP_IDENTIFY:
     case OP_MAP:
     case OP_TELEPORT:
-    case OP_UNCURSE:
     case OP_ENCHANT:
     case OP_SUMMON:
         break;   /* pending: their mechanics come later */

@@ -165,8 +165,8 @@ a move that is refused, followed by a melee.
   ai.md R22).
 - **R28 (later)** An actor can steal from a neighbour (`ACT_STEAL`, the bandit), and
   no theft can take the quest item (winning.md R6).
-- **R29 (later)** Stacks merge and counts are used up, and two-handed weapons and
-  sticky curses are enforced, in the existing actions (section 6.8).
+- **R29** Stacks merge and two-handed weapons and sticky curses are enforced, in the
+  existing actions (section 6.8). Using up counts other than ammo comes later.
 - **R30 (later)** Features that do something when operated, hidden features and traps
   have their actions (`ACT_OPERATE`, `ACT_SEARCH`, `ACT_DISARM`), once such features
   exist.
@@ -533,7 +533,7 @@ form `act.h` will need.
 | Addition | Names |
 |---|---|
 | Actions | `ACT_UNLOCK` 14, `ACT_CAST` 15, `ACT_STEAL` 16, `ACT_OPERATE` 17, `ACT_SEARCH` 18, `ACT_DISARM` 19 |
-| Refused reasons | `ACT_R_LOCKED`, `ACT_R_NOT_LOCKED`, `ACT_R_WRONG_KEY`, `ACT_R_NO_MANA`, `ACT_R_NO_SPELL`, `ACT_R_NOTHING_TO_STEAL`, `ACT_R_CURSED`, `ACT_R_CANT_OPERATE`, `ACT_R_SPENT` |
+| Refused reasons | `ACT_R_LOCKED`, `ACT_R_NOT_LOCKED`, `ACT_R_WRONG_KEY`, `ACT_R_NO_MANA`, `ACT_R_NO_SPELL`, `ACT_R_NOTHING_TO_STEAL`, `ACT_R_CANT_OPERATE`, `ACT_R_SPENT` |
 | Attempted reasons | `ACT_R_PICK_FAILED`, `ACT_R_CAUGHT` |
 | Events | `EV_UNLOCKED`, `EV_CAST`, `EV_STOLEN` |
 
@@ -700,8 +700,8 @@ These add no action, and need only the accessors and some reasons.
 | Action | Change | What it reads |
 |---|---|---|
 | `ACT_OPEN` | Refused with `ACT_R_LOCKED` (section 6.5) | `FEAT_LOCKED` |
-| `ACT_EQUIP` | A two-handed item needs `SLOT_SHIELD` free as well, and a shield needs no two-handed item wielded: `ACT_R_SLOT_TAKEN`, with the item in the way as `target` | `ITEMF_TWO_HANDS`, 4 kinds |
-| `ACT_UNEQUIP` | A cursed item stays on: `ACT_R_CURSED` | `ITEMF_CURSED`, 5 kinds |
+| `ACT_EQUIP` | A two-handed item needs `SLOT_SHIELD` free as well, and a shield needs no two-handed item wielded: `ACT_R_SLOT_TAKEN`, with the item in the way as `target`, built | `ITEMF_TWO_HANDS`, 4 kinds |
+| `ACT_UNEQUIP` | A cursed item stays on, until uncursed: `ACT_R_CURSED`, built | `ITEMF_CURSED`, 5 kinds, and `ITEM_UNCURSED` |
 | `ACT_PICKUP` | Ammo merges into a stack of the same kind, built. Treasure goes to the player's gold (player_character.md R20) | `item_count[]`, kind, subclass |
 | `ACT_USE` | Uses one of a count, where a subclass has one | `item_count[]` |
 | `ACT_MELEE` | Its end moved to `act_strike()` (D21). No change in behaviour | |
@@ -822,6 +822,18 @@ To add with section 6:
 
 What differs from section 6 and [actions_plan.md](actions_plan.md).
 
+- **Step 11:**
+  - The rules are `inv_hands_taken()` and `inv_cursed()` in the inventory component, as
+    R12 wants. They cost page 110 186 bytes in debug, 256 left, so step 12's lock rule
+    won't fit there as it stands.
+  - `OP_UNCURSE` was built here (Q2). A kind's `ITEMF_CURSED` can't change, so an item's
+    lifted curse is an entity flag, `ITEM_UNCURSED`, `NGE_ENTITY_FLAG_USER`: no new table.
+    It covers everything the reader has equipped. A stowed cursed item stays cursed, and
+    a lifted one stays lifted, wherever it goes. Its worn penalty counts until it is off.
+  - `ACT_R_CURSED` is tested before room in the pack, and uses no turn.
+  - The dev kit has a quarterstaff, a shield and an uncurse parchment, in place of the
+    wand of teleport, the wand of sleep and the staff of healing.
+  - Reading the parchment says "You feel cleansed." whether or not anything was cursed.
 - **Step 10:**
   - `opt_shoot()` calls `act_do()` itself, not `ai_try()`: after the check it holds its fire
     unless the check's `a->target` is its own target. Sight sees past creatures and a shot

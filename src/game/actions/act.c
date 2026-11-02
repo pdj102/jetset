@@ -41,6 +41,7 @@ const uint8_t act_reason_flags[ACT_R_COUNT] = {
     [ACT_R_WRONG_AMMO]       = 0,
     [ACT_R_CANT_AIM]         = 0,
     [ACT_R_NO_CHARGES]       = 0,
+    [ACT_R_CURSED]           = 0,
 };
 
 uint8_t act_do(uint8_t action, act_t *a, uint8_t mode)

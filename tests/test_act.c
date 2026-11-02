@@ -457,6 +457,99 @@ int main(void)
     CHECK(act_unequip(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_NOT_CARRIED);
     events();
 
+    /* ---- two hands: a two-handed item and a shield, in either order; the check refuses as the action does ---- */
+    {
+        nge_entity_id_t holder = gen_creature(CR_BANDIT, AREA);
+        nge_entity_id_t staff = gen_item(IT_QUARTERSTAFF, holder);
+        nge_entity_id_t shield = gen_item(IT_SHIELD, holder);
+        nge_entity_id_t sword = gen_item(IT_SWORD, holder);
+        nge_entity_id_t ring = gen_item(IT_RING_FRAILTY, holder);
+        nge_entity_id_t cursed = gen_item(IT_RUSTY_SWORD, holder);
+        nge_entity_id_t page = gen_item(IT_SP_UNCURSE, holder);
+
+        nge_location_set(holder, 1, 1);
+        a = ctx(holder);
+        a.item = shield;
+        CHECK(act_equip(&a, ACT_DO) == ACT_SUCCESS && a.kind == SLOT_SHIELD);
+        a = ctx(holder);
+        a.item = staff;
+        CHECK(act_equip(&a, ACT_CHECK) == ACT_FAIL && a.reason == ACT_R_SLOT_TAKEN && a.target == shield);
+        a = ctx(holder);
+        a.item = staff;
+        CHECK(act_equip(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_SLOT_TAKEN && a.target == shield &&
+              a.used == 0 && item_slot[staff] == SLOT_NONE);
+        a = ctx(holder);
+        a.item = sword;
+        CHECK(act_equip(&a, ACT_DO) == ACT_SUCCESS);            /* one hand: goes with a shield */
+        a = ctx(holder);
+        a.item = sword;
+        CHECK(act_unequip(&a, ACT_DO) == ACT_SUCCESS);
+        a = ctx(holder);
+        a.item = shield;
+        CHECK(act_unequip(&a, ACT_DO) == ACT_SUCCESS);
+        a = ctx(holder);
+        a.item = staff;
+        CHECK(act_equip(&a, ACT_DO) == ACT_SUCCESS && a.kind == SLOT_WEAPON);
+        a = ctx(holder);
+        a.item = shield;
+        CHECK(act_equip(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_SLOT_TAKEN && a.target == staff &&
+              item_slot[shield] == SLOT_NONE);
+
+        /* ---- curses: on, it stays on, without using the turn, until an uncurse parchment ---- */
+        a = ctx(holder);
+        a.item = ring;
+        CHECK(act_equip(&a, ACT_DO) == ACT_SUCCESS);
+        events();
+        a = ctx(holder);
+        a.item = ring;
+        CHECK(act_unequip(&a, ACT_CHECK) == ACT_FAIL && a.reason == ACT_R_CURSED);
+        a = ctx(holder);
+        a.item = ring;
+        CHECK(act_do(ACT_UNEQUIP, &a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_CURSED && a.used == 0 &&
+              item_slot[ring] != SLOT_NONE && events() == 0);
+        /* Refused before room is asked about */
+        inv_capacity[holder] = inv_count(holder);
+        a = ctx(holder);
+        a.item = ring;
+        CHECK(act_unequip(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_CURSED);
+        inv_capacity[holder] = 6;
+        /* Read: what is worn is freed, and what is stowed is still cursed */
+        a = ctx(holder);
+        a.item = page;
+        CHECK(act_do(ACT_USE, &a, ACT_DO) == ACT_SUCCESS && !NGE_ENTITY_IS_ALIVE(page));
+        CHECK(!inv_cursed(ring) && inv_cursed(cursed));
+        events();
+        a = ctx(holder);
+        a.item = ring;
+        CHECK(act_unequip(&a, ACT_DO) == ACT_SUCCESS && item_slot[ring] == SLOT_NONE);
+        /* Off once, on again: the curse doesn't come back */
+        a = ctx(holder);
+        a.item = ring;
+        CHECK(act_equip(&a, ACT_DO) == ACT_SUCCESS);
+        a = ctx(holder);
+        a.item = ring;
+        CHECK(act_unequip(&a, ACT_DO) == ACT_SUCCESS);
+        /* A cursed weapon, and a holder's death: its gear drops, curse or no curse (no action, so no refusal) */
+        a = ctx(holder);
+        a.item = staff;
+        CHECK(act_unequip(&a, ACT_DO) == ACT_SUCCESS);
+        a = ctx(holder);
+        a.item = cursed;
+        CHECK(act_equip(&a, ACT_DO) == ACT_SUCCESS && item_slot[cursed] == SLOT_WEAPON);
+        CHECK(inv_drop_all(holder) >= 1 && item_slot[cursed] == SLOT_NONE && NGE_OWNER_OF(cursed) == AREA);
+        /* Gone, so the tests below find the tile empty */
+        nge_entity_destroy(staff);
+        nge_entity_destroy(shield);
+        nge_entity_destroy(sword);
+        nge_entity_destroy(ring);
+        nge_entity_destroy(cursed);
+        NGE_ENTITY_RELEASE_EACH_DYING(door) {
+        }
+        nge_entity_destroy(holder);
+        nge_entity_release(nge_entity_next_dying());
+        events();
+    }
+
     /* ---- who can equip: the rat has no inventory, the goblin no ring slots ---- */
     a = ctx(rat);
     a.item = ring1;

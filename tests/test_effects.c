@@ -12,6 +12,7 @@
 #include "game/components/attrs.h"
 #include "game/components/health.h"
 #include "game/components/inventory.h"
+#include "game/components/inventory.h"
 #include "game/components/item.h"
 #include "game/components/mana.h"
 #include "game/components/stats.h"
@@ -623,6 +624,18 @@ int main(void)
     k = stats_ability[ABIL_STR][g];
     effect_apply(EF_MIGHT, 3, g, NGE_ENTITY_INVALID);
     CHECK(stats_ability[ABIL_STR][g] == k + 2 && count_effects(g, EF_MIGHT) == 1);
+
+    /* ---- uncurse: everything equipped, not what is stowed or on the floor; worn effects still count ---- */
+    reset();
+    g = goblin();
+    ring = gen_item(IT_RING_FRAILTY, g);
+    item_slot[ring] = SLOT_RING_L;
+    effects_recompute(g);
+    k = health_hp_max[g];
+    e = gen_item(IT_RUSTY_SWORD, g);
+    CHECK(inv_cursed(ring) && inv_cursed(e));
+    CHECK(effect_apply(EF_UNCURSE, 1, g, NGE_ENTITY_INVALID) == 1);
+    CHECK(!inv_cursed(ring) && inv_cursed(e) && health_hp_max[g] == k);
 
     /* ---- pending effects: safe to apply, doing nothing yet ---- */
     reset();

@@ -38,7 +38,7 @@ uint8_t act_equip(act_t *a, uint8_t mode) NGE_BANKED
     nge_util_assert(item < NGE_ENTITY_MAX);
     nge_util_assert(want < SLOT_COUNT);
 
-    /* 2. Validate: carried, stowed, fits a slot the actor has, one that is free */
+    /* 2. Validate: carried, stowed, fits a slot the actor has, one that is free, hands for it */
     if (!INV_HAS(actor)) {
         return act_fail(a, ACT_R_NO_INVENTORY);
     }
@@ -73,6 +73,11 @@ uint8_t act_equip(act_t *a, uint8_t mode) NGE_BANKED
         a->target = taken;   /* the item in the (last) slot it fits */
         return act_fail(a, ACT_R_SLOT_TAKEN);
     }
+    taken = inv_hands_taken(actor, item, slot);
+    if (taken != NGE_ENTITY_INVALID) {
+        a->target = taken;
+        return act_fail(a, ACT_R_SLOT_TAKEN);
+    }
     a->kind = slot;
     if (mode == ACT_CHECK) {
         return act_checked(a);
@@ -96,12 +101,15 @@ uint8_t act_unequip(act_t *a, uint8_t mode) NGE_BANKED
     nge_util_assert(actor < NGE_ENTITY_MAX && NGE_ENTITY_IS_ALIVE(actor));
     nge_util_assert(item < NGE_ENTITY_MAX);
 
-    /* 2. Validate: carried, equipped, room to stow it */
+    /* 2. Validate: carried, equipped, not cursed, room to stow it */
     if (!carried(actor, item)) {
         return act_fail(a, ACT_R_NOT_CARRIED);
     }
     if (item_slot[item] == SLOT_NONE) {
         return act_fail(a, ACT_R_NOT_EQUIPPED);
+    }
+    if (inv_cursed(item)) {
+        return act_fail(a, ACT_R_CURSED);
     }
     if (inv_count(actor) >= inv_capacity[actor]) {
         return act_fail(a, ACT_R_FULL);

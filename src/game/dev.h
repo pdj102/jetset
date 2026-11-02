@@ -9,8 +9,9 @@
  * With GAME_DEV_KIT: a new game starts with a sword, three rings of health,
  * a healing potion, an antidote, a dead rat, an elixir and a potion of
  * strength in the player's pack, with a short bow, arrows, darts and a
- * flask of oil to fire, wands, a staff and a parchment to aim, and the
- * player resistant to fire, immune
+ * flask of oil to fire, a wand and a parchment to aim, a quarterstaff and
+ * a shield for the two-handed rule, a ring of frailty and an uncurse
+ * parchment for curses, and the player resistant to fire, immune
  * to acid and vulnerable to cold (game/actors.c); X hurts the player,
  * cycling through the damage types (game/player); V pans the view a pixel
  * at a time while a movement key is held, to check the pixel camera; M

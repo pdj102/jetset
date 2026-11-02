@@ -137,7 +137,8 @@ typedef struct act {
 #define ACT_R_WRONG_AMMO        30  /**< Refused: the ammo doesn't fit the launcher. */
 #define ACT_R_CANT_AIM          31  /**< Refused: the item has nothing to aim. */
 #define ACT_R_NO_CHARGES        32  /**< Refused: a wand or staff with none left. */
-#define ACT_R_COUNT             33
+#define ACT_R_CURSED            33  /**< Refused: a cursed item won't come off. */
+#define ACT_R_COUNT             34
 
 /**
  * @brief Move one tile.
@@ -183,20 +184,23 @@ uint8_t act_drop(act_t *a, uint8_t mode) NGE_BANKED;
  * In: actor (alive), item, kind (the slot to use, SLOT_* in game/
  * components/item.h; SLOT_NONE for the first free slot the item fits).
  * Succeeds if the actor has the item stowed, it fits a slot the actor
- * has, and that slot is free: posts EV_EQUIPPED (p1: the slot); a->kind
- * is the slot used. Equipped items don't count towards the capacity.
+ * has, that slot is free, and it has the hands (inv_hands_taken(): a
+ * two-handed item and a shield exclude each other): posts EV_EQUIPPED
+ * (p1: the slot); a->kind is the slot used. Equipped items don't count towards the capacity.
  * Refused with ACT_R_NO_INVENTORY, ACT_R_NOT_CARRIED,
  * ACT_R_ALREADY_EQUIPPED, ACT_R_CANT_EQUIP, ACT_R_NO_SLOT or
- * ACT_R_SLOT_TAKEN (a->target: the item in the slot).
+ * ACT_R_SLOT_TAKEN (a->target: the item in the slot, or in the way of
+ * the hands).
  */
 uint8_t act_equip(act_t *a, uint8_t mode) NGE_BANKED;
 
 /**
  * @brief Take off an equipped item, back into the inventory.
  *
- * In: actor (alive), item. Succeeds if the actor has the item equipped and
- * room to stow it: posts EV_UNEQUIPPED. Refused with ACT_R_NOT_CARRIED,
- * ACT_R_NOT_EQUIPPED or ACT_R_FULL.
+ * In: actor (alive), item. Succeeds if the actor has the item equipped, it
+ * isn't cursed (inv_cursed()), and there is room to stow it: posts
+ * EV_UNEQUIPPED. Refused with ACT_R_NOT_CARRIED, ACT_R_NOT_EQUIPPED,
+ * ACT_R_CURSED or ACT_R_FULL.
  */
 uint8_t act_unequip(act_t *a, uint8_t mode) NGE_BANKED;
 

@@ -15,7 +15,8 @@
  * the mask of equipment slots it has (SLOT_BIT()).
  *
  * inv_stow() and inv_place() move an item without checking the rules: the
- * actions (game/actions/act.h) check them first.
+ * actions (game/actions/act.h) check them first, asking inv_hands_taken()
+ * and inv_cursed() for the rules that depend on an item's kind.
  *
  * The tables are in slot 0 (inventory_cdata.c). Banking: every function is
  * banked (NGE_BANKED, page 110, with the shared generator helpers): they
@@ -55,6 +56,17 @@ nge_entity_id_t inv_next(nge_entity_id_t holder, nge_entity_id_t after) NGE_BANK
 
 /** @brief The item holder has equipped in slot (SLOT_WEAPON...), or NGE_ENTITY_INVALID. */
 nge_entity_id_t inv_equipped(nge_entity_id_t holder, uint8_t slot) NGE_BANKED;
+
+/**
+ * @brief The item in the way of holder's hands if item goes in slot: a
+ *        two-handed item needs SLOT_SHIELD free, and a shield needs no
+ *        two-handed item wielded.
+ * @return That item, or NGE_ENTITY_INVALID if there is none.
+ */
+nge_entity_id_t inv_hands_taken(nge_entity_id_t holder, nge_entity_id_t item, uint8_t slot) NGE_BANKED;
+
+/** @brief 1 if item can't be taken off: its kind is cursed, and the curse isn't lifted (ITEM_UNCURSED). */
+uint8_t inv_cursed(nge_entity_id_t item) NGE_BANKED;
 
 /** @brief Stow item in holder's inventory: owned by holder, off the map, not equipped. */
 void inv_stow(nge_entity_id_t item, nge_entity_id_t holder) NGE_BANKED;

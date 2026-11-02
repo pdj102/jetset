@@ -684,6 +684,9 @@ int main(void)
         a.reason = ACT_R_NO_CHARGES;
         messages_act_failed(&a);
         CHECK(said("It has no charges left."));
+        a.reason = ACT_R_CURSED;
+        messages_act_failed(&a);
+        CHECK(said("It is cursed: it won't come off."));
     }
     messages_game_over(GAME_OVER_WON);
     CHECK(said("Press any key.") && shown("You escape with the crown. You win!"));

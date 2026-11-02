@@ -69,6 +69,12 @@ extern uint8_t item_slot[NGE_ENTITY_MAX];
 /** The count of each entity with COMPONENT_ITEM, in slot 0. */
 extern uint8_t item_count[NGE_ENTITY_MAX];
 
+/**
+ * An entity flag: its curse is lifted (OP_UNCURSE). It stays on the item
+ * wherever it goes; its worn effect still counts while it is worn.
+ */
+#define ITEM_UNCURSED  NGE_ENTITY_FLAG_USER
+
 /** The entity has the item component. */
 #define ITEM_IS(id)  NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_ITEM)
 
