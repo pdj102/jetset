@@ -17,6 +17,7 @@
 
 #include "game/components/attack.h"
 #include "game/components/inventory.h"
+#include "game/components/item.h"
 #include "game/components/stats.h"
 #include "game/events.h"
 
@@ -93,6 +94,13 @@ ai_can_t ai_can(nge_entity_id_t id) NGE_BANKED
         if (intel >= AI_INT_USE) {
             can |= AI_CAN_USE;
         }
+        /* The slot first: inv_equipped() looks at every entity, and few kinds have one */
+        if ((inv_slots[id] & SLOT_BIT(SLOT_AMMO)) && inv_equipped(id, SLOT_AMMO) != NGE_ENTITY_INVALID) {
+            can |= AI_CAN_RANGED;
+        }
+    }
+    if (ATTACK_HAS(id, ATTACK_RANGED)) {
+        can |= AI_CAN_RANGED;
     }
     if (intel >= AI_INT_OPEN) {
         can |= AI_CAN_OPEN;

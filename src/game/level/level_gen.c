@@ -21,6 +21,7 @@
 
 #include "core/nge_util.h"
 #include "ecs/components/nge_location.h"
+#include "game/ai/ai.h"
 #include "game/components/feature.h"
 #include "game/dev.h"
 #include "game/gen/gen.h"
@@ -553,6 +554,26 @@ static void place_player(nge_entity_id_t player, uint8_t arrival)
     nge_location_set(player, x, y);
     nge_map_centre_camera(x, y);
 }
+
+#if GAME_DEV_KIT
+void level_dev_bandit(nge_entity_id_t player) NGE_BANKED
+{
+    uint8_t px = NGE_LOCATION_X(player);
+    uint8_t py = NGE_LOCATION_Y(player);
+    uint8_t tries;
+    uint8_t x;
+    uint8_t y;
+
+    for (tries = 0; tries < PLACE_ATTEMPTS; tries++) {
+        if (free_floor(&x, &y) && !nge_map_within(px, py, x, y, AI_SIGHT)) {
+            nge_location_set(gen_creature(CR_BANDIT, LEVEL_AREA), x, y);
+            nge_location_set(gen_item(IT_SHORT_BOW, LEVEL_AREA), x, y);
+            nge_location_set(gen_item(IT_ARROWS, LEVEL_AREA), x, y);
+            return;
+        }
+    }
+}
+#endif
 
 void level_generate(uint8_t depth, nge_entity_id_t player, uint8_t arrival) NGE_BANKED
 {

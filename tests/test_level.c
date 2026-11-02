@@ -23,6 +23,7 @@
 
 #include "data/tile_data.h"
 
+#include "game/ai/ai.h"
 #include "game/components/feature.h"
 #include "game/components/health.h"
 #include "game/components/inventory.h"
@@ -867,6 +868,18 @@ int main(void)
     level_free_floor(&d, &arrival);
     CHECK(d == 3 && arrival == 2);   /* not on the door */
     go(4, LEVEL_ARRIVE_ANY);   /* a real level again */
+
+    /* ---- the dev kit's bandit: out of the player's sight, its bow and arrows at its feet ---- */
+    level_dev_bandit(player);
+    ok = 0;
+    for (id = 0; id < NGE_ENTITY_MAX; id++) {
+        if (NGE_ENTITY_IS_ALIVE(id) && NGE_OWNER_OF(id) == LEVEL_AREA && KIND_IS(id, CLASS_CREATURE) &&
+            kind_index[id] == CR_BANDIT && entities_at(NGE_LOCATION_X(id), NGE_LOCATION_Y(id)) == 3) {
+            ok = !nge_map_within(NGE_LOCATION_X(player), NGE_LOCATION_Y(player), NGE_LOCATION_X(id),
+                                 NGE_LOCATION_Y(id), AI_SIGHT);
+        }
+    }
+    CHECK(ok);
 
     /* ---- quest_check() catches a quest item nowhere (R14) ---- */
     nge_owner_set(quest, NGE_OWNER_WORLD);

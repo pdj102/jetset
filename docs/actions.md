@@ -346,7 +346,7 @@ lists. P-ACT-1 asks for a text for each new reason, and these three are the exce
 | `ACT_CLOSE` | `c`, then a direction | No |
 | `ACT_ASCEND`, `ACT_DESCEND` | `<`, `>` | No |
 | `ACT_WAIT` | `.` | The end of an AI turn |
-| `ACT_FIRE` | `f`, then a tile | No |
+| `ACT_FIRE` | `f`, then a tile | `opt_shoot()` |
 | `ACT_AIM` | `a`, or `a` or ENTER on the inventory screen, then a tile | No |
 
 **Bumping** is the player's move command combining actions: it checks the move, and
@@ -603,8 +603,7 @@ table. `gen_item_group()` is in the same place.
 
 **Callers.** The `f` key uses `target_choose()` with a new `TARGET_FIRE` and the
 shooter's range, and `PLAYER_PROMPT_FIRE` goes. The AI gets `AI_CAN_RANGED` from
-`ai_can()` and an option such as `opt_shoot()`, on `ai_try()`, so a check that fails
-costs it nothing. The PC screen gets its ranged row (ranged_ai_components.md R5).
+`ai_can()` and `opt_shoot()`, so a check that fails costs it nothing. The PC screen gets its ranged row (ranged_ai_components.md R5).
 
 Largest case: `EV_FIRED`, `EV_HIT`, `EV_DAMAGED`, `EV_DIED`, `EV_EFFECT_STARTED` and
 `EV_ATTRS_CHANGED`, 6 events, within the half queue events.md R25 allows.
@@ -811,8 +810,7 @@ To add with section 6:
   callers use `used` instead.
 - **Check-heavy AI.** Each check is banked calls into the actions' section, so an AI that
   checks many options has a real cost per turn ([ai.md](ai.md)). `ACT_FIRE`'s check walks
-  a line, and `ai_try()` runs it twice for each shot, so a shooting monster's option should
-  test sight first.
+  a line, and it runs twice for each shot, so `opt_shoot()` tests sight first.
 - **Comments behind the code.** `act.h` says an attempted action's events say so, and
   rooted posts none (section 4.6). `act_internal.h` still mentions `a->cost`, which is gone.
 - **A dying target.** A target found earlier may be dead by the time an action uses it, and
@@ -824,6 +822,24 @@ To add with section 6:
 
 What differs from section 6 and [actions_plan.md](actions_plan.md).
 
+- **Step 10:**
+  - `opt_shoot()` calls `act_do()` itself, not `ai_try()`: after the check it holds its fire
+    unless the check's `a->target` is its own target. Sight sees past creatures and a shot
+    stops at the first, so otherwise bandits would shoot each other, and start hunting
+    each other from the hurt. It takes the next option, usually a step.
+  - `AI_CAN_RANGED` is an own ranged attack or anything in `SLOT_AMMO`, not the whole of
+    `find_shooter()`'s rule: `act_fire()` decides (G-ARCH-1), and arrows with no bow only
+    cost a check. `inv_equipped()` scans every entity, so it runs only for kinds with an
+    ammo slot, which today means the bandit alone: goblins and orcs can't shoot.
+  - `opt_wield()` no longer stops at a wielded weapon, so a bandit with a sword readies a
+    bow. It tests `gen_item_fits()` first and leaves armour alone, as before.
+  - Not in the plan: "The bandit fires." when the player sees it, and "readies a" in place
+    of "puts on a" for launchers and ammo.
+  - Dev kit: `level_dev_bandit()` in a new game, with bandits starting awake. It is apart
+    from `level_generate()`, as three things on a tile break `test_level`'s rule. The
+    bandit must start out of sight: one that sees the player hunts, and only idle ones arm.
+  - A monster only arms while idle, so one that meets the player with a bow in its pack
+    uses its knife.
 - **Step 1:** `check-banks.sh` also stops the build if a `BANK_n` section passes 16K. The
   plan didn't list this, but the script only checked `PAGE_n` sections, and the linker
   doesn't check `BANK_n` at all, so the move would have lost the guard the actions had.

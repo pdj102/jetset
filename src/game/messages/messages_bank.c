@@ -238,6 +238,8 @@ void messages_on_event(const nge_event_t *e) NGE_BANKED
     case EV_FIRED:
         if (source == actor_player) {
             screen_message("You fire.");
+        } else if (seen_ai(source)) {
+            say_named("The ", source, " fires.");
         }
         break;
     case EV_AIMED:
@@ -297,7 +299,8 @@ void messages_on_event(const nge_event_t *e) NGE_BANKED
         if (source == actor_player) {
             say_named("You equip a ", target, ".");
         } else if (seen_ai(source)) {
-            say_did(source, p1 == SLOT_WEAPON ? " wields a " : " puts on a ", target);
+            say_did(source, (p1 == SLOT_WEAPON) ? " wields a " :
+                            (p1 == SLOT_RANGED || p1 == SLOT_AMMO) ? " readies a " : " puts on a ", target);
         }
         break;
     case EV_UNEQUIPPED:

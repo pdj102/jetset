@@ -62,7 +62,7 @@ typedef uint8_t ai_can_t;     /**< A mask of AI_CAN_*. */
 #define AI_STATE_NONE    0   /**< No state: never an entity's. */
 #define AI_STATE_ASLEEP  1   /**< Does nothing; wakes when it hears the player, or is hurt. */
 #define AI_STATE_IDLE    2   /**< Awake, after no one: picks up, wields, wanders; looks. */
-#define AI_STATE_HUNT    3   /**< After its target: attacks, drinks, steps towards it. */
+#define AI_STATE_HUNT    3   /**< After its target: attacks, drinks, shoots, steps towards it. */
 #define AI_STATE_COUNT   4
 #define AI_STATE_NO_CHANGE  AI_STATE_NONE   /**< In a brain's table: stay in the current state. */
 
@@ -82,10 +82,10 @@ typedef uint8_t ai_can_t;     /**< A mask of AI_CAN_*. */
 /* Capabilities: bits of ai_can() */
 #define AI_CAN_MELEE   0x01   /**< Attacks in melee: its own attack or a wielded weapon's. */
 #define AI_CAN_PICKUP  0x02   /**< Picks up items: an inventory. */
-#define AI_CAN_EQUIP   0x04   /**< Wields and wears them: an inventory with an equipment slot. */
+#define AI_CAN_EQUIP   0x04   /**< Readies what it fights with: an inventory with an equipment slot. */
 #define AI_CAN_USE     0x08   /**< Uses them (drinks a potion): an inventory and Int AI_INT_USE. */
 #define AI_CAN_OPEN    0x10   /**< Opens and closes doors: Int AI_INT_OPEN. */
-#define AI_CAN_RANGED  0x20   /**< Reserved: a ranged attack (later). */
+#define AI_CAN_RANGED  0x20   /**< Shoots: its own ranged attack, or something in its ammo slot. */
 #define AI_CAN_CAST    0x40   /**< Reserved: casts spells, with mana (later). */
 #define AI_CAN_MOVE    0x80   /**< Leaves its tile: not rooted (STATUS_ROOTED). */
 

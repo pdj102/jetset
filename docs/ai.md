@@ -215,8 +215,8 @@ adds to it, with the reason.
 - **R21 (later)** A dev-kit key that switches every AI entity to the next
   brain (and back), to compare models in CSpect: once there is a second
   brain.
-- **R22 (later)** `AI_CAN_RANGED` and `AI_CAN_CAST`, when a ranged attack
-  and spells can be used (their bits reserved now).
+- **R22** `AI_CAN_RANGED` is built ([actions.md](actions.md), 6.3).
+  `AI_CAN_CAST` comes when spells can be used (its bit reserved now).
 
 ## 5. Decisions
 
@@ -257,6 +257,7 @@ adds to it, with the reason.
   | `AI_CAN_EQUIP` | it has an inventory with an equipment slot | `act_equip()` |
   | `AI_CAN_USE` | it has an inventory and Int `AI_INT_USE` (5) or more | `act_use()`, plus the AI's rule |
   | `AI_CAN_OPEN` | it has stats and Int `AI_INT_OPEN` (6) or more | `act_open()`, plus the AI's rule |
+  | `AI_CAN_RANGED` | it has a ranged attack, or something in its ammo slot, a slot only some kinds have | `act_fire()`, which decides (arrows with no bow) |
   | `AI_CAN_MOVE` | it isn't rooted ([creatures.md](creatures.md), D1) | `act_move()` |
 
   The scores come from the current ability values (`stats_ability[]`,
@@ -407,7 +408,7 @@ typedef uint8_t ai_can_t;     /**< A mask of AI_CAN_*. */
 #define AI_CAN_EQUIP   0x04   /**< Wields and wears them: an inventory with a slot. */
 #define AI_CAN_USE     0x08   /**< Uses them (drinks a potion): an inventory, Int AI_INT_USE. */
 #define AI_CAN_OPEN    0x10   /**< Opens and closes doors: Int AI_INT_OPEN. */
-#define AI_CAN_RANGED  0x20   /**< Reserved: a ranged attack (later). */
+#define AI_CAN_RANGED  0x20   /**< Shoots: its own ranged attack, or something in its ammo slot. */
 #define AI_CAN_CAST    0x40   /**< Reserved: casts spells, with mana (later). */
 
 /* The least Intelligence for the AI's own rules */

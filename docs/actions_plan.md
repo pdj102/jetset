@@ -4,9 +4,9 @@ The steps that build what [actions.md](actions.md) section 6 specifies. The spec
 what each action does and why, and this file says in what order, what changes, and how
 each step is checked.
 
-Status: plan written 2026-10-31. D10 to D23 agreed. Steps 1 to 9 done: step 1 passed in
+Status: plan written 2026-10-31. D10 to D23 agreed. Steps 1 to 10 done: step 1 passed in
 CSpect and on hardware, the others in CSpect, with step 5 checked through step 7. Step
-10 is next.
+11 is next.
 
 ## 1. How the steps work
 
@@ -226,7 +226,7 @@ Each needs its own spec first: spells and who knows them, and fleeing (ai.md R18
 | 7 | +841: 8,630 | Common: +28, 4,682 free. Pages 114 +76, 116 +7, 118 +123, 124 +57 |
 | 8 | +316: 8,946 | |
 | 9 | +706: 9,652 | Common: +28, 4,653 free. Pages 114 +107, 116 +181, 118 +116, 124 +55 |
-| 10 | | Page 130 |
+| 10 | | Page 130 +275, page 118 +86 on hardware, with common unchanged. Debug: page 130 +284, page 102 +200 (the dev bandit), common +14, 4,640 free |
 | 11 | +0.1K | Page 110: the risk |
 | 12 | +0.6K | Page 110 or a new home for the lock rule |
 

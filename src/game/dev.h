@@ -19,7 +19,9 @@
  * level and gives 10 gold (game/components/pc.h); rats and goblins act
  * half as often, speed 20 (game/gen/gen_creature_pdata.c), and look (x)
  * names a monster's AI state, "You see a goblin (hunting)."
- * (game/messages), to watch the AI (game/ai/ai.h).
+ * (game/messages), to watch the AI (game/ai/ai.h); bandits start awake,
+ * and a new game has one out of sight with a short bow and arrows at its
+ * feet (level_dev_bandit()), to watch a monster arm itself and shoot.
  */
 
 #ifndef GAME_DEV_KIT

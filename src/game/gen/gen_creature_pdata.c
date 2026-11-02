@@ -19,8 +19,10 @@
 /* Development: the monsters act half as often, to watch the AI (game/dev.h) */
 #if GAME_DEV_KIT
 #define MONSTER_SPEED  20
+#define BANDIT_STATE   AI_STATE_IDLE   /* awake, so depth 1's bandit arms itself (level_gen.c) */
 #else
 #define MONSTER_SPEED  10
+#define BANDIT_STATE   AI_STATE_ASLEEP
 #endif
 #define MONSTER_FAST   (MONSTER_SPEED / 2)
 #define MONSTER_SLOW   (MONSTER_SPEED * 2)
@@ -191,7 +193,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .inventory = { .capacity = 6, .slots = SLOTS_HUMANOID },
         .xp = 20,                                       /* 2 hit dice */
         .flags = 0,
-        .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
+        .ai = { .brain = AI_BRAIN_DEFAULT, .state = BANDIT_STATE },
         .where = { .depth = 2, .depth_max = 6, .rarity = 5 },
     },
     [CR_ORC] = {

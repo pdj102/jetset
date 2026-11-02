@@ -183,8 +183,8 @@ adds to it, with the reason.
   | State | Senses | Options, in order |
   |---|---|---|
   | `AI_STATE_ASLEEP` | hears (R6) | none: it waits |
-  | `AI_STATE_IDLE` | looks (R7) | pick up an item here; wield a weapon it carries; wander |
-  | `AI_STATE_HUNT` | looks (R7) | attack the target next to it; drink a healing potion if at half hit points or less; step towards the goal |
+  | `AI_STATE_IDLE` | looks (R7) | pick up an item here; ready a weapon, launcher or ammo it carries; wander |
+  | `AI_STATE_HUNT` | looks (R7) | attack the target next to it; drink a healing potion if at half hit points or less; shoot the target; step towards the goal |
 
   Reason (Changed): the request asked for basic actions. Flee and use of
   ranged attacks are left for later brains (section 7), so this step
@@ -210,6 +210,7 @@ adds to it, with the reason.
   | pick up | `AI_CAN_PICKUP` | no | yes |
   | wield | `AI_CAN_EQUIP` | no | yes |
   | drink | `AI_CAN_USE` | no | yes |
+  | shoot | `AI_CAN_RANGED` | no | no: it has no ammo slot |
   | wander, step towards | nothing | yes | yes |
 
 ### Waiting
@@ -309,7 +310,7 @@ adds to it, with the reason.
   ```c
   static uint8_t think_hunt(ai_ctx_t *c)
   {
-      return opt_attack(c) || opt_drink(c) || opt_approach(c);
+      return opt_attack(c) || opt_drink(c) || opt_shoot(c) || opt_approach(c);
   }
   ```
 
@@ -436,10 +437,11 @@ adds to it, with the reason.
 - **D10 Picking up and wielding (R10, R12).** `opt_pickup()`: idle, with
   `AI_CAN_PICKUP`, an item on its tile: `ACT_PICKUP` with the first item
   (the action refuses if it is full). `opt_wield()`: idle, with
-  `AI_CAN_EQUIP`, no weapon in `SLOT_WEAPON` (`attack_weapon()`): tries
-  `ACT_EQUIP` with `kind = SLOT_WEAPON` on each item it carries, the
-  first the check accepts. No "better weapon" comparison: a goblin keeps
-  the first weapon. The quest item can be picked up like any item; a
+  `AI_CAN_EQUIP`: tries `ACT_EQUIP` on each stowed item that fits
+  `SLOT_WEAPON`, `SLOT_RANGED` or `SLOT_AMMO`, the first the check
+  accepts: a slot it lacks or has filled refuses it, so a sword doesn't
+  stop a bandit readying a bow. Worn items are left in the pack. No
+  "better weapon" comparison: a goblin keeps the first weapon. The quest item can be picked up like any item; a
   monster that dies drops what it carries (`level.c`), so it is never
   lost. **Rejected:** monsters going to items they see: a goal kind, and a
   choice between the player and an item, for a later "greedy" brain.
@@ -548,14 +550,15 @@ level, it sets the target and goal before the transition. On `SEEN`,
 |---|---|---|
 | `opt_attack` | `AI_CAN_MELEE`, sees its target | `ACT_MELEE` on the target (the check refuses it out of reach) |
 | `opt_drink` | `AI_CAN_USE`, hp ≤ half, carries a healing item | `ACT_USE` |
+| `opt_shoot` | `AI_CAN_RANGED`, sees its target | `ACT_FIRE` at the goal, only if the check names the target as who a shot would hit |
 | `opt_approach` | has a goal | at the goal and not seeing: `c->stim = LOST`, 0; else `ai_step_toward()`; nothing moved: `LOST` |
 | `opt_pickup` | `AI_CAN_PICKUP` | `ACT_PICKUP`, first item (refused if none here) |
-| `opt_wield` | `AI_CAN_EQUIP`, nothing in its weapon slot | `ACT_EQUIP`, `SLOT_WEAPON`, each item carried in turn |
+| `opt_wield` | `AI_CAN_EQUIP` | `ACT_EQUIP`, each stowed weapon, launcher or ammo in turn |
 | `opt_wander` | a 1 in 2 roll | `ACT_MOVE` in a random direction (no doors) |
 
 ```c
 static uint8_t think_idle(ai_ctx_t *c) { return opt_pickup(c) || opt_wield(c) || opt_wander(c); }
-static uint8_t think_hunt(ai_ctx_t *c) { return opt_attack(c) || opt_drink(c) || opt_approach(c); }
+static uint8_t think_hunt(ai_ctx_t *c) { return opt_attack(c) || opt_drink(c) || opt_shoot(c) || opt_approach(c); }
 ```
 
 `opt_pickup()` costs a goblin one `ACT_CHECK` banked call each idle turn;

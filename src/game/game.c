@@ -310,6 +310,9 @@ static void play_start(void)
     actors_create(name);
     nge_render_follow(actor_player);   /* the camera slides with them (after nge_render_init()) */
     level_generate(1, actor_player, LEVEL_ARRIVE_ANY);   /* the first level; the camera on the player */
+#if GAME_DEV_KIT
+    level_dev_bandit(actor_player);
+#endif
     shown_turn = 0;
     nge_key_flush();         /* keys typed at the title don't move the player */
     game_play_redraw();

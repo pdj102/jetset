@@ -142,6 +142,24 @@ static nge_entity_id_t hunter(uint8_t kind, uint8_t x, uint8_t y, uint8_t gx, ui
     return id;
 }
 
+/* An item of kind in id's pack */
+static nge_entity_id_t carried(uint8_t kind, nge_entity_id_t id)
+{
+    nge_entity_id_t item = gen_item(kind, AREA);
+
+    inv_stow(item, id);
+    return item;
+}
+
+/* An item of kind equipped by id, in the slot given */
+static nge_entity_id_t equipped(uint8_t kind, nge_entity_id_t id, uint8_t slot)
+{
+    nge_entity_id_t item = carried(kind, id);
+
+    item_slot[item] = slot;
+    return item;
+}
+
 /* A context for actor with no inputs */
 static act_t ctx(nge_entity_id_t actor)
 {
@@ -676,6 +694,134 @@ int main(void)
     srand(seed_no_wander());
     ai_on_turn(rat);
     CHECK(NGE_OWNER_OF(b) == AREA && at(rat, 8, 9) && events() == 0);
+
+    /* ---- idle: a bandit arms itself with what it finds, its sword no hindrance; a goblin has no such slots ---- */
+    scene(0, 0);
+    a = creature(CR_BANDIT, 9, 9);
+    ai_state[a] = AI_STATE_IDLE;
+    sword = equipped(IT_SWORD, a, SLOT_WEAPON);
+    b = gen_item(IT_SHORT_BOW, AREA);
+    nge_location_set(b, 9, 9);
+    potion = gen_item(IT_ARROWS, AREA);
+    nge_location_set(potion, 9, 9);
+    CHECK(!(ai_can(a) & AI_CAN_RANGED));
+    ai_on_turn(a);
+    ai_on_turn(a);
+    CHECK(NGE_OWNER_OF(b) == a && NGE_OWNER_OF(potion) == a && item_slot[b] == SLOT_NONE);
+    ai_on_turn(a);
+    ai_on_turn(a);
+    CHECK(item_slot[b] == SLOT_RANGED && item_slot[potion] == SLOT_AMMO && item_slot[sword] == SLOT_WEAPON);
+    CHECK(ai_can(a) & AI_CAN_RANGED);
+    CHECK(at(a, 9, 9));
+    goblin = creature(CR_GOBLIN, 7, 9);
+    ai_state[goblin] = AI_STATE_IDLE;
+    b = carried(IT_SHORT_BOW, goblin);
+    potion = carried(IT_HEAL_POTION, goblin);               /* not for wielding */
+    equipped(IT_ARROWS, goblin, SLOT_AMMO);
+    CHECK(!(ai_can(goblin) & AI_CAN_RANGED));               /* no ammo slot: not looked at */
+    events();
+    srand(seed_no_wander());
+    ai_on_turn(goblin);
+    CHECK(item_slot[b] == SLOT_NONE && item_slot[potion] == SLOT_NONE && at(goblin, 7, 9) && events() == 0);
+
+    /* ---- shooting: in sight and range it stays and shoots, each shot using up the ammo ---- */
+    scene(0, 5);
+    a = hunter(CR_BANDIT, 5, 5, 0, 5);
+    b = equipped(IT_SHORT_BOW, a, SLOT_RANGED);
+    potion = equipped(IT_ARROWS, a, SLOT_AMMO);
+    hp = (uint8_t)item_count[potion];
+    events();
+    ai_on_turn(a);
+    CHECK(at(a, 5, 5) && item_count[potion] == hp - 1 && NGE_ENTITY_IS_ALIVE(actor_player));
+    CHECK(events() >= 2 && is(0, actor_player, EV_FIRED, a) && seen[0].p1 == b &&
+          (is(1, actor_player, EV_HIT, a) || is(1, actor_player, EV_MISSED, a)));
+    /* The last arrow: then it comes on, and can't shoot */
+    item_count[potion] = 1;
+    health_hp[actor_player] = health_hp_max[actor_player];
+    ai_on_turn(a);
+    CHECK(at(a, 5, 5) && !NGE_ENTITY_IS_ALIVE(potion));
+    events();
+    nge_entity_release(nge_entity_next_dying());
+    CHECK(!(ai_can(a) & AI_CAN_RANGED));
+    ai_on_turn(a);
+    CHECK(at(a, 4, 5) && events() == 1 && seen[0].id == EV_MOVED);
+
+    /* Seen but past its range (6): it comes on, and nothing is used up */
+    scene(0, 5);
+    a = hunter(CR_BANDIT, 8, 5, 0, 5);
+    equipped(IT_SHORT_BOW, a, SLOT_RANGED);
+    potion = equipped(IT_ARROWS, a, SLOT_AMMO);
+    hp = (uint8_t)item_count[potion];
+    events();
+    ai_on_turn(a);
+    CHECK(at(a, 7, 5) && item_count[potion] == hp);
+
+    /* Next to it: the knife, not the bow */
+    scene(4, 5);
+    a = hunter(CR_BANDIT, 5, 5, 4, 5);
+    equipped(IT_SHORT_BOW, a, SLOT_RANGED);
+    potion = equipped(IT_ARROWS, a, SLOT_AMMO);
+    hp = (uint8_t)item_count[potion];
+    events();
+    ai_on_turn(a);
+    CHECK(item_count[potion] == hp && events() >= 1 &&
+          (is(0, actor_player, EV_HIT, a) || is(0, actor_player, EV_MISSED, a)));
+
+    /* A creature in the line: it holds its fire and moves, and the rat isn't hurt */
+    scene(0, 5);
+    rat = creature(CR_RAT, 3, 5);
+    a = hunter(CR_BANDIT, 5, 5, 0, 5);
+    equipped(IT_SHORT_BOW, a, SLOT_RANGED);
+    potion = equipped(IT_ARROWS, a, SLOT_AMMO);
+    hp = (uint8_t)item_count[potion];
+    events();
+    ai_on_turn(a);
+    CHECK(at(a, 4, 5) && item_count[potion] == hp && events() == 1 && seen[0].id == EV_MOVED);
+
+    /* Its target out of sight behind a wall: no check, no shot */
+    scene(0, 5);
+    wall_column(3, 0, 9);
+    a = hunter(CR_BANDIT, 5, 5, 4, 5);
+    equipped(IT_SHORT_BOW, a, SLOT_RANGED);
+    potion = equipped(IT_ARROWS, a, SLOT_AMMO);
+    hp = (uint8_t)item_count[potion];
+    events();
+    ai_on_turn(a);
+    CHECK(at(a, 4, 5) && item_count[potion] == hp);
+
+    /* Arrows and no bow: can't, and comes on. Darts need none. Rooted, it still shoots */
+    scene(0, 5);
+    a = hunter(CR_BANDIT, 5, 5, 0, 5);
+    potion = equipped(IT_ARROWS, a, SLOT_AMMO);
+    hp = (uint8_t)item_count[potion];
+    CHECK(ai_can(a) & AI_CAN_RANGED);                       /* the action's check decides */
+    events();
+    ai_on_turn(a);
+    CHECK(at(a, 4, 5) && item_count[potion] == hp);
+    scene(0, 5);
+    a = hunter(CR_BANDIT, 4, 5, 0, 5);                      /* darts reach 4 */
+    potion = equipped(IT_DARTS, a, SLOT_AMMO);
+    hp = (uint8_t)item_count[potion];
+    stats_status[a] |= STATUS_ROOTED;
+    CHECK(!(ai_can(a) & AI_CAN_MOVE));
+    events();
+    ai_on_turn(a);
+    CHECK(at(a, 4, 5) && item_count[potion] == hp - 1);
+    CHECK(events() >= 2 && is(0, actor_player, EV_FIRED, a) && seen[0].p1 == potion);
+
+    /* Its own ranged attack, with no inventory: nothing used up, and p1 no item */
+    scene(0, 5);
+    rat = hunter(CR_RAT, 4, 5, 0, 5);
+    CHECK(!(ai_can(rat) & AI_CAN_RANGED));
+    {
+        attack_kind_t spit = { .dice = 1, .sides = 2, .type = DMG_ACID, .range = 4 };
+
+        attack_add(rat, ATTACK_RANGED, &spit);
+    }
+    CHECK(ai_can(rat) & AI_CAN_RANGED);
+    events();
+    ai_on_turn(rat);
+    CHECK(at(rat, 4, 5) && events() >= 2 && is(0, actor_player, EV_FIRED, rat) && seen[0].p1 == NGE_EVENT_NONE);
 
     /* ---- hunting: a healing potion at half hit points or less, with the wit to use it ---- */
     scene(0, 5);

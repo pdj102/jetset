@@ -16,6 +16,7 @@
 #include "game/components/health.h"
 #include "game/components/item.h"
 #include "game/game.h"
+#include "game/events.h"
 #include "game/gen/gen.h"
 #include "game/level/level.h"
 #include "game/messages/messages.h"
@@ -331,6 +332,12 @@ int main(void)
     nge_event_process(messages_on_event);
     CHECK(said(0, "You fire.") || said(1, "You fire.") || said(2, "You fire."));
     script = NULL;
+    /* A monster the player sees says so */
+    id = gen_creature(CR_RAT, LEVEL_AREA);
+    nge_location_set(id, 31, 20);
+    nge_event_post(actor_player, EV_FIRED, id, NGE_EVENT_NONE, 0);
+    nge_event_process(messages_on_event);
+    CHECK(said(0, "The rat fires."));
 
     return test_summary("target");
 }

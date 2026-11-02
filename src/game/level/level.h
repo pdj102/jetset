@@ -47,6 +47,7 @@
 #include "ecs/components/nge_block.h"
 #include "ecs/nge_entity.h"
 #include "ecs/nge_owner.h"
+#include "game/dev.h"
 #include "map/nge_map.h"
 
 #define LEVEL_DEPTH_SURFACE  0   /**< The surface: leaving the dungeon. */
@@ -109,6 +110,16 @@ void level_init(void) NGE_BANKED;
  * @param arrival LEVEL_ARRIVE_*.
  */
 void level_generate(uint8_t depth, nge_entity_id_t player, uint8_t arrival) NGE_BANKED;
+
+#if GAME_DEV_KIT
+/*
+ * Development: a bandit out of the player's sight, with a short bow and
+ * arrows at its feet, to arm itself and shoot. Bandits start awake
+ * (gen_creature_pdata.c), and one that sees the player can't stop to arm.
+ * Apart from level_generate(), so a level stays what the level tests ask
+ */
+void level_dev_bandit(nge_entity_id_t player) NGE_BANKED;
+#endif
 
 /**
  * @brief Draw (x, y) by its terrain again, and its neighbours: where a

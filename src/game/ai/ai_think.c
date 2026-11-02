@@ -10,7 +10,7 @@
  * 2. think: the state's handler, think_<state>(c), tries its options in
  *    order of priority and stops at the first that uses the turn:
  *
- *        return opt_attack(c) || opt_drink(c) || opt_approach(c);
+ *        return opt_attack(c) || opt_drink(c) || opt_shoot(c) || opt_approach(c);
  *
  * 3. wait: if none did, the entity waits (ai_wait()), so every turn is
  *    exactly one action;
@@ -39,11 +39,14 @@
 #include "ecs/components/nge_location.h"
 #include "map/nge_map.h"
 
-#include "game/components/attack.h"
 #include "game/components/health.h"
 #include "game/components/item.h"
+#include "game/components/kind.h"
 #include "game/effects/effects.h"
 #include "game/gen/gen.h"
+
+/* What opt_wield() readies: what it fights with, not what it wears */
+#define WIELD_SLOTS  (SLOT_BIT(SLOT_WEAPON) | SLOT_BIT(SLOT_RANGED) | SLOT_BIT(SLOT_AMMO))
 
 /* The first item id carries, not equipped, whose use effect is ef; NGE_ENTITY_INVALID if none */
 static nge_entity_id_t carried_use(nge_entity_id_t id, uint8_t ef)
@@ -92,6 +95,29 @@ static uint8_t opt_drink(const ai_ctx_t *c)
     return ai_try(ACT_USE, &a);
 }
 
+/*
+ * Shoot the target, if it can and sees it. Sight first, as the check walks
+ * the line. By hand, not ai_try(): the check names who a shot would hit,
+ * and a creature in the way isn't the target, so it holds its fire
+ */
+static uint8_t opt_shoot(const ai_ctx_t *c)
+{
+    nge_entity_id_t target = c->target;
+    act_t a = { 0 };
+
+    if (!(c->can & AI_CAN_RANGED) || !c->sees) {
+        return 0;
+    }
+    a.actor = c->id;
+    a.x = c->gx;
+    a.y = c->gy;
+    if (act_do(ACT_FIRE, &a, ACT_CHECK) != ACT_SUCCESS || a.target != target) {
+        return 0;
+    }
+    act_do(ACT_FIRE, &a, ACT_DO);
+    return a.used;
+}
+
 /* Step towards the goal; there and the target not seen, or no way at all: lost. Rooted, it watches what it sees */
 static uint8_t opt_approach(ai_ctx_t *c)
 {
@@ -128,7 +154,7 @@ static uint8_t opt_pickup(const ai_ctx_t *c)
     return ai_try(ACT_PICKUP, &a);
 }
 
-/* Wield the first weapon it carries, if it can equip and wields nothing */
+/* Ready the first weapon, launcher or ammo it carries that has a free slot, if it can equip */
 static uint8_t opt_wield(const ai_ctx_t *c)
 {
     nge_entity_id_t id = c->id;
@@ -136,14 +162,14 @@ static uint8_t opt_wield(const ai_ctx_t *c)
     uint8_t i;
     nge_entity_id_t item;
 
-    if (!(c->can & AI_CAN_EQUIP) || attack_weapon(id) != NGE_ENTITY_INVALID) {
+    if (!(c->can & AI_CAN_EQUIP)) {
         return 0;
     }
     NGE_OWNER_FOR_EACH_OWNED(i, item, id) {
-        if (ITEM_IS(item) && item_slot[item] == SLOT_NONE) {
+        if (ITEM_IS(item) && item_slot[item] == SLOT_NONE && (gen_item_fits(kind_index[item]) & WIELD_SLOTS)) {
             a.actor = id;
             a.item = item;
-            a.kind = SLOT_WEAPON;   /* the check refuses what isn't a weapon */
+            a.kind = SLOT_NONE;   /* the slot it fits; the check refuses one it lacks or has filled */
             if (ai_try(ACT_EQUIP, &a)) {
                 return 1;
             }
@@ -170,7 +196,7 @@ static uint8_t think_idle(ai_ctx_t *c)
 
 static uint8_t think_hunt(ai_ctx_t *c)
 {
-    return opt_attack(c) || opt_drink(c) || opt_approach(c);
+    return opt_attack(c) || opt_drink(c) || opt_shoot(c) || opt_approach(c);
 }
 
 /* ---- The turn ---- */
