@@ -9,6 +9,12 @@
  * links, joins neighbouring cells with corridors, so every room can be
  * reached. A corridor between two cells runs through the gap between them,
  * so it never cuts through another room.
+ *
+ * Locks guard side rooms only: a room with one doorway and no stairs is on
+ * no way between anywhere else, so its lock stops nothing that has to be
+ * reached. What is placed at random keeps out of them, the player and the
+ * quest item included. A locked room holds one item, and its key is
+ * somewhere else on the level (docs/actions.md, 6.12).
  */
 #ifdef __SDCC
 #pragma codeseg PAGE_102
@@ -17,6 +23,7 @@
 
 #include "game/level/level_internal.h"
 
+#include <stddef.h>
 #include <stdlib.h>
 
 #include "core/nge_util.h"
@@ -401,13 +408,15 @@ static uint8_t free_floor_in(const level_room_t *r, uint8_t *x, uint8_t *y)
     return 0;
 }
 
-/* The same in a random room, a new one each try */
+/* The same in a random room, a new one each try, not a locked one */
 static uint8_t free_floor(uint8_t *x, uint8_t *y)
 {
     uint8_t tries;
+    uint8_t cell;
 
     for (tries = 0; tries < PLACE_ATTEMPTS; tries++) {
-        if (try_floor(&level_rooms[level_room_cells[roll(level_room_count)]], x, y)) {
+        cell = level_room_cells[roll(level_room_count)];
+        if (!LEVEL_CELL_LOCKED(cell) && try_floor(&level_rooms[cell], x, y)) {
             return 1;
         }
     }
@@ -415,8 +424,8 @@ static uint8_t free_floor(uint8_t *x, uint8_t *y)
 }
 
 /*
- * The first room floor tile, in room order, with no entity on it that has
- * component c (0: no entity at all)
+ * The first room floor tile, in room order, not in a locked room, with no
+ * entity on it that has component c (0: no entity at all)
  */
 static uint8_t scan_floor(nge_component_t c, uint8_t *x, uint8_t *y)
 {
@@ -429,6 +438,9 @@ static uint8_t scan_floor(nge_component_t c, uint8_t *x, uint8_t *y)
     uint8_t y2;
 
     for (i = 0; i < level_room_count; i++) {
+        if (LEVEL_CELL_LOCKED(level_room_cells[i])) {
+            continue;
+        }
         r = &level_rooms[level_room_cells[i]];
         x1 = r->x1;
         x2 = r->x2;
@@ -493,6 +505,115 @@ static void place_stairs(uint8_t depth)
             down++;   /* any room but the up stairs' */
         }
         level_stairs[1] = place_stairs_in(FT_STAIRS_DOWN, &level_rooms[level_room_cells[down]]);
+    }
+}
+
+/* (x, y) is on room r, walls included */
+static uint8_t in_room(const level_room_t *r, uint8_t x, uint8_t y)
+{
+    uint8_t x1 = r->x1;   /* the room's fields in locals (T-ZSDCC-1) */
+    uint8_t x2 = r->x2;
+    uint8_t y1 = r->y1;
+    uint8_t y2 = r->y2;
+
+    return x >= x1 && x <= x2 && y >= y1 && y <= y2;
+}
+
+/* The doorway of side room r: its only one, with no stairs in the room. LEVEL_DOORWAYS_MAX if it isn't a side room */
+static uint8_t side_room_doorway(const level_room_t *r)
+{
+    nge_entity_id_t stairs;
+    uint8_t doorway = LEVEL_DOORWAYS_MAX;
+    uint8_t i;
+
+    for (i = 0; i < 2; i++) {
+        stairs = level_stairs[i];
+        if (stairs != NGE_ENTITY_INVALID && in_room(r, NGE_LOCATION_X(stairs), NGE_LOCATION_Y(stairs))) {
+            return LEVEL_DOORWAYS_MAX;
+        }
+    }
+    for (i = 0; i < level_doorway_count; i++) {
+        if (in_room(r, level_doorway_x[i], level_doorway_y[i])) {
+            if (doorway != LEVEL_DOORWAYS_MAX) {
+                return LEVEL_DOORWAYS_MAX;
+            }
+            doorway = i;
+        }
+    }
+    return doorway;
+}
+
+/* A closed door in doorway d, locked with key (KEY_*): 1, or 0 if no entity is free for it */
+static uint8_t lock_doorway(uint8_t d, uint8_t key)
+{
+    uint8_t x = level_doorway_x[d];
+    uint8_t y = level_doorway_y[d];
+    nge_entity_id_t id = nge_location_find(LEVEL_AREA, x, y, COMPONENT_FEATURE, 0);
+
+    if (id == NGE_ENTITY_INVALID) {
+        id = gen_feature(FT_DOOR, LEVEL_AREA);
+        if (id == NGE_ENTITY_INVALID) {
+            return 0;
+        }
+        feature_place(id, x, y);
+    } else if (FEATURE_IS_OPEN(id)) {
+        feature_close(id);
+    }
+    feature_lock(id, key);
+    return 1;
+}
+
+/* Put item (NGE_ENTITY_INVALID: none) on free floor, in room r or (NULL) any room not locked; with none found, it goes */
+static void place_item(nge_entity_id_t item, const level_room_t *r)
+{
+    uint8_t x;
+    uint8_t y;
+
+    if (item == NGE_ENTITY_INVALID) {
+        return;
+    }
+    if ((r != NULL) ? free_floor_in(r, &x, &y) : free_floor(&x, &y)) {
+        nge_location_set(item, x, y);
+    } else {
+        nge_entity_destroy(item);
+    }
+}
+
+/*
+ * Every side room locked, LEVEL_LOCKS_MAX at most, each with a random item
+ * inside: there are few of them, about one a level.
+ * The rooms are all marked first, so the keys then land outside every one
+ * of them. Harder locks come with depth; a key is made by kind, as its
+ * lock's, whatever depths that kind turns up at by chance
+ */
+static void place_locks(uint8_t depth)
+{
+    uint8_t keys[LEVEL_LOCKS_MAX];
+    uint8_t kinds = (uint8_t)(1 + (unsigned int)depth / 3);
+    uint8_t locks = 0;
+    uint8_t i;
+    uint8_t cell;
+    uint8_t d;
+
+    if (kinds > KEY_GOLD) {
+        kinds = KEY_GOLD;
+    }
+    level_locked_cells = 0;
+    for (i = 0; i < level_room_count && locks < LEVEL_LOCKS_MAX; i++) {
+        cell = level_room_cells[i];
+        d = side_room_doorway(&level_rooms[cell]);
+        if (d != LEVEL_DOORWAYS_MAX) {
+            keys[locks] = (uint8_t)(KEY_IRON + roll(kinds));
+            if (!lock_doorway(d, keys[locks])) {
+                break;
+            }
+            level_locked_cells |= (uint16_t)1 << cell;
+            place_item(gen_item_random(depth, LEVEL_AREA), &level_rooms[cell]);
+            locks++;
+        }
+    }
+    for (i = 0; i < locks; i++) {
+        place_item(gen_item((uint8_t)(IT_KEY_IRON + keys[i] - KEY_IRON), LEVEL_AREA), NULL);
     }
 }
 
@@ -598,6 +719,7 @@ void level_generate(uint8_t depth, nge_entity_id_t player, uint8_t arrival) NGE_
     level_decorate_all();   /* the terrain is complete: draw it, before features draw over it */
     place_stairs(depth);
     place_doors();
+    place_locks(depth);
     place_random(roll_between(LEVEL_ITEMS_MIN, LEVEL_ITEMS_MAX), depth, 0);
     place_random(roll_between(LEVEL_MONSTERS_MIN, LEVEL_MONSTERS_MAX), depth, 1);
     /* ...then what depends on play, so it can't change the rest */

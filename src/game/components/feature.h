@@ -27,7 +27,8 @@
  * A closed feature can be locked. The lock's kind (KEY_*) is in the state,
  * and so are the rules of what opens it: a key that fits, or a pick that
  * beats FEAT_PICK_DC. feature_lock() and feature_unlock() don't change how
- * it looks, and a locked door looks like any closed door.
+ * it looks, and a locked door looks like any closed door. The level
+ * generator locks side rooms only (game/level/level_gen.c).
  *
  * The tables are in slot 0 (feature_cdata.c). Banking: the functions are
  * banked (NGE_BANKED, page 132, a pair of its own).

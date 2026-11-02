@@ -90,6 +90,7 @@ add to it. Section 4 gives the reasons.
 
 ### Leaving and winning
 
+  It is never in a locked room ([actions.md](actions.md), 6.12).
 - **R11** The up stairs on depth 1 (the only way to depth 0,
   level_transitions.md R2) refuse if the actor doesn't carry the quest item:
   `ACT_R_NO_QUEST`, "You can't leave without the <quest item>." No turn is

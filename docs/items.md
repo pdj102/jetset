@@ -318,7 +318,6 @@ mechanic is missing.
 | Mechanic | Waiting data |
 |---|---|
 | Using up counts | `item_count[]`, on what isn't ammo. Ammo merges and is used up |
-| Locks in play | Keys and picks work (`ACT_UNLOCK`), but no level locks a door yet |
 | Hunger | `EF_NOURISH` (D11) |
 | Light | `EF_WORN_LIGHT`, with the radius as its power; a light's count as burn time |
 | Worn regeneration | `EF_WORN_REGEN`: a worn effect has no tick |

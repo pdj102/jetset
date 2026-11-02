@@ -48,7 +48,8 @@
 #define LEVEL_LOOPS_MAX     2  /* extra links after the spanning tree: 0 to LEVEL_LOOPS_MAX */
 #define LEVEL_DOORS_MAX     12 /* door entities per level */
 #define LEVEL_DOOR_CHANCE   3  /* a doorway gets a door 1 time in LEVEL_DOOR_CHANCE */
-#define LEVEL_ITEMS_MIN     4  /* items per level */
+#define LEVEL_LOCKS_MAX     2  /* locked rooms per level */
+#define LEVEL_ITEMS_MIN     4  /* items per level, not counting a locked room's */
 #define LEVEL_ITEMS_MAX     10
 #define LEVEL_MONSTERS_MIN  2  /* monsters per level */
 #define LEVEL_MONSTERS_MAX  5
@@ -84,6 +85,11 @@ extern uint8_t level_doorway_x[LEVEL_DOORWAYS_MAX];
 extern uint8_t level_doorway_y[LEVEL_DOORWAYS_MAX];
 extern uint8_t level_doorway_count;
 
+/* The cells whose room is locked: a bit each, set by level_generate() (page 103) */
+extern uint16_t level_locked_cells;
+#define LEVEL_CELL_LOCKED(cell)  ((level_locked_cells & ((uint16_t)1 << (cell))) != 0)
+typedef char level_locked_check[(LEVEL_CELLS <= 16) ? 1 : -1];
+
 /* The stairs, by LEVEL_ARRIVE_UP_STAIRS / _DOWN_STAIRS - 1: NGE_ENTITY_INVALID if none (page 103) */
 extern nge_entity_id_t level_stairs[2];
 
@@ -111,8 +117,8 @@ void level_deco_blocks(void);
  * Room floor for something placed after the random entities (a parked
  * entity, the player arriving anywhere): a random tile with nothing on it,
  * else the first such tile in room order, else the first with no feature on
- * it, shared with an item or a creature (docs/winning.md R10). Always finds
- * one (page 102)
+ * it, shared with an item or a creature (docs/winning.md R10). Never in a
+ * locked room, so what must be reached can be. Always finds one (page 102)
  */
 void level_free_floor(uint8_t *x, uint8_t *y);
 

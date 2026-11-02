@@ -9,9 +9,9 @@
  * With GAME_DEV_KIT: a new game starts with a sword, three rings of health,
  * a healing potion, an antidote, a dead rat, an elixir and a potion of
  * strength in the player's pack, with a short bow, arrows, darts and a
- * flask of oil to fire, a wand and a parchment to aim, an iron key, a
- * brass key and a lock pick for locks, a ring of frailty for curses, and
- * the player resistant to fire, immune
+ * flask of oil to fire, a wand and a parchment to aim, a lock pick (no
+ * keys: one in the pack would open a locked door when bumped), a ring of
+ * frailty for curses, and the player resistant to fire, immune
  * to acid and vulnerable to cold (game/actors.c); X hurts the player,
  * cycling through the damage types (game/player); L locks the nearest
  * closed door, with an iron lock (game/player); V pans the view a pixel

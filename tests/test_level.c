@@ -78,6 +78,7 @@ static nge_block_t terrain_block(uint8_t t)
 static int doors_open;
 static int doors_shut;
 static int doorways_seen;
+static int locks_seen;
 
 /* The events posted: kept to look at, then thrown away */
 static nge_event_t seen[32];
@@ -182,6 +183,16 @@ static int is_open(int x, int y)
            nge_map_block((uint8_t)x, (uint8_t)y) == NGE_BLOCK_NONE;
 }
 
+/* A locked door at (x, y), if there is one */
+static nge_entity_id_t locked_door_at(int x, int y)
+{
+    nge_entity_id_t id = nge_location_find(LEVEL_AREA, (uint8_t)x, (uint8_t)y, COMPONENT_FEATURE, 0);
+
+    return (id != NGE_ENTITY_INVALID && FEATURE_IS_LOCKED(id)) ? id : NGE_ENTITY_INVALID;
+}
+
+static int flood_stops_at_locks;   /* flood() treats a locked door as a wall */
+
 static void flood(uint8_t x, uint8_t y)
 {
     static const int dx[4] = { 1, -1, 0, 0 };
@@ -202,7 +213,8 @@ static void flood(uint8_t x, uint8_t y)
             int nx = cx + dx[d];
             int ny = cy + dy[d];
 
-            if (is_open(nx, ny) && !reached[ny][nx]) {
+            if (is_open(nx, ny) && !reached[ny][nx] &&
+                !(flood_stops_at_locks && locked_door_at(nx, ny) != NGE_ENTITY_INVALID)) {
                 reached[ny][nx] = 1;
                 queue_x[tail] = (uint8_t)nx;
                 queue_y[tail++] = (uint8_t)ny;
@@ -219,6 +231,118 @@ static int fail(int depth, const char *what)
     return 0;
 }
 
+/*
+ * Locks (Q1, option A, actions.md 6.12): each guards a side room, with one
+ * doorway and no stairs, holding at most one item and no monster, and has
+ * its key elsewhere. With every lock shut, everything else can be reached
+ * from the player. Sets *locks to how many there are
+ */
+static int check_locks(int depth, int *locks)
+{
+    int doors = 0;
+    int cell;
+    int x;
+    int y;
+    uint8_t i;
+    nge_entity_id_t id;
+
+    *locks = 0;
+    for (cell = 0; cell < LEVEL_CELLS; cell++) {
+        const level_room_t *r = &level_rooms[cell];
+        int doorways = 0;
+        uint8_t lock = 0;
+
+        if (!LEVEL_CELL_LOCKED(cell)) {
+            continue;
+        }
+        (*locks)++;
+        if (r->junction) {
+            return fail(depth, "a junction is locked");
+        }
+        for (i = 0; i < level_doorway_count; i++) {
+            x = level_doorway_x[i];
+            y = level_doorway_y[i];
+            if (x >= r->x1 && x <= r->x2 && y >= r->y1 && y <= r->y2) {
+                doorways++;
+                if (locked_door_at(x, y) == NGE_ENTITY_INVALID) {
+                    return fail(depth, "a locked room's doorway has no locked door");
+                }
+                id = locked_door_at(x, y);
+                if (FEATURE_IS_OPEN(id)) {
+                    return fail(depth, "a locked door is open");
+                }
+                lock = (uint8_t)((feature_state[id] & FEAT_KEY_MASK) >> FEAT_KEY_SHIFT);
+            }
+        }
+        if (doorways != 1) {
+            return fail(depth, "a locked room isn't a dead end");
+        }
+        if (lock < KEY_IRON || lock > KEY_GOLD) {
+            return fail(depth, "a lock has no kind");
+        }
+        /* Its key, outside the locked rooms */
+        doorways = 0;
+        NGE_OWNER_FOR_EACH_OWNED(i, id, LEVEL_AREA) {
+            if (ITEM_IS(id) && NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_LOCATION) &&
+                gen_item_subclass(kind_index[id]) == ITEM_KEY && gen_item_group(kind_index[id]) == lock &&
+                !LEVEL_CELL_LOCKED(room_of(NGE_LOCATION_X(id), NGE_LOCATION_Y(id)))) {
+                doorways = 1;
+            }
+        }
+        if (!doorways) {
+            return fail(depth, "a lock has no key outside the locked rooms");
+        }
+    }
+    if (*locks > LEVEL_LOCKS_MAX) {
+        return fail(depth, "too many locks");
+    }
+    NGE_OWNER_FOR_EACH_OWNED(i, id, LEVEL_AREA) {
+        if (FEATURE_IS(id) && FEATURE_IS_LOCKED(id)) {
+            doors++;
+        }
+    }
+    if (doors != *locks) {
+        return fail(depth, "a locked door doesn't guard a locked room");
+    }
+
+    /* With the locks shut: every open tile outside the locked rooms can still be reached */
+    flood_stops_at_locks = 1;
+    flood(NGE_LOCATION_X(player), NGE_LOCATION_Y(player));
+    flood_stops_at_locks = 0;
+    for (y = 0; y < LEVEL_HEIGHT; y++) {
+        for (x = 0; x < LEVEL_WIDTH; x++) {
+            int room = room_of((uint8_t)x, (uint8_t)y);
+
+            if (room >= 0 && LEVEL_CELL_LOCKED(room)) {
+                if (reached[y][x]) {
+                    return fail(depth, "a locked room can be reached with its lock shut");
+                }
+            } else if (is_open(x, y) && !reached[y][x] && locked_door_at(x, y) == NGE_ENTITY_INVALID) {
+                return fail(depth, "a lock cuts off more than its room");
+            }
+        }
+    }
+
+    /* In a locked room: one item at most, nothing else, and nothing that has to be reached */
+    for (cell = 0; cell < LEVEL_CELLS; cell++) {
+        int inside = 0;
+
+        NGE_OWNER_FOR_EACH_OWNED(i, id, LEVEL_AREA) {
+            if (LEVEL_CELL_LOCKED(cell) && id != player && !FEATURE_IS(id) &&
+                room_of(NGE_LOCATION_X(id), NGE_LOCATION_Y(id)) == cell) {
+                inside++;
+                if (!ITEM_IS(id) || NGE_ENTITY_HAS_FLAGS(id, NGE_ENTITY_PERSISTENT)) {
+                    return fail(depth, "a locked room holds more than an item");
+                }
+            }
+        }
+        if (inside > 1) {
+            return fail(depth, "a locked room holds more than one item");
+        }
+    }
+    return 1;
+}
+
 static int check_level(int depth)
 {
     int cell;
@@ -231,6 +355,7 @@ static int check_level(int depth)
     int downs = 0;
     int up_room = -1;
     int down_room = -1;
+    int locks = 0;
     int x;
     int y;
     uint8_t i;
@@ -459,14 +584,18 @@ static int check_level(int depth)
     if (downs == 0 && level_stairs[1] != NGE_ENTITY_INVALID) {
         return fail(depth, "down stairs remembered at the bottom");
     }
-    if (items < LEVEL_ITEMS_MIN || items > LEVEL_ITEMS_MAX) {
+    if (!check_locks(depth, &locks)) {
+        return 0;
+    }
+    locks_seen += locks;
+    if (items < LEVEL_ITEMS_MIN || items > LEVEL_ITEMS_MAX + 2 * locks) {   /* each lock: its key, its room's item */
         return fail(depth, "item count");
     }
     if (monsters < LEVEL_MONSTERS_MIN || monsters > LEVEL_MONSTERS_MAX) {
         return fail(depth, "monster count");
     }
     /* Doors: at most the maximum; every doorway is doorway terrain, drawn as one if it has no door; two per link */
-    if (doors > LEVEL_DOORS_MAX) {
+    if (doors > LEVEL_DOORS_MAX + locks) {
         return fail(depth, "door count");
     }
     for (i = 0; i < level_doorway_count; i++) {
@@ -579,6 +708,9 @@ int main(void)
     /* About a third of doorways get doors, about half of them open */
     CHECK(doors_open + doors_shut > doorways_seen / 5 && doors_open + doors_shut < doorways_seen / 2);
     CHECK(doors_open > (doors_open + doors_shut) / 3 && doors_shut > (doors_open + doors_shut) / 3);
+
+    /* Every side room is locked, about one a level: fewer would hardly be seen (Next's rand: 0.98) */
+    CHECK(locks_seen > SEEDS * LEVEL_DEPTH_BOTTOM * 3 / 4);
 
     /* ---- arrivals: on the stairs taken, or anywhere (R16) ---- */
     go(4, LEVEL_ARRIVE_UP_STAIRS);
@@ -850,6 +982,7 @@ int main(void)
     /* ---- level_free_floor() always ends (R10): free floor, else shared, never on a feature ---- */
     go(4, LEVEL_ARRIVE_ANY);
     CHECK(entities_at(2, 2) == 0 && entities_at(3, 2) == 0);
+    level_locked_cells = 0;
     level_room_count = 1;   /* one room, two floor tiles: (2, 2) and (3, 2) */
     level_rooms[level_room_cells[0]].x1 = 1;
     level_rooms[level_room_cells[0]].y1 = 1;
@@ -868,6 +1001,17 @@ int main(void)
     level_free_floor(&d, &arrival);
     CHECK(d == 3 && arrival == 2);   /* not on the door */
     go(4, LEVEL_ARRIVE_ANY);   /* a real level again */
+
+    /* ---- level_free_floor() never chooses a locked room, the fallbacks included: what must be reached can be ---- */
+    level_room_count = 2;
+    ok = 1;
+    level_locked_cells = (uint16_t)1 << level_room_cells[0];
+    for (n = 0; n < 200 && ok; n++) {
+        level_free_floor(&d, &arrival);
+        ok = room_of(d, arrival) == level_room_cells[1];
+    }
+    CHECK(ok);
+    go(4, LEVEL_ARRIVE_ANY);
 
     /* ---- the dev kit's bandit: out of the player's sight, its bow and arrows at its feet ---- */
     level_dev_bandit(player);

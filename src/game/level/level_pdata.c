@@ -14,6 +14,7 @@ uint8_t      level_links[LEVEL_CELLS];
 uint8_t      level_doorway_x[LEVEL_DOORWAYS_MAX];
 uint8_t      level_doorway_y[LEVEL_DOORWAYS_MAX];
 uint8_t      level_doorway_count;
+uint16_t     level_locked_cells;
 nge_entity_id_t level_stairs[2];
 uint8_t      level_terrain[LEVEL_HEIGHT][LEVEL_WIDTH];
 uint8_t      level_deco_seed;

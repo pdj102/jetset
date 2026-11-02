@@ -159,8 +159,8 @@ a move that is refused, followed by a melee.
   (`ACT_FIRE`).
 - **R25 (later)** Wands, staves and aimed parchments can be aimed at a chosen tile
   (`ACT_AIM`).
-- **R26** Doors can be locked, and keys and lock picks open them (`ACT_UNLOCK`). The
-  level generator doesn't lock any yet.
+- **R26** Doors can be locked, and keys and lock picks open them (`ACT_UNLOCK`). Locks
+  guard side rooms only (section 6.12).
 - **R27 (later)** Spells and creature abilities are cast (`ACT_CAST`, mana.md R13,
   ai.md R22).
 - **R28 (later)** An actor can steal from a neighbour (`ACT_STEAL`, the bandit), and
@@ -518,7 +518,7 @@ actions are listed, and one of them is needed by items the game already generate
 
 | Action | Needed for | Priority | Blocked by |
 |---|---|---|---|
-| `ACT_UNLOCK`, built | 7 item kinds: keys and lock picks | Needed | No door is ever locked: level generation (Q1 in [actions_plan.md](actions_plan.md)) |
+| `ACT_UNLOCK`, built | 7 item kinds: keys and lock picks | Needed | Nothing: locks are placed (section 6.12) |
 | `ACT_CAST` | Mana exists and nothing spends it; the goblin shaman | Wanted | Its own spec: what spells exist, who knows them |
 | `ACT_STEAL` | The bandit's "steals and runs" | Wanted | An AI that flees (ai.md R18) |
 | `ACT_OPERATE` | Fountains and the like | If added | No such feature kind: there are only doors and stairs |
@@ -767,6 +767,45 @@ Outside the section:
 
 The order of work is in [actions_plan.md](actions_plan.md).
 
+
+### 6.12 Placing locks and keys, built
+
+Q1 in [actions_plan.md](actions_plan.md) is answered: locks guard side rooms only, so a
+lock never gates progress and a key is a bonus.
+
+- **R31** A side room is a room with one doorway and no stairs. A lock there cuts off that
+  room and nothing else, as every other room joins up without it.
+- **R32** Every side room is locked, 2 a level at most (`LEVEL_LOCKS_MAX`). Its doorway
+  gets a closed door if it hasn't one. Side rooms are few: 2,000 levels with the Next's
+  `rand()` had 0.98 locks a level, and 31% of levels had none, having no side room.
+- **R33** A locked room holds one random item for the depth, and nothing else.
+- **R34** Each lock's key is on free floor outside every locked room. If no tile is found
+  there is no key, which R31 allows.
+- **R35** What is placed at random keeps out of locked rooms: the player arriving anywhere,
+  the quest item, parked entities, monsters and items (`free_floor()`, `scan_floor()`).
+
+**The lock's kind** is `KEY_IRON` plus a roll over `1 + depth / 3` kinds, at most 4, so
+deeper levels add brass, silver and gold. The key is made by kind, so it needs no `where`
+for that depth. A skeleton key's `KEY_ANY` is never a lock.
+
+**What Q1 asked about:**
+
+- A monster picks up the key: it drops it when it dies, and the room stays optional.
+- A key left on another level: the room stays optional, and the key may fit a later lock.
+- Keys from `gen_item_random()` with no lock to match: left as they are, a spare that may
+  fit a later lock.
+
+**Decisions.**
+
+- **D24 A side room is found by counting doorways, not links.** A room has one doorway
+  for each link, on a different wall, so the list `level_doorway_x[]` already has the answer.
+  *Rejected:* counting bits in `level_links[]`, which needs the neighbours' bits too.
+- **D25 The mask is `level_locked_cells`, 2 bytes in page 103.** *Rejected:* a flag in
+  `level_room_t`, 12 bytes for what a bit holds.
+- **D26 Random placement skips locked rooms in one place,** so no caller can forget.
+  *Rejected:* monsters inside, which would need the AI to stay shut in, and is a surprise
+  the player has no way to see coming.
+
 ## 7. Tests
 
 `test_act` covers:
@@ -823,6 +862,18 @@ To add with section 6:
 
 What differs from section 6 and [actions_plan.md](actions_plan.md).
 
+- **Step 13:**
+  - Section 6.12 is the spec, written with the step, as Q1's answer needed the details.
+  - A locked door keeps the closed door's look. The plan's "decoration of the door" needs a
+    new look in the tileset: the map has one palette bank, so it can't be recoloured.
+  - A locked room's item isn't in the plan: without it a lock would guard an empty room.
+  - The first version locked a side room 1 time in 2, and the CSpect check found no lock
+    in 8 levels: 62% of levels had none. Now every side room is locked (R32). Those
+    numbers are from the level code linked with z88dk's `rand()`, ported to C and checked
+    against `z88dk-ticks`, as the PC tests use the host's `rand()`, which differs.
+  - The dev kit has no keys, as a key in the pack unlocks a door when it is bumped, so
+    "The door is locked." never showed. It keeps the lock pick.
+  - Page 102 grew by about 790 bytes, to about 7,370, with about 820 left in debug.
 - **Step 12:**
   - No door is locked in play until step 13. The `L` dev key locks the nearest closed door.
   - `act_unlock()` is in `act_open.c`, not a new `act_unlock.c`, as it shares

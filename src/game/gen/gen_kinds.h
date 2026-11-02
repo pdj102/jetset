@@ -243,6 +243,9 @@
 #define KEY_ANY     5
 #define KEY_COUNT   6
 
+/* A key's kind from the KEY_* it opens: the level generator makes the key to a lock */
+typedef char gen_key_kinds_check[(IT_KEY_GOLD - IT_KEY_IRON == KEY_GOLD - KEY_IRON) ? 1 : -1];
+
 #define KIND_INVALID 0xFF /* Invalid kind */
 
 #endif

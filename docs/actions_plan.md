@@ -4,9 +4,9 @@ The steps that build what [actions.md](actions.md) section 6 specifies. The spec
 what each action does and why, and this file says in what order, what changes, and how
 each step is checked.
 
-Status: plan written 2026-10-31. D10 to D23 agreed. Steps 1 to 12 done: step 1 passed in
+Status: plan written 2026-10-31. D10 to D23 agreed. Steps 1 to 13 done: step 1 passed in
 CSpect and on hardware, the others in CSpect, with step 5 checked through step 7. Step
-13 is blocked on Q1, and step 14 needs its own specs first.
+14 needs its own specs first.
 
 ## 1. How the steps work
 
@@ -30,7 +30,7 @@ CSpect and on hardware, the others in CSpect, with step 5 checked through step 7
 
  11 two hands, curses     (needs only step 6's accessor)
  12 lock mechanism        (needs step 1)
- 13 lock placement        BLOCKED on Q1
+ 13 lock placement        (needs step 12; Q1: option A)
  14 ACT_CAST, ACT_STEAL   own specs first
 ```
 
@@ -202,9 +202,9 @@ nothing in play until step 13, as no door is locked.
 
 ### Step 13: placing locks and keys
 
-**Blocked on Q1.** Level generation, decoration of the door and the placement of keys.
-`gen_item_random()` already drops keys anywhere, and that has to be squared with whichever
-answer is chosen.
+Q1 is answered: option A, and the spec is in [actions.md](actions.md), section 6.12. Level
+generation and the placement of keys. A locked door's own look needs new tile art, so it
+keeps the closed door's until then.
 
 ### Step 14: `ACT_CAST` and `ACT_STEAL`
 
@@ -230,6 +230,7 @@ Each needs its own spec first: spells and who knows them, and fleeing (ai.md R18
 | 11 | +76: 9,728 | Page 110: +186, 256 left. Page 120 +95, page 118 +46. Common +1, 4,639 free |
 | Between 11 and 12 | | `feature.c` moved to its own pair, 132/133: page 110 -928, about 1,180 left |
 | 12 | +498: 10,226 | Page 132 +462, 6,802 free. Page 118 +188, page 116 +133, page 114 +525 with the dev key. Common +30, 4,609 free |
+| 13 | | Page 102: +790, 822 left in debug. Page 103 +2 |
 
 The estimates come from the spec, 6.11. The actions ended at 10.2K of 16K, so the
 section has room. **Page 110 was the real limit:** the game's component functions are
@@ -239,8 +240,8 @@ to move is the one with the most still to come (G-MOD-3).
 
 ## 4. Open questions
 
-**Q1 How is a key guaranteed to be reachable?** Undecided, and it blocks only step 13. The
-answer doesn't change steps 1 to 12. What the options are, as a start:
+**Q1 How is a key guaranteed to be reachable?** Answered: option A, built in step 13. What
+the options were:
 
 | Option | How it works | Cost | Weakness |
 |---|---|---|---|
