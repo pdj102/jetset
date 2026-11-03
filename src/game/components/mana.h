@@ -7,10 +7,11 @@
  *        spent to cast spells (the player). See docs/mana.md.
  *
  * MP are a pool: each has current MP (mp, 0 to mp_max) and a maximum
- * (mp_max), set from the kind value in its kind record (mana_kind_t,
- * game/gen). The maximum doesn't change yet: it isn't an attribute
- * (game/components/attrs.h) until an item or effect needs to change it
- * (docs/mana.md, D2). An entity starts full.
+ * (mp_max), an attribute (ATTR_MP_MAX, game/components/attrs.h): its base
+ * is set from the kind value in its kind record (mana_kind_t, game/gen),
+ * and effects change it (docs/spells.md, D11). A lower maximum takes
+ * current MP down with it; a higher one restores none. An entity starts
+ * full.
  *
  * A spell's caller checks there are enough (MANA_HAS()) before spending
  * them: mana_spend() asserts it, and stops at 0 when asserts are compiled
@@ -37,8 +38,9 @@ typedef struct mana_kind {
 #define MANA_KIND_HAS(k)  ((k)->mp_max != 0)
 
 /* Tables in slot 0 (mana_cdata.c): read-only for game code; meaningful only with COMPONENT_MANA */
-extern uint8_t mana_mp[NGE_ENTITY_MAX];       /**< Current MP, 0 to mana_mp_max. */
-extern uint8_t mana_mp_max[NGE_ENTITY_MAX];   /**< The most MP it can have, 1 or more. */
+extern uint8_t mana_mp[NGE_ENTITY_MAX];            /**< Current MP, 0 to mana_mp_max. */
+extern uint8_t mana_mp_max[NGE_ENTITY_MAX];        /**< The most MP it can have, 1 or more: the attribute's value. */
+extern uint8_t mana_mp_max_base[NGE_ENTITY_MAX];   /**< Its base: changed only by effects_set_base(). */
 
 /** Entity id has the mana component. */
 #define MANA_IS(id)      NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_MANA)

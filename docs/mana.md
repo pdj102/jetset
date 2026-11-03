@@ -74,9 +74,10 @@ with the reason.
 
 - **R13 (later)** Spells and the actions that cast them, which check and
   spend MP.
-- **R14 (later)** Getting MP back over time (an innate effect, as `EF_REGEN`
+- **R14** Getting MP back over time (an innate effect, as `EF_REGEN`
   gives hit points), and items or effects that restore MP (a potion) or
-  change the maximum (a ring): see D2.
+  change the maximum (a ring): see D2. Built by spells.md: `EF_MANA_REGEN`
+  and `ATTR_MP_MAX` (spells.md, R19 and R20).
 - **R15 (later)** Monsters with MP, and messages for spending and
   restoring.
 
@@ -98,6 +99,8 @@ with the reason.
   takes current MP down with it, a higher one gives nothing back. **Option
   (Q2):** make it an attribute now: about 100 more bytes in slot 0, a few
   lines in `effects_game_store()`, and its tests, for no use yet.
+  **Built** by spells.md (D11): `ATTR_MP_MAX`, with `mana_mp_max_base[]`
+  in slot 0 and the rule above.
 
 - **D3 Read the tables; no getter functions (R6).** As with `health_hp[]`,
   the tables are read-only outside the component, and read directly:

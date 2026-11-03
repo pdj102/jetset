@@ -874,6 +874,7 @@ int main(void)
     CHECK(starts(OVER_ROW(22), "Status  None"));
     CHECK(starts(OVER_ROW(24), "Effect           Turns  Save"));
     CHECK(starts(OVER_ROW(25), "Regeneration") && strstr(OVER_ROW(25), "always") != NULL);   /* innate */
+    CHECK(starts(OVER_ROW(26), "Mana flow") && strstr(OVER_ROW(26), "always") != NULL);
     CHECK(starts(OVER_ROW(30), "Cyan: better than base  Red: worse") && INK(30, 0) == L2_CYAN &&
           INK(30, 24) == L2_RED);
     /* Values away from their bases (as effects would set them, after the poison's recompute): better cyan, worse red */
@@ -897,7 +898,8 @@ int main(void)
     CHECK(seen[1][20][20].c == '*' && INK(20, 20) == L2_RED);                           /* vulnerable to cold */
     CHECK(starts(OVER_ROW(22), "Status  Poisoned") && INK(22, 8) == L2_RED);            /* a condition */
     CHECK(strcmp(seen_cols(1, 25, 0, 29), "Poison              12  Con 10") == 0);       /* 4 firings, 3 turns apart */
-    CHECK(starts(OVER_ROW(26), "Regeneration  ") && starts(OVER_ROW(27), "    "));       /* in EF_* order */
+    CHECK(starts(OVER_ROW(26), "Regeneration  ") && starts(OVER_ROW(27), "Mana flow  ") &&
+          starts(OVER_ROW(28), "    "));                                                  /* in EF_* order */
     /* A second regeneration (it stacks): one row, counted */
     CHECK(effect_apply(EF_REGEN, 1, actor_player, NGE_ENTITY_INVALID));
     nge_event_flush();
@@ -905,7 +907,7 @@ int main(void)
     press(EV(NGE_KEY_SPACE));
     screen_pc_run();
     CHECK(starts(OVER_ROW(26), "Regeneration x2") && strstr(OVER_ROW(26), "always") != NULL &&
-          starts(OVER_ROW(27), "    "));
+          starts(OVER_ROW(27), "Mana flow  ") && starts(OVER_ROW(28), "    "));
     {
         nge_entity_id_t id;
         nge_entity_id_t last = NGE_ENTITY_INVALID;

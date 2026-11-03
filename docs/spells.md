@@ -9,8 +9,8 @@ Spells are cast with an action ([actions.md](actions.md)), do what an effect say
 [ai.md](ai.md).
 
 Status: proposed, 2026-11-02. `SPELL_DIRECT` added 2026-11-03, agreed in actions.md
-(section 6.13, D30). Nothing here is built. This spec replaces the sketch in
-actions.md, section 6.6.
+(section 6.13, D30). Being built, in the steps of [spells_plan.md](spells_plan.md).
+This spec replaces the sketch in actions.md, section 6.6.
 
 ## 1. Overview
 

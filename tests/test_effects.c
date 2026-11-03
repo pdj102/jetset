@@ -540,12 +540,59 @@ int main(void)
     TEST_EXPECT_HALT(effect_apply(EF_STRENGTH, 1, g, NGE_ENTITY_INVALID));    /* raising a base it hasn't */
     CHECK(test_halt_count == 1);
 
-    /* ---- the player: their innate regeneration ---- */
+    /* ---- the player: their innate regeneration, then mana regeneration (a rule: they have mana) ---- */
     reset();
     player = gen_creature(CR_PLAYER, AREA);
-    CHECK(count_effects(player, EF_REGEN) == 1);
-    CHECK(events() == 1 && is(0, player, EV_EFFECT_STARTED, effect_on(player, EF_REGEN), EF_REGEN));
+    CHECK(count_effects(player, EF_REGEN) == 1 && count_effects(player, EF_MANA_REGEN) == 1);
+    CHECK(events() == 2 && is(0, player, EV_EFFECT_STARTED, effect_on(player, EF_REGEN), EF_REGEN) &&
+          is(1, player, EV_EFFECT_STARTED, effect_on(player, EF_MANA_REGEN), EF_MANA_REGEN));
     CHECK(GEN_HOOK_EF(gen_hook_of(player, GEN_HOOK_INNATE)) == EF_REGEN);
+
+    /* ---- mana regeneration: 1 MP every 20 turns, stopping at the maximum; innate, so no cure ends it ---- */
+    e = effect_on(player, EF_MANA_REGEN);
+    CHECK(effect_defs[EF_MANA_REGEN].flags == EFFECT_INNATE && effect_defs[EF_MANA_REGEN].cycles == 0);
+    mana_spend(player, 2);
+    events();
+    while (mana_mp[player] < 4 && nge_timer_turns < 100) {
+        nge_timer_advance(dispatch);
+    }
+    CHECK(NGE_ENTITY_IS_ALIVE(e) && mana_mp[player] == 4 && nge_timer_turns == 20);         /* the first firing, at turn 20 */
+    events();
+    CHECK(find_event(0, EV_MANA_RESTORED) >= 0);
+    effect_apply(EF_CURE_ALL, 1, player, NGE_ENTITY_INVALID);
+    CHECK(count_effects(player, EF_MANA_REGEN) == 1);
+    while (mana_mp[player] < 5 && nge_timer_turns < 100) {
+        nge_timer_advance(dispatch);
+    }
+    CHECK(mana_mp[player] == 5 && nge_timer_turns == 40);
+    events();
+    while (nge_timer_turns < 60) {
+        nge_timer_advance(dispatch);
+    }
+    events();
+    CHECK(mana_mp[player] == 5 && find_event(0, EV_MANA_RESTORED) < 0 && count_effects(player, EF_MANA_REGEN) == 1);
+
+    /* ---- maximum MP: an attribute, at least 1; a lower maximum takes MP down with it, a higher restores none ---- */
+    events();
+    CHECK(effects_game_attrs[ATTR_MP_MAX].base == mana_mp_max_base &&
+          effects_game_attrs[ATTR_MP_MAX].component == COMPONENT_MANA);
+    effects_set_base(player, ATTR_MP_MAX, 9);
+    CHECK(mana_mp_max_base[player] == 9 && mana_mp_max[player] == 9 && mana_mp[player] == 5 && effects_check(player));
+    effects_set_base(player, ATTR_MP_MAX, 3);
+    CHECK(mana_mp_max[player] == 3 && mana_mp[player] == 3);
+    effects_set_base(player, ATTR_MP_MAX, 0);
+    CHECK(mana_mp_max[player] == 1 && mana_mp[player] == 1);
+    CHECK(events() == 3);                                          /* one EV_ATTRS_CHANGED each */
+    mana_mp_max[player]++;
+    CHECK(!effects_check(player));
+    mana_mp_max[player]--;
+    CHECK(effects_check(player));
+    g = goblin();                                                  /* no mana: the attribute is left alone */
+    mana_mp_max[g] = 77;
+    effects_recompute(g);
+    CHECK(mana_mp_max[g] == 77 && count_effects(g, EF_MANA_REGEN) == 0);
+    TEST_EXPECT_HALT(effects_set_base(g, ATTR_MP_MAX, 1));
+    CHECK(test_halt_count == 1);
 
     /* ---- no entity free: a timed effect is refused, an instant one isn't ---- */
     reset();

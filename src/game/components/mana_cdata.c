@@ -8,3 +8,4 @@
 
 uint8_t mana_mp[NGE_ENTITY_MAX];
 uint8_t mana_mp_max[NGE_ENTITY_MAX];
+uint8_t mana_mp_max_base[NGE_ENTITY_MAX];

@@ -131,8 +131,10 @@ Later, each in its own spec:
   have them too, so they are attributes in shared components (attack,
   stats) whose bases a new level raises; the PC component keeps only the
   level.
-- **R18 (later)** MP gained by level, for a spellcaster: maximum MP becomes
-  an attribute first (docs/mana.md, D2).
+- **R18** MP gained by level, for a spellcaster: maximum MP becomes
+  an attribute first (docs/mana.md, D2). Built by spells.md (R20, R21):
+  `level_up()` raises maximum and current MP by 1d4 + the Intelligence
+  modifier, at least 1, for an entity with mana.
 - **R19 (later)** Level drain (an undead's touch): takes a level, and the XP
   down to that level's figure.
 - **R20 (later)** Gold on the floor and in monsters' packs (a gold item,

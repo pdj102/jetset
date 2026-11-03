@@ -46,8 +46,10 @@ CFLAGS ?= -DNGE_CSPECT
 # nge settings for the game, in every build mode. NGE_FILE_MAX: the streams
 # open at once, at most: the debug output, the main screen's 3, the help
 # line of the overlay buffer, an overlay screen's 4 panels and the keyboard
-# (docs/ui_screens.md, D6)
-NGE_CONFIG := -DNGE_FILE_MAX=10
+# (docs/ui_screens.md, D6). NGE_EVENT_QUEUE: a level-up's events come from
+# one handler call, and 3 levels from one gain would fill 16 (docs/spells.md,
+# D10)
+NGE_CONFIG := -DNGE_FILE_MAX=10 -DNGE_EVENT_QUEUE=32
 
 # Header dependencies: zcc can't write them, so the host compiler lists the
 # headers each C file includes (obj/<file>.d), and a changed header

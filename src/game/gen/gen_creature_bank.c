@@ -54,6 +54,9 @@ static nge_entity_id_t create(uint8_t kind, nge_owner_t owner)
     if (b.hooks[GEN_HOOK_INNATE].ef != EF_NONE) {
         effect_apply(b.hooks[GEN_HOOK_INNATE].ef, b.hooks[GEN_HOOK_INNATE].power, id, NGE_ENTITY_INVALID);   /* an entity of its own, owned by it */
     }
+    if (MANA_KIND_HAS(&b.mana)) {
+        effect_apply(EF_MANA_REGEN, 1, id, NGE_ENTITY_INVALID);   /* a rule, not a hook: every kind with mana (docs/spells.md, D12) */
+    }
     return id;
 }
 

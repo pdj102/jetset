@@ -30,6 +30,7 @@ void mana_add(nge_entity_id_t id, const mana_kind_t *k) NGE_BANKED
 
     mana_mp[id] = k->mp_max;
     mana_mp_max[id] = k->mp_max;
+    mana_mp_max_base[id] = k->mp_max;
     NGE_ENTITY_ADD_COMPONENT(id, COMPONENT_MANA);
 }
 

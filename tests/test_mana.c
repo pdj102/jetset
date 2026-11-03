@@ -50,7 +50,7 @@ int main(void)
     CHECK(!MANA_IS(a));
     mana_add(a, &b);
     CHECK(MANA_IS(a) && !MANA_IS(none));
-    CHECK(mana_mp[a] == 5 && mana_mp_max[a] == 5);
+    CHECK(mana_mp[a] == 5 && mana_mp_max[a] == 5 && mana_mp_max_base[a] == 5);
     CHECK(events() == 0);
 
     /* ---- MANA_HAS: at least n ---- */
@@ -79,7 +79,7 @@ int main(void)
     mana_spend(a, 4);
     b.mp_max = 9;
     mana_add(a, &b);
-    CHECK(mana_mp[a] == 9 && mana_mp_max[a] == 9);
+    CHECK(mana_mp[a] == 9 && mana_mp_max[a] == 9 && mana_mp_max_base[a] == 9);
     events();
 
     /* ---- asserts: spending too much, no component, no MP in the kind ---- */

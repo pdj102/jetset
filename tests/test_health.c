@@ -13,7 +13,7 @@
 #include "game/events.h"
 
 /* The events posted since the last call */
-static nge_event_t seen[16];
+static nge_event_t seen[NGE_EVENT_QUEUE];   /* a drain holds at most a full queue */
 static int seen_count;
 
 static void record(const nge_event_t *e)

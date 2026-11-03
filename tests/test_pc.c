@@ -12,6 +12,7 @@
 
 #include "game/components/attrs.h"
 #include "game/components/health.h"
+#include "game/components/mana.h"
 #include "game/components/pc.h"
 #include "game/components/stats.h"
 #include "game/effects/effects.h"
@@ -19,7 +20,7 @@
 #include "game/gen/gen.h"
 
 /* The events posted since the last call */
-static nge_event_t seen[16];
+static nge_event_t seen[NGE_EVENT_QUEUE];   /* a drain holds at most a full queue */
 static int seen_count;
 
 static void record(const nge_event_t *e)
@@ -127,6 +128,11 @@ int main(void)
     events();
     CHECK(first(EV_XP_GAINED) == 0 && count(EV_LEVEL_GAINED) == 1 && count(EV_HEALED) == 1);
     CHECK(seen[seen_count - 1].id == EV_LEVEL_GAINED && seen[seen_count - 1].p1 == 2);
+    /* MP the same way, by 1d4 + Int 10's 0: maximum and current, after the hit points */
+    gain = (uint8_t)(mana_mp_max[p] - 5);
+    CHECK(gain >= 1 && gain <= 4 && mana_mp_max_base[p] == mana_mp_max[p] && mana_mp[p] == mana_mp_max[p]);
+    CHECK(count(EV_MANA_RESTORED) == 1 && seen[first(EV_MANA_RESTORED)].p1 == gain);
+    CHECK(first(EV_HEALED) < first(EV_MANA_RESTORED) && count(EV_ATTRS_CHANGED) == 2 && seen_count == 6);
 
     /* ---- hurt: a level heals the gain, not to full ---- */
     health_damage(p, NGE_ENTITY_INVALID, 10, DMG_BLUNT);
@@ -179,6 +185,20 @@ int main(void)
         events();
     }
     CHECK(ok);
+    /* The MP gain: at least 1 at Int 1, and only MP spent come back above the old maximum's room */
+    p = new_player();
+    effects_set_base(p, ATTR_INT, 1);                  /* modifier -5 */
+    mana_spend(p, 3);
+    pc_gain_xp(p, 20);
+    CHECK(mana_mp_max[p] == 6 && mana_mp[p] == 3);
+    events();
+    /* No mana component: hit points only */
+    p = new_player();
+    NGE_ENTITY_REMOVE_COMPONENT(p, COMPONENT_MANA);
+    hp_max = health_hp_max[p];
+    pc_gain_xp(p, 20);
+    events();
+    CHECK(pc_level == 2 && health_hp_max[p] > hp_max && count(EV_MANA_RESTORED) == 0 && count(EV_ATTRS_CHANGED) == 1);
     p = new_player();
     effects_set_base(p, ATTR_HP_MAX, 254);
     pc_gain_xp(p, 20);

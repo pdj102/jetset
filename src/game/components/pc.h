@@ -45,6 +45,7 @@
 #define PC_XP_MAX     65535u   /**< XP stop here. */
 #define PC_GOLD_MAX   65535u   /**< Gold stops here. */
 #define PC_HIT_DIE    8        /**< The die rolled for each level's hit points (later: by class). */
+#define PC_MANA_DIE   4        /**< The die rolled for each level's MP, a power of 2 (rolled with a mask). */
 
 /* Classes: values of pc_class, a placeholder until character generation */
 #define PC_CLASS_FIGHTER  0

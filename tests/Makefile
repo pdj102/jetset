@@ -76,7 +76,8 @@ TESTS := $(patsubst %.c,$(BUILD)/%,$(TEST_SRCS))
 
 # NGE_CSPECT: build the DebugOut stream (its trap is faked).
 # NGE_FILE_MAX: the game's 10 (Makefile), and room for the stdout debug stream that test_init() opens.
-CPPFLAGS := -DNGE_CSPECT -DNGE_FILE_MAX=12 \
+# NGE_EVENT_QUEUE: the game's (Makefile).
+CPPFLAGS := -DNGE_CSPECT -DNGE_FILE_MAX=12 -DNGE_EVENT_QUEUE=32 \
             -include support/test_config.h \
             -Isupport -I$(GEN) -I$(SRCDIR) -I$(SRCDIR)/.. -I$(Z88DK_CONFIG_DIR)
 CFLAGS := -std=gnu11 -O1 -g -Wall -MMD -MP

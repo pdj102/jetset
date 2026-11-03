@@ -174,7 +174,7 @@ An event may also say less and leave the handler to read the current value:
 ### 4.2 The queue
 
 ```c
-static nge_event_t queue[NGE_EVENT_QUEUE];   /* 16: a power of 2, checked at compile time */
+static nge_event_t queue[NGE_EVENT_QUEUE];   /* 32 in the game: a power of 2, checked at compile time */
 static uint8_t head;                         /* oldest event */
 static uint8_t count;                        /* events waiting */
 ```
@@ -464,8 +464,8 @@ level gained in one handler call.
 - **D9 A full queue is a programming error.** A size is chosen for the worst case and
   an assert says when that was wrong. *Rejected:* overwriting the oldest event, which
   loses it silently in debug builds as well. With D7, the worst case is one action
-  (R25), and a queue of 16 fits today's. Actions that touch many entities will need 32
-  (section 6).
+  (R25), and a queue of 16 fitted the first actions. The game sets 32 (`NGE_CONFIG` in the
+  Makefile): a level-up's events come from one handler call (spells.md, D10).
 - **D10 Events aren't flushed on a level change.** A change of level is deferred until
   the frame's events are handled (level_transitions.md, D4), so nothing is left to
   throw away and no message is lost.
@@ -499,7 +499,6 @@ level gained in one handler call.
 | Item | What's there, what's missing |
 |---|---|
 | Hit and use effects as reactions | Allowed by R27 and still calls. Moving them needs a handler in the game's side of effects, with a filter in common memory |
-| A queue of 32 | Needed by the first action that touches many entities, such as an area spell: about 3 events a target. It costs 80 bytes of common memory |
 | nge's own events | IDs 0 to 15 are reserved, and nothing uses them |
 | Events with no target | The queue allows them, and no game event has one |
 | Reactions to `EV_STOOD_ON` | Only a message. Traps and the like would react here (level_transitions.md) |

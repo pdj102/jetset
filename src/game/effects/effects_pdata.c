@@ -16,6 +16,7 @@
 #include "ecs/systems/nge_timer.h"
 #include "game/components/attrs.h"
 #include "game/components/health.h"
+#include "game/components/mana.h"
 #include "game/components/stats.h"
 #include "game/timers.h"
 
@@ -153,6 +154,14 @@ const effect_def_t effect_defs[EF_COUNT] = {
         .save = { ABIL_STR, 14 },
         .period = TURNS(1),      /* less than a lichen's turn: a hit refreshes it, and each firing is a save */
         .cycles = 6,
+    },
+    [EF_MANA_REGEN] = {
+        .name = "Mana flow",
+        .duration = EFFECT_TIMED,
+        .flags = EFFECT_INNATE,  /* every kind with mana, from the generator (docs/spells.md, D12) */
+        .period = TURNS(20),
+        .cycles = 0,             /* for ever */
+        .on_tick = { OP_MANA, 0, 1 },
     },
     [EF_HEALING] = {
         .duration = EFFECT_INSTANT,
@@ -343,6 +352,7 @@ const effects_attr_t effects_game_attrs[ATTR_COUNT] = {
     [ATTR_INT]    = { &stats_ability_base[ABIL_INT][0], COMPONENT_STATS,  0 },
     [ATTR_WIS]    = { &stats_ability_base[ABIL_WIS][0], COMPONENT_STATS,  0 },
     [ATTR_CHA]    = { &stats_ability_base[ABIL_CHA][0], COMPONENT_STATS,  0 },
+    [ATTR_MP_MAX] = { mana_mp_max_base,                 COMPONENT_MANA,   0 },
 };
 
 const uint8_t effects_game_timer_kind = TIMER_EFFECT;

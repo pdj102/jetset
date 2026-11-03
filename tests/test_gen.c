@@ -374,6 +374,22 @@ int main(void)
                                                      kind == CR_FLOATING_EYE || kind == CR_MIMIC);
     }
     CHECK(ok);
+    /* Mana regeneration: a rule for every kind with mana, after its innate hook (docs/spells.md, D12) */
+    ok = 1;
+    for (kind = 0; kind < CR_COUNT; kind++) {
+        nge_entity_id_t owned;
+        uint8_t i;
+        int n = 0;
+
+        reset();
+        nge_event_init();
+        id = gen_creature(kind, AREA);
+        NGE_OWNER_FOR_EACH_OWNED(i, owned, id) {
+            n += NGE_ENTITY_HAS_COMPONENT(owned, COMPONENT_EFFECT) && effect_kind_of(owned) == EF_MANA_REGEN;
+        }
+        ok = ok && n == (MANA_KIND_HAS(&gen_creatures[kind].mana) ? 1 : 0);
+    }
+    CHECK(ok);
     CHECK(effect_defs[EF_HOLD].period < gen_creatures[CR_LICHEN].stats.speed);
     CHECK(GEN_HOOK_EF(gen_creature_hook(CR_LICHEN, GEN_HOOK_HIT)) == EF_HOLD);
     reset();
@@ -388,7 +404,7 @@ int main(void)
     id = gen_creature(CR_SKELETON, AREA);
     CHECK(ai_can(id) == (AI_CAN_MOVE | AI_CAN_MELEE | AI_CAN_PICKUP | AI_CAN_EQUIP));   /* Int 3: mindless at doors */
     id = gen_creature(CR_PLAYER, AREA);
-    CHECK(GEN_HOOK_EF(gen_hook_of(id, GEN_HOOK_INNATE)) == EF_REGEN && nge_owner_count(id) == 1);   /* its innate effect */
+    CHECK(GEN_HOOK_EF(gen_hook_of(id, GEN_HOOK_INNATE)) == EF_REGEN && nge_owner_count(id) == 2);   /* its innate effect, and mana regeneration */
     CHECK(MANA_IS(id) && mana_mp[id] == 5 && mana_mp_max[id] == 5);                 /* full */
     CHECK(PC_IS(id) && pc_level == 1 && pc_xp == 0 && pc_gold == 0);                 /* a new character */
     CHECK(!AI_IS(id));

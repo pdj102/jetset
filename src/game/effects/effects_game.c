@@ -25,7 +25,7 @@
 
 /* Its data (the attributes' tables, the timer kind) is in page 121 with the definitions: effects_pdata.c */
 
-/* Attributes are kept for entities with health (and, for speed, stats) */
+/* Attributes are kept for entities with health (and, for speed, stats; for MP, mana) */
 uint8_t effects_game_has_attrs(nge_entity_id_t id)
 {
     return NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_HEALTH);
@@ -165,6 +165,16 @@ uint8_t effects_game_store(nge_entity_id_t id, const effects_derived_t *d, uint8
         changed = 1;
         if (write && NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_TIMER)) {
             nge_timer_set_period(id, stats_speed[id]);   /* its turns: every speed ticks */
+        }
+    }
+    if (MANA_IS(id)) {
+        max = clamp(d->value[ATTR_MP_MAX], 1);
+        changed |= set(&mana_mp_max[id], max, write);
+        if (mana_mp[id] > max) {
+            if (write) {
+                mana_mp[id] = max;   /* as hit points: kept within a lower maximum */
+            }
+            changed = 1;
         }
     }
     if (NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_STATS)) {

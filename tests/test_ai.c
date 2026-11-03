@@ -38,7 +38,7 @@ static const nge_rect_t window = { .x1 = 0, .x2 = 19, .y1 = 0, .y2 = 19 };   /* 
 const nge_rect_t screen_map_view = { .x1 = 0, .x2 = 27, .y1 = 0, .y2 = 25 };
 
 /* The events handled since the last call, each passed to the AI first, as the game does */
-static nge_event_t seen[16];
+static nge_event_t seen[NGE_EVENT_QUEUE];   /* a drain holds at most a full queue */
 static int seen_count;
 
 static void dispatch(const nge_event_t *e)

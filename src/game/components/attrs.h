@@ -20,7 +20,7 @@
  *               writes it, and it is recomputed whenever a source changes
  *               (equip, an effect starts or ends, a base changes)
  *
- * A pool (hit points, later MP) also has a current amount (health_hp):
+ * A pool (hit points, MP) also has a current amount (health_hp):
  * not an attribute, but a resource that damage and healing change, kept
  * within the value. A lower maximum takes it down; a higher one doesn't
  * heal.
@@ -48,7 +48,8 @@
 #define ATTR_INT     9
 #define ATTR_WIS     10
 #define ATTR_CHA     11  /**< ...stats_ability[ABIL_CHA]. */
-#define ATTR_COUNT   12
+#define ATTR_MP_MAX  12  /**< mana: mana_mp_max, mana_mp_max_base; 1-255. */
+#define ATTR_COUNT   13
 
 /** The attribute of ability a (ABIL_*, game/components/stats.h): in the same order. */
 #define ATTR_ABILITY(a)  ((uint8_t)(ATTR_STR + (a)))

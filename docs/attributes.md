@@ -117,6 +117,7 @@ is a resource that damage and healing change. Hit points are a pool.
 | `ATTR_SPEED` | stats | Added | 1-255 |
 | `ATTR_IMMUNE`, `ATTR_RESIST`, `ATTR_VULN` | health | ORed | Damage type masks |
 | `ATTR_STR` to `ATTR_CHA` | stats | Added | 1-30 |
+| `ATTR_MP_MAX` | mana | Added | 1-255; current MP kept within it, as hit points (spells.md, D11) |
 
 Each is only meaningful for an entity with its component. Modifiers can add bits
 to a mask but not remove them.
@@ -239,7 +240,6 @@ The core ends an effect through one internal function, with a reason in
 
 | Mechanic | What's there, what's missing |
 |---|---|
-| Maximum MP as an attribute | It is a kind value today ([mana.md](mana.md)). It would follow this design: `ATTR_MP_MAX`, `mana_mp_max_base[]` and one row of `effects_game_attrs[]` |
 | Blinded and unconscious | Effects grant them and the PC screen shows them, but no rule reads them and the main screen shows only poisoned |
 | Other ways to avoid or end a condition | A saving throw when it is applied, waking when damaged, condition immunities (which could be a mask attribute) |
 | Messages by reason | The reason is in the event, but every ending uses the effect's one text |

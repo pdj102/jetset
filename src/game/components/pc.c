@@ -16,6 +16,7 @@
 #include "event/nge_event.h"
 #include "game/components/attrs.h"
 #include "game/components/health.h"
+#include "game/components/mana.h"
 #include "game/components/stats.h"
 #include "game/effects/effects.h"
 #include "game/events.h"
@@ -79,12 +80,15 @@ uint16_t pc_xp_needed(uint8_t level) NGE_BANKED
 /*
  * Go up a level: maximum hit points up by a roll of the hit die plus the
  * Constitution modifier, at least 1 (the base, through the effects: the
- * maximum stops at 255), and current hit points by the same
+ * maximum stops at 255), and current hit points by the same. With mana,
+ * maximum and current MP the same way, by 1d4 plus the Intelligence
+ * modifier (docs/spells.md, R21)
  */
 static void level_up(nge_entity_id_t id)
 {
     int16_t gain;
     uint16_t hp_max;
+    uint16_t mp_max;
 
     gain = (int16_t)(1 + (unsigned int)rand() % PC_HIT_DIE) + STATS_MOD(stats_ability[ABIL_CON][id]);
     if (gain < 1) {
@@ -93,6 +97,15 @@ static void level_up(nge_entity_id_t id)
     hp_max = (uint16_t)(health_hp_max_base[id] + gain);
     effects_set_base(id, ATTR_HP_MAX, hp_max > 255 ? 255 : (uint8_t)hp_max);
     health_heal(id, (uint8_t)gain);   /* up to the new maximum: posts EV_HEALED */
+    if (MANA_IS(id)) {
+        gain = (int16_t)(1 + (rand() & (PC_MANA_DIE - 1))) + STATS_MOD(stats_ability[ABIL_INT][id]);
+        if (gain < 1) {
+            gain = 1;
+        }
+        mp_max = (uint16_t)(mana_mp_max_base[id] + gain);
+        effects_set_base(id, ATTR_MP_MAX, mp_max > 255 ? 255 : (uint8_t)mp_max);
+        mana_restore(id, (uint8_t)gain);   /* up to the new maximum: posts EV_MANA_RESTORED */
+    }
     pc_level++;
     nge_event_post(id, EV_LEVEL_GAINED, NGE_EVENT_NONE, pc_level, 0);
 }
