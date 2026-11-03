@@ -43,7 +43,8 @@
 #define TARGET_LOOK           0   /**< Look at what is on a tile (messages_look()). */
 #define TARGET_FIRE           1   /**< Fire at a tile (ACT_FIRE). */
 #define TARGET_AIM            2   /**< Aim an item at a tile (ACT_AIM). */
-#define TARGET_PURPOSE_COUNT  3
+#define TARGET_CAST           3   /**< Cast a spell at a tile (ACT_CAST). */
+#define TARGET_PURPOSE_COUNT  4
 
 /* target_key()'s answers */
 #define TARGET_STEP_MOVING     0   /**< Still targeting: the cursor moved, or a choice was refused. */

@@ -22,6 +22,7 @@
 #include "game/components/stats.h"
 #include "game/effects/effects.h"
 #include "game/events.h"
+#include "game/spells/spells.h"
 #include "game/gen/gen.h"
 
 #define AREA   NGE_OWNER_AREA(0)
@@ -356,6 +357,14 @@ int main(void)
     nge_event_post(gob2, EV_DAMAGED, NGE_EVENT_NONE, 1, 0);
     CHECK(events() == 2 && is(1, gob2, EV_AI_CHANGED, NGE_EVENT_NONE) && ai_get_state(gob2) == AI_STATE_HUNT);
     CHECK(ai_target[gob2] == NGE_ENTITY_INVALID && ai_goal_x[gob2] == NGE_MAP_X_INVALID);
+    /* A spell cast at it wakes it, whatever the spell does (a hold does no damage); its own cast doesn't */
+    b = creature(CR_RAT, 1, 8);
+    nge_event_post(b, EV_CAST, b, SP_CURE_WOUNDS, 0);
+    CHECK(events() == 1 && ai_get_state(b) == AI_STATE_ASLEEP);
+    nge_event_post(b, EV_CAST, player, SP_HOLD, 0);
+    CHECK(events() == 2 && is(1, b, EV_AI_CHANGED, player) && ai_get_state(b) == AI_STATE_HUNT && ai_target[b] == player);
+    nge_entity_destroy(b);
+    nge_entity_release(nge_entity_next_dying());
     /* Other events, entities without AI, no target: nothing */
     b = creature(CR_RAT, 1, 8);
     nge_event_post(b, EV_MOVED, NGE_EVENT_NONE, 1, 0);

@@ -32,11 +32,13 @@
 #include "game/gen/gen.h"
 #include "game/level/level.h"
 #include "game/messages/messages.h"
+#include "game/spells/spells.h"
 #include "game/target/target.h"
 #include "game/ui/screen.h"
 #include "game/ui/screen_main.h"
 #include "game/ui/screen_inv.h"
 #include "game/ui/screen_pc.h"
+#include "game/ui/screen_spell.h"
 
 /* Characters of the movement keys (nge_key_ascii): cursor keys */
 #define CHAR_LEFT   8
@@ -217,6 +219,26 @@ static void fire_command(void)
     }
 }
 
+/*
+ * Cast: choose a spell from the list, which says why one can't be cast.
+ * A bolt or a direct spell then asks for a tile within its range.
+ * Backing out of either uses no turn
+ */
+static void cast_command(void)
+{
+    act_t a = { 0 };
+    spell_def_t def;
+
+    if (!screen_spell_run(&a.spell)) {
+        return;
+    }
+    spell_get(a.spell, &def);
+    if (def.shape != SPELL_SELF && !choose_tile(TARGET_CAST, def.range, &a)) {
+        return;
+    }
+    player_act(ACT_CAST, &a);
+}
+
 #if GAME_DEV_KIT
 #define DEV_GOLD  10   /* the gold the E key gives */
 
@@ -351,6 +373,9 @@ void player_command(nge_key_event_t ev) NGE_BANKED
         break;
     case 'f':
         fire_command();
+        break;
+    case 'm':
+        cast_command();
         break;
     case 'c':
         close_command();

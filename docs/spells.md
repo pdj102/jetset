@@ -635,3 +635,15 @@ Differences from the design above, step by step ([spells_plan.md](spells_plan.md
   start (section 4.9) is made to fit in step 4.
 - Page 134 is about 1.5K with asserts, not 0.5K, and page 135 0.6K.
 
+**Step 3, `ACT_CAST` and the `m` key (2026-11-03).**
+
+- No dim colour: the text has four inks. A spell that can't be cast now is red in the
+  list, and choosing it gives the reason on the status line, as the inventory does.
+- The list shows every spell known on one screen, with no scrolling: 10 at most.
+- The help line of the play screen is full, so it doesn't list `m`.
+- Abilities aren't tested in `test_act`: no row has level 0 yet.
+- `act_cast()` is 612 bytes of `BANK_56`, and page 104 gained 1.7K, not 1K.
+- zsdcc miscompiled the list's first draw: `i < w->list.count` added the field's offset to
+  HL again on each pass, so only the first spell was drawn until the cursor moved. The
+  bound is copied into a local first (T-ZSDCC-3). The PC tests can't see it; CSpect did.
+

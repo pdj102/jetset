@@ -226,6 +226,26 @@ static void say_learned(uint8_t sp)
     screen_message(line);
 }
 
+/* "You cast <spell>.", or "The <caster> casts <spell>." if the player sees it */
+static void say_cast(nge_entity_id_t caster, uint8_t sp)
+{
+    char line[MESSAGE_MAX];
+    char name[SPELL_NAME_MAX + 1];
+
+    spell_name(sp, name, sizeof(name));
+    if (caster == actor_player) {
+        strcpy(line, "You cast ");
+        add(line, name);
+        add(line, ".");
+        screen_message(line);
+    } else if (seen_ai(caster)) {
+        strcpy(line, " casts ");
+        add(line, name);
+        add(line, ".");
+        say_named("The ", caster, line);
+    }
+}
+
 void messages_on_event(const nge_event_t *e) NGE_BANKED
 {
     /*
@@ -350,6 +370,9 @@ void messages_on_event(const nge_event_t *e) NGE_BANKED
     case EV_LEVEL_GAINED:
         say_level(p1);
         break;
+    case EV_CAST:
+        say_cast(source, p1);
+        break;
     case EV_SPELL_LEARNED:
         if (target == actor_player) {
             say_learned(p1);
@@ -452,6 +475,12 @@ void messages_act_failed(const act_t *a) NGE_BANKED
         break;
     case ACT_R_PICK_FAILED:
         screen_message("The lock holds.");
+        break;
+    case ACT_R_NO_MANA:
+        screen_message("You haven't the mana.");
+        break;
+    case ACT_R_NO_SPELL:
+        screen_message("You don't know that spell.");
         break;
     case ACT_R_CANT_USE:
         screen_message("You can't use that.");

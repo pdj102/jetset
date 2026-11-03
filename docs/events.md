@@ -313,7 +313,7 @@ cascades:
 |---|---|---|
 | `EV_DIED`, killed by the player | `player_on_pc_event()` through `pc_gain_xp()` | `EV_XP_GAINED`, and for each level gained `EV_ATTRS_CHANGED`, `EV_HEALED`, `EV_ATTRS_CHANGED`, `EV_MANA_RESTORED`, `EV_LEVEL_GAINED`, `EV_SPELL_LEARNED` |
 | `EV_PICKED_UP`, the quest item, first time | `quest_on_event()` | `EV_QUEST_FOUND` |
-| `EV_HIT`, `EV_MISSED`, `EV_DAMAGED` | `ai_on_event()` through `ai_stimulus()` | `EV_AI_CHANGED`, if the state changed |
+| `EV_HIT`, `EV_MISSED`, `EV_DAMAGED`, `EV_CAST` at another | `ai_on_event()` through `ai_stimulus()` | `EV_AI_CHANGED`, if the state changed |
 
 `NGE_EVENT_PROCESS_MAX` (64) catches handlers that keep posting. It is a guard, not a
 budget: the game is turn-based, so a long cascade only delays the next frame (D15).
@@ -335,6 +335,7 @@ Reactions marked **rule** change the game's state. The rest only show something.
 | `EV_HIT`, `EV_MISSED` | `act_strike()` | anim: a lunge; **rule** AI: hurt; messages |
 | `EV_FIRED` | `act_fire()`, for the player and monsters | messages; the projectile animation when it comes |
 | `EV_AIMED` | `act_aim()` | messages |
+| `EV_CAST` | `act_cast()` | **rule** AI: hurt, if cast at another creature; messages |
 | `EV_DAMAGED` | `health_damage()` | player: hit points; **rule** AI: hurt; messages |
 | `EV_HEALED` | `health_heal()` | player: hit points |
 | `EV_DIED` | `health_damage()` | **rule** player: XP, maybe a level; messages; **rule** death: game over |

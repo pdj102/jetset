@@ -22,12 +22,14 @@
 #include "game/components/inventory.h"
 #include "game/components/feature.h"
 #include "game/components/item.h"
+#include "game/components/mana.h"
 #include "game/components/stats.h"
 #include "game/effects/effects.h"
 #include "game/events.h"
 #include "game/gen/gen.h"
 #include "game/level/level.h"
 #include "game/quest/quest.h"
+#include "game/spells/spells.h"
 
 #define AREA   NGE_OWNER_AREA(0)
 #define FLOOR  '.'
@@ -159,6 +161,16 @@ static uint8_t aim(nge_entity_id_t actor, nge_entity_id_t item, uint8_t x, uint8
     last.x = x;
     last.y = y;
     return act_aim(&last, mode);
+}
+
+/* act_cast() of spell sp by actor at (x, y): its result, and the context in last */
+static uint8_t cast(nge_entity_id_t actor, uint8_t sp, uint8_t x, uint8_t y, uint8_t mode)
+{
+    last = move(actor, 0, 0);
+    last.spell = sp;
+    last.x = x;
+    last.y = y;
+    return act_cast(&last, mode);
 }
 
 /* A stack of this kind on the floor of the area at (x, y) */
@@ -1543,6 +1555,114 @@ int main(void)
     i2 = equipped(IT_WAND_FIRE, player, SLOT_NECK);
     CHECK(aim(player, i2, 3, 2, ACT_DO) == ACT_FAIL && last.reason == ACT_R_EQUIPPED);
     events();
+
+    /* ---- cast: the player at (0, 2), who knows Magic Bolt and has 5 MP, a rat along the row ---- */
+    nge_entity_init();
+    nge_render_init();
+    nge_timer_init();
+    nge_event_init();
+    player = creature(CR_PLAYER, 0, 2);
+    rat = creature(CR_RAT, 3, 2);
+    effects_set_base(rat, ATTR_HP_MAX, 200);
+    health_hp[rat] = 200;
+    events();
+    CHECK(spell_knows(player, SP_MAGIC_BOLT) && mana_mp[player] == 5);
+    /* Refused, in order, changing nothing and posting nothing: not known, then the MP, then a target */
+    mana_spend(player, 5);
+    events();
+    CHECK(cast(player, SP_FIRE_BOLT, 3, 2, ACT_DO) == ACT_FAIL && last.reason == ACT_R_NO_SPELL && last.used == 0);
+    CHECK(cast(player, SP_NONE, 3, 2, ACT_DO) == ACT_FAIL && last.reason == ACT_R_NO_SPELL);
+    CHECK(cast(player, SP_MAGIC_BOLT, 3, 2, ACT_DO) == ACT_FAIL && last.reason == ACT_R_NO_MANA && last.used == 0);
+    CHECK(cast(player, SP_MAGIC_BOLT, 0, 2, ACT_CHECK) == ACT_FAIL && last.reason == ACT_R_NO_MANA);
+    mana_restore(player, 255);
+    events();
+    CHECK(cast(player, SP_MAGIC_BOLT, 0, 2, ACT_DO) == ACT_FAIL && last.reason == ACT_R_NO_TARGET);   /* can cast: a tile next */
+    CHECK(cast(rat, SP_MAGIC_BOLT, 0, 2, ACT_DO) == ACT_FAIL && last.reason == ACT_R_NO_SPELL);      /* not a caster */
+    CHECK(mana_mp[player] == 5 && health_hp[rat] == 200 && events() == 0);
+    /* Check mode: the target found, nothing changed, no random numbers, the spell left as it was */
+    srand(9);
+    r1 = rand();
+    srand(9);
+    CHECK(cast(player, SP_MAGIC_BOLT, 3, 2, ACT_CHECK) == ACT_SUCCESS && last.used == 0 && last.target == rat &&
+          last.spell == SP_MAGIC_BOLT);
+    CHECK(rand() == r1 && mana_mp[player] == 5 && health_hp[rat] == 200 && events() == 0);
+    /* A bolt, by act_do(): EV_CAST, the MP, then the effect's events with the actor as source */
+    a = ctx(player);
+    a.spell = SP_MAGIC_BOLT;
+    a.x = 3;
+    a.y = 2;
+    nge_event_init();
+    CHECK(act_do(ACT_CAST, &a, ACT_DO) == ACT_SUCCESS && a.used == 1 && a.reason == ACT_R_NONE && a.target == rat &&
+          a.spell == SP_MAGIC_BOLT);
+    CHECK(mana_mp[player] == 4 && health_hp[rat] == 197);              /* power 3, 1 magic damage each */
+    CHECK(nge_event_peak() <= NGE_EVENT_QUEUE / 2);                      /* R32 */
+    CHECK(events() >= 3 && is(0, rat, EV_CAST, player) && seen[0].p1 == SP_MAGIC_BOLT &&
+          is(1, player, EV_MANA_SPENT, NGE_EVENT_NONE) && seen[1].p1 == 1 && is(2, rat, EV_DAMAGED, player));
+    /* The first creature in line takes a bolt; a direct spell passes it, to the one chosen */
+    biter = creature(CR_RAT, 2, 2);
+    spell_learn(player, SP_HOLD);
+    spell_learn(player, SP_CURE_WOUNDS);
+    events();
+    CHECK(cast(player, SP_MAGIC_BOLT, 3, 2, ACT_CHECK) == ACT_SUCCESS && last.target == biter);
+    CHECK(cast(player, SP_HOLD, 3, 2, ACT_CHECK) == ACT_SUCCESS && last.target == rat);
+    CHECK(cast(player, SP_HOLD, 2, 2, ACT_CHECK) == ACT_SUCCESS && last.target == biter);
+    nge_entity_destroy(biter);
+    nge_entity_release(biter);
+    /* A wall stops either; the range is the spell's, exactly */
+    NGE_MAP_TILE(1, 2).tile_id = WALL;
+    CHECK(cast(player, SP_MAGIC_BOLT, 3, 2, ACT_DO) == ACT_FAIL && last.reason == ACT_R_NO_LINE);
+    CHECK(cast(player, SP_HOLD, 3, 2, ACT_DO) == ACT_FAIL && last.reason == ACT_R_NO_LINE);
+    NGE_MAP_TILE(1, 2).tile_id = FLOOR;
+    nge_location_set(rat, 8, 2);
+    CHECK(cast(player, SP_MAGIC_BOLT, 8, 2, ACT_CHECK) == ACT_SUCCESS && last.target == rat);
+    CHECK(cast(player, SP_MAGIC_BOLT, 9, 2, ACT_CHECK) == ACT_FAIL && last.reason == ACT_R_OUT_OF_RANGE);
+    CHECK(cast(player, SP_HOLD, 6, 2, ACT_CHECK) == ACT_FAIL && last.reason == ACT_R_NO_TARGET);       /* empty tile */
+    CHECK(cast(player, SP_HOLD, 7, 2, ACT_CHECK) == ACT_FAIL && last.reason == ACT_R_OUT_OF_RANGE);    /* range 6 */
+    nge_location_set(rat, 3, 2);
+    CHECK(mana_mp[player] == 4 && events() == 0);
+    /* A self spell: on the caster wherever the tile is; no line, no range */
+    health_hp[player] = 2;
+    CHECK(cast(player, SP_CURE_WOUNDS, 9, 9, ACT_DO) == ACT_SUCCESS && last.target == player && health_hp[player] == 6);
+    CHECK(events() >= 3 && is(0, player, EV_CAST, player) && seen[0].p1 == SP_CURE_WOUNDS &&
+          is(1, player, EV_MANA_SPENT, NGE_EVENT_NONE) && seen[2].id == EV_HEALED);
+    /* MP at exactly the cost: cast, and then none left */
+    CHECK(mana_mp[player] == 3);
+    mana_spend(player, 2);
+    events();
+    CHECK(cast(player, SP_MAGIC_BOLT, 3, 2, ACT_DO) == ACT_SUCCESS && mana_mp[player] == 0);
+    events();
+    CHECK(cast(player, SP_MAGIC_BOLT, 3, 2, ACT_DO) == ACT_FAIL && last.reason == ACT_R_NO_MANA);
+    /* A kill names the actor, so its XP is earned: 5 events, within half the queue */
+    mana_restore(player, 255);
+    events();
+    health_hp[rat] = 1;
+    nge_event_init();
+    CHECK(cast(player, SP_MAGIC_BOLT, 3, 2, ACT_DO) == ACT_SUCCESS && health_hp[rat] == 0);
+    CHECK(nge_event_peak() <= NGE_EVENT_QUEUE / 2);
+    ok = 0;
+    r1 = events();
+    for (x = 0; x < r1; x++) {
+        ok = ok || (seen[x].id == EV_DIED && seen[x].source == player);
+    }
+    CHECK(ok);
+    /* A caster without mana: refused a spell that costs */
+    rat = creature(CR_RAT, 3, 2);
+    {
+        static const uint8_t bolt[1] = { SP_MAGIC_BOLT };
+
+        spell_add(rat, bolt, 1);
+    }
+    CHECK(cast(rat, SP_MAGIC_BOLT, 0, 2, ACT_DO) == ACT_FAIL && last.reason == ACT_R_NO_MANA);
+    /* A timed effect with no entity free: refused by the effect, and the MP stay spent (section 8) */
+    events();
+    r2 = mana_mp[player];
+    while (nge_entity_create() != NGE_ENTITY_INVALID) {
+    }
+    CHECK(cast(player, SP_HOLD, 3, 2, ACT_DO) == ACT_SUCCESS && mana_mp[player] == r2 - 2 &&
+          !STATUS_HAS(rat, STATUS_ROOTED));
+    events();
+    TEST_EXPECT_HALT(cast(player, SPELL_COUNT, 3, 2, ACT_DO));
+    CHECK(test_halt_count == 1);
 
     return test_summary("act");
 }

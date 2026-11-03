@@ -37,6 +37,7 @@
 #include "game/messages/messages.h"
 #include "game/player/player.h"
 #include "game/quest/quest.h"
+#include "game/spells/spells.h"
 #include "game/ui/screen.h"
 #include "game/ui/screen_inv.h"
 #include "game/ui/screen_main.h"
@@ -735,6 +736,12 @@ int main(void)
         a.reason = ACT_R_PICK_FAILED;
         messages_act_failed(&a);
         CHECK(said("The lock holds."));
+        a.reason = ACT_R_NO_MANA;
+        messages_act_failed(&a);
+        CHECK(said("You haven't the mana."));
+        a.reason = ACT_R_NO_SPELL;
+        messages_act_failed(&a);
+        CHECK(said("You don't know that spell."));
     }
     messages_game_over(GAME_OVER_WON);
     CHECK(said("Press any key.") && shown("You escape with the crown. You win!"));
@@ -801,6 +808,94 @@ int main(void)
         player_command(EV(NGE_KEY_A));
         CHECK(player_turn && item_count[staff] == 0);
         nge_entity_destroy(staff);
+        nge_event_flush();
+    }
+
+    /* ---- cast: m lists the spells known, then a bolt asks for a tile; backing out uses no turn ---- */
+    {
+        nge_entity_id_t rat;
+        uint8_t px = NGE_LOCATION_X(actor_player);
+        uint8_t py = NGE_LOCATION_Y(actor_player);
+
+        fresh();
+        nge_event_flush();
+        mana_restore(actor_player, 255);
+        nge_event_flush();
+        player_turn = 1;
+        CHECK(spell_knows(actor_player, SP_MAGIC_BOLT) && mana_mp[actor_player] == mana_mp_max[actor_player]);
+        press(EV(NGE_KEY_SPACE));                                  /* back from the list */
+        player_command(EV(NGE_KEY_M));
+        CHECK(RAN_AND_CLOSED() && player_turn);
+        CHECK(strstr(OVER_ROW(0), " Cast a Spell ") != NULL && strstr(OVER_ROW(2), "Spell") != NULL &&
+              strstr(OVER_ROW(2), "Level") != NULL && strstr(OVER_ROW(2), "MP") != NULL);
+        CHECK(starts(OVER_ROW(3), " a) Magic Bolt") && INK(3, 4) == L2_WHITE && starts(OVER_ROW(4), " b) Cure Wounds"));
+        CHECK(starts(seen_cols(1, 3, 20, 28), "    1   1"));      /* its level and MP */
+        CHECK(starts(OVER_ROW(26), " MP "));
+        /* A bolt: the list's first, the closing frame, then the cursor cancelled */
+        fresh();
+        press(EV(NGE_KEY_A));
+        press(EV(NGE_KEY_SPACE));
+        press(EV(NGE_KEY_Q));
+        player_command(EV(NGE_KEY_M));
+        CHECK(player_turn && mana_mp[actor_player] == mana_mp_max[actor_player]);
+        /* At a rat west of the player (a door is east): cast, the turn used, an MP spent, said */
+        rat = gen_creature(CR_RAT, AREA);
+        nge_location_set(rat, (uint8_t)(px - 1), py);
+        nge_event_flush();
+        fresh();
+        press(EV(NGE_KEY_A));
+        press(EV(NGE_KEY_SPACE));
+        press(EV(NGE_KEY_LEFT));
+        press(EV(NGE_KEY_ENTER));
+        player_command(EV(NGE_KEY_M));
+        CHECK(!player_turn && mana_mp[actor_player] == mana_mp_max[actor_player] - 1);
+        nge_event_process(messages_on_event);
+        CHECK(shown("You cast Magic Bolt."));
+        player_turn = 1;
+        /* A self spell (known from a level gained above): no tile asked for */
+        spell_learn(actor_player, SP_HASTE);
+        nge_event_process(messages_on_event);
+        CHECK(said("You learn Haste."));
+        fresh();
+        press(EV(NGE_KEY_B));
+        press(EV(NGE_KEY_SPACE));
+        player_command(EV(NGE_KEY_M));
+        CHECK(!player_turn && mana_mp[actor_player] == mana_mp_max[actor_player] - 2);
+        nge_event_flush();
+        player_turn = 1;
+        /* No MP: the spell is red, choosing it says why on the status line, and the screen stays open */
+        mana_spend(actor_player, mana_mp[actor_player]);
+        nge_event_flush();
+        fresh();
+        press(EV(NGE_KEY_A));
+        press(EV(NGE_KEY_SPACE));
+        player_command(EV(NGE_KEY_M));
+        CHECK(RAN_AND_CLOSED() && player_turn && INK(3, 4) == L2_RED && starts(STATUS(), "You haven't the mana."));
+        /* A monster seen casting is said; one the player knows nothing of isn't learned aloud */
+        nge_event_post(rat, EV_CAST, actor_player, SP_HOLD, 0);
+        nge_event_process(messages_on_event);
+        CHECK(said("You cast Hold."));
+        nge_event_post(rat, EV_SPELL_LEARNED, NGE_EVENT_NONE, SP_HOLD, 0);
+        nge_event_process(messages_on_event);
+        CHECK(said("You cast Hold."));
+        {
+            nge_entity_id_t shaman = gen_creature(CR_GOBLIN_SHAMAN, AREA);
+
+            nge_location_set(shaman, (uint8_t)(px - 2), py);
+            nge_event_flush();
+            nge_event_post(actor_player, EV_CAST, shaman, SP_MAGIC_BOLT, 0);
+            nge_event_process(messages_on_event);
+            CHECK(said("The goblin shaman casts Magic Bolt."));
+            nge_entity_destroy(shaman);
+        }
+        /* Knowing none: said, and no screen */
+        NGE_ENTITY_REMOVE_COMPONENT(actor_player, COMPONENT_SPELLS);
+        fresh();
+        player_command(EV(NGE_KEY_M));
+        CHECK(said("You know no spells.") && player_turn && paused == 0);
+        NGE_ENTITY_ADD_COMPONENT(actor_player, COMPONENT_SPELLS);
+        nge_entity_destroy(rat);
+        mana_restore(actor_player, 255);
         nge_event_flush();
     }
 

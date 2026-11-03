@@ -259,6 +259,12 @@ int main(void)
     CHECK(t.x == 30 && t.y == 21);
     CHECK(said(0, "That is out of range.") && said(1, "Look at what?"));
     script = NULL;
+    /* Casting asks its own question */
+    context(&t, 30, 20, 8);
+    t.purpose = TARGET_CAST;
+    script = cancel;
+    CHECK(target_choose(&t) == 0 && !out_of_keys && said(1, "Cast at what?"));
+    script = NULL;
 
     /* ---- asserts: a start off the map, an unknown purpose ---- */
     context(&t, 30, 20, TARGET_RANGE_ANY);

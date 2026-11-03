@@ -106,7 +106,8 @@ typedef struct act {
 #define ACT_FIRE    12
 #define ACT_AIM     13
 #define ACT_UNLOCK  14
-#define ACT_COUNT   15
+#define ACT_CAST    15
+#define ACT_COUNT   16
 
 /** How far an aimed item reaches (nge_map_within()): a kind has no range of its own. */
 #define ACT_AIM_RANGE  8
@@ -150,7 +151,9 @@ typedef struct act {
 #define ACT_R_NOT_LOCKED        35  /**< Refused: it isn't locked. */
 #define ACT_R_WRONG_KEY         36  /**< Refused: not a key that fits, or a lock pick. */
 #define ACT_R_PICK_FAILED       37  /**< Attempted: the lock pick lost its roll, and a use. */
-#define ACT_R_COUNT             38
+#define ACT_R_NO_MANA           38  /**< Refused: not enough MP for the spell, or no mana. */
+#define ACT_R_NO_SPELL          39  /**< Refused: the actor doesn't know the spell. */
+#define ACT_R_COUNT             40
 
 /**
  * @brief Move one tile.
@@ -342,6 +345,27 @@ uint8_t act_aim(act_t *a, uint8_t mode) NGE_BANKED;
  * ACT_R_OUT_OF_RANGE, ACT_R_NOT_LOCKED or ACT_R_WRONG_KEY.
  */
 uint8_t act_unlock(act_t *a, uint8_t mode) NGE_BANKED;
+
+/**
+ * @brief Cast a spell (game/spells/spells.h): its effect, at its power, on
+ *        the actor (SPELL_SELF), the first creature on the line towards the
+ *        tile (a->x, a->y) (SPELL_BOLT), or the creature on that tile, past
+ *        any on the way (SPELL_DIRECT), within the spell's range. Costs the
+ *        MP of its level; an ability (level 0) needs no mana. No roll: a
+ *        valid cast always happens. See docs/spells.md, section 4.4.
+ *
+ * Inputs: actor (alive, placed), spell, and x, y for a bolt or a direct
+ * spell. Outputs: target; spell is left as it was, so a context can be
+ * checked and then done. Posts EV_CAST (p1: the spell), EV_MANA_SPENT,
+ * then the effect's events, with the actor as their source, so a kill
+ * earns its XP. Refused with ACT_R_NO_SPELL, ACT_R_NO_MANA,
+ * ACT_R_OUT_OF_RANGE, ACT_R_NO_LINE or ACT_R_NO_TARGET.
+ *
+ * A bolt or direct spell is refused on the actor's own tile with
+ * ACT_R_NO_TARGET, after the spell and its cost, so a check there asks
+ * whether the actor can cast it at all: that reason means yes.
+ */
+uint8_t act_cast(act_t *a, uint8_t mode) NGE_BANKED;
 
 /** @brief Call action (ACT_MOVE...) by number: for the AI and delayed actions. */
 uint8_t act_do(uint8_t action, act_t *a, uint8_t mode);

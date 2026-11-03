@@ -193,6 +193,7 @@ a move that is refused, followed by a melee.
 | `act_melee.c` | `BANK_56` | Melee, as far as validation | 1,072 |
 | `act_fire.c` | `BANK_56` | Fire | 830 |
 | `act_aim.c` | `BANK_56` | Aim | 706 |
+| `act_cast.c` | `BANK_56` | Cast | 612 |
 | `act_use.c` | `BANK_56` | Use | 396 |
 | `act_open.c` | `BANK_56` | Open and close | 1,179 |
 | `act_stairs.c` | `BANK_56` | Ascend and descend | 781 |
@@ -237,6 +238,7 @@ Who reads what:
 | Wait | | | | |
 | Fire, with `x`, `y` | Out: the first in line | Out: the launcher or thrown item | | Out: `damage` |
 | Aim, with `x`, `y` | Out: the first in line, the one on the tile if direct, or the actor | In | | Out: `effect` |
+| Cast, with `x`, `y` for a bolt or direct spell | Out: the first in line, the one on the tile if direct, or the actor if self | | | In: `spell` |
 
 A context can be passed straight to the next action. After a move is refused,
 `target` already holds the blocker, ready for a melee or an open. It can also be
@@ -290,6 +292,7 @@ Consequences are direct calls, because the rest of the action reads their result
 | `ACT_WAIT` | Nothing; it always succeeds | None | No |
 | `ACT_FIRE` | Shoots at the first creature in line towards a tile (section 6.3) | `EV_FIRED`, `EV_HIT` or `EV_MISSED`, then the damage's and hit effect's | Yes |
 | `ACT_AIM` | Sends an item's effect at the first creature in line, the creature on the tile if the item is direct, or the actor (sections 6.4, 6.13) | `EV_AIMED`, then the effect's | No |
+| `ACT_CAST` | Casts a known spell, paying its MP: on the actor, the first creature in line, or the creature on the tile, by the spell's shape ([spells.md](spells.md)) | `EV_CAST`, `EV_MANA_SPENT`, then the effect's | No |
 
 **Move** takes the tile from the actor's location and `dx`, `dy`, each -1, 0 or 1,
 and asks `nge_block_can_enter()` with the actor's pass flags, so a ghost's walls are
@@ -359,6 +362,7 @@ lists. P-ACT-1 asks for a text for each new reason, and these three are the exce
 | `ACT_FIRE` | `f`, then a tile | `opt_shoot()` |
 | `ACT_UNLOCK` | Bump with a key that fits, or `p`, a key or a pick, then a direction | No |
 | `ACT_AIM` | `a`, or `a` or ENTER on the inventory screen, then a tile | No |
+| `ACT_CAST` | `m`, a spell from the list, then a tile for a bolt or direct spell | `opt_cast()`, from step 4 of spells_plan.md |
 
 **Bumping** is the player's move command combining actions: it checks the move, and
 if the blocker has health it melees, and if it is a closed door it opens it. The AI
@@ -545,10 +549,10 @@ form `act.h` will need.
 
 | Addition | Names |
 |---|---|
-| Actions | `ACT_CAST` 15, `ACT_STEAL` 16, `ACT_OPERATE` 17, `ACT_SEARCH` 18, `ACT_DISARM` 19 |
-| Refused reasons | `ACT_R_NO_MANA`, `ACT_R_NO_SPELL`, `ACT_R_NOTHING_TO_STEAL`, `ACT_R_CANT_OPERATE`, `ACT_R_SPENT` |
+| Actions | `ACT_CAST` 15 (built), `ACT_STEAL` 16, `ACT_OPERATE` 17, `ACT_SEARCH` 18, `ACT_DISARM` 19 |
+| Refused reasons | `ACT_R_NO_MANA` 38 and `ACT_R_NO_SPELL` 39 (built), `ACT_R_NOTHING_TO_STEAL`, `ACT_R_CANT_OPERATE`, `ACT_R_SPENT` |
 | Attempted reasons | `ACT_R_CAUGHT` |
-| Events | `EV_CAST`, `EV_STOLEN` |
+| Events | `EV_CAST` (built), `EV_STOLEN` |
 
 Numbers are given only for ordering: each gets its number when it is built, as
 `ACT_COUNT` sizes `modes[]`.
@@ -677,7 +681,10 @@ pack and calls `ACT_UNLOCK`. A pick is chosen on the inventory screen, with a li
 tools. The AI opens no locks at first: `ai_step()` already goes round what it can't
 open.
 
-### 6.6 `ACT_CAST`
+### 6.6 `ACT_CAST`, built
+
+Built by [spells.md](spells.md), section 4.4, which replaces this sketch.
+
 
 **Cast a spell or ability.** In: actor, spell (a spell number), x, y if it is aimed.
 Out: target.

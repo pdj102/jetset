@@ -150,7 +150,8 @@ adds to it, with the reason.
 
 - **R6** The AI reacts to game events: an event about an alive AI entity
   can be turned into a stimulus for it. In this step: being attacked
-  (`EV_HIT`, `EV_MISSED`, or `EV_DAMAGED`, target an AI entity) is
+  (`EV_HIT`, `EV_MISSED`, or `EV_DAMAGED`, target an AI entity; or
+  `EV_CAST` by another creature, spells.md R18) is
   `AI_STIM_HURT`.
 - **R7** Reacting to an event only changes the AI's state; it never acts.
   An AI entity acts only on its own turn. (Otherwise an event would give
