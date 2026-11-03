@@ -43,7 +43,9 @@ seam, so the mechanism could become an nge module.
  callers                       effects core                   game's side
  --------                      ------------                   -----------
  use hook (act_use)      ---+
- hit hook (act_melee)    ---+-> effect_apply()
+ hit hook (act_melee)    ---+
+ aim hook (act_aim)      ---+-> effect_apply()
+ a spell (act_cast)      ---+       |
  innate hook (generator) ---+       |
                                     +-- instant: run start op ---> damage, heal,
                                     |                              mana...

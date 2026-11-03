@@ -72,14 +72,16 @@ with the reason.
 
 ### Out of scope
 
-- **R13 (later)** Spells and the actions that cast them, which check and
-  spend MP.
+- **R13** Spells and the actions that cast them, which check and
+  spend MP. Built by [spells.md](spells.md): `ACT_CAST`.
 - **R14** Getting MP back over time (an innate effect, as `EF_REGEN`
   gives hit points), and items or effects that restore MP (a potion) or
   change the maximum (a ring): see D2. Built by spells.md: `EF_MANA_REGEN`
   and `ATTR_MP_MAX` (spells.md, R19 and R20).
-- **R15 (later)** Monsters with MP, and messages for spending and
-  restoring.
+- **R15** Monsters with MP, and messages for spending and
+  restoring. Built by spells.md: the goblin shaman casts, and the messages
+  are of the cast ("You cast Magic Bolt."), not of the MP, which the stats
+  window shows.
 
 ## 4. Decisions
 

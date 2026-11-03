@@ -3,7 +3,9 @@
 The steps that build what [spells.md](spells.md) specifies. The spec says what a spell
 is and why, and this file says in what order, what changes, and how each step is checked.
 
-Status: plan written 2026-11-03. Step 1 done, passed in CSpect. Step 2 done, passed in CSpect. Step 3 done, passed in CSpect. Step 4 built: CSpect checks 1 and 2 passed (casting at range, then melee when out of MP); 3 (healing itself) and 4 (holding a bolt) not checked in CSpect, covered by test_ai.
+Status: done 2026-11-03. Steps 1 to 3 passed in CSpect. Step 4: casting at range and
+melee when out of MP passed in CSpect; healing itself and holding a bolt are covered by
+`test_ai` only. Step 5 closed the docs.
 
 ## 1. How the steps work
 

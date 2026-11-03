@@ -209,6 +209,7 @@ happened by the time a handler sees it:
 | `act_strike()` | `EV_HIT`, the damage's events, the effect's | Reads as "hits you", then the damage (actions.md, 4.4) |
 | `act_fire()` | `EV_FIRED`, `act_strike()`'s, then the shot used up | The shot comes first, and a stack that runs out is dying when handlers see it |
 | `act_aim()` | `EV_AIMED`, the charge used or the parchment destroyed, the effect's | Reads as "you aim", then the effect |
+| `act_cast()` | `EV_CAST`, `EV_MANA_SPENT`, the effect's | Reads as "you cast", then the result; the MP are spent before the effect, so a spell can't restore what paid for it (spells.md, 4.10) |
 | `act_use()` | `EV_USED`, destroys the item, the effect's | Reads as "you drink", then the effect |
 | `health_damage()` | Takes the hit points, `EV_DAMAGED`, `EV_DIED`, destroys the entity | The target is dying when handlers see it |
 | `level_send()` | `EV_LEFT_LEVEL`, parks or destroys the entity | The target may be dying when handlers see it |
@@ -418,12 +419,13 @@ How many events one firing, command or level change can leave waiting:
 | A hit with a timed effect | 3, and 1 more if it changes the target's attributes | |
 | A timed effect firing | 3, or 2 if it kills | |
 | Using an item | 3 | |
+| A cast | 5 for a bolt that kills; 4 for a timed effect | spells.md, R32 |
 | A move onto a tile | 1 + up to 4 items + each other entity there | R26 |
 | Arriving on a level | 1 + one for each innate effect, and each effect ended by parking | Bounded by the creatures on the level |
 
 Handlers drain the queue as they post, so a cascade adds to the peak much less than
-it adds to the count. The exception is `pc_gain_xp()`, which posts 3 events for each
-level gained in one handler call.
+it adds to the count. The exception is `pc_gain_xp()`, which posts 6 events for each
+level gained in one handler call (spells.md, "As built").
 
 `nge_event_peak()`, in debug builds only, gives the highest count since
 `nge_event_init()`.

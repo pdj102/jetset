@@ -15,9 +15,9 @@ whether an attack hits, belong to the components, and are in their headers. Sect
 is the list of actions to add, and none of it is built. Sections 1 to 5 describe the
 code as it stands, except the decisions under "Agreed, not built".
 
-Status: D10 to D23 agreed 2026-10-31. D21, D22, D23, `ACT_FIRE` and `ACT_AIM` are built,
-and the rest not yet. The rest of section 6 is proposed. Line modes (section 6.13, R36 to
-R39, D27 to D30) agreed and built 2026-11-03, with `ACT_CAST`'s part waiting for that action.
+Status: D10 to D23 agreed 2026-10-31. D21, D22, D23, `ACT_FIRE`, `ACT_AIM` and `ACT_CAST`
+(spells.md) are built, and the rest not yet. The rest of section 6 is proposed. Line modes
+(section 6.13, R36 to R39, D27 to D30) agreed and built 2026-11-03, `ACT_CAST`'s part with it.
 The CSpect check is to do.
 
 ## 1. Overview
@@ -321,12 +321,13 @@ else leaves at once. Only the player, carrying the quest item, can leave the dun
 
 ### 4.6 Reasons
 
-There are 33 reasons, with `ACT_R_NONE`. Two are attempted:
+There are 40 reasons, with `ACT_R_NONE` (`ACT_R_COUNT`). Three are attempted:
 
 | Attempted reason | Where | Event | What the player is told |
 |---|---|---|---|
 | `ACT_R_MISSED` | Melee, fire | `EV_MISSED` | The event's message |
 | `ACT_R_ROOTED` | Move, stairs | None | "You can't move!" from `messages_act_failed()` |
+| `ACT_R_PICK_FAILED` | Unlock | None | "The lock holds." from `messages_act_failed()` |
 
 Rooted is an attempted reason that posts nothing, unlike the rule `act.h` gives for
 attempted failures. Nothing needs an event today, as only the player struggles: the

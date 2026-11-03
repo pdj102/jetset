@@ -8,9 +8,11 @@ Spells are cast with an action ([actions.md](actions.md)), do what an effect say
 [player_character.md](player_character.md), and how a monster chooses is in
 [ai.md](ai.md).
 
-Status: proposed, 2026-11-02. `SPELL_DIRECT` added 2026-11-03, agreed in actions.md
-(section 6.13, D30). Being built, in the steps of [spells_plan.md](spells_plan.md).
-This spec replaces the sketch in actions.md, section 6.6.
+Status: implemented 2026-11-03, in the 5 steps of [spells_plan.md](spells_plan.md). CSpect
+checks 1 to 5, 7 and 8 passed; check 6 in part: the shaman casts and comes to melee out of
+MP, and healing itself was checked only by the PC tests. Differences from the design are in
+section 9. Proposed 2026-11-02; `SPELL_DIRECT` added 2026-11-03, agreed in actions.md
+(section 6.13, D30). This spec replaces the sketch in actions.md, section 6.6.
 
 ## 1. Overview
 
@@ -578,6 +580,10 @@ stopping at the maximum, and innate, so a cure doesn't end it.
 6. A goblin shaman casts, heals itself, and runs out and comes to melee.
 7. A sleeping monster hit by Hold wakes.
 8. Common memory free, before and after, from the map.
+
+Results (2026-11-03): 1 to 5 and 7 passed. 6: casting at range and melee out of MP passed;
+healing itself and holding a bolt were not seen in CSpect. 8: 4,611 bytes free before step 1
+and 4,429 after step 4, 182 less, of which 80 are the queue, with no new library routine.
 
 ## 8. Known risks
 

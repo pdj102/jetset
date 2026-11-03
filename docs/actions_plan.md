@@ -208,8 +208,8 @@ keeps the closed door's until then.
 
 ### Step 14: `ACT_CAST` and `ACT_STEAL`
 
-Each needs its own spec first: spells and who knows them, and fleeing (ai.md R18). Then
-`ACT_CAST` reuses step 9's ending and step 5's line. `ACT_OPERATE`, `ACT_SEARCH` and
+Each needs its own spec first: spells and who knows them, and fleeing (ai.md R18).
+`ACT_CAST` is built: [spells.md](spells.md), in the steps of [spells_plan.md](spells_plan.md). `ACT_OPERATE`, `ACT_SEARCH` and
 `ACT_DISARM` wait for feature kinds.
 
 ## 3. Memory

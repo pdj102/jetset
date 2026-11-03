@@ -463,9 +463,10 @@ proposed, by agreeing D3, D5, D6, D10 and D11.
   is still there.
 - **`screen_draw_stats()` only clears the window;** `screen_show_name()`
   draws the name, from `player_show_stats()` with the other values.
-- **A big gain posts about three events a level** (`EV_ATTRS_CHANGED`,
-  `EV_HEALED`, `EV_LEVEL_GAINED`), and the event queue holds 16: a gain
-  across five levels or more at once would fill it. Kills and the `E` key
+- **A big gain posts six events a level** (`EV_ATTRS_CHANGED`,
+  `EV_HEALED`, then for mana `EV_ATTRS_CHANGED` and `EV_MANA_RESTORED`,
+  `EV_LEVEL_GAINED`, and `EV_SPELL_LEARNED`: spells.md), and the event
+  queue holds 32: a gain across five levels or more at once would fill it. Kills and the `E` key
   give one level at a time; a large gold pile could give more, so gold
   items (R20) must handle it.
 - **Guidelines:** G-ENT-4 names `PC_IS()` instead of `KIND_IS_PLAYER()`,
