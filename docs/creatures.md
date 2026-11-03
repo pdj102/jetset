@@ -30,7 +30,7 @@ goblin's, the player's and the coins' patterns are reused, in other banks.
 | 3-7 | 8 | orc | goblin | iron | 2 | Wields and wears, opens doors | |
 | 3-7 | 6 | giant spider | spider (new) | dark | 3 | Strong poison | Webs |
 | 3-7 | 7 | skeleton | skeleton (new) | bone | 2 | Weak to blunt, resists pierce; no doors | Never flees |
-| 3-7 | 4 | goblin shaman | goblin | purple | 2 | Has mana (6 MP); knows Magic Bolt, Cure Wounds and Enfeeble (spells.md) | Casts them (spells_plan.md, step 4) |
+| 3-7 | 4 | goblin shaman | goblin | purple | 2 | Has mana (6 MP); knows Magic Bolt, Cure Wounds and Enfeeble (spells.md) | Casts them when hunting: bolts and Enfeeble, Cure Wounds when hurt |
 | 4-8 | 5 | gold snake | snake | gold | 3 | Bite blinds (no rule reads it yet) | Spits at range |
 | 4-8 | 3 | floating eye | eye (new) | blue | 3+ | Rooted, no attack, slow | A paralysing gaze |
 | 4-9 | 3 | mimic | coins | gold | 4 | Rooted, looks like treasure | Hidden until touched |

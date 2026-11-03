@@ -677,21 +677,33 @@ static void place_player(nge_entity_id_t player, uint8_t arrival)
 }
 
 #if GAME_DEV_KIT
-void level_dev_bandit(nge_entity_id_t player) NGE_BANKED
+/* Development: a free floor tile out of the player's sight, in *x, *y; 0 if none was found */
+static uint8_t dev_out_of_sight(nge_entity_id_t player, uint8_t *x, uint8_t *y)
 {
     uint8_t px = NGE_LOCATION_X(player);
     uint8_t py = NGE_LOCATION_Y(player);
     uint8_t tries;
+
+    for (tries = 0; tries < PLACE_ATTEMPTS; tries++) {
+        if (free_floor(x, y) && !nge_map_within(px, py, *x, *y, AI_SIGHT)) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+void level_dev_bandit(nge_entity_id_t player) NGE_BANKED
+{
     uint8_t x;
     uint8_t y;
 
-    for (tries = 0; tries < PLACE_ATTEMPTS; tries++) {
-        if (free_floor(&x, &y) && !nge_map_within(px, py, x, y, AI_SIGHT)) {
-            nge_location_set(gen_creature(CR_BANDIT, LEVEL_AREA), x, y);
-            nge_location_set(gen_item(IT_SHORT_BOW, LEVEL_AREA), x, y);
-            nge_location_set(gen_item(IT_ARROWS, LEVEL_AREA), x, y);
-            return;
-        }
+    if (dev_out_of_sight(player, &x, &y)) {
+        nge_location_set(gen_creature(CR_BANDIT, LEVEL_AREA), x, y);
+        nge_location_set(gen_item(IT_SHORT_BOW, LEVEL_AREA), x, y);
+        nge_location_set(gen_item(IT_ARROWS, LEVEL_AREA), x, y);
+    }
+    if (dev_out_of_sight(player, &x, &y)) {
+        nge_location_set(gen_creature(CR_GOBLIN_SHAMAN, LEVEL_AREA), x, y);   /* to watch a caster (docs/spells_plan.md, step 4) */
     }
 }
 #endif

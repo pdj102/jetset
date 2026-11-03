@@ -647,3 +647,13 @@ Differences from the design above, step by step ([spells_plan.md](spells_plan.md
   HL again on each pass, so only the first spell was drawn until the cursor moved. The
   bound is copied into a local first (T-ZSDCC-3). The PC tests can't see it; CSpect did.
 
+**Step 4, monsters that cast (2026-11-03).**
+
+- The random start is `rand() & 15`, with 11 to 15 folded back to 1 to 5, not
+  `rand() & 31`: `spell_next()` takes only spells below `SPELL_COUNT`. Spells 1 to 5 are
+  twice as likely to be tried first, which matters little while a caster knows 2 or 3.
+- `opt_cast()` and `opt_drink()` share `hurt()`, half hit points or less.
+- A debug build places a goblin shaman out of sight, asleep, beside the dev bandit
+  (`level_dev_bandit()`), for the CSpect check.
+- Page 130 grew by 545 bytes; common memory is unchanged.
+

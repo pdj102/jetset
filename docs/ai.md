@@ -217,7 +217,8 @@ adds to it, with the reason.
   brain (and back), to compare models in CSpect: once there is a second
   brain.
 - **R22** `AI_CAN_RANGED` is built ([actions.md](actions.md), 6.3).
-  `AI_CAN_CAST` comes when spells can be used (its bit reserved now).
+  `AI_CAN_CAST` is built: a creature that knows spells, `opt_cast()` first
+  in the hunt ([spells.md](spells.md), 4.9).
 
 ## 5. Decisions
 
@@ -410,7 +411,7 @@ typedef uint8_t ai_can_t;     /**< A mask of AI_CAN_*. */
 #define AI_CAN_USE     0x08   /**< Uses them (drinks a potion): an inventory, Int AI_INT_USE. */
 #define AI_CAN_OPEN    0x10   /**< Opens and closes doors: Int AI_INT_OPEN. */
 #define AI_CAN_RANGED  0x20   /**< Shoots: its own ranged attack, or something in its ammo slot. */
-#define AI_CAN_CAST    0x40   /**< Reserved: casts spells, with mana (later). */
+#define AI_CAN_CAST    0x40   /**< Casts spells: knows some (game/spells/spells.h); ACT_CAST says which it can afford. */
 
 /* The least Intelligence for the AI's own rules */
 #define AI_INT_USE   5

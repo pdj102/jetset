@@ -15,10 +15,12 @@
 
 #include "game/ai/ai_internal.h"
 #include "game/components/attack.h"
+#include "game/components/attrs.h"
 #include "game/components/feature.h"
 #include "game/components/health.h"
 #include "game/components/inventory.h"
 #include "game/components/item.h"
+#include "game/components/mana.h"
 #include "game/components/stats.h"
 #include "game/effects/effects.h"
 #include "game/events.h"
@@ -873,6 +875,48 @@ int main(void)
     health_hp[goblin] = 1;
     ai_on_turn(goblin);
     CHECK(at(goblin, 2, 5) && NGE_ENTITY_IS_ALIVE(potion));
+    events();
+
+    /* ---- casting: a shaman knows spells; it casts at what it hunts, stays, and spends its MP ---- */
+    scene(0, 5);
+    effects_set_base(actor_player, ATTR_HP_MAX, 200);
+    health_hp[actor_player] = 200;
+    a = hunter(CR_GOBLIN_SHAMAN, 5, 5, 0, 5);
+    goblin = creature(CR_GOBLIN, 9, 9);
+    events();
+    CHECK((ai_can(a) & AI_CAN_CAST) && !(ai_can(goblin) & AI_CAN_CAST) && mana_mp[a] == 6);
+    ai_on_turn(a);
+    CHECK(at(a, 5, 5) && mana_mp[a] < 6);
+    CHECK(events() >= 2 && is(0, actor_player, EV_CAST, a) &&
+          (seen[0].p1 == SP_MAGIC_BOLT || seen[0].p1 == SP_ENFEEBLE));
+    /* Until its MP run out (Magic Bolt costs 1, so it ends at 0); then it comes on */
+    for (hp = 0; hp < 10 && mana_mp[a] != 0; hp++) {
+        ai_on_turn(a);
+        events();
+    }
+    CHECK(mana_mp[a] == 0 && at(a, 5, 5) && health_hp[actor_player] < 200);
+    ai_on_turn(a);
+    CHECK(at(a, 4, 5) && events() >= 1 && seen[0].id == EV_MOVED);
+    /* Hurt: Cure Wounds on itself first, even out of sight */
+    mana_restore(a, 255);
+    health_hp[a] = 2;
+    events();
+    ai_on_turn(a);
+    CHECK(at(a, 4, 5) && health_hp[a] == 6 && mana_mp[a] == 5);
+    CHECK(events() >= 2 && is(0, a, EV_CAST, a) && seen[0].p1 == SP_CURE_WOUNDS);
+    /* A rat in the line: a bolt is held; Enfeeble, direct, passes it. With MP for a bolt only, it comes on */
+    scene(0, 5);
+    rat = creature(CR_RAT, 3, 5);
+    a = hunter(CR_GOBLIN_SHAMAN, 5, 5, 0, 5);
+    hp = health_hp[rat];
+    mana_spend(a, 5);
+    events();
+    ai_on_turn(a);
+    CHECK(at(a, 4, 5) && mana_mp[a] == 1 && health_hp[rat] == hp && events() >= 1 && seen[0].id == EV_MOVED);
+    mana_restore(a, 255);
+    events();
+    ai_on_turn(a);
+    CHECK(health_hp[rat] == hp && events() >= 1 && is(0, actor_player, EV_CAST, a) && seen[0].p1 == SP_ENFEEBLE);
     events();
 
     /* ---- a target gone (on another level, or dead) is dropped; hurt by no one, it hunts no one ---- */

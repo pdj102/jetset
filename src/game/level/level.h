@@ -114,7 +114,8 @@ void level_generate(uint8_t depth, nge_entity_id_t player, uint8_t arrival) NGE_
 #if GAME_DEV_KIT
 /*
  * Development: a bandit out of the player's sight, with a short bow and
- * arrows at its feet, to arm itself and shoot. Bandits start awake
+ * arrows at its feet, to arm itself and shoot, and a goblin shaman out of
+ * sight, to cast. Bandits start awake
  * (gen_creature_pdata.c), and one that sees the player can't stop to arm.
  * Apart from level_generate(), so a level stays what the level tests ask
  */

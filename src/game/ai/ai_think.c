@@ -10,7 +10,7 @@
  * 2. think: the state's handler, think_<state>(c), tries its options in
  *    order of priority and stops at the first that uses the turn:
  *
- *        return opt_attack(c) || opt_drink(c) || opt_shoot(c) || opt_approach(c);
+ *        return opt_cast(c) || opt_attack(c) || opt_drink(c) || opt_shoot(c) || opt_approach(c);
  *
  * 3. wait: if none did, the entity waits (ai_wait()), so every turn is
  *    exactly one action;
@@ -44,6 +44,7 @@
 #include "game/components/kind.h"
 #include "game/effects/effects.h"
 #include "game/gen/gen.h"
+#include "game/spells/spells.h"
 
 /* What opt_wield() readies: what it fights with, not what it wears */
 #define WIELD_SLOTS  (SLOT_BIT(SLOT_WEAPON) | SLOT_BIT(SLOT_RANGED) | SLOT_BIT(SLOT_AMMO))
@@ -77,14 +78,84 @@ static uint8_t opt_attack(const ai_ctx_t *c)
     return ai_try(ACT_MELEE, &a);
 }
 
+/* At half its hit points or less: when it drinks a potion or casts a healing spell */
+static uint8_t hurt(nge_entity_id_t id)
+{
+    return NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_HEALTH) && (uint16_t)health_hp[id] * 2 <= health_hp_max[id];
+}
+
+/*
+ * Cast a spell (docs/spells.md, 4.9). Hurt, each spell it uses when hurt,
+ * on itself. Seeing its target, each spell it casts at one, from a random
+ * one: checked by hand, as opt_shoot() does, so it holds a spell that
+ * would reach someone else. ACT_CAST refuses what it can't afford, so out
+ * of MP it falls back on its other options. The random start is drawn out
+ * of the action (actions.md, R5)
+ */
+static uint8_t opt_cast(const ai_ctx_t *c)
+{
+    /* The fields in locals (T-ZSDCC-1): a field read through c in a loop was miscompiled (screen_spell_bank.c) */
+    nge_entity_id_t id = c->id;
+    nge_entity_id_t target = c->target;
+    uint8_t gx = c->gx;
+    uint8_t gy = c->gy;
+    uint8_t sees = c->sees;
+    uint8_t first;
+    uint8_t sp;
+    act_t a = { 0 };
+
+    if (!(c->can & AI_CAN_CAST)) {
+        return 0;
+    }
+    a.actor = id;
+    if (hurt(id)) {
+        first = spell_next(id, SP_NONE, SPELL_AI_HURT);
+        sp = first;
+        while (sp != SP_NONE) {
+            a.spell = sp;
+            a.x = c->x;
+            a.y = c->y;
+            if (ai_try(ACT_CAST, &a)) {
+                return 1;
+            }
+            sp = spell_next(id, sp, SPELL_AI_HURT);
+            if (sp == first) {
+                break;
+            }
+        }
+    }
+    if (!sees) {
+        return 0;
+    }
+    sp = (uint8_t)(rand() & 15);   /* a mask, not %: 11 to 15 fold back to 1 to 5 */
+    if (sp >= SPELL_COUNT) {
+        sp = (uint8_t)(sp - (SPELL_COUNT - 1));
+    }
+    first = spell_next(id, sp, SPELL_AI_TARGET);
+    sp = first;
+    while (sp != SP_NONE) {
+        a.spell = sp;
+        a.x = gx;
+        a.y = gy;
+        if (act_do(ACT_CAST, &a, ACT_CHECK) == ACT_SUCCESS && a.target == target) {
+            act_do(ACT_CAST, &a, ACT_DO);
+            return a.used;
+        }
+        sp = spell_next(id, sp, SPELL_AI_TARGET);
+        if (sp == first) {
+            break;
+        }
+    }
+    return 0;
+}
+
 /* Drink a healing potion it carries, if it can and is at half its hit points or less */
 static uint8_t opt_drink(const ai_ctx_t *c)
 {
     nge_entity_id_t id = c->id;
     act_t a = { 0 };
 
-    if (!(c->can & AI_CAN_USE) || !NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_HEALTH) ||
-        (uint16_t)health_hp[id] * 2 > health_hp_max[id]) {
+    if (!(c->can & AI_CAN_USE) || !hurt(id)) {
         return 0;
     }
     a.item = carried_use(id, EF_HEALING);
@@ -196,7 +267,7 @@ static uint8_t think_idle(ai_ctx_t *c)
 
 static uint8_t think_hunt(ai_ctx_t *c)
 {
-    return opt_attack(c) || opt_drink(c) || opt_shoot(c) || opt_approach(c);
+    return opt_cast(c) || opt_attack(c) || opt_drink(c) || opt_shoot(c) || opt_approach(c);
 }
 
 /* ---- The turn ---- */

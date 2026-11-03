@@ -310,7 +310,7 @@ adds to it, with the reason.
   ```c
   static uint8_t think_hunt(ai_ctx_t *c)
   {
-      return opt_attack(c) || opt_drink(c) || opt_shoot(c) || opt_approach(c);
+      return opt_cast(c) || opt_attack(c) || opt_drink(c) || opt_shoot(c) || opt_approach(c);
   }
   ```
 
@@ -632,7 +632,8 @@ by a few dozen bytes to a few hundred.
   pattern for docs/guidelines/patterns.md.
 - **Later:** flee and morale (`AI_STIM_LOW_HP`, a second brain that
   flees, ai.md R18); ranged attacks and spells as options
-  (`AI_CAN_RANGED`, `AI_CAN_CAST`); noise from events (a door opened,
+  (`AI_CAN_RANGED`, `AI_CAN_CAST`: both built, `opt_shoot()` and
+  `opt_cast()`, spells.md 4.9); noise from events (a door opened,
   combat); going to items in sight; pathfinding (D8); sight from Wisdom;
   the player's stealth; a field of view for the other messages; monsters
   using stairs; option lists as data per brain (D3); the dev-kit brain

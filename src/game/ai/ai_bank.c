@@ -20,6 +20,7 @@
 #include "game/components/item.h"
 #include "game/components/stats.h"
 #include "game/events.h"
+#include "game/spells/spells.h"
 
 static void check_entity(nge_entity_id_t id)
 {
@@ -104,6 +105,9 @@ ai_can_t ai_can(nge_entity_id_t id) NGE_BANKED
     }
     if (intel >= AI_INT_OPEN) {
         can |= AI_CAN_OPEN;
+    }
+    if (SPELLS_IS(id)) {
+        can |= AI_CAN_CAST;
     }
     if (!rooted) {
         can |= AI_CAN_MOVE;

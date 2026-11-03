@@ -166,7 +166,7 @@ a move that is refused, followed by a melee.
   (`ACT_AIM`).
 - **R26** Doors can be locked, and keys and lock picks open them (`ACT_UNLOCK`). Locks
   guard side rooms only (section 6.12).
-- **R27 (later)** Spells and creature abilities are cast (`ACT_CAST`, mana.md R13,
+- **R27** Spells and creature abilities are cast (built by [spells.md](spells.md)) (`ACT_CAST`, mana.md R13,
   ai.md R22).
 - **R28 (later)** An actor can steal from a neighbour (`ACT_STEAL`, the bandit), and
   no theft can take the quest item (winning.md R6).
@@ -362,7 +362,7 @@ lists. P-ACT-1 asks for a text for each new reason, and these three are the exce
 | `ACT_FIRE` | `f`, then a tile | `opt_shoot()` |
 | `ACT_UNLOCK` | Bump with a key that fits, or `p`, a key or a pick, then a direction | No |
 | `ACT_AIM` | `a`, or `a` or ENTER on the inventory screen, then a tile | No |
-| `ACT_CAST` | `m`, a spell from the list, then a tile for a bolt or direct spell | `opt_cast()`, from step 4 of spells_plan.md |
+| `ACT_CAST` | `m`, a spell from the list, then a tile for a bolt or direct spell | `opt_cast()` |
 
 **Bumping** is the player's move command combining actions: it checks the move, and
 if the blocker has health it melees, and if it is a closed door it opens it. The AI

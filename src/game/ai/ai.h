@@ -86,7 +86,7 @@ typedef uint8_t ai_can_t;     /**< A mask of AI_CAN_*. */
 #define AI_CAN_USE     0x08   /**< Uses them (drinks a potion): an inventory and Int AI_INT_USE. */
 #define AI_CAN_OPEN    0x10   /**< Opens and closes doors: Int AI_INT_OPEN. */
 #define AI_CAN_RANGED  0x20   /**< Shoots: its own ranged attack, or something in its ammo slot. */
-#define AI_CAN_CAST    0x40   /**< Reserved: casts spells, with mana (later). */
+#define AI_CAN_CAST    0x40   /**< Casts spells: knows some (game/spells/spells.h); ACT_CAST says which it can afford. */
 #define AI_CAN_MOVE    0x80   /**< Leaves its tile: not rooted (STATUS_ROOTED). */
 
 /* The least Intelligence for the AI's own rules (the player needs none) */
