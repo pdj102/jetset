@@ -308,8 +308,9 @@ uint8_t act_fire(act_t *a, uint8_t mode) NGE_BANKED;
 /**
  * @brief Send an item's aim hook (GEN_HOOK_AIM) at the first creature on
  *        the line towards the tile (a->x, a->y), within ACT_AIM_RANGE, or
- *        at the actor if it is the actor's own tile. A wand or staff uses a
- *        charge and is kept at 0; a parchment is destroyed.
+ *        at the actor if it is the actor's own tile. An ITEMF_DIRECT kind
+ *        passes creatures on the way, to the one on the tile. A wand or
+ *        staff uses a charge and is kept at 0; a parchment is destroyed.
  *
  * Inputs: actor (alive, placed), item, x, y. Outputs: target; kind, the
  * effect. Posts EV_AIMED, then the effect's events, with the actor as

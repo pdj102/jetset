@@ -16,7 +16,9 @@ is the list of actions to add, and none of it is built. Sections 1 to 5 describe
 code as it stands, except the decisions under "Agreed, not built".
 
 Status: D10 to D23 agreed 2026-10-31. D21, D22, D23, `ACT_FIRE` and `ACT_AIM` are built,
-and the rest not yet. The rest of section 6 is proposed.
+and the rest not yet. The rest of section 6 is proposed. Line modes (section 6.13, R36 to
+R39, D27 to D30) agreed and built 2026-11-03, with `ACT_CAST`'s part waiting for that action.
+The CSpect check is to do.
 
 ## 1. Overview
 
@@ -83,6 +85,9 @@ a move that is refused, followed by a melee.
 | Stowed, equipped, carried | In the pack, in a slot, either ([items.md](items.md), section 4.3) |
 | Rooted | Has `STATUS_ROOTED`: can't leave its tile ([creatures.md](creatures.md)) |
 | Line of fire | The tiles a shot or bolt crosses (section 6.2) |
+| Line mode | How a line picks its target: `ACT_LINE_BOLT` or `ACT_LINE_DIRECT` (section 6.13) |
+| Bolt | A line that stops at the first creature on it, whoever was aimed at |
+| Direct | A line that reaches the creature on the chosen tile, past any on the way |
 
 ## 3. Requirements
 
@@ -193,8 +198,9 @@ a move that is refused, followed by a melee.
 | `act_stairs.c` | `BANK_56` | Ascend and descend | 781 |
 | `act_wait.c` | `BANK_56` | Wait | 161 |
 
-The sizes are from the debug build's map, with asserts, and total 9,652 bytes of
-`BANK_56`'s 16,384 (pages 112 and 113, D22). That leaves 6,732 (section 6.11).
+The sizes are from the debug build's map, with asserts, after step 9, and total 9,652 bytes of
+`BANK_56`'s 16,384 (pages 112 and 113, D22). After the line modes the section is 10,484, which
+leaves 5,900 (section 9).
 
 ### 4.2 The context
 
@@ -230,7 +236,7 @@ Who reads what:
 | Ascend, descend | Out: the stairs | | | |
 | Wait | | | | |
 | Fire, with `x`, `y` | Out: the first in line | Out: the launcher or thrown item | | Out: damage type |
-| Aim, with `x`, `y` | Out: the first in line, or the actor | In | | Out: the effect |
+| Aim, with `x`, `y` | Out: the first in line, the one on the tile if direct, or the actor | In | | Out: the effect |
 
 A context can be passed straight to the next action. After a move is refused,
 `target` already holds the blocker, ready for a melee or an open. It can also be
@@ -279,7 +285,7 @@ Consequences are direct calls, because the rest of the action reads their result
 | `ACT_ASCEND`, `ACT_DESCEND` | Takes stairs on the actor's tile | `EV_LEFT_LEVEL` for anyone but the player | No |
 | `ACT_WAIT` | Nothing; it always succeeds | None | No |
 | `ACT_FIRE` | Shoots at the first creature in line towards a tile (section 6.3) | `EV_FIRED`, `EV_HIT` or `EV_MISSED`, then the damage's and hit effect's | Yes |
-| `ACT_AIM` | Sends an item's effect at the first creature in line, or the actor (section 6.4) | `EV_AIMED`, then the effect's | No |
+| `ACT_AIM` | Sends an item's effect at the first creature in line, the creature on the tile if the item is direct, or the actor (sections 6.4, 6.13) | `EV_AIMED`, then the effect's | No |
 
 **Move** takes the tile from the actor's location and `dx`, `dy`, each -1, 0 or 1,
 and asks `nge_block_can_enter()` with the actor's pass flags, so a ghost's walls are
@@ -455,6 +461,8 @@ All agreed 2026-10-31, for the actions in section 6.
   walking the line, so a creature in the way is hit in place of the one aimed at. That
   is what the player can see and it needs no rule for shooting past. *Rejected:*
   hitting the chosen tile only, which lets a shot pass through whatever is on the way.
+  This stays the rule for shots. Effects that don't fly, such as teleporting another,
+  may reach the chosen tile instead (D27, section 6.13).
 - **D12 Shooting at nothing is refused.** A line with no creature fails with
   `ACT_R_NO_TARGET`, costing no ammo or charge, and a wall in the way with
   `ACT_R_NO_LINE`. Both are found in validation, so the check and the AI get the same
@@ -547,15 +555,21 @@ Fire, aim and cast find their target the same way, in `act_line()` (D11, D21). I
 in validation, so it has no randomness and a check gets the same answer.
 
 ```text
- act_line(a, range): from the actor, towards (a->x, a->y)
+ act_line(a, range, how): from the actor, towards (a->x, a->y)
 
  chosen tile out of range, or the actor's own tile --> ACT_R_OUT_OF_RANGE or
                                                        ACT_R_NO_TARGET
  for each tile along the line, nearest first:
      solid (a wall, a closed door) ------------------> ACT_R_NO_LINE
-     an alive entity with health ---------------------> a->target, done
+     an alive entity with health:
+         ACT_LINE_BOLT ------------------------------> a->target, done
+         ACT_LINE_DIRECT, before the chosen tile ----> passed over
+         ACT_LINE_DIRECT, on the chosen tile --------> a->target, done
  reached the chosen tile with nothing ----------------> ACT_R_NO_TARGET
 ```
+
+`how` is the line mode (section 6.13). Before it, the line had no mode and was always a
+bolt.
 
 `nge_block_line()` answers only whether a line is clear, and aim needs the first tile
 that stops it. So page 56 has a walk that gives each tile in turn,
@@ -616,7 +630,8 @@ Out: target; kind, the effect.
 
 - **Validate:** the item is carried and stowed (`ACT_R_NOT_CARRIED`, `ACT_R_EQUIPPED`),
   has a `GEN_HOOK_AIM` (`ACT_R_CANT_AIM`) and, if a wand, a charge
-  (`ACT_R_NO_CHARGES`), then `act_line()`.
+  (`ACT_R_NO_CHARGES`), then `act_line()`, a bolt unless the kind has `ITEMF_DIRECT`
+  (section 6.13).
 - **Range:** `ACT_AIM_RANGE`, 8, the same as `AI_SIGHT`. A kind has no aim range, and
   one number keeps wands simple.
 - **Own tile:** aiming at the actor's own tile picks the actor, so a staff of healing
@@ -666,7 +681,8 @@ Out: target.
 - **Data:** one table of spells: effect, power, MP cost, aimed or not, range. It is
   read by number (G-ARCH-7), with what a creature or class knows kept per kind.
 - **Validate:** the actor knows it (`ACT_R_NO_SPELL`), has the MP with `MANA_HAS()`
-  (`ACT_R_NO_MANA`), and if aimed, `act_line()`.
+  (`ACT_R_NO_MANA`), and if aimed, `act_line()`, with the mode the spell's shape gives
+  (section 6.13).
 - **Apply:** `EV_CAST`, `mana_spend()`, then `effect_apply()`, with the actor as source.
 - **Abilities:** a row with cost 0 (D20), for the floating eye's gaze and the like.
 
@@ -706,6 +722,8 @@ These add no action, and need only the accessors and some reasons.
 | `ACT_PICKUP` | Ammo merges into a stack of the same kind, built. Treasure goes to the player's gold (player_character.md R20) | `item_count[]`, kind, subclass |
 | `ACT_USE` | Uses one of a count, where a subclass has one | `item_count[]` |
 | `ACT_MELEE` | Its end moved to `act_strike()` (D21). No change in behaviour | |
+| `ACT_AIM` | A direct item reaches the creature on the chosen tile (section 6.13) | `ITEMF_DIRECT` |
+| `ACT_FIRE` | Passes `ACT_LINE_BOLT`. No change in behaviour (section 6.13) | |
 | `ACT_MOVE`, `ACT_CLOSE`, `ACT_WAIT`, stairs, `ACT_DROP` | None needed | |
 
 The flags need a `gen_item_flags()`. Who may equip what is a rule, so it belongs in the
@@ -806,6 +824,120 @@ for that depth. A skeleton key's `KEY_ANY` is never a lock.
   *Rejected:* monsters inside, which would need the AI to stay shut in, and is a surprise
   the player has no way to see coming.
 
+### 6.13 Line modes
+
+Agreed 2026-11-03, with Q3 to Q5 answered. Built 2026-11-03, apart from cast, which isn't
+built yet. What differs is in section 9, "Line modes".
+
+**Two ways a line picks its target.** Today every line is a bolt: a shot or a wand stops at
+the first creature on its way (D11). That is right for anything that flies, and wrong for an
+effect that doesn't, such as a wand of teleport sending away the creature the player chose.
+So the line takes a mode, and whoever uses it says which.
+
+| Mode | Name | Target | Creatures on the way | Walls on the way | Example |
+|---|---|---|---|---|---|
+| a | `ACT_LINE_BOLT` | The first creature on the line | Stop it: the first is the target | Stop it: `ACT_R_NO_LINE` | Arrows, darts, a wand of fire, Magic Bolt, a lightning bolt |
+| b | `ACT_LINE_DIRECT` | The creature on the chosen tile | Passed over | Stop it: `ACT_R_NO_LINE` | A wand of teleport, a staff of healing, a wand of sleep, a gaze |
+
+Both use the same range, the same walk and the same reasons, so the cursor, the check and the
+AI agree for either.
+
+**Other names considered.** `FIRST` and `CHOSEN` say what each picks but not what it is;
+`PROJECTILE` and `SIGHTED` are longer; `BLOCKED` and `SEEKING` suggest a missile that
+steers. Bolt is already the spells' word (spells.md, "Shape"), so bolt and direct read well
+beside it.
+
+#### Requirements
+
+- **R36 New.** `act_line()` takes a line mode, `ACT_LINE_BOLT` or `ACT_LINE_DIRECT`. Every
+  action that finds a target along a line passes one, and nothing else changes how a line
+  picks its target.
+- **R37 New.** A direct line reaches the creature on the chosen tile, past any creature on the
+  way. A wall or closed door on the way still stops it, with `ACT_R_NO_LINE`, and a chosen
+  tile with no creature is `ACT_R_NO_TARGET`, as for a bolt (D12).
+- **R38 New.** The mode comes from what is used, not from the action: `ACT_FIRE` is always a
+  bolt; `ACT_AIM` reads the item kind's `ITEMF_DIRECT`; `ACT_CAST` reads the spell's shape.
+- **R39 New.** The actor's own tile is unchanged by the mode: aim picks the actor, and fire
+  and cast refuse it (section 6.4, spells.md 4.5).
+
+#### Decisions
+
+- **D27 Two modes, one walk.** The mode is a parameter of `act_line()`, which already walks
+  the line for fire, aim and cast (D21). A direct line is the same walk that doesn't stop at
+  creatures before the chosen tile. *Rejected:* a second function, `act_line_direct()`, which
+  repeats the range, own tile and wall tests (G-ARCH-1). *Rejected:* letting a direct line
+  ignore walls too, as that reaches creatures the actor can't see, and the cursor would be green
+  where sight says no.
+- **D28 The item or spell says which mode, not the effect.** A flag on the item kind and a
+  shape on the spell, so a wand of sleep can be a bolt while a gaze of sleep is direct.
+  `ITEMF_DIRECT` is `0x04`, in the flags byte kinds already have, read with `gen_item_flags()`,
+  so it costs no table. *Rejected:* a column in the effects table, which ties every source of
+  an effect to one mode and adds a byte per effect.
+- **D29 Fire stays a bolt, with no flag.** Ammo that seeks its target isn't wanted, and a shot
+  that passes creatures would undo D11. If it is wanted later, fire reads `ITEMF_DIRECT` from
+  the ammo, and nothing else changes. *Rejected:* reading the flag now, which costs bytes for
+  no item that has it.
+- **D30 Spells get a third shape, `SPELL_DIRECT`.** `SPELL_BOLT` passes `ACT_LINE_BOLT` and
+  `SPELL_DIRECT` passes `ACT_LINE_DIRECT`, so a shape stays the one field that says who a
+  spell reaches (spells.md 4.5). spells.md 4.1, 4.4, 4.5 and 4.8 say so (Q5). Of the first spells,
+  Hold and Enfeeble are direct and the damaging ones are bolts (spells.md 4.12).
+
+#### Which items are direct
+
+| Kind | Effect | Mode | Why |
+|---|---|---|---|
+| Wand of teleport | `EF_TELEPORT` | Direct | It sends away the creature chosen, not whatever is nearest |
+| Staff of healing | `EF_HEALING` | Direct | Healing doesn't fly, and an ally behind an enemy should be the one healed |
+| Wand and parchment of sleep, wand of slowness | `EF_SLEEP`, `EF_SLOW` | Direct | A spell on the mind or body, not a missile (Q4) |
+| Wands of striking, fire, frost; staff of power; the missile, fire, frost and acid parchments | `EF_BOLT_*` | Bolt | They fly (D11) |
+
+#### Design
+
+- **`act_line(a, range, how)`.** `how` is a `uint8_t`, `ACT_LINE_BOLT` 0 or
+  `ACT_LINE_DIRECT` 1, in `act_internal.h`. In the creature test, a direct line goes on unless
+  the tile is the chosen one. The wall test comes first on every tile, so a creature standing
+  in an open doorway doesn't let the line through a wall.
+- **Fire** passes `ACT_LINE_BOLT`.
+- **Aim** reads `gen_item_flags(kind_index[item]) & ITEMF_DIRECT` in its context step, into a
+  local (T-ZSDCC-1).
+- **Cast** maps its shape to the mode when it is built.
+- **The AI.** `opt_shoot()` holds its fire unless the check's target is its own (section 9,
+  step 10). A direct line always gives the target on the chosen tile, so it never holds, and
+  no change is needed. `opt_cast()` makes the same test (spells.md 4.9).
+- **The projectile** (animations.md R14). `EV_FIRED` and `EV_AIMED` name the target, so the
+  animation runs to the right tile in either mode. For a direct item it passes over the
+  creatures on the way, which matches what happens.
+- **Messages.** No new reason or text: `ACT_R_NO_TARGET` and `ACT_R_NO_LINE` cover both modes.
+- **The cursor** marks range only, as now. It doesn't show who a bolt would hit.
+
+#### Memory
+
+| Where | Change |
+|---|---|
+| `BANK_56` | About 30 bytes, estimated: the parameter, one test in the loop, aim's flag read. Built: 258 (section 9) |
+| Page 108 | Five kinds' flags change, no bytes |
+| Common | None |
+
+#### Tests
+
+- `act_line()` with `ACT_LINE_DIRECT`: a creature on the way is passed, the one on the chosen
+  tile is the target, a wall or closed door before it is `ACT_R_NO_LINE`, an empty chosen tile
+  is `ACT_R_NO_TARGET`, range the same as a bolt's, and no random numbers.
+- `act_line()` with `ACT_LINE_BOLT`: the existing tests, unchanged.
+- Aim: a wand of teleport past a creature reaches the one chosen, and a wand of fire on the
+  same line hits the nearer one. The check gives the same target.
+- Fire: a creature in the way is still hit in place of the one aimed at.
+- `ITEMF_DIRECT` is on exactly the kinds in the table above.
+
+CSpect: aim the wand of teleport and the staff of healing past a creature, by the user.
+
+#### Questions answered
+
+- **Q3 Names.** `ACT_LINE_BOLT` and `ACT_LINE_DIRECT`, as proposed.
+- **Q4 Which items are direct.** Teleport and healing, and sleep and slowness too: 5 kinds.
+- **Q5 spells.md.** The third shape is written there now, not when `ACT_CAST` is built.
+- **R37** Agreed: walls and closed doors stop a direct line.
+
 ## 7. Tests
 
 `test_act` covers:
@@ -861,6 +993,22 @@ To add with section 6:
 ## 9. As built
 
 What differs from section 6 and [actions_plan.md](actions_plan.md).
+
+- **Line modes (section 6.13):**
+  - `BANK_56` grew by 258 bytes in the debug build, to 10,484, where the spec said about 30:
+    `act_line()` 191, from 336 to 527; aim 64; fire 3. The test in the loop is about 25 bytes,
+    and the assert on `how` 76 with its strings. The rest is zsdcc moving `act_line()`'s
+    locals from registers to the stack frame, where each access takes 3 bytes. Without asserts
+    `act_line()` is 451. Three rewrites were measured: skipping the creature test and searching
+    the chosen tile after the loop, the same reading `a->x` and `a->y` in place of locals, and a
+    helper for the search. Each was larger in the debug build, which must fit, so the first
+    version stays. 5,900 bytes of the section are free. Page 108 and common memory didn't change.
+  - `ACT_LINE_COUNT` was added, as H-CONST-2 asks, and `act_line()` asserts `how` is below it.
+  - The aim check reads the flag only when the line is walked, not on the actor's own tile.
+  - items.md, section 4.7, lists `ITEMF_DIRECT`, and `act.h` says what it does to aim.
+  - Not done here: `ACT_CAST`, which isn't built. spells.md has the shapes.
+  - For the CSpect check the dev kit has a wand of sleep and a staff of healing, in place of
+    the missile parchment and the healing potion.
 
 - **Step 13:**
   - Section 6.12 is the spec, written with the step, as Q1's answer needed the details.

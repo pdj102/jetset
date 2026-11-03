@@ -238,8 +238,10 @@ The data is laid out for firing, which isn't built:
 - **`group`** is one byte whose meaning depends on the subclass. Ammo and
   launchers must share a `GROUP_*`. A key opens locks of its `KEY_*`, and
   `KEY_ANY` opens all.
-- **`flags`** hold `ITEMF_TWO_HANDS` and `ITEMF_CURSED`. The rules are in the inventory
-  component, and an item's lifted curse is an entity flag, `ITEM_UNCURSED`.
+- **`flags`** hold `ITEMF_TWO_HANDS`, `ITEMF_CURSED` and `ITEMF_DIRECT`. The first two's
+  rules are in the inventory component, and an item's lifted curse is an entity flag,
+  `ITEM_UNCURSED`. `ITEMF_DIRECT` makes an aimed item pass creatures on the way to the
+  chosen tile ([actions.md](actions.md), section 6.13).
 
 ### 4.8 Generation
 

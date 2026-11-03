@@ -57,7 +57,7 @@ uint8_t act_strike(act_t *a, nge_entity_id_t attacker, uint8_t use, nge_entity_i
     return act_succeed(a);
 }
 
-uint8_t act_line(act_t *a, uint8_t range)
+uint8_t act_line(act_t *a, uint8_t range, uint8_t how)
 {
     nge_block_walk_t w;
     nge_entity_id_t actor = a->actor;
@@ -69,6 +69,8 @@ uint8_t act_line(act_t *a, uint8_t range)
     uint8_t ty = a->y;
     uint8_t x;
     uint8_t y;
+
+    nge_util_assert(how < ACT_LINE_COUNT);
 
     a->target = NGE_ENTITY_INVALID;
     if (!nge_map_within(ax, ay, tx, ty, range)) {
@@ -83,6 +85,9 @@ uint8_t act_line(act_t *a, uint8_t range)
         y = w.y;
         if (!nge_block_can_enter(area, x, y, LINE_PASS, NGE_ENTITY_INVALID, NULL)) {
             return ACT_R_NO_LINE;
+        }
+        if (how == ACT_LINE_DIRECT && (x != tx || y != ty)) {
+            continue;   /* a direct line passes over creatures on the way */
         }
         NGE_LOCATION_FOR_EACH_AT(id, area, x, y, COMPONENT_HEALTH) {
             if (health_hp[id] != 0) {

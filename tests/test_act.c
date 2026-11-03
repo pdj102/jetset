@@ -115,19 +115,25 @@ static unsigned int seed_for_roll(int r)
     return 0;
 }
 
-/* act_line() from actor towards (x, y): its reason, and the target in line_target */
+/* act_line() from actor towards (x, y) in mode how: its reason, and the target in line_target */
 static nge_entity_id_t line_target;
 
-static uint8_t line(nge_entity_id_t actor, uint8_t x, uint8_t y, uint8_t range)
+static uint8_t line_how(nge_entity_id_t actor, uint8_t x, uint8_t y, uint8_t range, uint8_t how)
 {
     act_t a = move(actor, 0, 0);
     uint8_t reason;
 
     a.x = x;
     a.y = y;
-    reason = act_line(&a, range);
+    reason = act_line(&a, range, how);
     line_target = a.target;
     return reason;
+}
+
+/* act_line() as a bolt */
+static uint8_t line(nge_entity_id_t actor, uint8_t x, uint8_t y, uint8_t range)
+{
+    return line_how(actor, x, y, range, ACT_LINE_BOLT);
 }
 
 /* act_fire() from actor at (x, y): its result, and the context in last */
@@ -1208,6 +1214,32 @@ int main(void)
     /* A nearer creature is hit first, and a corpse that stays doesn't stop a shot */
     biter = creature(CR_RAT, 3, 2);
     CHECK(line(opener, 6, 2, 20) == ACT_R_NONE && line_target == biter);
+    /* A direct line passes it, to the creature on the chosen tile, with no random numbers or events */
+    srand(9);
+    CHECK(line_how(opener, 6, 2, 20, ACT_LINE_DIRECT) == ACT_R_NONE && line_target == rat);
+    CHECK(line_how(opener, 3, 2, 20, ACT_LINE_DIRECT) == ACT_R_NONE && line_target == biter);
+    CHECK(line_how(opener, 5, 2, 20, ACT_LINE_DIRECT) == ACT_R_NO_TARGET && line_target == NGE_ENTITY_INVALID);
+    CHECK(line_how(opener, 7, 2, 20, ACT_LINE_DIRECT) == ACT_R_NO_TARGET);   /* past the rat: nobody there */
+    CHECK(line_how(opener, 6, 2, 5, ACT_LINE_DIRECT) == ACT_R_OUT_OF_RANGE);
+    CHECK(line_how(opener, 6, 2, 6, ACT_LINE_DIRECT) == ACT_R_NONE && line_target == rat);
+    CHECK(line_how(opener, 0, 2, 20, ACT_LINE_DIRECT) == ACT_R_NO_TARGET);   /* its own tile */
+    CHECK(rand() == r1 && events() == 0);
+    /* The same range as a bolt on every tile */
+    ok = 1;
+    for (y = 0; y < 10; y++) {
+        for (x = 1; x < 10; x++) {
+            ok = ok && (line_how(opener, (uint8_t)x, (uint8_t)y, 5, ACT_LINE_DIRECT) == ACT_R_OUT_OF_RANGE) ==
+                       (line(opener, (uint8_t)x, (uint8_t)y, 5) == ACT_R_OUT_OF_RANGE);
+        }
+    }
+    CHECK(ok);
+    /* A wall or a closed door stops it, before the creature in the way or after it */
+    NGE_MAP_TILE(4, 2).tile_id = WALL;
+    CHECK(line_how(opener, 6, 2, 20, ACT_LINE_DIRECT) == ACT_R_NO_LINE && line_target == NGE_ENTITY_INVALID);
+    NGE_MAP_TILE(4, 2).tile_id = FLOOR;
+    NGE_MAP_TILE(2, 2).tile_id = WALL;
+    CHECK(line_how(opener, 3, 2, 20, ACT_LINE_DIRECT) == ACT_R_NO_LINE);
+    NGE_MAP_TILE(2, 2).tile_id = FLOOR;
     health_hp[biter] = 0;
     CHECK(line(opener, 6, 2, 20) == ACT_R_NONE && line_target == rat);
     /* An item isn't a target */
@@ -1445,6 +1477,19 @@ int main(void)
     /* The line and the range, as a shot's; first in line takes it */
     biter = creature(CR_RAT, 2, 2);
     CHECK(aim(player, i1, 3, 2, ACT_CHECK) == ACT_SUCCESS && last.target == biter);
+    /* A direct item passes it, to the one chosen; a check gives the same target */
+    i2 = gen_item(IT_WAND_TELEPORT, player);
+    CHECK(aim(player, i2, 3, 2, ACT_CHECK) == ACT_SUCCESS && last.target == rat);
+    CHECK(aim(player, i2, 2, 2, ACT_CHECK) == ACT_SUCCESS && last.target == biter);
+    nge_entity_destroy(i2);
+    nge_entity_release(i2);
+    i2 = gen_item(IT_WAND_SLOW, player);
+    r1 = item_count[i2];
+    CHECK(aim(player, i2, 3, 2, ACT_DO) == ACT_SUCCESS && last.target == rat && item_count[i2] == r1 - 1);
+    CHECK(events() >= 1 && is(0, rat, EV_AIMED, player));
+    nge_entity_destroy(i2);
+    nge_entity_release(i2);
+    events();
     nge_entity_destroy(biter);
     nge_entity_release(biter);
     CHECK(aim(player, i1, 9, 2, ACT_DO) == ACT_FAIL && last.reason == ACT_R_OUT_OF_RANGE && last.used == 0);

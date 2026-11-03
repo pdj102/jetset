@@ -336,6 +336,14 @@ int main(void)
           gen_item_group(IT_SWORD) == GROUP_NONE);
     CHECK(gen_item_flags(IT_QUARTERSTAFF) == ITEMF_TWO_HANDS && gen_item_flags(IT_RUSTY_SWORD) == ITEMF_CURSED &&
           gen_item_flags(IT_SWORD) == 0);
+    /* Direct items: exactly the five that don't fly (docs/actions.md, section 6.13) */
+    ok = 1;
+    for (kind = 0; kind < IT_COUNT; kind++) {
+        ok = ok && ((gen_item_flags(kind) & ITEMF_DIRECT) != 0) ==
+                       (kind == IT_SP_SLEEP || kind == IT_WAND_SLOW || kind == IT_WAND_SLEEP ||
+                        kind == IT_WAND_TELEPORT || kind == IT_STAFF_HEALING);
+    }
+    CHECK(ok);
     {
         attack_kind_t attack;
 

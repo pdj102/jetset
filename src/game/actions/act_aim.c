@@ -26,6 +26,7 @@ uint8_t act_aim(act_t *a, uint8_t mode) NGE_BANKED
     uint16_t hook;
     uint8_t ef;
     uint8_t wand;
+    uint8_t how;
     uint8_t reason;
 
     /* 1. Context */
@@ -53,7 +54,8 @@ uint8_t act_aim(act_t *a, uint8_t mode) NGE_BANKED
     if (a->x == NGE_LOCATION_X(actor) && a->y == NGE_LOCATION_Y(actor)) {
         a->target = actor;   /* only aim does this: a staff of healing can heal its holder */
     } else {
-        reason = act_line(a, ACT_AIM_RANGE);
+        how = (gen_item_flags(kind_index[item]) & ITEMF_DIRECT) ? ACT_LINE_DIRECT : ACT_LINE_BOLT;
+        reason = act_line(a, ACT_AIM_RANGE, how);
         if (reason != ACT_R_NONE) {
             return act_fail(a, reason);
         }

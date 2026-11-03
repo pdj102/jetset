@@ -46,15 +46,21 @@ uint8_t act_checked(act_t *a);
 uint8_t act_strike(act_t *a, nge_entity_id_t attacker, uint8_t use, nge_entity_id_t hooks, int8_t to_hit,
                    int8_t bonus);
 
+/* Line modes (act_line()'s how): who a line reaches. See docs/actions.md, section 6.13 */
+#define ACT_LINE_BOLT    0   /* the first creature on the line: what flies */
+#define ACT_LINE_DIRECT  1   /* the creature on the chosen tile, past any on the way */
+#define ACT_LINE_COUNT   2
+
 /*
  * The line of fire, for validation: from the actor, placed in an area,
  * towards (a->x, a->y) within range (nge_map_within()). Sets a->target to the
- * first alive entity with health along it, or NGE_ENTITY_INVALID. No random
- * numbers, so a check gets the same answer. Returns ACT_R_NONE, or why not:
+ * first alive entity with health along it (ACT_LINE_BOLT) or on the chosen
+ * tile (ACT_LINE_DIRECT), or NGE_ENTITY_INVALID. No random numbers, so a
+ * check gets the same answer. Returns ACT_R_NONE, or why not:
  * ACT_R_OUT_OF_RANGE, ACT_R_NO_LINE (something solid first, the chosen tile
  * included), or ACT_R_NO_TARGET (nobody there, or the actor's own tile)
  */
-uint8_t act_line(act_t *a, uint8_t range);
+uint8_t act_line(act_t *a, uint8_t range, uint8_t how);
 
 /* 1 if id can't leave its tile (STATUS_ROOTED): an actor without stats has no statuses */
 uint8_t act_rooted(nge_entity_id_t id);
