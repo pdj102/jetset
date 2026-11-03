@@ -25,6 +25,8 @@
  * | EV_FIRED          | the entity aimed at | shooter  | p1: launcher, thrown item or NGE_EVENT_NONE |
  * | EV_AIMED          | the entity aimed at | aimer    | p1: the item |
  * | EV_UNLOCKED       | the feature         | unlocker | -        |
+ * | EV_CAST           | the entity aimed at, or the caster | the caster | p1: SP_* |
+ * | EV_SPELL_LEARNED  | the entity          | -        | p1: SP_* |
  * | EV_EFFECT_ENDED   | the entity affected | the effect (dying) | p1: EF_*, p2: EFFECT_END_* |
  * | EV_ATTRS_CHANGED  | the entity          | -        | -        |
  * | EV_OPENED         | the feature         | opener   | -        |
@@ -71,5 +73,7 @@
 #define EV_FIRED          (NGE_EVENT_USER + 26)    /**< A shot was fired at it by the source (act_fire()); EV_HIT or EV_MISSED follows. */
 #define EV_AIMED          (NGE_EVENT_USER + 27)    /**< An item's effect was sent at it by the source (act_aim()); the effect's events follow. */
 #define EV_UNLOCKED       (NGE_EVENT_USER + 28)    /**< Unlocked by the source (act_unlock()). */
+#define EV_CAST           (NGE_EVENT_USER + 29)    /**< Spell p1 was cast at it by the source, or by itself (act_cast()); the effect's events follow. */
+#define EV_SPELL_LEARNED  (NGE_EVENT_USER + 30)    /**< Learned spell p1 (spell_learn(), game/spells/spells.h). */
 
 #endif

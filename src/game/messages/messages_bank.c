@@ -28,6 +28,7 @@
 #include "game/gen/gen.h"
 #include "game/level/level.h"
 #include "game/quest/quest.h"
+#include "game/spells/spells.h"
 #include "game/ui/screen_main.h"
 
 #define MESSAGE_MAX  41   /* a message window line, and its NUL */
@@ -212,6 +213,19 @@ static void say_level(uint8_t level)
     screen_message(line);
 }
 
+/* "You learn <spell>." */
+static void say_learned(uint8_t sp)
+{
+    char line[MESSAGE_MAX];
+    char name[SPELL_NAME_MAX + 1];
+
+    spell_name(sp, name, sizeof(name));   /* a copy: the name is in the spells' page */
+    strcpy(line, "You learn ");
+    add(line, name);
+    add(line, ".");
+    screen_message(line);
+}
+
 void messages_on_event(const nge_event_t *e) NGE_BANKED
 {
     /*
@@ -335,6 +349,11 @@ void messages_on_event(const nge_event_t *e) NGE_BANKED
         break;
     case EV_LEVEL_GAINED:
         say_level(p1);
+        break;
+    case EV_SPELL_LEARNED:
+        if (target == actor_player) {
+            say_learned(p1);
+        }
         break;
     case EV_LEFT_LEVEL:
         say_named("The ", target, p1 < level_depth ? " goes up and away." : " goes down and away.");

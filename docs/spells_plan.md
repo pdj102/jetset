@@ -3,7 +3,7 @@
 The steps that build what [spells.md](spells.md) specifies. The spec says what a spell
 is and why, and this file says in what order, what changes, and how each step is checked.
 
-Status: plan written 2026-11-03. Step 1 done, passed in CSpect.
+Status: plan written 2026-11-03. Step 1 done, passed in CSpect. Step 2 done, passed in CSpect.
 
 ## 1. How the steps work
 
@@ -81,3 +81,4 @@ The rest of section 4.13, and spells.md's status.
 |---|---|---|
 | Start | 4,611 | BANK_56 10,484. Page 104 4,271; 110 7,008; 114 3,607; 116 5,541; 118 5,127; 120 5,327; 121 2,564; 124 1,268; 130 5,258 |
 | 1 | -83: 4,528, the queue's 80 | Page 110 +148; 120 +100; 121 +41; 106 +32. Slot 0 +100 |
+| 2 | 4,528 | Page 134 1,542; 135 598. Page 110 +62; 107 +84; 106 +28; 118 +123 |

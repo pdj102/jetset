@@ -35,6 +35,9 @@ static nge_entity_id_t create(uint8_t kind, nge_owner_t owner)
     if (MANA_KIND_HAS(&b.mana)) {
         mana_add(id, &b.mana);
     }
+    if (b.spells[0] != SP_NONE) {
+        spell_add(id, b.spells, GEN_SPELLS_MAX);
+    }
     if (ATTACK_KIND_HAS(&b.melee)) {
         attack_add(id, ATTACK_MELEE, &b.melee);
     }

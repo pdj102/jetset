@@ -20,6 +20,7 @@
 #include "game/components/stats.h"
 #include "game/effects/effects.h"
 #include "game/events.h"
+#include "game/spells/spells.h"
 
 /* A new character's name, until pc_set_name() */
 static const char default_name[] = "Rogue";
@@ -108,6 +109,9 @@ static void level_up(nge_entity_id_t id)
     }
     pc_level++;
     nge_event_post(id, EV_LEVEL_GAINED, NGE_EVENT_NONE, pc_level, 0);
+    if (SPELLS_IS(id)) {
+        spell_learn_level(id, pc_level);   /* automatic: a handler can't run a chooser (docs/spells.md, D7) */
+    }
 }
 
 void pc_gain_xp(nge_entity_id_t id, uint16_t amount) NGE_BANKED

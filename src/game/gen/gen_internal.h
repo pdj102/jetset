@@ -34,6 +34,7 @@
 #include "game/components/pc.h"
 #include "game/components/stats.h"
 #include "game/effects/effects.h"
+#include "game/spells/spells.h"
 
 /* The sprite part: nge_render_add() and nge_render_set_anim() arguments */
 typedef struct gen_render {
@@ -69,6 +70,9 @@ typedef struct gen_hook {
     int8_t  power;
 } gen_hook_t;
 
+/* The spells a kind starts with, at most (docs/spells.md, R7) */
+#define GEN_SPELLS_MAX  4
+
 /* Creature flags */
 #define CREATURE_PLAYER  0x01   /* the player: its turns wait for commands */
 
@@ -79,6 +83,7 @@ typedef struct gen_creature_kind {
     stats_kind_t stats;
     health_kind_t health;
     mana_kind_t  mana;        /* mp 0 for none */
+    uint8_t      spells[GEN_SPELLS_MAX];   /* SP_*, the first SP_NONE for none: then no spells component */
     attack_kind_t melee;      /* its natural melee attack (fists, a bite); dice 0 for none */
     gen_inventory_t inventory;
     uint16_t     xp;      /* XP the player gains for killing one (classic B/X, by hit dice); 0 for the player */

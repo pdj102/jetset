@@ -311,7 +311,7 @@ cascades:
 
 | Event | Handler | Posts |
 |---|---|---|
-| `EV_DIED`, killed by the player | `player_on_pc_event()` through `pc_gain_xp()` | `EV_XP_GAINED`, and for each level gained `EV_ATTRS_CHANGED`, `EV_HEALED`, `EV_LEVEL_GAINED` |
+| `EV_DIED`, killed by the player | `player_on_pc_event()` through `pc_gain_xp()` | `EV_XP_GAINED`, and for each level gained `EV_ATTRS_CHANGED`, `EV_HEALED`, `EV_ATTRS_CHANGED`, `EV_MANA_RESTORED`, `EV_LEVEL_GAINED`, `EV_SPELL_LEARNED` |
 | `EV_PICKED_UP`, the quest item, first time | `quest_on_event()` | `EV_QUEST_FOUND` |
 | `EV_HIT`, `EV_MISSED`, `EV_DAMAGED` | `ai_on_event()` through `ai_stimulus()` | `EV_AI_CHANGED`, if the state changed |
 
@@ -338,6 +338,7 @@ Reactions marked **rule** change the game's state. The rest only show something.
 | `EV_DAMAGED` | `health_damage()` | player: hit points; **rule** AI: hurt; messages |
 | `EV_HEALED` | `health_heal()` | player: hit points |
 | `EV_DIED` | `health_damage()` | **rule** player: XP, maybe a level; messages; **rule** death: game over |
+| `EV_SPELL_LEARNED` | `spell_learn()` | messages, for the player |
 | `EV_EFFECT_STARTED`, `EV_EFFECT_ENDED` | `effects_core.c` | messages |
 | `EV_ATTRS_CHANGED` | `effects_recompute()` | player: the stats |
 | `EV_MANA_SPENT`, `EV_MANA_RESTORED` | `mana.c` | player: MP |

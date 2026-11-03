@@ -610,3 +610,28 @@ stopping at the maximum, and innate, so a cure doesn't end it.
 - **zsdcc.** `act_cast()` and `opt_cast()` read a copied row in code that branches, so fields
   go into locals first (T-ZSDCC-1). Bit masks need the cast in section 4.3, and the PC tests
   miss both.
+
+## 9. As built
+
+Differences from the design above, step by step ([spells_plan.md](spells_plan.md)).
+
+**Step 1, mana (2026-11-03).**
+
+- Setting the maximum MP posts its own `EV_ATTRS_CHANGED`, as hit points' does. With
+  step 2, a level-up posts 6 events, not the 5 of section 4.10: `EV_ATTRS_CHANGED`,
+  `EV_HEALED`, `EV_ATTRS_CHANGED`, `EV_MANA_RESTORED`, `EV_LEVEL_GAINED`,
+  `EV_SPELL_LEARNED`. 3 levels from one gain post 19 with `EV_XP_GAINED`: more than half
+  the queue, which the handler's call can't drain, and within the 32 with the kill's own
+  events. A queue of 32 holds 5 levels from one gain, not 6 (section 8).
+- `PC_MANA_DIE` (4) names the die, beside `PC_HIT_DIE`.
+
+**Step 2, the module (2026-11-03).**
+
+- `spell_add()` takes a count with the list: `spell_add(id, list, count)`, so the module
+  doesn't need the generator's `GEN_SPELLS_MAX`.
+- `spell_learn_level()` runs after `EV_LEVEL_GAINED` is posted, so the messages read
+  "Welcome to experience level 2." and then "You learn Cure Wounds.".
+- `spell_next()` takes a spell below `SPELL_COUNT`, not any of 0 to 31. The AI's random
+  start (section 4.9) is made to fit in step 4.
+- Page 134 is about 1.5K with asserts, not 0.5K, and page 135 0.6K.
+

@@ -66,7 +66,9 @@
 //                                 AI entity's state and brain
 //                        132/133  feature: the feature component's functions /
 //                                 (unused)
-//                        134-151  free
+//                        134/135  spells: the spells' functions / the spell
+//                                 definitions and each caster's known spells
+//                        136-151  free
 //             152-223  game assets (maps, graphics, level data):
 //                        153  the map tiles' palette (slot 7, via nge_palette_load9();
 //                             src/data/tile_palette_data.asm, generated)
@@ -146,6 +148,9 @@
 
 // game feature: the feature component (game/components/feature.c)
 #pragma define CRT_ORG_PAGE_132 = 0x84C000
+
+// game spells: the spells (game/spells)
+#pragma define CRT_ORG_PAGE_134 = 0x86C000
 
 // nge map: set-up functions
 #pragma define CRT_ORG_PAGE_44 = 0x2CC000

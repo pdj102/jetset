@@ -51,7 +51,8 @@ GEN_GAME_SRCS := $(addprefix $(GAMEDIR)/,gen/gen.c gen/gen_shared_bank.c \
                  ai/ai.c ai/ai_bank.c ai/ai_brains.c ai/ai_pdata.c \
                  components/feature.c components/feature_cdata.c \
                  gen/gen_feature_bank.c gen/gen_feature_pdata.c \
-                 effects/effects_core.c effects/effects_game.c effects/effects_pdata.c)
+                 effects/effects_core.c effects/effects_game.c effects/effects_pdata.c \
+                 spells/spells_bank.c spells/spells_pdata.c)
 GEN_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(GEN_GAME_SRCS))
 LEVEL_GAME_SRCS := $(addprefix $(GAMEDIR)/,level/level.c level/level_bank.c level/level_gen.c level/level_deco.c \
                    level/level_travel.c level/level_pdata.c quest/quest.c quest/quest_bank.c)
@@ -118,6 +119,9 @@ $(BUILD)/test_deco: $(BUILD)/test_deco.o $(LIB_OBJS) $(SUPPORT_OBJS) $(LEVEL_GAM
 	$(HOSTCC) $(CFLAGS) $^ -o $@
 
 $(BUILD)/test_gen: $(BUILD)/test_gen.o $(LIB_OBJS) $(SUPPORT_OBJS) $(GEN_GAME_OBJS)
+	$(HOSTCC) $(CFLAGS) $^ -o $@
+
+$(BUILD)/test_spell: $(BUILD)/test_spell.o $(LIB_OBJS) $(SUPPORT_OBJS) $(GEN_GAME_OBJS)
 	$(HOSTCC) $(CFLAGS) $^ -o $@
 
 $(BUILD)/test_act: $(BUILD)/test_act.o $(LIB_OBJS) $(SUPPORT_OBJS) $(ACT_GAME_OBJS)

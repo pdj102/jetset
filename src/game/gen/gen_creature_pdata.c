@@ -75,6 +75,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .stats = { .speed = 10, .ability = { 16, 14, 14, 10, 10, 10 } },   /* Str Dex Con Int Wis Cha */
         .health = { .hp_max = 12, .ac = 10 },
         .mana = { .mp_max = 5 },
+        .spells = { SP_MAGIC_BOLT },                    /* every spell learned at level 1: level 1 is never gained */
         .melee = { .to_hit = 0, .dice = 1, .sides = 2, .bonus = 0, .type = DMG_BLUNT, .range = 1 },   /* fists */
         .inventory = { .capacity = 20, .slots = SLOTS_HUMANOID },
         .xp = 0,
@@ -236,13 +237,14 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
         .where = { .depth = 3, .depth_max = 7, .rarity = 7 },
     },
-    [CR_GOBLIN_SHAMAN] = {                              /* later: casts */
+    [CR_GOBLIN_SHAMAN] = {
         .name = "goblin shaman",
         .render = SHAPE_GOBLIN(BANK_PURPLE),
         .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
         .stats = { .speed = MONSTER_SPEED, .ability = { 8, 12, 10, 13, 14, 10 } },
         .health = { .hp_max = 9, .resist = DMG_BIT(DMG_BLUNT), .vuln = DMG_BIT(DMG_FIRE), .ac = 12 },
         .mana = { .mp_max = 6 },
+        .spells = { SP_MAGIC_BOLT, SP_CURE_WOUNDS, SP_ENFEEBLE },
         .melee = { .to_hit = 1, .dice = 1, .sides = 4, .bonus = 0, .type = DMG_BLUNT, .range = 1 },   /* a stick */
         .inventory = { .capacity = 4, .slots = SLOT_BIT(SLOT_WEAPON) },
         .xp = 25,                                       /* 2 hit dice, special */

@@ -53,7 +53,8 @@
 #define COMPONENT_MANA       NGE_COMPONENT(NGE_COMPONENT_USER + 9)   /**< Mana points, spent on spells (mana.h). */
 #define COMPONENT_PC         NGE_COMPONENT(NGE_COMPONENT_USER + 10)  /**< The player character: name, level, XP, gold (pc.h). */
 #define COMPONENT_AI         NGE_COMPONENT(NGE_COMPONENT_USER + 11)  /**< The game decides its turns: monsters (game/ai/ai.h). */
-#define COMPONENT_COUNT      12  /**< The game's components: the next is NGE_COMPONENT_USER + COMPONENT_COUNT. */
+#define COMPONENT_SPELLS     NGE_COMPONENT(NGE_COMPONENT_USER + 12)  /**< Knows spells: a caster (game/spells/spells.h). */
+#define COMPONENT_COUNT      13  /**< The game's components: the next is NGE_COMPONENT_USER + COMPONENT_COUNT. */
 
 /* Every game component has a number below NGE_COMPONENT_MAX */
 typedef char components_count_check[(NGE_COMPONENT_USER + COMPONENT_COUNT <= NGE_COMPONENT_MAX) ? 1 : -1];

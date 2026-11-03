@@ -79,6 +79,15 @@ static int creature_ok(nge_entity_id_t id, nge_owner_t owner, uint8_t kind)
         (MANA_IS(id) && (mana_mp[id] != b->mana.mp_max || mana_mp_max[id] != b->mana.mp_max))) {
         return 0;
     }
+    /* Spells if its kind lists some: those and no others */
+    if (SPELLS_IS(id) != (b->spells[0] != SP_NONE)) {
+        return 0;
+    }
+    for (a = 1; a < SPELL_COUNT; a++) {
+        if (spell_knows(id, a) != (memchr(b->spells, a, GEN_SPELLS_MAX) != NULL)) {
+            return 0;
+        }
+    }
     /* Its abilities: the record's scores, as values and bases */
     for (a = 0; a < ABIL_COUNT; a++) {
         if (stats_ability[a][id] != b->stats.ability[a] || stats_ability_base[a][id] != b->stats.ability[a] ||
@@ -224,7 +233,7 @@ int main(void)
             NGE_COMPONENT_LOCATION, NGE_COMPONENT_SPRITE, NGE_COMPONENT_BLOCK, NGE_COMPONENT_TIMER,
             COMPONENT_KIND, COMPONENT_STATS, COMPONENT_ITEM, COMPONENT_INVENTORY, COMPONENT_HEALTH,
             COMPONENT_MELEE, COMPONENT_RANGED, COMPONENT_EFFECT, COMPONENT_FEATURE, COMPONENT_MANA, COMPONENT_PC,
-            COMPONENT_AI,
+            COMPONENT_AI, COMPONENT_SPELLS,
         };
         uint8_t seen[NGE_COMPONENT_TABLES] = {0};
         unsigned int m;
