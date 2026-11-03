@@ -53,9 +53,29 @@ nge_entity_id_t actor_player;
 static int waits;     /* game_wait_key() calls: a prompt waited for a key */
 static int paused;    /* game_pause_frame() calls: frames a screen ran */
 
+static uint8_t over;   /* game_is_over()'s answer: a test sets it */
+
 void game_over(uint8_t reason)
 {
     (void)reason;
+}
+
+uint8_t game_is_over(void)
+{
+    return over;
+}
+
+/* The game's dispatch, as much of it as these tests link: the player, the quest, the messages */
+static void pause_on_event(const nge_event_t *e)
+{
+    player_on_event(e);
+    quest_on_event(e);
+    messages_on_event(e);
+}
+
+void game_pause_events(void)
+{
+    nge_event_process(pause_on_event);
 }
 
 /* Frames: only the development V key (player_bank.c) runs them, and no test presses it */
@@ -149,13 +169,23 @@ static const char *seen_cols(uint8_t b, uint8_t y, uint8_t x1, uint8_t x2)
     return text;
 }
 
-/* The overlay screen's row y, whole, and its list panel's (columns 0-27), as last seen */
+/* The overlay screen's row y, and its list panel's row i, whole, as last seen */
 #define OVER_ROW(y)  seen_cols(1, (y), 0, 39)
-#define LIST_ROW(i)  seen_cols(1, (uint8_t)(2 + (i)), 0, 27)
-#define DETAILS(i)   seen_cols(1, (uint8_t)(2 + (i)), 28, 39)
+#define LIST_ROW(i)  seen_cols(1, (uint8_t)(2 + (i)), 0, 39)
 #define STATUS()     seen_cols(1, 29, 0, 39)
+#define STATUS2()    seen_cols(1, 30, 0, 39)
 #define HELP()       seen_cols(1, 31, 0, 39)
-#define HIGHLIGHTED(i)  (seen[1][2 + (i)][0].paper == SCREEN_HIGHLIGHT && seen[1][2 + (i)][27].paper == SCREEN_HIGHLIGHT)
+#define HIGHLIGHTED(i)  (seen[1][2 + (i)][0].paper == SCREEN_HIGHLIGHT && seen[1][2 + (i)][39].paper == SCREEN_HIGHLIGHT)
+#define BLANK        "                                        "
+
+/* An inventory row as it should be: the letter, the count, the name and the details in their columns */
+static const char *inv_row(const char *letter, unsigned count, const char *name, const char *details)
+{
+    static char expect[64];
+
+    snprintf(expect, sizeof(expect), "%-2s%3u %-19s %-14s", letter, count, name, details);
+    return expect;
+}
 
 /* The text colours as the Layer 2 stream draws them (io/nge_l2_stream.c) */
 #define L2_WHITE   0xFF
@@ -240,6 +270,8 @@ int main(void)
     nge_entity_id_t door;
     nge_entity_id_t quest;
     nge_entity_id_t chosen;
+    nge_entity_id_t potion;
+    uint8_t used;
     nge_entity_id_t many[29];
     nge_entity_id_t rat;
     char name[PC_NAME_MAX + 1] = "Rogue";
@@ -339,25 +371,24 @@ int main(void)
     nge_event_process(player_on_event);
     CHECK(pc_depth_max == 4);
 
-    /* ---- the inventory, empty: titled, says so, SPACE goes back; the main screen untouched ---- */
+    /* ---- the inventory, empty: titled, the pack's count, says so, SPACE goes back; the main screen untouched ---- */
     memcpy(main_before, test_layer2_buf[0], sizeof(main_before));
     fresh();
-    press(EV(NGE_KEY_A));                      /* not a key of the screen: it stays */
+    press(EV(NGE_KEY_A));                      /* aim, with nothing to aim: it stays */
     press(EV(NGE_KEY_SPACE));
     player_turn = 1;
     player_command(EV(NGE_KEY_I));
     CHECK(SCREEN_INV_MAX == 20 + SLOT_COUNT - 1);   /* a full pack and every slot in use */
     CHECK(RAN_AND_CLOSED() && paused == 3);   /* a frame a key, and the frame that shows the main screen */
-    CHECK(strcmp(OVER_ROW(0), "          Worldly Possessions           ") == 0);   /* centred */
+    CHECK(strcmp(OVER_ROW(0), "          Worldly Possessions Pack  0/20") == 0);   /* centred; the count at the end */
     CHECK(starts(LIST_ROW(0), " You are carrying nothing."));
-    CHECK(starts(DETAILS(26), "Pack  0/20"));
     CHECK(starts(HELP(), "jk:select SPACE:back"));
     CHECK(seen[1][0][0].paper == SCREEN_PAPER);                     /* the whole display covered */
     CHECK(memcmp(main_before, test_layer2_buf[0], sizeof(main_before)) == 0);
     CHECK(player_turn && nge_event_count() == 0);
     CHECK(nge_render_area == AREA);                                 /* the sprites aren't hidden: buffer 1 covers them */
 
-    /* ---- browse: what is in use (by slot), then the pack (by ID); the cursor highlighted ---- */
+    /* ---- browse: count, name and details in columns; in use first (by slot), in its ink; the cursor highlighted ---- */
     sword = gen_item(IT_SWORD, actor_player);
     ring1 = gen_item(IT_RING_HEALTH_2, actor_player);
     ring2 = gen_item(IT_RING_HEALTH_2, actor_player);
@@ -365,14 +396,14 @@ int main(void)
     inv_capacity[actor_player] = 20;
     fresh();
     press(EV(NGE_KEY_SPACE));
-    CHECK(screen_inv_run(SCREEN_INV_BROWSE, &chosen) == SCREEN_INV_BACK && RAN_AND_CLOSED());
-    CHECK(starts(LIST_ROW(0), " ring of health +2 (left)"));
-    CHECK(starts(LIST_ROW(1), " sword "));
-    CHECK(starts(LIST_ROW(2), " ring of health "));
-    CHECK(strcmp(LIST_ROW(3), "                            ") == 0);
+    CHECK(screen_inv_run(SCREEN_INV_BROWSE, &chosen, &used) == SCREEN_INV_BACK && !used && RAN_AND_CLOSED());
+    CHECK(strcmp(LIST_ROW(0), inv_row("", 1, "ring of health +2", "")) == 0);
+    CHECK(strcmp(LIST_ROW(1), inv_row("", 1, "sword", "1d8 [+1,+0]")) == 0);
+    CHECK(strcmp(LIST_ROW(2), inv_row("", 1, "ring of health +2", "")) == 0);
+    CHECK(strcmp(LIST_ROW(3), BLANK) == 0);
+    CHECK(INK(2, 6) == L2_CYAN && INK(3, 6) == L2_WHITE && INK(3, 26) == L2_WHITE);   /* in use; stowed */
     CHECK(HIGHLIGHTED(0) && !HIGHLIGHTED(1));
-    CHECK(starts(DETAILS(0), "ring of heal") && starts(DETAILS(1), "th "));   /* the name, wrapped */
-    CHECK(starts(DETAILS(26), "Pack  2/20"));                       /* the ring in use doesn't count */
+    CHECK(strcmp(OVER_ROW(0) + 30, "Pack  2/20") == 0);             /* the ring in use doesn't count */
     CHECK(starts(HELP(), "jk:select r:off SPACE:back"));            /* in use: only taking it off */
     /* The cursor: down (the cursor key or j), the highlight and the help follow */
     fresh();
@@ -380,22 +411,14 @@ int main(void)
     press(EV(NGE_KEY_J));
     press(EV(NGE_KEY_K));
     press(EV(NGE_KEY_SPACE));
-    screen_inv_run(SCREEN_INV_BROWSE, &chosen);
+    screen_inv_run(SCREEN_INV_BROWSE, &chosen, &used);
     CHECK(RAN_AND_CLOSED() && HIGHLIGHTED(1) && !HIGHLIGHTED(0) && !HIGHLIGHTED(2));
-    CHECK(starts(DETAILS(0), "sword "));
     CHECK(starts(HELP(), "jk:select w:wear d:drop SPACE:back"));
-
-    /* ---- browse: an action key gives the action and the item; nothing is done to it here ---- */
-    fresh();
-    press(EV(NGE_KEY_DOWN));
-    press(EV(NGE_KEY_D));
-    CHECK(screen_inv_run(SCREEN_INV_BROWSE, &chosen) == ACT_DROP && chosen == sword && RAN_AND_CLOSED());
-    CHECK(stowed(sword) && nge_event_count() == 0);
-    /* Refused: why, on the status line; the screen stays */
+    /* Refused: why, on the status line; the screen stays, nothing done */
     fresh();
     press(EV(NGE_KEY_D));                       /* the ring in use */
     press(EV(NGE_KEY_SPACE));
-    CHECK(screen_inv_run(SCREEN_INV_BROWSE, &chosen) == SCREEN_INV_BACK && RAN_AND_CLOSED());
+    CHECK(screen_inv_run(SCREEN_INV_BROWSE, &chosen, &used) == SCREEN_INV_BACK && !used && RAN_AND_CLOSED());
     CHECK(starts(STATUS(), "You must take that off first."));
     CHECK(item_slot[ring1] == SLOT_RING_L && nge_event_count() == 0);
     CHECK(memcmp(main_before, test_layer2_buf[0], sizeof(main_before)) == 0);   /* not in the message window */
@@ -404,27 +427,70 @@ int main(void)
     press(EV(NGE_KEY_U));                       /* a ring does nothing when used */
     press(EV(NGE_KEY_DOWN));
     press(EV(NGE_KEY_SPACE));
-    screen_inv_run(SCREEN_INV_BROWSE, &chosen);
-    CHECK(strcmp(STATUS(), "                                        ") == 0);
+    screen_inv_run(SCREEN_INV_BROWSE, &chosen, &used);
+    CHECK(strcmp(STATUS(), BLANK) == 0);
 
-    /* ---- i, then the command does it: d drops the sword, the turn used, the message on the main screen ---- */
+    /* ---- browse: wear, take off, drop and use are done here, the screen staying open; one turn for them all ---- */
+    potion = gen_item(IT_HEAL_POTION, actor_player);   /* the list: ring1 (in use), sword, ring2, potion */
+    fresh();
+    player_turn = 1;
+    press(EV(NGE_KEY_DOWN));                    /* the sword */
+    press(EV(NGE_KEY_W));                       /* wielded: first now, the cursor with it */
+    press(EV(NGE_KEY_DOWN));
+    press(EV(NGE_KEY_DOWN));                    /* ring2 */
+    press(EV(NGE_KEY_W));                       /* the right hand: sword, ring1, ring2, potion */
+    press(EV(NGE_KEY_DOWN));                    /* the potion */
+    press(EV(NGE_KEY_U));                       /* drunk: gone, the cursor on the last, ring2 */
+    press(EV(NGE_KEY_D));                       /* in use: refused, nothing done */
+    press(EV(NGE_KEY_R));                       /* taken off: to the pack, still last */
+    press(EV(NGE_KEY_D));                       /* dropped: the cursor on the new last, ring1 */
+    press(EV(NGE_KEY_SPACE));
+    player_command(EV(NGE_KEY_I));
+    CHECK(RAN_AND_CLOSED());
+    CHECK(item_slot[sword] == SLOT_WEAPON && item_slot[ring1] == SLOT_RING_L);
+    CHECK(NGE_OWNER_OF(ring2) == AREA && NGE_LOCATION_X(ring2) == 5);
+    CHECK(NGE_ENTITY_STATE(potion) == NGE_ENTITY_DYING);
+    CHECK(!player_turn && nge_event_count() == 0);                  /* one turn; every event handled in the screen */
+    CHECK(strcmp(LIST_ROW(0), inv_row("", 1, "sword", "1d8 [+1,+0]")) == 0 && INK(2, 6) == L2_CYAN);
+    CHECK(strcmp(LIST_ROW(1), inv_row("", 1, "ring of health +2", "")) == 0 && HIGHLIGHTED(1));
+    CHECK(strcmp(LIST_ROW(2), BLANK) == 0);
+    CHECK(strcmp(OVER_ROW(0) + 30, "Pack  0/20") == 0);
+    CHECK(starts(STATUS(), "You drop a ring of health +2.") && strcmp(STATUS2(), BLANK) == 0);
+    CHECK(starts(HELP(), "jk:select r:off SPACE:done"));            /* something done: SPACE leaves with it */
+    CHECK(said("You drop a ring of health +2.") && shown("You take off a ring of health +2."));   /* the window too */
+    /* A use's two messages: one a line on the status line */
+    potion = gen_item(IT_HEAL_POTION, actor_player);
     fresh();
     player_turn = 1;
     press(EV(NGE_KEY_DOWN));
-    press(EV(NGE_KEY_D));
-    player_command(EV(NGE_KEY_I));
-    CHECK(RAN_AND_CLOSED());
-    CHECK(NGE_OWNER_OF(sword) == AREA && NGE_LOCATION_X(sword) == 5 && !player_turn);
-    nge_event_process(messages_on_event);
-    CHECK(said("You drop a sword."));
-    /* ENTER: the obvious action, taking off what is in use */
+    press(EV(NGE_KEY_DOWN));
+    press(EV(NGE_KEY_ENTER));                   /* the obvious action: use it */
+    press(EV(NGE_KEY_SPACE));
+    CHECK(screen_inv_run(SCREEN_INV_BROWSE, &chosen, &used) == SCREEN_INV_BACK && used && RAN_AND_CLOSED());
+    CHECK(starts(STATUS(), "You drink the healing potion.") && starts(STATUS2(), "You feel much better."));
+    CHECK(NGE_ENTITY_STATE(potion) == NGE_ENTITY_DYING && player_turn);   /* the command, not the screen, ends the turn */
+    /* ENTER on what is in use takes it off; the screen stays */
     fresh();
-    player_turn = 1;
     press(EV(NGE_KEY_ENTER));
-    player_command(EV(NGE_KEY_I));
-    CHECK(RAN_AND_CLOSED() && item_slot[ring1] == SLOT_NONE && !player_turn);
+    press(EV(NGE_KEY_SPACE));
+    CHECK(screen_inv_run(SCREEN_INV_BROWSE, &chosen, &used) == SCREEN_INV_BACK && used && RAN_AND_CLOSED());
+    CHECK(stowed(sword) && item_slot[ring1] == SLOT_RING_L);
+    CHECK(starts(STATUS(), "You take off a sword."));
+    /* The game over while the screen is up (R3a): it closes after the action */
+    potion = gen_item(IT_HEAL_POTION, actor_player);
+    over = 1;
+    fresh();
+    press(EV(NGE_KEY_DOWN));
+    press(EV(NGE_KEY_DOWN));
+    press(EV(NGE_KEY_U));                       /* no SPACE: it closes by itself */
+    CHECK(screen_inv_run(SCREEN_INV_BROWSE, &chosen, &used) == SCREEN_INV_BACK && used && RAN_AND_CLOSED());
+    CHECK(NGE_ENTITY_STATE(potion) == NGE_ENTITY_DYING);
+    over = 0;
+    /* Back as the choosing tests expect: all three in the pack */
+    item_slot[ring1] = SLOT_NONE;
+    inv_stow(ring2, actor_player);
+    effects_recompute(actor_player);
     nge_event_flush();
-    inv_stow(sword, actor_player);   /* back in the pack */
 
     /* ---- choose: d, w, r and u list what the action applies to, lettered; a letter chooses ---- */
     fresh();
@@ -434,8 +500,9 @@ int main(void)
     player_command(EV(NGE_KEY_D));
     CHECK(RAN_AND_CLOSED());
     CHECK(starts(OVER_ROW(0), "             Shed a Burden"));         /* (40 - 13) / 2 */
-    CHECK(starts(LIST_ROW(0), " a) sword") && starts(LIST_ROW(1), " b) ring of health"));
-    CHECK(starts(LIST_ROW(2), " c) ring of health") && starts(LIST_ROW(3), "    "));
+    CHECK(strcmp(LIST_ROW(0), inv_row("a)", 1, "sword", "1d8 [+1,+0]")) == 0);
+    CHECK(starts(LIST_ROW(1), "b)  1 ring of health"));
+    CHECK(starts(LIST_ROW(2), "c)  1 ring of health") && strcmp(LIST_ROW(3), BLANK) == 0);
     CHECK(HIGHLIGHTED(2));                      /* the letter moved the cursor */
     CHECK(starts(HELP(), "Letter/ENTER: drop it  SPACE: back"));
     CHECK(NGE_OWNER_OF(ring2) == AREA && !player_turn);
@@ -450,7 +517,7 @@ int main(void)
     fresh();
     press(EV(NGE_KEY_DOWN));
     press(EV(NGE_KEY_ENTER));
-    CHECK(screen_inv_run(ACT_DROP, &chosen) == ACT_DROP && chosen == ring1);
+    CHECK(screen_inv_run(ACT_DROP, &chosen, &used) == ACT_DROP && chosen == ring1 && !used);
     /* A potion: it fits no slot */
     ring2 = gen_item(IT_HEAL_POTION, actor_player);
     fresh();
@@ -458,8 +525,8 @@ int main(void)
     press(EV(NGE_KEY_B));
     player_command(EV(NGE_KEY_W));
     CHECK(starts(OVER_ROW(0), "              Arm Thyself"));
-    CHECK(starts(LIST_ROW(0), " a) sword") && starts(LIST_ROW(1), " b) ring of health"));
-    CHECK(starts(LIST_ROW(2), "     "));       /* not the potion */
+    CHECK(starts(LIST_ROW(0), "a)  1 sword") && starts(LIST_ROW(1), "b)  1 ring of health"));
+    CHECK(strcmp(LIST_ROW(2), BLANK) == 0);     /* not the potion */
     CHECK(item_slot[ring1] != SLOT_NONE && !player_turn);
     player_turn = 1;
     fresh();
@@ -472,7 +539,8 @@ int main(void)
     press(EV(NGE_KEY_B));
     player_command(EV(NGE_KEY_R));
     CHECK(starts(OVER_ROW(0), "                 Divest"));
-    CHECK(starts(LIST_ROW(0), " a) sword (in hand)") && starts(LIST_ROW(1), " b) ring of health +2 (left)"));
+    CHECK(starts(LIST_ROW(0), "a)  1 sword") && starts(LIST_ROW(1), "b)  1 ring of health +2"));
+    CHECK(INK(2, 6) == L2_CYAN && INK(3, 6) == L2_CYAN);                 /* both in use */
     CHECK(item_slot[ring1] == SLOT_NONE && item_slot[sword] == SLOT_WEAPON && !player_turn);
     /* Refused: why, on the status line; the screen stays, the turn kept */
     player_turn = 1;
@@ -492,7 +560,7 @@ int main(void)
     press(EV(NGE_KEY_A));
     player_command(EV(NGE_KEY_U));
     CHECK(starts(OVER_ROW(0), "                Partake"));          /* (40 - 7) / 2 */
-    CHECK(starts(LIST_ROW(0), " a) healing potion") && starts(LIST_ROW(1), "     "));   /* not the ring */
+    CHECK(starts(LIST_ROW(0), "a)  1 healing potion") && strcmp(LIST_ROW(1), BLANK) == 0);   /* not the ring */
     CHECK(NGE_ENTITY_STATE(ring2) == NGE_ENTITY_DYING && !player_turn);
     nge_event_process(messages_on_event);
     CHECK(starts(row(27), "You drink the healing potion.") && said("You feel much better."));   /* the window not full yet */
@@ -534,10 +602,62 @@ int main(void)
     nge_entity_destroy(sword);
     nge_render_set_view(AREA);
     fresh();
-    CHECK(screen_inv_run(ACT_DROP, &chosen) == SCREEN_INV_BACK);
+    CHECK(screen_inv_run(ACT_DROP, &chosen, &used) == SCREEN_INV_BACK && !used);
     CHECK(paused == 0 && test_layer2_buffer == SCREEN_BUFFER_MAIN);
     CHECK(said("You have nothing to drop."));
-    CHECK(screen_inv_run(ACT_UNEQUIP, &chosen) == SCREEN_INV_BACK && said("You aren't using anything."));
+    CHECK(screen_inv_run(ACT_UNEQUIP, &chosen, &used) == SCREEN_INV_BACK && said("You aren't using anything."));
+
+    /* ---- the details: an attack's dice and bonuses, ammo's bonuses, AC, a count's meaning; stacks counted ---- */
+    {
+        static const struct { uint8_t kind; unsigned count; const char *name; const char *details; } rows[] = {
+            { IT_RUSTY_SWORD,    1, "rusty sword",        "1d8 [-1,-1]" },
+            { IT_LONG_BOW_2,     1, "long bow +2",        "1d8 [+3,+2]" },
+            { IT_ARROWS,        15, "sheaf of arrows",    "[+0,+0]" },       /* no attack part */
+            { IT_ARROWS_1,      10, "sheaf of arrows +1", "[+1,+1]" },       /* bonuses only */
+            { IT_DARTS,          8, "handful of darts",   "1d3 [+0,+0]" },   /* thrown: dice of its own */
+            { IT_HELMET,         1, "iron helmet",        "AC 2" },
+            { IT_WAND_STRIKING,  1, "wand of striking",   "6 charges" },
+            { IT_TORCH,          1, "torch",              "100 turns" },
+            { IT_LOCK_PICK,      1, "lock pick",          "5 uses" },
+            { IT_GOLD_SMALL,    10, "handful of gold",    "" },
+            { IT_HEAL_POTION,    1, "healing potion",     "" },
+        };
+        nge_entity_id_t ids[sizeof(rows) / sizeof(rows[0])];
+        uint8_t i;
+
+        for (i = 0; i < sizeof(rows) / sizeof(rows[0]); i++) {
+            ids[i] = gen_item(rows[i].kind, actor_player);
+        }
+        fresh();
+        press(EV(NGE_KEY_SPACE));
+        screen_inv_run(SCREEN_INV_BROWSE, &chosen, &used);
+        for (i = 0; i < sizeof(rows) / sizeof(rows[0]); i++) {
+            CHECK(strcmp(LIST_ROW(i), inv_row("", rows[i].count, rows[i].name, rows[i].details)) == 0);
+        }
+        /* One charge; a bonus of two digits fits its column */
+        item_count[ids[6]] = 1;
+        fresh();
+        press(EV(NGE_KEY_SPACE));
+        screen_inv_run(SCREEN_INV_BROWSE, &chosen, &used);
+        CHECK(strcmp(LIST_ROW(6), inv_row("", 1, "wand of striking", "1 charge")) == 0);
+        item_count[ids[6]] = 6;
+        /* Wield the rusty sword, then aim the wand: the aim is returned, the wield's turn used */
+        fresh();
+        press(EV(NGE_KEY_W));
+        for (i = 0; i < 6; i++) {
+            press(EV(NGE_KEY_DOWN));
+        }
+        press(EV(NGE_KEY_A));
+        CHECK(screen_inv_run(SCREEN_INV_BROWSE, &chosen, &used) == ACT_AIM && chosen == ids[6] && used);
+        CHECK(item_slot[ids[0]] == SLOT_WEAPON && INK(2, 6) == L2_CYAN);
+        nge_event_flush();
+        item_slot[ids[0]] = SLOT_NONE;
+        for (i = 0; i < sizeof(rows) / sizeof(rows[0]); i++) {
+            nge_entity_destroy(ids[i]);
+        }
+        effects_recompute(actor_player);
+        nge_event_flush();
+    }
 
     /* ---- a list longer than its panel (27 rows) scrolls with the cursor ---- */
     inv_capacity[actor_player] = 30;
@@ -549,18 +669,21 @@ int main(void)
         press(EV(NGE_KEY_DOWN));
     }
     press(EV(NGE_KEY_SPACE));
-    screen_inv_run(SCREEN_INV_BROWSE, &chosen);
+    screen_inv_run(SCREEN_INV_BROWSE, &chosen, &used);
     CHECK(RAN_AND_CLOSED());
-    CHECK(HIGHLIGHTED(26) && starts(LIST_ROW(26), " ring of health"));   /* item 27 on the last row */
-    CHECK(starts(DETAILS(26), "Pack 29/30"));
+    CHECK(HIGHLIGHTED(26) && starts(LIST_ROW(26), "    1 ring of health"));   /* item 27 on the last row */
+    CHECK(strcmp(OVER_ROW(0) + 30, "Pack 29/30") == 0);
     fresh();
     for (x = 0; x < 28; x++) {
         press(EV(NGE_KEY_DOWN));
     }
-    press(EV(NGE_KEY_ENTER));                   /* the potion, the last, shown on the last row */
-    CHECK(screen_inv_run(SCREEN_INV_BROWSE, &chosen) == ACT_USE && chosen == many[28]);
-    CHECK(HIGHLIGHTED(26) && starts(LIST_ROW(26), " healing potion"));
-    for (x = 0; x < 29; x++) {
+    press(EV(NGE_KEY_ENTER));                   /* the potion, the last, shown on the last row: drunk */
+    press(EV(NGE_KEY_SPACE));
+    CHECK(screen_inv_run(SCREEN_INV_BROWSE, &chosen, &used) == SCREEN_INV_BACK && used);
+    CHECK(NGE_ENTITY_STATE(many[28]) == NGE_ENTITY_DYING);
+    CHECK(HIGHLIGHTED(26) && starts(LIST_ROW(26), "    1 ring of health"));   /* the new last, still shown */
+    nge_event_flush();
+    for (x = 0; x < 28; x++) {
         nge_entity_destroy(many[x]);
     }
     inv_capacity[actor_player] = 20;
@@ -1033,9 +1156,9 @@ int main(void)
     CHECK(effects_check(actor_player));
 
     /* ---- asserts ---- */
-    TEST_EXPECT_HALT(screen_inv_run(ACT_COUNT + 1, &chosen));
+    TEST_EXPECT_HALT(screen_inv_run(ACT_COUNT + 1, &chosen, &used));
     CHECK(test_halt_count == 1);
-    TEST_EXPECT_HALT(screen_inv_run(ACT_MOVE, &chosen));   /* not an item action */
+    TEST_EXPECT_HALT(screen_inv_run(ACT_MOVE, &chosen, &used));   /* not an item action */
     CHECK(test_halt_count == 1);
     TEST_EXPECT_HALT(screen_close());                      /* none open */
     CHECK(test_halt_count == 1);

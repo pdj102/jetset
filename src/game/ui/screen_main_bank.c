@@ -88,6 +88,7 @@ void screen_init(void) NGE_BANKED
     screen_depth = 0;
     screen_message_line_used = 0;
     screen_message_stream = NULL;
+    screen_message_copy_stream = NULL;
     nge_sprite_clear(screen_overlay, SCREEN_OVERLAY_COUNT);
 
     b = nge_panel_open_all(SCREEN_BUFFER_MAIN, panels, PANEL_COUNT, streams);

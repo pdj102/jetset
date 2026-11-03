@@ -309,7 +309,9 @@ one; their names tell them apart.
 - **D12 Timed effects come first in the numbering.** Only they can be active, so
   anything counting active effects sizes its arrays by `EF_TIMED_COUNT`, keeping
   the PC screen's stack use small. A test checks the order.
-- **D13 Long names may be cut when equipped.** The list panel is 28 columns, so a
+- **D13 Long names may be cut when equipped.** *(Superseded: the inventory's rows
+  have no slot words now, and every name fits; [ui_inventory.md](ui_inventory.md).)*
+  The list panel is 28 columns, so a
   long name can lose the end of its slot word. This is cosmetic and accepted.
 
 ## 6. Not built yet

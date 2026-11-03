@@ -2,7 +2,9 @@
 
 Status: implemented; the CSpect checks in section 7 passed (2026-10-26).
 The opening time on hardware (check 8) is not measured yet. Agreed on 2026-10-26, with the questions answered in section 9.
-Section 10 lists where the build differs from the design.
+Section 10 lists where the build differs from the design. The inventory
+screen was changed by [ui_inventory.md](ui_inventory.md) (2026-11-03):
+several actions in one visit, and full-width rows with no details panel.
 
 Builds on [ui_layer2.md](ui_layer2.md) (the UI on Layer 2) and
 [cells_16.md](cells_16.md) (today's layout). It replaces the item screens
@@ -95,7 +97,7 @@ a requirement that differs from the request, with the reason.
 - **R14** While an overlay screen is shown, no game time passes, no
   animation advances and no sprite moves (today, waiting for a key runs
   the game's frames, which advance the animations).
-- **R15 (New)** A screen only chooses; the game acts. An action that uses
+- **R15 (New; changed for the inventory by ui_inventory.md D1)** A screen only chooses; the game acts. An action that uses
   a turn (equip, take off, drop, use) closes the screen and returns the
   action and its item to the command that opened it, which does it, as
   `ui_choose_item()` does today. *Reason: keeps one place where turns are
@@ -114,7 +116,7 @@ a requirement that differs from the request, with the reason.
 - **R18** It lists what the player has in use (by slot) and what is in
   the pack (by ID), with the pack's count and capacity, and a cursor on
   one item.
-- **R19 (Changed, Q5)** A details panel shows the selected item's name.
+- **R19 (Changed, Q5; replaced by ui_inventory.md R6-R13)** A details panel shows the selected item's name.
   What can be done with it is on the help line (R11). *Reason: more
   details (where it is worn, attack, AC, a description) come later, with
   item descriptions.*
@@ -214,7 +216,8 @@ a requirement that differs from the request, with the reason.
   area" call): saves the bytes, but each panel's cursor and ink would
   have to be put back by hand on every switch.
 
-- **D7 A turn-using action closes the screen (R15).** **Rejected:** keeping
+- **D7 A turn-using action closes the screen (R15).** *(Reversed for
+  equip, take off, drop and use by ui_inventory.md D1.)* **Rejected:** keeping
   the screen open and doing several actions in one visit: either the
   world doesn't react between them (equip three items for the price of
   one), or the world steps with the screen up and the player can't see

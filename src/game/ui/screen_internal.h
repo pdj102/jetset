@@ -38,6 +38,12 @@ extern uint8_t screen_message_line_used;
 /* Where messages go instead of the message window (screen_message_to()), or NULL */
 extern NGE_FILE *screen_message_stream;
 
+/* Where messages are copied as well as the message window (screen_message_copy()), or NULL */
+extern NGE_FILE *screen_message_copy_stream;
+
+/* The copy's stream has a message: the next goes on a new line */
+extern uint8_t screen_message_copy_used;
+
 /* The overlay sprites' records */
 extern nge_sprite_attr_t screen_overlay[SCREEN_OVERLAY_COUNT];
 
@@ -57,12 +63,12 @@ uint8_t screen_pc_ink(uint8_t value, uint8_t base, uint8_t lower_is_better);
 /* The inventory's panels, by number */
 #define SCREEN_INV_TITLE    0
 #define SCREEN_INV_LIST     1
-#define SCREEN_INV_DETAILS  2
-#define SCREEN_INV_STATUS   3
-#define SCREEN_INV_COUNT   4
+#define SCREEN_INV_STATUS   2
+#define SCREEN_INV_COUNT    3
 
 extern nge_entity_id_t screen_inv_ids[SCREEN_INV_MAX];       /* the items listed, in order */
 extern nge_list_t screen_inv_list;                           /* their cursor and rows */
 extern NGE_FILE *screen_inv_streams[SCREEN_INV_COUNT];      /* the panels' streams, by SCREEN_INV_* */
+extern uint8_t screen_inv_used;                              /* 1 once an action done in the screen used the turn */
 
 #endif

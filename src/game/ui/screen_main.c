@@ -23,6 +23,8 @@ NGE_FILE *screen_messages = NULL;
 
 uint8_t screen_message_line_used;
 NGE_FILE *screen_message_stream = NULL;
+NGE_FILE *screen_message_copy_stream = NULL;
+uint8_t screen_message_copy_used;
 
 /* The overlay sprites' records: common memory, so the upload can read them from any caller */
 nge_sprite_attr_t screen_overlay[SCREEN_OVERLAY_COUNT];
@@ -63,8 +65,16 @@ void screen_message_to(NGE_FILE *stream)
     screen_message_stream = stream;
 }
 
+void screen_message_copy(NGE_FILE *stream)
+{
+    screen_message_copy_stream = stream;
+    screen_message_copy_used = 0;
+}
+
 void screen_message(const char *text)
 {
+    NGE_FILE *copy = screen_message_copy_stream;
+
     if (screen_message_stream != NULL) {
         nge_text_cls(screen_message_stream);
         nge_puts(text, screen_message_stream);
@@ -73,4 +83,11 @@ void screen_message(const char *text)
     screen_message_line();
     nge_text_ink(NGE_INK_WHITE, screen_messages);
     nge_puts(text, screen_messages);
+    if (copy != NULL) {
+        if (screen_message_copy_used) {
+            nge_putc(NGE_CTRL_LF, copy);   /* a scrolling panel: the newest stays on its bottom line */
+        }
+        screen_message_copy_used = 1;
+        nge_puts(text, copy);
+    }
 }

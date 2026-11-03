@@ -171,8 +171,12 @@ static uint8_t choose_tile(uint8_t purpose, uint8_t range, act_t *a)
 static void item_command(uint8_t mode)
 {
     act_t a = { 0 };
-    uint8_t action = screen_inv_run(mode, &a.item);
+    uint8_t used;
+    uint8_t action = screen_inv_run(mode, &a.item, &used);
 
+    if (used) {
+        player_turn = 0;   /* actions done in the screen: one turn for them all, and for what follows */
+    }
     if (action == SCREEN_INV_BACK || (action == ACT_AIM && !choose_tile(TARGET_AIM, ACT_AIM_RANGE, &a))) {
         return;
     }

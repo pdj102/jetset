@@ -61,6 +61,17 @@ void game_pause_frame(void)
     CHECK(0);
 }
 
+/* The inventory's actions: no screen runs here */
+void game_pause_events(void)
+{
+    CHECK(0);
+}
+
+uint8_t game_is_over(void)
+{
+    return 0;
+}
+
 /*
  * The keys the player presses while a chooser waits: a key event already
  * waiting first, as the real one does, then the script's, one a wait. When

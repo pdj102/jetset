@@ -21,25 +21,40 @@
 #include "ui/nge_panel.h"
 
 #include "game/actors.h"
+#include "game/components/attack.h"
 #include "game/components/inventory.h"
 #include "game/components/item.h"
 #include "game/components/kind.h"
 #include "game/effects/effects.h"
+#include "game/game.h"
 #include "game/gen/gen.h"
+#include "game/gen/gen_kinds.h"
 #include "game/messages/messages.h"
 #include "game/ui/screen_internal.h"
 
+/* The status line scrolls: an action's words, one a line, the newest last */
 static const nge_panel_t panels[SCREEN_INV_COUNT] = {
     [SCREEN_INV_TITLE]   = { { .x1 = 0, .x2 = 39, .y1 = 0, .y2 = 1 }, SCREEN_PAPER, NGE_PANEL_CLIP },
-    [SCREEN_INV_LIST]    = { { .x1 = 0, .x2 = 27, .y1 = 2, .y2 = 28 }, SCREEN_PAPER, NGE_PANEL_CLIP },
-    [SCREEN_INV_DETAILS] = { { .x1 = 28, .x2 = 39, .y1 = 2, .y2 = 28 }, SCREEN_PAPER, NGE_PANEL_SCROLL },
-    [SCREEN_INV_STATUS]  = { { .x1 = 0, .x2 = 39, .y1 = 29, .y2 = 30 }, SCREEN_PAPER, NGE_PANEL_CLIP },
+    [SCREEN_INV_LIST]    = { { .x1 = 0, .x2 = 39, .y1 = 2, .y2 = 28 }, SCREEN_PAPER, NGE_PANEL_CLIP },
+    [SCREEN_INV_STATUS]  = { { .x1 = 0, .x2 = 39, .y1 = 29, .y2 = 30 }, SCREEN_PAPER, NGE_PANEL_SCROLL },
 };
 
 #define LIST_ROWS     27   /* the list panel's rows */
-#define DETAILS_LAST  26   /* the details panel's last row: the pack's count */
 #define NAME_MAX      20   /* a kind's name, and its NUL */
 #define HELP_MAX      48   /* a help line built for an item: longer than the line, which clips it */
+
+/*
+ * A row's columns (docs/ui_inventory.md, 5.1): the choose mode's letter,
+ * the count, the name, the details. The longest name is 19 (test_gen
+ * checks NAME_MAX), the longest details 14 ("1d10 [+10,+10]")
+ */
+#define COUNT_WIDTH   3    /* a count is a byte: 255 at most */
+#define NAME_WIDTH    (NAME_MAX - 1)
+#define PACK_COL      30   /* "Pack nn/mm" on the title row, right-aligned */
+
+/* The inks of a row: what is in use stands out */
+#define INK_IN_USE  NGE_INK_CYAN
+#define INK_STOWED  NGE_INK_WHITE
 
 /* Characters of the keys (nge_key_ascii()) */
 #define CHAR_DOWN   10
@@ -82,29 +97,13 @@ static const inv_mode_t modes[ACT_COUNT + 1] = {
     [ACT_UNLOCK]  = { "Try a Lock", "Letter/ENTER: try it  SPACE: back", "You have no key or pick.", LIST_TOOLS },
 };
 
+/* The actions done in the screen in browse mode, which stays open (R1) */
+#define BUNDLED(action)  ((action) == ACT_EQUIP || (action) == ACT_UNEQUIP || (action) == ACT_DROP || \
+                          (action) == ACT_USE)
+
 /* The browse keys of the actions, as the help line lists them, in this order */
 static const uint8_t help_actions[5] = { ACT_EQUIP, ACT_UNEQUIP, ACT_DROP, ACT_USE, ACT_AIM };
 static const char *const help_words[5] = { " w:wear", " r:off", " d:drop", " u:use", " a:aim" };
-
-/* Where an equipped item is, after its name */
-static const char *const slot_words[SLOT_COUNT] = {
-    [SLOT_NONE]   = "",
-    [SLOT_WEAPON] = " (in hand)",
-    [SLOT_SHIELD] = " (on arm)",
-    [SLOT_HEAD]   = " (on head)",
-    [SLOT_BODY]   = " (worn)",
-    [SLOT_HANDS]  = " (on hands)",
-    [SLOT_FEET]   = " (on feet)",
-    [SLOT_NECK]   = " (neck)",
-    [SLOT_RING_L] = " (left)",    /* short: "ring of health (right)" fits the list */
-    [SLOT_RING_R] = " (right)",
-    [SLOT_LIGHT]  = " (lit)",
-    [SLOT_RANGED] = " (ready)",
-    [SLOT_AMMO]   = " (quiver)",
-    [SLOT_ARMS]   = " (on arms)",
-    [SLOT_LEGS]   = " (on legs)",
-    [SLOT_CLOAK]  = " (on back)",
-};
 
 /* ---- The items ---- */
 
@@ -205,6 +204,83 @@ static uint8_t allowed(uint8_t action, uint8_t say)
 
 /* ---- Drawing ---- */
 
+/* A signed bonus, with its sign: "+1", "-1", "+0" */
+static void put_signed(int8_t v, NGE_FILE *s)
+{
+    if (v >= 0) {
+        nge_putc('+', s);
+    }
+    nge_puti16(v, s);
+}
+
+/* A count and its unit: "8 charges", "1 charge" */
+static void put_count(uint8_t n, const char *unit, NGE_FILE *s)
+{
+    nge_putu16(n, s);
+    nge_puts(unit, s);
+    if (n != 1) {
+        nge_putc('s', s);
+    }
+}
+
+/*
+ * An item's details, after its name (docs/ui_inventory.md, 5.2): an
+ * attack's dice and bonuses, ammo's bonuses, armour's AC, a count's
+ * meaning; nothing for the rest. The kind's own numbers (R11)
+ */
+static void describe(nge_entity_id_t id, NGE_FILE *s)
+{
+    attack_kind_t k;
+    uint8_t kind = kind_index[id];
+    uint8_t subclass = gen_item_subclass(kind);
+    uint16_t hook;
+
+    switch (subclass) {
+    case ITEM_WEAPON:
+    case ITEM_RANGED:
+    case ITEM_AMMO:
+        gen_item_attack(kind, &k);   /* zeros for plain ammo, with no attack part */
+        if (k.dice != 0) {
+            nge_putu16(k.dice, s);
+            nge_putc('d', s);
+            nge_putu16(k.sides, s);
+            nge_putc(' ', s);
+        } else if (subclass != ITEM_AMMO) {
+            return;
+        }
+        nge_putc('[', s);
+        put_signed(k.to_hit, s);
+        nge_putc(',', s);
+        put_signed(k.bonus, s);
+        nge_putc(']', s);
+        return;
+    case ITEM_WAND:
+        put_count(item_count[id], " charge", s);
+        return;
+    case ITEM_LIGHT:
+        put_count(item_count[id], " turn", s);
+        return;
+    case ITEM_TOOL:
+        put_count(item_count[id], " use", s);
+        return;
+    default:
+        break;
+    }
+    hook = gen_hook_of(id, GEN_HOOK_WORN);
+    if (GEN_HOOK_EF(hook) == EF_WORN_AC) {
+        nge_puts("AC ", s);
+        nge_puti16(GEN_HOOK_POWER(hook), s);
+    }
+}
+
+/* How many of an item there are: a stack's count, 1 for anything else (Q2) */
+static uint8_t how_many(nge_entity_id_t id)
+{
+    uint8_t subclass = gen_item_subclass(kind_index[id]);
+
+    return (subclass == ITEM_AMMO || subclass == ITEM_TREASURE) ? item_count[id] : 1;
+}
+
 /* Draw item i's row, if it is shown: lettered in choose mode, highlighted under the cursor */
 static void draw_row(uint8_t mode, uint8_t i)
 {
@@ -212,47 +288,56 @@ static void draw_row(uint8_t mode, uint8_t i)
     char name[NAME_MAX];
     uint8_t top = screen_inv_list.top;
     nge_entity_id_t id = screen_inv_ids[i];
+    uint8_t n;
 
     if (i < top || i >= top + LIST_ROWS) {
         return;
     }
     nge_text_at((uint8_t)(i - top), 0, s);
     nge_text_paper((i == screen_inv_list.cursor) ? SCREEN_HIGHLIGHT : SCREEN_PAPER, s);
-    nge_putc(' ', s);
+    nge_text_ink((item_slot[id] != SLOT_NONE) ? INK_IN_USE : INK_STOWED, s);
     if (mode != SCREEN_INV_BROWSE) {
         nge_putc((uint8_t)('a' + i), s);
-        nge_puts(") ", s);
+        nge_putc(')', s);
+    } else {
+        nge_puts("  ", s);
     }
+    nge_putu16w(how_many(id), COUNT_WIDTH, ' ', s);
+    nge_putc(' ', s);
     gen_name(id, name, sizeof(name));
     nge_puts(name, s);
-    nge_puts(slot_words[item_slot[id]], s);
-    nge_text_clreol(s);   /* the rest of the row: a highlight bar, or what a longer name left */
+    for (n = (uint8_t)strlen(name); n <= NAME_WIDTH; n++) {
+        nge_putc(' ', s);   /* to the details' column, and the space before it */
+    }
+    describe(id, s);
+    nge_text_clreol(s);   /* the rest of the row: a highlight bar, or what a longer row left */
     nge_text_paper(SCREEN_PAPER, s);
 }
 
-/* Draw every row shown */
+/* Draw every row shown, or say the list is empty */
 static void draw_rows(uint8_t mode)
 {
+    NGE_FILE *s = screen_inv_streams[SCREEN_INV_LIST];
     uint8_t i;
 
+    nge_text_cls(s);
+    if (screen_inv_list.count == 0) {
+        nge_text_at(0, 1, s);
+        nge_text_ink(INK_STOWED, s);
+        nge_puts(modes[mode].empty, s);
+        return;
+    }
     for (i = screen_inv_list.top; i < screen_inv_list.count; i++) {
         draw_row(mode, i);
     }
 }
 
-/* The details panel: the selected item's name, and the pack's count */
-static void draw_details(void)
+/* The pack's count, on the title row */
+static void draw_pack(void)
 {
-    NGE_FILE *s = screen_inv_streams[SCREEN_INV_DETAILS];
-    char name[NAME_MAX];
+    NGE_FILE *s = screen_inv_streams[SCREEN_INV_TITLE];
 
-    nge_text_cls(s);
-    if (screen_inv_list.count != 0) {
-        nge_text_ink(NGE_INK_YELLOW, s);
-        gen_name(selected(), name, sizeof(name));
-        nge_puts(name, s);
-    }
-    nge_text_at(DETAILS_LAST, 0, s);
+    nge_text_at(0, PACK_COL, s);
     nge_text_ink(NGE_INK_CYAN, s);
     nge_puts("Pack ", s);
     nge_putu16w(inv_count(actor_player), 2, ' ', s);
@@ -279,7 +364,7 @@ static void show_help(uint8_t mode)
             }
         }
     }
-    strncat(help, " SPACE:back", sizeof(help) - 1 - strlen(help));
+    strncat(help, screen_inv_used ? " SPACE:done" : " SPACE:back", sizeof(help) - 1 - strlen(help));
     screen_help(help);   /* on the stack: common memory */
 }
 
@@ -290,32 +375,68 @@ static void moved(uint8_t mode, uint8_t old, uint8_t change)
         return;
     }
     if (change == NGE_LIST_SCROLLED) {
-        nge_text_cls(screen_inv_streams[SCREEN_INV_LIST]);
         draw_rows(mode);
     } else {
         draw_row(mode, old);
         draw_row(mode, screen_inv_list.cursor);
     }
     nge_text_cls(screen_inv_streams[SCREEN_INV_STATUS]);   /* a refusal was about the old item */
-    draw_details();
     show_help(mode);
 }
 
 /* Draw the whole screen */
 static void draw(uint8_t mode)
 {
-    NGE_FILE *s = screen_inv_streams[SCREEN_INV_LIST];
-
     nge_text_ink(NGE_INK_YELLOW, screen_inv_streams[SCREEN_INV_TITLE]);
     nge_panel_centre(&panels[SCREEN_INV_TITLE], 0, modes[mode].title, screen_inv_streams[SCREEN_INV_TITLE]);
+    draw_pack();
     nge_text_ink(NGE_INK_YELLOW, screen_inv_streams[SCREEN_INV_STATUS]);
-    if (screen_inv_list.count == 0) {
-        nge_text_at(0, 1, s);
-        nge_puts(modes[mode].empty, s);
-    }
     draw_rows(mode);
-    draw_details();
     show_help(mode);
+}
+
+/* ---- Actions done here (browse mode) ---- */
+
+/*
+ * Do action with the selected item, which the check allowed: its words go
+ * to the message window and the status line (R5), its events are handled
+ * at once (D2). Then list again, the cursor on the same item if it is
+ * still listed, or in its place (D4), and redraw
+ */
+static void act_here(uint8_t action)
+{
+    NGE_FILE *status = screen_inv_streams[SCREEN_INV_STATUS];
+    act_t a = { 0 };
+    uint8_t i;
+    uint8_t place = screen_inv_list.cursor;
+
+    a.actor = actor_player;
+    a.item = selected();
+    a.slot = SLOT_NONE;   /* equip: the first free slot it fits */
+    nge_text_cls(status);
+    screen_message_copy(status);
+    if (act_do(action, &a, ACT_DO) == ACT_FAIL) {
+        messages_act_failed(&a);
+    }
+    game_pause_events();
+    screen_message_copy(NULL);
+    if (a.used) {
+        screen_inv_used = 1;
+    }
+
+    nge_list_init(&screen_inv_list, collect(LIST_ALL), LIST_ROWS);
+    for (i = 0; i < screen_inv_list.count; i++) {
+        if (screen_inv_ids[i] == a.item) {
+            place = i;
+            break;
+        }
+    }
+    if (screen_inv_list.count != 0) {
+        nge_list_set(&screen_inv_list, place);   /* clamped to the last */
+    }
+    draw_rows(SCREEN_INV_BROWSE);
+    draw_pack();
+    show_help(SCREEN_INV_BROWSE);
 }
 
 /* ---- Keys ---- */
@@ -407,13 +528,15 @@ static uint8_t key(uint8_t mode, nge_key_event_t ev)
     }
 }
 
-uint8_t screen_inv_run(uint8_t mode, nge_entity_id_t *item) NGE_BANKED
+uint8_t screen_inv_run(uint8_t mode, nge_entity_id_t *item, uint8_t *used) NGE_BANKED
 {
     uint8_t answer;
     uint8_t ok;
 
     nge_util_assert(mode <= ACT_COUNT && modes[mode].title != NULL);
 
+    *used = 0;
+    screen_inv_used = 0;
     nge_list_init(&screen_inv_list, collect(modes[mode].list), LIST_ROWS);
     if (screen_inv_list.count == 0 && mode != SCREEN_INV_BROWSE) {
         screen_message(modes[mode].empty);   /* nothing to choose: the screen isn't opened */
@@ -426,10 +549,15 @@ uint8_t screen_inv_run(uint8_t mode, nge_entity_id_t *item) NGE_BANKED
     draw(mode);
     do {
         answer = key(mode, screen_wait_key());
+        if (mode == SCREEN_INV_BROWSE && BUNDLED(answer)) {
+            act_here(answer);
+            answer = game_is_over() ? SCREEN_INV_BACK : KEY_STAY;   /* the player died: close (R3a) */
+        }
     } while (answer == KEY_STAY);
     if (answer != SCREEN_INV_BACK) {
         *item = selected();
     }
+    *used = screen_inv_used;
     nge_panel_close_all(screen_inv_streams, SCREEN_INV_COUNT);
     screen_close();
     return answer;

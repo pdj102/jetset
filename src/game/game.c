@@ -136,6 +136,16 @@ void game_pause_frame(void)
     nge_input_update();
 }
 
+void game_pause_events(void)
+{
+    nge_event_process(game_on_event);
+}
+
+uint8_t game_is_over(void)
+{
+    return ended;
+}
+
 nge_key_event_t game_wait_key(uint16_t frames_max)
 {
     nge_key_event_t ev;

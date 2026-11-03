@@ -58,14 +58,18 @@
  * the help line (game_play_help()); a screen with screen_wait_key(),
  * paused, and screen_close() shows the main screen again. It returns the
  * answer, and the command then does the action. No time passes while a
- * chooser waits. The choosers are screen_inv_run()
+ * chooser waits. The inventory is the one exception: in browse mode it
+ * does equip, take off, drop and use itself, several in one visit for one
+ * turn, handling each one's events at once (game_pause_events()). The
+ * choosers are screen_inv_run()
  * (game/ui/screen_inv.h), player_ask_direction()
  * (game/player/player.h) and target_choose() (game/target/target.h).
  *
- * Events are handled in three places, each for a reason: after each timer
+ * Events are handled in four places, each for a reason: after each timer
  * firing (every actor sees the last one's reactions), in the step (the
- * player's command), and after a change of level (the arrival, before the
- * clean-up releases what it names).
+ * player's command), after a change of level (the arrival, before the
+ * clean-up releases what it names), and after each action the inventory
+ * does itself (game_pause_events()).
  *
  * A game ends only through game_over(): the clock stops after the current
  * tick, so nothing more acts in the frame's remaining advances, and the
@@ -114,6 +118,18 @@ void game_frame_end(void);
  *        as they were. If the last frame wasn't ended, it is ended first.
  */
 void game_pause_frame(void);
+
+/**
+ * @brief Handle the events waiting, as play does after each timer firing:
+ *        for an overlay screen that did an action itself (the inventory's
+ *        bundled actions, docs/ui_inventory.md), so the queue never holds
+ *        more than one action's events, and their words are said while
+ *        the screen is up.
+ */
+void game_pause_events(void);
+
+/** @brief The game is over (game_over() was called): an overlay screen that did an action closes. */
+uint8_t game_is_over(void);
 
 /**
  * @brief Wait for a key, running frames that only draw.

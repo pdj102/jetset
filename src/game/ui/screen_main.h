@@ -134,6 +134,15 @@ void screen_message(const char *text);
 void screen_message_to(NGE_FILE *stream);
 
 /**
+ * @brief Copy the messages to stream as well as the message window, from
+ *        now on, until called with NULL: each on a new line of it (a
+ *        scrolling panel shows the newest last). An overlay screen uses it
+ *        to show what an action it did said, while the message window
+ *        keeps the whole record (docs/ui_inventory.md, R5).
+ */
+void screen_message_copy(NGE_FILE *stream);
+
+/**
  * @brief Start a new line in the message window for writing to
  *        screen_messages directly: the next message then goes on the line
  *        after it.

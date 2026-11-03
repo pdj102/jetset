@@ -124,7 +124,12 @@ targeting (`target_choose()`, game/target/target.h), whose frames do only
   (`game_play_help()`); a screen is an overlay screen (P-SCREEN-1). It
   throws away waiting key events again, and returns the answer.
 - It only chooses: it does no action and posts no events. The command does
-  the action with the answer, through `player_act()`.
+  the action with the answer, through `player_act()`. The one exception is
+  the inventory's browse mode (`docs/ui_inventory.md`, D1): it does equip,
+  take off, drop and use itself with `act_do()`, handles each one's events
+  at once (`game_pause_events()`), closes if the game is over
+  (`game_is_over()`), and tells the command a turn was used; the command
+  ends the turn.
 - Its answer to a key is a step function on one key event
   (`player_direction_key()`, `target_key()`, the inventory's `key()`), with
   PC tests: a screen's through its run function, the keys given one a
