@@ -50,7 +50,7 @@ uint8_t act_aim(act_t *a, uint8_t mode) NGE_BANKED
     if (wand && item_count[item] == 0) {
         return act_fail(a, ACT_R_NO_CHARGES);
     }
-    a->kind = ef;
+    a->effect = ef;
     if (a->x == NGE_LOCATION_X(actor) && a->y == NGE_LOCATION_Y(actor)) {
         a->target = actor;   /* only aim does this: a staff of healing can heal its holder */
     } else {

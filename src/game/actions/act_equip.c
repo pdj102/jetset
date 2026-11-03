@@ -28,7 +28,7 @@ uint8_t act_equip(act_t *a, uint8_t mode) NGE_BANKED
 {
     nge_entity_id_t actor = a->actor;
     nge_entity_id_t item = a->item;
-    uint8_t want = a->kind;
+    uint8_t want = a->slot;
     nge_entity_id_t taken = NGE_ENTITY_INVALID;
     uint16_t slots;
     uint8_t slot;
@@ -78,7 +78,7 @@ uint8_t act_equip(act_t *a, uint8_t mode) NGE_BANKED
         a->target = taken;
         return act_fail(a, ACT_R_SLOT_TAKEN);
     }
-    a->kind = slot;
+    a->slot = slot;
     if (mode == ACT_CHECK) {
         return act_checked(a);
     }

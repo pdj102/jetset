@@ -216,7 +216,7 @@ and `item`: entity 0 is a real ID, so an action that accepts no target says so w
 | `item` | The item used | The weapon used |
 | `dx`, `dy` | A direction | |
 | `x`, `y` | A tile: fire and aim read them | |
-| `kind` | A slot to equip in | The slot, damage type or effect used |
+| `kind` | One byte, named by its use: `slot` to equip in, `spell` to cast | `slot`, `damage` or `effect` used |
 | `amount` | | The damage taken; in fire's check, its range |
 | `reason` | | `ACT_R_*` |
 | `used` | | 1 if the turn was used |
@@ -228,20 +228,24 @@ Who reads what:
 | Move | Out: the blocker | | In | |
 | Pick up | In or find; out | | | |
 | Drop | | In | | |
-| Equip | Out: the item in the slot | In | | In and out: the slot |
+| Equip | Out: the item in the slot | In | | In and out: `slot` |
 | Unequip | | In | | |
-| Melee | In or find; out | Out: the weapon | If `target` is invalid | Out: damage type |
-| Use | | In | | Out: the effect |
+| Melee | In or find; out | Out: the weapon | If `target` is invalid | Out: `damage` |
+| Use | | In | | Out: `effect` |
 | Open, close | In or find; out | | If `target` is invalid | |
 | Ascend, descend | Out: the stairs | | | |
 | Wait | | | | |
-| Fire, with `x`, `y` | Out: the first in line | Out: the launcher or thrown item | | Out: damage type |
-| Aim, with `x`, `y` | Out: the first in line, the one on the tile if direct, or the actor | In | | Out: the effect |
+| Fire, with `x`, `y` | Out: the first in line | Out: the launcher or thrown item | | Out: `damage` |
+| Aim, with `x`, `y` | Out: the first in line, the one on the tile if direct, or the actor | In | | Out: `effect` |
 
 A context can be passed straight to the next action. After a move is refused,
 `target` already holds the blocker, ready for a melee or an open. It can also be
 passed to the same action twice, which is what `ai_try()` does: what a check writes
 to `kind` and `item` is what the action would choose anyway.
+
+`kind` is an anonymous union: `slot`, `damage`, `effect` and `spell` are names for the
+same byte, and each action reads or writes only its own. Two actions in a row still
+share it, so an output of one is the next one's input if that reads it.
 
 ### 4.3 Results
 
@@ -675,7 +679,7 @@ open.
 
 ### 6.6 `ACT_CAST`
 
-**Cast a spell or ability.** In: actor, kind (a spell number), x, y if it is aimed.
+**Cast a spell or ability.** In: actor, spell (a spell number), x, y if it is aimed.
 Out: target.
 
 - **Data:** one table of spells: effect, power, MP cost, aimed or not, range. It is

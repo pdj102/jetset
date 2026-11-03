@@ -180,7 +180,7 @@ static void item_command(uint8_t mode)
         }
         a.target = NGE_ENTITY_INVALID;   /* what is in that direction */
     }
-    a.kind = SLOT_NONE;   /* equip: the first free slot it fits */
+    a.slot = SLOT_NONE;   /* equip: the first free slot it fits */
     player_act(action, &a);
 }
 

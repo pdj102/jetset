@@ -68,7 +68,14 @@ typedef struct act {
     int8_t  dy;
     uint8_t x;                /**< ...or a tile. */
     uint8_t y;
-    uint8_t kind;             /**< Extra input, e.g. a damage type... */
+    /* One byte, named by the action using it: an action reads or writes one name only */
+    union {
+        uint8_t kind;         /**< Any of them, for code that doesn't care which. */
+        uint8_t slot;         /**< Equip: in and out, the slot (SLOT_*). */
+        uint8_t damage;       /**< Melee, fire: out, the damage type (DMG_*)... */
+        uint8_t effect;       /**< Use, aim: out, the effect (EF_*). */
+        uint8_t spell;        /**< Cast: in, the spell (SP_*). */
+    };
     uint8_t amount;           /**< ...and amount. */
     /* Out */
     uint8_t reason;           /**< ACT_R_*: why it failed; ACT_R_NONE on success. */
@@ -186,12 +193,12 @@ uint8_t act_drop(act_t *a, uint8_t mode) NGE_BANKED;
 /**
  * @brief Equip a stowed item: wield a weapon, put on a ring.
  *
- * In: actor (alive), item, kind (the slot to use, SLOT_* in game/
+ * In: actor (alive), item, slot (the slot to use, SLOT_* in game/
  * components/item.h; SLOT_NONE for the first free slot the item fits).
  * Succeeds if the actor has the item stowed, it fits a slot the actor
  * has, that slot is free, and it has the hands (inv_hands_taken(): a
  * two-handed item and a shield exclude each other): posts EV_EQUIPPED
- * (p1: the slot); a->kind is the slot used. Equipped items don't count towards the capacity.
+ * (p1: the slot); a->slot is the slot used. Equipped items don't count towards the capacity.
  * Refused with ACT_R_NO_INVENTORY, ACT_R_NOT_CARRIED,
  * ACT_R_ALREADY_EQUIPPED, ACT_R_CANT_EQUIP, ACT_R_NO_SLOT or
  * ACT_R_SLOT_TAKEN (a->target: the item in the slot, or in the way of
@@ -217,7 +224,7 @@ uint8_t act_unequip(act_t *a, uint8_t mode) NGE_BANKED;
  * that tile. Uses the melee attack of the weapon in the actor's
  * SLOT_WEAPON, or else its own. Out: target; item, the weapon
  * (NGE_ENTITY_INVALID for its own attack); on a hit amount, the damage
- * taken, and kind, its type.
+ * taken, and damage, its type.
  *
  * A hit (1d20 + to hit >= the target's AC; 20 always hits, 1 always
  * misses) posts EV_HIT (p1: the roll, p2: the weapon) and damages the
@@ -235,7 +242,7 @@ uint8_t act_melee(act_t *a, uint8_t mode) NGE_BANKED;
  * In: actor (alive), item. Succeeds if the actor has the item stowed and
  * it has a use effect (GEN_HOOK_USE, game/gen/gen.h): posts EV_USED,
  * destroys the item and applies the effect to the actor
- * (effect_apply(), game/effects/effects.h: its events follow); a->kind
+ * (effect_apply(), game/effects/effects.h: its events follow); a->effect
  * is the effect (EF_*). Refused with ACT_R_NOT_CARRIED, ACT_R_EQUIPPED or
  * ACT_R_CANT_USE.
  */
@@ -293,7 +300,7 @@ uint8_t act_wait(act_t *a, uint8_t mode) NGE_BANKED;
  *        hit or miss; when the stack runs out it is destroyed.
  *
  * Inputs: actor (alive, placed), x, y. Outputs: target; item, the launcher
- * or thrown item, or NGE_ENTITY_INVALID; on a hit amount and kind. Posts
+ * or thrown item, or NGE_ENTITY_INVALID; on a hit amount and damage. Posts
  * EV_FIRED, then EV_HIT or EV_MISSED as act_melee() does, and the hook of
  * the ammo applies. Fails with ACT_R_MISSED, attempted. Refused with
  * ACT_R_NO_ATTACK, ACT_R_NO_AMMO, ACT_R_WRONG_AMMO, ACT_R_OUT_OF_RANGE,
@@ -312,7 +319,7 @@ uint8_t act_fire(act_t *a, uint8_t mode) NGE_BANKED;
  *        passes creatures on the way, to the one on the tile. A wand or
  *        staff uses a charge and is kept at 0; a parchment is destroyed.
  *
- * Inputs: actor (alive, placed), item, x, y. Outputs: target; kind, the
+ * Inputs: actor (alive, placed), item, x, y. Outputs: target; effect, the
  * effect. Posts EV_AIMED, then the effect's events, with the actor as
  * their source, so a kill earns its XP. Refused with ACT_R_NOT_CARRIED,
  * ACT_R_EQUIPPED, ACT_R_CANT_AIM, ACT_R_NO_CHARGES, ACT_R_OUT_OF_RANGE,

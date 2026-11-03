@@ -38,7 +38,7 @@ uint8_t act_checked(act_t *a);
 /*
  * Steps 3 and 4 of an attack, on a->target by a->actor, once validated: the
  * d20 roll against attacker's attack of this use (ATTACK_MELEE, ATTACK_RANGED),
- * then on a hit the damage (sets a->kind and a->amount) and the hit effect of
+ * then on a hit the damage (sets a->damage and a->amount) and the hit effect of
  * hooks, the entity whose GEN_HOOK_HIT applies. to_hit and bonus add to the
  * roll and the damage (attack_hits(), attack_damage()). The events carry
  * a->item. A miss fails with ACT_R_MISSED. Returns ACT_SUCCESS or ACT_FAIL

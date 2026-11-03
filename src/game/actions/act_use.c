@@ -39,7 +39,7 @@ uint8_t act_use(act_t *a, uint8_t mode) NGE_BANKED
     if (ef == EF_NONE) {
         return act_fail(a, ACT_R_CANT_USE);
     }
-    a->kind = ef;
+    a->effect = ef;
     if (mode == ACT_CHECK) {
         return act_checked(a);
     }

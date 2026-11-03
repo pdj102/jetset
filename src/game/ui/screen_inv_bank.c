@@ -189,7 +189,7 @@ static uint8_t allowed(uint8_t action, uint8_t say)
     }
     a.actor = actor_player;
     a.item = selected();
-    a.kind = SLOT_NONE;   /* equip: the first free slot it fits */
+    a.slot = SLOT_NONE;   /* equip: the first free slot it fits */
     a.x = NGE_LOCATION_X(actor_player);   /* aim: its own tile asks about the item alone (act_aim()) */
     a.y = NGE_LOCATION_Y(actor_player);
     if (act_do(action, &a, ACT_CHECK) == ACT_SUCCESS) {

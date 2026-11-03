@@ -384,11 +384,11 @@ int main(void)
     CHECK(stowed(i2, player) && item_slot[i2] == SLOT_NONE && inv_count(player) == 1);
     a = ctx(player);
     a.item = i2;
-    a.kind = SLOT_NONE;
-    CHECK(act_equip(&a, ACT_CHECK) == ACT_SUCCESS && a.used == 0 && a.kind == SLOT_WEAPON);
+    a.slot = SLOT_NONE;
+    CHECK(act_equip(&a, ACT_CHECK) == ACT_SUCCESS && a.used == 0 && a.slot == SLOT_WEAPON);
     CHECK(item_slot[i2] == SLOT_NONE && events() == 0);
-    a.kind = SLOT_NONE;
-    CHECK(act_equip(&a, ACT_DO) == ACT_SUCCESS && a.reason == ACT_R_NONE && a.used == 1 && a.kind == SLOT_WEAPON);
+    a.slot = SLOT_NONE;
+    CHECK(act_equip(&a, ACT_DO) == ACT_SUCCESS && a.reason == ACT_R_NONE && a.used == 1 && a.slot == SLOT_WEAPON);
     CHECK(item_slot[i2] == SLOT_WEAPON && inv_equipped(player, SLOT_WEAPON) == i2);
     CHECK(inv_count(player) == 0);                            /* equipped items don't count */
     CHECK(events() == 1 && is(0, i2, EV_EQUIPPED, player) && seen[0].p1 == SLOT_WEAPON);
@@ -419,10 +419,10 @@ int main(void)
     inv_stow(ring3, player);
     a = ctx(player);
     a.item = ring1;
-    CHECK(act_equip(&a, ACT_DO) == ACT_SUCCESS && a.kind == SLOT_RING_L && item_slot[ring1] == SLOT_RING_L);
+    CHECK(act_equip(&a, ACT_DO) == ACT_SUCCESS && a.slot == SLOT_RING_L && item_slot[ring1] == SLOT_RING_L);
     a = ctx(player);
     a.item = ring2;
-    CHECK(act_equip(&a, ACT_DO) == ACT_SUCCESS && a.kind == SLOT_RING_R && item_slot[ring2] == SLOT_RING_R);
+    CHECK(act_equip(&a, ACT_DO) == ACT_SUCCESS && a.slot == SLOT_RING_R && item_slot[ring2] == SLOT_RING_R);
     /* Rings of health: each one worn counts, recomputed by the action; hit points not raised */
     CHECK(health_hp_max[player] == 12 + 4 && health_hp[player] == 12 && effects_check(player));
     a = ctx(player);
@@ -431,11 +431,11 @@ int main(void)
     /* A slot asked for: taken, not one it fits, or free */
     a = ctx(player);
     a.item = ring3;
-    a.kind = SLOT_RING_L;
+    a.slot = SLOT_RING_L;
     CHECK(act_equip(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_SLOT_TAKEN && a.target == ring1);
     a = ctx(player);
     a.item = ring3;
-    a.kind = SLOT_HEAD;
+    a.slot = SLOT_HEAD;
     CHECK(act_equip(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_NO_SLOT);
     events();
 
@@ -451,7 +451,7 @@ int main(void)
     /* Now the left hand is free: asking for it works */
     a = ctx(player);
     a.item = ring3;
-    a.kind = SLOT_RING_L;
+    a.slot = SLOT_RING_L;
     CHECK(act_do(ACT_EQUIP, &a, ACT_DO) == ACT_SUCCESS && item_slot[ring3] == SLOT_RING_L);
     /* No room in the pack: refused, still equipped */
     inv_capacity[player] = inv_count(player);
@@ -477,7 +477,7 @@ int main(void)
         nge_location_set(holder, 1, 1);
         a = ctx(holder);
         a.item = shield;
-        CHECK(act_equip(&a, ACT_DO) == ACT_SUCCESS && a.kind == SLOT_SHIELD);
+        CHECK(act_equip(&a, ACT_DO) == ACT_SUCCESS && a.slot == SLOT_SHIELD);
         a = ctx(holder);
         a.item = staff;
         CHECK(act_equip(&a, ACT_CHECK) == ACT_FAIL && a.reason == ACT_R_SLOT_TAKEN && a.target == shield);
@@ -496,7 +496,7 @@ int main(void)
         CHECK(act_unequip(&a, ACT_DO) == ACT_SUCCESS);
         a = ctx(holder);
         a.item = staff;
-        CHECK(act_equip(&a, ACT_DO) == ACT_SUCCESS && a.kind == SLOT_WEAPON);
+        CHECK(act_equip(&a, ACT_DO) == ACT_SUCCESS && a.slot == SLOT_WEAPON);
         a = ctx(holder);
         a.item = shield;
         CHECK(act_equip(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_SLOT_TAKEN && a.target == staff &&
@@ -570,7 +570,7 @@ int main(void)
     inv_stow(sw2, goblin);
     a = ctx(goblin);
     a.item = sw2;
-    CHECK(act_equip(&a, ACT_DO) == ACT_SUCCESS && a.kind == SLOT_WEAPON);
+    CHECK(act_equip(&a, ACT_DO) == ACT_SUCCESS && a.slot == SLOT_WEAPON);
     events();
 
     /* ---- melee: the player (sword i2 wielded) at (4, 5), a goblin west of it ---- */
@@ -592,7 +592,7 @@ int main(void)
     a = ctx(player);
     a.dx = -1;
     CHECK(act_melee(&a, ACT_DO) == ACT_SUCCESS && a.reason == ACT_R_NONE && a.used == 1);
-    CHECK(a.target == gob && a.item == i2 && a.kind == DMG_SLASH && a.amount >= 1 && a.amount <= 8);
+    CHECK(a.target == gob && a.item == i2 && a.damage == DMG_SLASH && a.amount >= 1 && a.amount <= 8);
     CHECK(health_hp[gob] == 200 - a.amount);
     CHECK(events() == 2 && is(0, gob, EV_HIT, player) && seen[0].p1 == 20 && seen[0].p2 == i2 &&
           is(1, gob, EV_DAMAGED, player) && seen[1].p1 == a.amount &&
@@ -623,7 +623,7 @@ int main(void)
     srand(seed_for_roll(20));
     a = ctx(player);
     a.target = gob;
-    CHECK(act_melee(&a, ACT_DO) == ACT_SUCCESS && a.item == NGE_ENTITY_INVALID && a.kind == DMG_BLUNT);
+    CHECK(act_melee(&a, ACT_DO) == ACT_SUCCESS && a.item == NGE_ENTITY_INVALID && a.damage == DMG_BLUNT);
     CHECK(a.amount == 1 && health_hp[gob] == 199);            /* 1d2 resisted: rounded up to 1 */
     CHECK(events() == 2 && seen[0].p2 == NGE_EVENT_NONE && EV_DMG_OUTCOME(seen[1].p2) == DMG_RESISTED);
     /* A kill: EV_DIED, the goblin destroyed */
@@ -772,7 +772,7 @@ int main(void)
     events();
     a = ctx(player);
     a.item = thing;
-    CHECK(act_use(&a, ACT_CHECK) == ACT_SUCCESS && a.used == 0 && a.kind == EF_HEALING);
+    CHECK(act_use(&a, ACT_CHECK) == ACT_SUCCESS && a.used == 0 && a.effect == EF_HEALING);
     CHECK(NGE_ENTITY_IS_ALIVE(thing) && health_hp[player] == 3 && events() == 0);
     CHECK(act_use(&a, ACT_DO) == ACT_SUCCESS && a.reason == ACT_R_NONE && a.used == 1);
     CHECK(NGE_ENTITY_STATE(thing) == NGE_ENTITY_DYING && health_hp[player] == 3 + 6);
@@ -788,7 +788,7 @@ int main(void)
     inv_stow(thing, player);
     a = ctx(player);
     a.item = thing;
-    CHECK(act_use(&a, ACT_DO) == ACT_SUCCESS && a.kind == EF_HEALING && health_hp[player] == 3 + 3);
+    CHECK(act_use(&a, ACT_DO) == ACT_SUCCESS && a.effect == EF_HEALING && health_hp[player] == 3 + 3);
     events();
     /* The new slots: a launcher, its ammo and more armour go where they fit */
     thing = gen_item(IT_SHORT_BOW, AREA);
@@ -818,7 +818,7 @@ int main(void)
     inv_stow(thing, player);
     a = ctx(player);
     a.item = thing;
-    CHECK(act_do(ACT_USE, &a, ACT_DO) == ACT_SUCCESS && a.kind == EF_POISON && STATUS_HAS(player, STATUS_POISONED));
+    CHECK(act_do(ACT_USE, &a, ACT_DO) == ACT_SUCCESS && a.effect == EF_POISON && STATUS_HAS(player, STATUS_POISONED));
     events();
     /* Refused: on the floor, not doing anything when used, equipped */
     thing = gen_item(IT_ANTIDOTE, AREA);
@@ -1312,7 +1312,7 @@ int main(void)
     a = ctx(player);
     a.x = 3;
     a.y = 2;
-    CHECK(act_do(ACT_FIRE, &a, ACT_DO) == ACT_SUCCESS && a.used == 1 && a.reason == ACT_R_NONE && a.kind == DMG_PIERCE);
+    CHECK(act_do(ACT_FIRE, &a, ACT_DO) == ACT_SUCCESS && a.used == 1 && a.reason == ACT_R_NONE && a.damage == DMG_PIERCE);
     CHECK(health_hp[rat] == 200 - a.amount && item_count[i1] == r2 - 1);
     CHECK(events() == 3 && is(0, rat, EV_FIRED, player) && seen[0].p1 == i2 && is(1, rat, EV_HIT, player) &&
           seen[1].p2 == i2 && is(2, rat, EV_DAMAGED, player));
@@ -1382,7 +1382,7 @@ int main(void)
         attack_add(player, ATTACK_RANGED, &spit);
         rat = creature(CR_RAT, 3, 2);
         srand(seed_for_roll(20));
-        CHECK(fire(player, 3, 2, ACT_DO) == ACT_SUCCESS && last.item == NGE_ENTITY_INVALID && last.kind == DMG_ACID);
+        CHECK(fire(player, 3, 2, ACT_DO) == ACT_SUCCESS && last.item == NGE_ENTITY_INVALID && last.damage == DMG_ACID);
         CHECK(events() >= 3 && seen[0].id == EV_FIRED && seen[0].p1 == NGE_EVENT_NONE);
     }
 
@@ -1464,7 +1464,7 @@ int main(void)
     r1 = rand();
     srand(9);
     CHECK(aim(player, i1, 3, 2, ACT_CHECK) == ACT_SUCCESS && last.used == 0 && last.target == rat &&
-          last.kind == EF_BOLT_FIRE);
+          last.effect == EF_BOLT_FIRE);
     CHECK(rand() == r1 && item_count[i1] == r2 && health_hp[rat] == 200 && events() == 0);
     /* Done, by act_do(): a charge used, the event first, the effect's source the actor */
     a = ctx(player);

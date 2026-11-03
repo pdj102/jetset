@@ -169,7 +169,7 @@ static uint8_t opt_wield(const ai_ctx_t *c)
         if (ITEM_IS(item) && item_slot[item] == SLOT_NONE && (gen_item_fits(kind_index[item]) & WIELD_SLOTS)) {
             a.actor = id;
             a.item = item;
-            a.kind = SLOT_NONE;   /* the slot it fits; the check refuses one it lacks or has filled */
+            a.slot = SLOT_NONE;   /* the slot it fits; the check refuses one it lacks or has filled */
             if (ai_try(ACT_EQUIP, &a)) {
                 return 1;
             }

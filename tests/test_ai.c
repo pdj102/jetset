@@ -325,7 +325,7 @@ int main(void)
     CHECK(!(ai_can(holder) & AI_CAN_MELEE));                /* carried, not wielded */
     c = ctx(holder);
     c.item = sword;
-    c.kind = SLOT_NONE;
+    c.slot = SLOT_NONE;
     CHECK(act_equip(&c, ACT_DO) == ACT_SUCCESS);
     CHECK(ai_can(holder) == (AI_CAN_MOVE | AI_CAN_MELEE | AI_CAN_PICKUP | AI_CAN_EQUIP));
     c = ctx(holder);
