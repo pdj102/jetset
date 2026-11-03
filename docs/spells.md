@@ -39,7 +39,7 @@ learned. Later ways of learning, such as a scroll or a shrine, call the same fun
                                                     +--> act_cast()
  AI: opt_cast(), in the hunt state -----------------+       |
                                                             |
-    context    spell_get(): the row, by a->kind             |
+    context    spell_get(): the row, by a->spell            |
     validate   known? enough MP? a target for its shape?    |
                   refused --> reason set, nothing changed   |
                   ACT_CHECK stops here                      |
@@ -99,8 +99,9 @@ learned. Later ways of learning, such as a scroll or a shrine, call the same fun
 
 - **R12** Casting is one action, `ACT_CAST`, for every caster and every spell, and takes
   one turn (actions.md, R10).
-- **R13** `a->kind` names the spell. `act_t` gains no field, and `act_cast()` doesn't
-  write to `kind`.
+- **R13** `a->spell` names the spell. It is a name for the byte `act_t` already has for
+  a slot, a damage type or an effect, so the context doesn't grow, and `act_cast()`
+  doesn't write to it.
 - **R14** A cast is refused if the actor doesn't know the spell, can't pay for it, or has
   no target for its shape. A refused cast costs nothing and posts nothing.
 - **R15** An ability needs no mana component and tests no MP.
@@ -209,9 +210,9 @@ The cast matters: zsdcc makes a constant `1 << 7` -128, and the PC tests miss it
 
 ### 4.4 `act_cast()`
 
-**Cast a spell.** In: actor (alive, placed in an area), kind (`SP_*`), and x, y for a bolt
+**Cast a spell.** In: actor (alive, placed in an area), spell (`SP_*`), and x, y for a bolt
 or a direct spell.
-Out: target. `kind` stays as it was, so `ai_try()` can pass the context twice.
+Out: target. `spell` stays as it was, so `ai_try()` can pass the context twice.
 
 1. **Context:** `spell_get()` and `spell_cost()`. Fields go into locals (T-ZSDCC-1).
 2. **Validate:**
@@ -230,7 +231,7 @@ Out: target. `kind` stays as it was, so `ai_try()` can pass the context twice.
 | Action | `ACT_CAST` 15, a case in `act_do()` |
 | Refused reasons | `ACT_R_NO_MANA` 38, `ACT_R_NO_SPELL` 39, `ACT_R_COUNT` 40 |
 | Texts | "You haven't the mana.", "You don't know that spell." |
-| `act_t` table, actions.md 4.2 | `target` out; `kind` in; x, y for a bolt or a direct spell |
+| `act_t` table, actions.md 4.2 | `target` out; `spell` in; x, y for a bolt or a direct spell |
 
 `ACT_R_NO_TARGET` on the actor's own tile means the spell can be cast, as it does for fire:
 the list asks that way, before there is a tile.
@@ -421,15 +422,19 @@ Made when this is built:
 
 ## 5. Decisions
 
-- **D1 `a->kind` names the spell, and `act_t` gains no field.** `kind` is already an input:
-  equip reads a slot from it. A number needs one table, and the action reads everything else
-  from the row, so the caller can't choose a cost or a power. *Rejected:* `effect` and
-  `power` fields, which let a caller cast anything, leave cost and level with no source, and
-  grow every action's context on the stack. *Rejected:* a `spell` field, a byte on every
-  context for one action, and another for prayers.
+- **D1 `a->spell` names the spell, and `act_t` gains no byte.** `act_t` has one byte with a
+  name for each use, in an anonymous union: `slot`, `damage`, `effect` and now `spell`, with
+  `kind` for code that doesn't care which. It is already an input: equip reads `slot`. A
+  number needs one table, and the action reads everything else from the row, so the caller
+  can't choose a cost or a power. *Rejected:* `effect` and `power` fields, which let a
+  caller cast anything, leave cost and level with no source, and grow every action's
+  context on the stack. *Rejected:* a `spell` byte of its own, a byte on every context for
+  one action, and another for prayers. *Rejected:* `kind` alone, where every use needs a
+  comment to say what it holds. *Rejected:* a named union, `a.u.spell`, which changes every
+  use for nothing an anonymous one doesn't give.
 - **D2 Prayers are rows in the same table.** A prayer differs from a spell in who knows it
   and perhaps what pays for it, not in how it reaches its target or what it does. So when
-  they come, a `school` field and one test in `act_cast()` are enough, and `ACT_CAST`, `kind`
+  they come, a `school` field and one test in `act_cast()` are enough, and `ACT_CAST`, `spell`
   and the callers stay. *Rejected:* adding `school` now, with one value. *Rejected:* an
   `ACT_PRAY`, an action that differs only in its data (actions.md, D20).
 - **D3 Every spell is an effect.** There is one way to change a creature, and no spell needs
@@ -545,7 +550,7 @@ Spells waiting for a place in the list, or a rule:
 - a creature in the way, a wall, range exactly, and the own tile;
 - an ability on an entity without mana;
 - the MP left at exactly the cost;
-- a check changing nothing, including `rand()`, and `kind` unchanged;
+- a check changing nothing, including `rand()`, and `spell` unchanged;
 - a timed effect with no entity free: the MP are spent (section 8);
 - `act_do()`, the reasons' kinds, and the peak of the largest cast (R32).
 
