@@ -30,6 +30,8 @@
  * | EV_OPERATED       | the feature         | operator | p1: EF_* |
  * | EV_TRIGGERED      | the trap            | the creature it fires at | - |
  * | EV_FOUND          | the hidden feature  | finder, or NGE_EVENT_NONE if it went off | - |
+ * | EV_DISARMED       | the trap (dying)    | disarmer | -        |
+ * | EV_SEARCHED       | the searcher        | -        | p1: how many found |
  * | EV_EFFECT_ENDED   | the entity affected | the effect (dying) | p1: EF_*, p2: EFFECT_END_* |
  * | EV_ATTRS_CHANGED  | the entity          | -        | -        |
  * | EV_OPENED         | the feature         | opener   | -        |
@@ -81,5 +83,7 @@
 #define EV_OPERATED       (NGE_EVENT_USER + 31)    /**< Operated by the source (act_operate()): its effect p1 follows. */
 #define EV_TRIGGERED      (NGE_EVENT_USER + 32)    /**< A trap went off at the source (act_spring()): its attack's or effect's events follow. */
 #define EV_FOUND          (NGE_EVENT_USER + 33)    /**< A hidden feature was found by the source, or went off (NGE_EVENT_NONE). */
+#define EV_DISARMED       (NGE_EVENT_USER + 34)    /**< Disarmed by the source (act_disarm()): destroyed. */
+#define EV_SEARCHED       (NGE_EVENT_USER + 35)    /**< Searched around itself, finding p1 hidden features (act_search()). */
 
 #endif

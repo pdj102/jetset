@@ -50,6 +50,9 @@ const uint8_t act_reason_flags[ACT_R_COUNT] = {
     [ACT_R_NO_SPELL]         = 0,
     [ACT_R_CANT_OPERATE]     = 0,
     [ACT_R_SPENT]            = 0,
+    [ACT_R_CANT_DISARM]      = 0,
+    [ACT_R_DISARM_FAILED]    = ACT_RF_ATTEMPTED,   /* the trap was worked at: the turn is used */
+    [ACT_R_SET_OFF]          = ACT_RF_ATTEMPTED,
 };
 
 uint8_t act_do(uint8_t action, act_t *a, uint8_t mode)
@@ -92,6 +95,10 @@ uint8_t act_do(uint8_t action, act_t *a, uint8_t mode)
         return act_exchange(a, mode);
     case ACT_OPERATE:
         return act_operate(a, mode);
+    case ACT_SEARCH:
+        return act_search(a, mode);
+    case ACT_DISARM:
+        return act_disarm(a, mode);
     default:
         nge_util_abort("bad action");
         return ACT_FAIL;

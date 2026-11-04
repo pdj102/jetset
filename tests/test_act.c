@@ -459,6 +459,107 @@ static void test_traps(void)
     CHECK(events() == 0);
 }
 
+/* Search and disarm (docs/features.md 4.6): a bandit at (2, 2), Wisdom and Dexterity 10 (no modifier) */
+static void test_search_disarm(void)
+{
+    nge_entity_id_t h;
+    nge_entity_id_t dart;
+    nge_entity_id_t pit;
+    nge_entity_id_t far;
+    nge_entity_id_t door;
+    act_t a;
+    int r1;
+    uint8_t x;
+    uint8_t y;
+
+    events();
+    nge_entity_init();
+    for (y = 0; y < 10; y++) {
+        for (x = 0; x < 10; x++) {
+            NGE_MAP_TILE(x, y).tile_id = FLOOR;
+        }
+    }
+    h = gen_creature(CR_BANDIT, AREA);
+    nge_location_set(h, 2, 2);
+    effects_set_base(h, ATTR_ABILITY(ABIL_WIS), 10);               /* bases: the scores are derived from them */
+    effects_set_base(h, ATTR_ABILITY(ABIL_DEX), 10);
+    effects_set_base(h, ATTR_HP_MAX, 200);
+    health_hp[h] = 200;
+    dart = gen_feature(FT_DART_TRAP, AREA);                         /* hidden, DC 12 */
+    feature_place(dart, 3, 2);
+    far = gen_feature(FT_DART_TRAP, AREA);                          /* hidden, out of reach */
+    feature_place(far, 5, 5);
+    door = gen_feature(FT_DOOR, AREA);
+    feature_place(door, 2, 1);
+    events();
+
+    /* Disarming what isn't known: nothing there; a door: not a trap */
+    a = ctx(h);
+    a.dx = 1;
+    CHECK(act_disarm(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_NOTHING_THERE && a.used == 0);
+    a = ctx(h);
+    a.dy = -1;
+    CHECK(act_disarm(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_CANT_DISARM && a.target == door && a.used == 0);
+
+    /* Search, check mode: possible, no roll, nothing found */
+    srand(9);
+    r1 = rand();
+    srand(9);
+    a = ctx(h);
+    CHECK(act_search(&a, ACT_CHECK) == ACT_SUCCESS && a.used == 0 && rand() == r1 && FEATURE_IS_HIDDEN(dart));
+    /* A 1: nothing found, still a success, the turn used, EV_SEARCHED with 0 */
+    srand(seed_for_roll(1));
+    a = ctx(h);
+    CHECK(act_do(ACT_SEARCH, &a, ACT_DO) == ACT_SUCCESS && a.used == 1 && a.amount == 0 && FEATURE_IS_HIDDEN(dart));
+    CHECK(events() == 1 && is(0, h, EV_SEARCHED, NGE_EVENT_NONE) && seen[0].p1 == 0);
+    /* A 20: the one within a tile found, drawn; the far one not */
+    srand(seed_for_roll(20));
+    a = ctx(h);
+    CHECK(act_search(&a, ACT_DO) == ACT_SUCCESS && a.amount == 1 && !FEATURE_IS_HIDDEN(dart) && FEATURE_IS_HIDDEN(far));
+    CHECK(NGE_MAP_TILE(3, 2).tile_id == LOOK_TRAP && events() == 2 && is(0, dart, EV_FOUND, h) &&
+          is(1, h, EV_SEARCHED, NGE_EVENT_NONE) && seen[1].p1 == 1);
+    /* The roll: the DC reached with Wisdom's modifier */
+    CHECK(!feature_found_by(h, far, 11) && feature_found_by(h, far, 12));
+    effects_set_base(h, ATTR_ABILITY(ABIL_WIS), 14);               /* +2 */
+    CHECK(feature_found_by(h, far, 10));
+    effects_set_base(h, ATTR_ABILITY(ABIL_WIS), 10);
+    events();
+
+    /* Disarm, check mode: possible, no roll */
+    srand(9);
+    a = ctx(h);
+    a.dx = 1;
+    CHECK(act_disarm(&a, ACT_CHECK) == ACT_SUCCESS && a.used == 0 && a.target == dart && rand() == r1);
+    /* Short by less than 5 (an 8 against 12): it holds, the turn used */
+    srand(seed_for_roll(8));
+    a = ctx(h);
+    a.dx = 1;
+    CHECK(act_disarm(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_DISARM_FAILED && a.used == 1 &&
+          NGE_ENTITY_IS_ALIVE(dart) && events() == 0);
+    /* Short by 5 (a 7): it goes off at the disarmer, next to it */
+    srand(seed_for_roll(7));
+    a = ctx(h);
+    a.dx = 1;
+    CHECK(act_disarm(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_SET_OFF && a.used == 1 && NGE_ENTITY_IS_ALIVE(dart));
+    CHECK(events() >= 2 && is(0, dart, EV_TRIGGERED, h));
+    /* Held fast, it can still disarm; a 12 does it: EV_DISARMED, the trap dying */
+    effect_apply(EF_HOLD, 1, h, NGE_ENTITY_INVALID);
+    events();
+    srand(seed_for_roll(12));
+    a = ctx(h);
+    a.target = dart;
+    CHECK(act_disarm(&a, ACT_DO) == ACT_SUCCESS && a.used == 1 && NGE_ENTITY_STATE(dart) == NGE_ENTITY_DYING);
+    CHECK(events() == 1 && is(0, dart, EV_DISARMED, h));
+    /* A web can't be disarmed */
+    pit = gen_feature(FT_WEB, AREA);
+    feature_place(pit, 1, 2);
+    a = ctx(h);
+    a.dx = -1;
+    CHECK(act_disarm(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_CANT_DISARM);
+    /* The margin: the roll and Dexterity's modifier, less the DC */
+    CHECK(feature_disarm_margin(h, far, 12) == 0 && feature_disarm_margin(h, far, 7) == FEAT_DISARM_SET_OFF);
+}
+
 static void test_exchange(void)
 {
     nge_entity_id_t h = gen_creature(CR_BANDIT, AREA);
@@ -1581,11 +1682,12 @@ int main(void)
     TEST_EXPECT_HALT(act_wait(&a, ACT_DO));
     CHECK(test_halt_count == 1);
 
-    /* ---- every reason is refused, but a miss, a struggle and a failed pick ---- */
+    /* ---- every reason is refused, but a miss, a struggle, a failed pick and a failed disarm ---- */
     ok = 1;
     for (r1 = 0; r1 < ACT_R_COUNT; r1++) {
         ok = ok && act_attempted((uint8_t)r1) == (r1 == ACT_R_MISSED || r1 == ACT_R_ROOTED ||
-                                                  r1 == ACT_R_PICK_FAILED);   /* includes ACT_R_CANT_USE */
+                                                  r1 == ACT_R_PICK_FAILED || r1 == ACT_R_DISARM_FAILED ||
+                                                  r1 == ACT_R_SET_OFF);   /* includes ACT_R_CANT_USE */
     }
     CHECK(ok);
 
@@ -2109,6 +2211,7 @@ int main(void)
     test_operate();
     test_container();
     test_traps();
+    test_search_disarm();
 
     return test_summary("act");
 }

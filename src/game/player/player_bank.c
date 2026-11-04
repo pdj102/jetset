@@ -90,16 +90,48 @@ void player_act(uint8_t action, act_t *a) NGE_BANKED
  * The move command, bump to attack and bump to open: a move blocked by
  * something that can be damaged attacks it instead, and one blocked by a
  * closed door opens it, or unlocks it with a key in the pack (act_move()'s
- * check mode finds the blocker)
+ * check mode finds the blocker). A move onto a known trap disarms it, or
+ * strikes a web
  */
+/* A known trap at (x, y) of the player's area that can do `can` (FCAN_*), or NGE_ENTITY_INVALID */
+static nge_entity_id_t known_trap(uint8_t x, uint8_t y, uint8_t can)
+{
+    gen_feature_info_t info;
+    nge_entity_id_t id = nge_location_find(NGE_OWNER_OF(actor_player), x, y, COMPONENT_FEATURE, 0);
+
+    if (id == NGE_ENTITY_INVALID || FEATURE_IS_HIDDEN(id)) {
+        return NGE_ENTITY_INVALID;
+    }
+    gen_feature_info(kind_index[id], &info);
+    return ((info.can & (FCAN_TRAP | can)) == (FCAN_TRAP | can)) ? id : NGE_ENTITY_INVALID;
+}
+
 static void move(int8_t dx, int8_t dy)
 {
     act_t a = { 0 };
     nge_entity_id_t blocker;
+    uint8_t x = (uint8_t)(NGE_LOCATION_X(actor_player) + dx);
+    uint8_t y = (uint8_t)(NGE_LOCATION_Y(actor_player) + dy);
 
     a.actor = actor_player;
     a.dx = dx;
     a.dy = dy;
+    /*
+     * A step onto a known trap: one that can be disarmed is disarmed, as a
+     * step into a locked door unlocks it; one that can be broken (a web) is
+     * struck. Never walked onto by mistake (docs/features.md D12)
+     */
+    a.target = known_trap(x, y, FCAN_DISARM);
+    if (a.target != NGE_ENTITY_INVALID) {
+        player_act(ACT_DISARM, &a);
+        return;
+    }
+    a.target = known_trap(x, y, 0);
+    if (a.target != NGE_ENTITY_INVALID && NGE_ENTITY_HAS_COMPONENT(a.target, COMPONENT_HEALTH)) {
+        player_act(ACT_MELEE, &a);
+        return;
+    }
+    a.target = NGE_ENTITY_INVALID;
     if (act_move(&a, ACT_CHECK) == ACT_FAIL && a.reason == ACT_R_BLOCKED_ENTITY) {
         blocker = a.target;
         if (NGE_ENTITY_HAS_COMPONENT(blocker, COMPONENT_HEALTH)) {
@@ -234,6 +266,25 @@ static void dev_traps(void)
     }
 }
 #endif
+
+/* Search around the player for hidden features (docs/features.md 4.6) */
+static void search_command(void)
+{
+    act_t a = { 0 };
+
+    player_act(ACT_SEARCH, &a);
+}
+
+/* Disarm the known trap the player stands on, or one in a direction asked for */
+static void disarm_command(void)
+{
+    act_t a = { 0 };
+
+    a.target = known_trap(NGE_LOCATION_X(actor_player), NGE_LOCATION_Y(actor_player), FCAN_DISARM);
+    if (a.target != NGE_ENTITY_INVALID || player_ask_direction(PLAYER_PROMPT_DISARM, &a.dx, &a.dy)) {
+        player_act(ACT_DISARM, &a);
+    }
+}
 
 /* Operate a feature next to the player: pray at a shrine, drink from a fountain (docs/features.md 4.6) */
 static void operate_command(void)
@@ -426,6 +477,12 @@ void player_command(nge_key_event_t ev) NGE_BANKED
     case 'o':
         operate_command();
         break;
+    case 's':
+        search_command();
+        break;
+    case 'D':
+        disarm_command();
+        break;
     case 'f':
         fire_command();
         break;
@@ -580,6 +637,7 @@ static const player_prompt_t prompts[PLAYER_PROMPT_COUNT] = {
     [PLAYER_PROMPT_CLOSE] = { "Close in which direction?", "Direction: close   Other keys: back" },
     [PLAYER_PROMPT_UNLOCK] = { "Unlock in which direction?", "Direction: unlock   Other keys: back" },
     [PLAYER_PROMPT_OPERATE] = { "Use what? Which direction?", "Direction: use   Other keys: back" },
+    [PLAYER_PROMPT_DISARM] = { "Disarm in which direction?", "Direction: disarm   Other keys: back" },
 };
 
 uint8_t player_direction_key(nge_key_event_t ev, int8_t *dx, int8_t *dy) NGE_BANKED

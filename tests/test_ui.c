@@ -943,15 +943,73 @@ int main(void)
     {
         nge_entity_id_t dart = gen_feature(FT_DART_TRAP, AREA);
         nge_entity_id_t pit = gen_feature(FT_PIT, AREA);
+        uint8_t px = NGE_LOCATION_X(actor_player);
+        uint8_t py = NGE_LOCATION_Y(actor_player);
 
+        feature_place(dart, px, py);                               /* stood on: hidden, so the map is untouched */
+        feature_place(pit, px, py);
         nge_event_post(dart, EV_TRIGGERED, actor_player, 0, 0);
         nge_event_process(messages_on_event);
         CHECK(said("You step on a dart trap!"));
         nge_event_post(pit, EV_TRIGGERED, actor_player, 0, 0);
         nge_event_process(messages_on_event);
         CHECK(said("You fall into a pit!"));
+        /* Off its tile, a failed disarm set it off */
+        nge_location_set(pit, (uint8_t)(px + 1), py);
+        nge_event_post(pit, EV_TRIGGERED, actor_player, 0, 0);
+        nge_event_process(messages_on_event);
+        CHECK(said("You set off a pit!"));
+        nge_location_remove(dart);
+        nge_location_remove(pit);
         nge_entity_destroy(dart);
         nge_entity_destroy(pit);
+    }
+
+    /* ---- known traps: a step onto one disarms it, a step into a web strikes it; s searches; D asks ---- */
+    {
+        nge_entity_id_t dart = gen_feature(FT_DART_TRAP, AREA);
+        nge_entity_id_t web = gen_feature(FT_WEB, AREA);
+        uint8_t px = NGE_LOCATION_X(actor_player);
+        uint8_t py = NGE_LOCATION_Y(actor_player);
+        nge_tile_t north = NGE_MAP_TILE(px, py - 1);                  /* put back after: the tests below use them */
+        nge_tile_t west = NGE_MAP_TILE(px - 1, py);
+
+        feature_place(dart, px, (uint8_t)(py - 1));                /* north */
+        feature_find(dart);
+        feature_place(web, (uint8_t)(px - 1), py);                 /* west */
+        nge_event_flush();
+        player_turn = 1;
+        player_command(EV(NGE_KEY_K));                             /* into the trap: a disarm, whatever the roll */
+        CHECK(NGE_LOCATION_Y(actor_player) == py && !player_turn);
+        nge_event_process(messages_on_event);
+        CHECK(shown("You disarm the dart trap.") || shown("You fail to disarm the dart trap.") ||
+              shown("You set off a dart trap!"));
+        player_turn = 1;
+        player_command(EV(NGE_KEY_H));                             /* into the web: struck, not walked into */
+        CHECK(NGE_LOCATION_X(actor_player) == px && !player_turn);
+        nge_event_process(messages_on_event);
+        CHECK(shown("You hit the spider web.") || shown("You miss the spider web."));
+        player_turn = 1;
+        player_command(EV(NGE_KEY_S));                             /* nothing hidden around */
+        CHECK(!player_turn);
+        nge_event_process(messages_on_event);
+        CHECK(said("You find nothing."));
+        player_turn = 1;
+        press(EV(NGE_KEY_L));
+        player_command(NGE_KEY_D | (NGE_MOD_CAPS << 8));
+        CHECK(said("Disarm in which direction?") || shown("Disarm in which direction?"));
+        /* Off the map, alive or already dying (disarmed, broken): the clean-up would redraw around them */
+        nge_location_remove(dart);
+        nge_location_remove(web);
+        if (NGE_ENTITY_IS_ALIVE(dart)) {
+            nge_entity_destroy(dart);
+        }
+        if (NGE_ENTITY_IS_ALIVE(web)) {
+            nge_entity_destroy(web);
+        }
+        NGE_MAP_TILE(px, py - 1) = north;
+        NGE_MAP_TILE(px - 1, py) = west;
+        nge_event_flush();
     }
     press(EV(NGE_KEY_A));                                          /* not a direction */
     player_command(EV(NGE_KEY_C));

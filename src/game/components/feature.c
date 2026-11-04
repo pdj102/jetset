@@ -157,6 +157,37 @@ nge_entity_id_t feature_fitting_key(nge_entity_id_t id, nge_entity_id_t holder) 
     return NGE_ENTITY_INVALID;
 }
 
+/* A d20 roll and actor's modifier for ability (ABIL_*), if it has stats */
+static int16_t check_total(nge_entity_id_t actor, uint8_t ability, uint8_t roll)
+{
+    int16_t total = roll;
+
+    if (NGE_ENTITY_HAS_COMPONENT(actor, COMPONENT_STATS)) {
+        total += STATS_MOD(stats_ability[ability][actor]);
+    }
+    return total;
+}
+
+uint8_t feature_found_by(nge_entity_id_t actor, nge_entity_id_t id, uint8_t roll) NGE_BANKED
+{
+    check_feature(id);
+
+    return check_total(actor, ABIL_WIS, roll) >= (int16_t)gen_feature_dc(kind_index[id]);
+}
+
+int8_t feature_disarm_margin(nge_entity_id_t actor, nge_entity_id_t id, uint8_t roll) NGE_BANKED
+{
+    int16_t margin;
+
+    check_feature(id);
+
+    margin = check_total(actor, ABIL_DEX, roll) - (int16_t)gen_feature_dc(kind_index[id]);
+    if (margin < -128) {
+        margin = -128;
+    }
+    return (int8_t)margin;
+}
+
 uint8_t feature_pick_works(nge_entity_id_t actor, nge_entity_id_t pick, uint8_t roll) NGE_BANKED
 {
     int16_t total = (int16_t)roll + gen_item_group(kind_index[pick]);

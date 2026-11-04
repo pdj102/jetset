@@ -99,7 +99,8 @@ void player_act(uint8_t action, act_t *a) NGE_BANKED;
 #define PLAYER_PROMPT_CLOSE  0   /**< Close in which direction? */
 #define PLAYER_PROMPT_UNLOCK 1   /**< Unlock in which direction? */
 #define PLAYER_PROMPT_OPERATE 2  /**< Use what, in which direction? */
-#define PLAYER_PROMPT_COUNT  3
+#define PLAYER_PROMPT_DISARM 3   /**< Disarm in which direction? */
+#define PLAYER_PROMPT_COUNT  4
 
 /**
  * @brief The direction prompt, a chooser: ask the question, wait for a key

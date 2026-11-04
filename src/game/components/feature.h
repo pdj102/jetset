@@ -136,6 +136,22 @@ uint8_t feature_key_fits(nge_entity_id_t id, nge_entity_id_t item) NGE_BANKED;
 /** @brief The first item holder has stowed that fits locked feature id, or NGE_ENTITY_INVALID. */
 nge_entity_id_t feature_fitting_key(nge_entity_id_t id, nge_entity_id_t holder) NGE_BANKED;
 
+/**
+ * @brief 1 if actor, with d20 roll, finds hidden feature id: the roll and
+ *        its Wisdom modifier, if it has stats, reach its kind's DC.
+ */
+uint8_t feature_found_by(nge_entity_id_t actor, nge_entity_id_t id, uint8_t roll) NGE_BANKED;
+
+/**
+ * @brief By how much actor, with d20 roll, beats the DC to disarm trap id:
+ *        the roll and its Dexterity modifier, if it has stats, less the
+ *        kind's DC. 0 or more disarms it; -5 or less sets it off.
+ */
+int8_t feature_disarm_margin(nge_entity_id_t actor, nge_entity_id_t id, uint8_t roll) NGE_BANKED;
+
+/** @brief A failed disarm by this much or worse sets the trap off (docs/features.md R14) */
+#define FEAT_DISARM_SET_OFF  (-5)
+
 /** @brief 1 if a lock pick with d20 roll beats a lock, for actor: its Dexterity modifier counts, if it has stats. */
 uint8_t feature_pick_works(nge_entity_id_t actor, nge_entity_id_t pick, uint8_t roll) NGE_BANKED;
 

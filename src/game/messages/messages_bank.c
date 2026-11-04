@@ -343,11 +343,31 @@ void messages_on_event(const nge_event_t *e) NGE_BANKED
             say_named(operate_you[gen_feature_verb(kind_index[target])], target, ".");
         }
         break;
-    case EV_TRIGGERED:
+    case EV_TRIGGERED: {
+        /* Off the trap's tile, a failed disarm set it off: no stepping or falling */
+        uint8_t verb = (NGE_LOCATION_X(source) == NGE_LOCATION_X(target) && NGE_LOCATION_Y(source) == NGE_LOCATION_Y(target))
+                           ? gen_feature_verb(kind_index[target]) : FVERB_NONE;
+
         if (source == actor_player) {
-            say_named(trap_you[gen_feature_verb(kind_index[target])], target, "!");
+            say_named(trap_you[verb], target, "!");
         } else if (seen_ai(source)) {
-            say_did(source, trap_it[gen_feature_verb(kind_index[target])], target);
+            say_did(source, trap_it[verb], target);
+        }
+        break;
+    }
+    case EV_FOUND:
+        if (source == actor_player) {   /* NGE_EVENT_NONE: found by going off, which says so */
+            say_named("You find a ", target, "!");
+        }
+        break;
+    case EV_DISARMED:
+        if (source == actor_player) {
+            say_named("You disarm the ", target, ".");
+        }
+        break;
+    case EV_SEARCHED:
+        if (target == actor_player && p1 == 0) {
+            screen_message("You find nothing.");
         }
         break;
     case EV_UNLOCKED:
@@ -514,6 +534,14 @@ void messages_act_failed(const act_t *a) NGE_BANKED
     case ACT_R_SPENT:
         say_named("The ", target, " is spent.");
         break;
+    case ACT_R_CANT_DISARM:
+        say_named("You can't disarm the ", target, ".");
+        break;
+    case ACT_R_DISARM_FAILED:
+        say_named("You fail to disarm the ", target, ".");
+        break;
+    case ACT_R_SET_OFF:
+        break;   /* the trap going off says so (EV_TRIGGERED) */
     case ACT_R_CANT_USE:
         screen_message("You can't use that.");
         break;

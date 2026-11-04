@@ -109,7 +109,9 @@ typedef struct act {
 #define ACT_CAST    15
 #define ACT_EXCHANGE 16
 #define ACT_OPERATE 17
-#define ACT_COUNT   18
+#define ACT_SEARCH  18
+#define ACT_DISARM  19
+#define ACT_COUNT   20
 
 /** How far an aimed item reaches (nge_map_within()): a kind has no range of its own. */
 #define ACT_AIM_RANGE  8
@@ -157,7 +159,10 @@ typedef struct act {
 #define ACT_R_NO_SPELL          39  /**< Refused: the actor doesn't know the spell. */
 #define ACT_R_CANT_OPERATE      40  /**< Refused: the feature does nothing when used (a door). a->target: it. */
 #define ACT_R_SPENT             41  /**< Refused: it has been used, and works once. a->target: the feature. */
-#define ACT_R_COUNT             42
+#define ACT_R_CANT_DISARM       42  /**< Refused: the feature isn't a trap that can be disarmed. a->target: it. */
+#define ACT_R_DISARM_FAILED     43  /**< Attempted: the trap held (the turn is used). a->target: it. */
+#define ACT_R_SET_OFF           44  /**< Attempted: the disarm failed badly, and the trap went off at the actor. */
+#define ACT_R_COUNT             45
 
 /**
  * @brief Move one tile.
@@ -308,6 +313,33 @@ uint8_t act_close(act_t *a, uint8_t mode) NGE_BANKED;
  * or ACT_R_SPENT. A rooted actor can operate.
  */
 uint8_t act_operate(act_t *a, uint8_t mode) NGE_BANKED;
+
+/**
+ * @brief Search the actor's tile and the eight around it for hidden
+ *        features (docs/features.md 4.6).
+ *
+ * In: actor (alive, placed in an area). Each hidden feature there is found
+ * on a d20 roll plus the actor's Wisdom modifier against its kind's DC
+ * (feature_found_by()): drawn, and EV_FOUND (source: the actor). Out:
+ * amount, how many were found. Always succeeds and uses the turn, finding
+ * something or not; posts EV_SEARCHED (p1: amount). Check mode rolls nothing.
+ */
+uint8_t act_search(act_t *a, uint8_t mode) NGE_BANKED;
+
+/**
+ * @brief Disarm a known trap next to the actor or on its tile.
+ *
+ * In: actor (alive, placed in an area), and target, or (with target
+ * NGE_ENTITY_INVALID) a direction dx, dy. Out: target. Rolls d20 plus the
+ * actor's Dexterity modifier against the trap's DC (feature_disarm_margin()):
+ * at or above it, posts EV_DISARMED and destroys the trap (the clean-up
+ * draws its cell); short by less than 5, fails with ACT_R_DISARM_FAILED;
+ * by 5 or more, the trap goes off at the actor (act_spring()), failing with
+ * ACT_R_SET_OFF. Both use the turn. Refused with ACT_R_NOTHING_THERE (a
+ * hidden trap isn't known), ACT_R_CANT_DISARM or ACT_R_OUT_OF_RANGE. A
+ * rooted actor can disarm.
+ */
+uint8_t act_disarm(act_t *a, uint8_t mode) NGE_BANKED;
 
 /**
  * @brief A trap goes off at victim (docs/features.md 4.8): not an action,
