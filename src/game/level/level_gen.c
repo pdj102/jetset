@@ -689,9 +689,35 @@ static uint8_t interior_floor(uint8_t *x, uint8_t *y)
 }
 
 /*
+ * A corridor tile with no entity on it, for a trap: the first found from a
+ * random row, reading rows in turn. Doorways are a terrain of their own,
+ * so never one. Returns 1 and the tile in (x, y), or 0 if there is none
+ */
+static uint8_t free_corridor(uint8_t *x, uint8_t *y)
+{
+    uint8_t row = roll(LEVEL_HEIGHT);
+    uint8_t n;
+    uint8_t tx;
+
+    for (n = 0; n < LEVEL_HEIGHT; n++) {
+        for (tx = 0; tx < LEVEL_WIDTH; tx++) {
+            if (level_terrain[row][tx] == TERRAIN_CORRIDOR &&
+                nge_location_find(LEVEL_AREA, tx, row, 0, 0) == NGE_ENTITY_INVALID) {
+                *x = tx;
+                *y = row;
+                return 1;
+            }
+        }
+        row = (uint8_t)((row + 1 == LEVEL_HEIGHT) ? 0 : row + 1);
+    }
+    return 0;
+}
+
+/*
  * Up to LEVEL_FEATURES_MAX random features for the depth (docs/features.md
  * 4.12). Where one goes follows from what it blocks: furniture on an
- * interior tile, anything else on free floor. One with nowhere to go is
+ * interior tile, anything else (a trap) on a free corridor or room tile,
+ * never a doorway. One with nowhere to go is
  * destroyed, unplaced. A container gets 1 to its `holds` random items,
  * LEVEL_CONTENTS_MAX a level, held off the map (4.9); one that opens is
  * locked one time in three while locks are left of LEVEL_LOCKS_MAX, the
@@ -714,7 +740,9 @@ static void place_features(uint8_t depth, uint8_t locks)
             continue;
         }
         gen_feature_info(kind_index[id], &info);
-        if (!((info.block_shut != NGE_BLOCK_NONE) ? interior_floor(&x, &y) : free_floor(&x, &y))) {
+        /* Furniture inside a room; a trap where walkers go, a corridor 3 times in 4, else room floor */
+        if (!((info.block_shut != NGE_BLOCK_NONE) ? interior_floor(&x, &y)
+                                                   : ((roll(4) != 0 && free_corridor(&x, &y)) || free_floor(&x, &y)))) {
             nge_entity_destroy(id);
             continue;
         }

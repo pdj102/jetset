@@ -16,7 +16,8 @@
  * cycling through the damage types (game/player); L locks the nearest
  * closed door, with an iron lock (game/player); T puts features to check
  * near the player: a locked chest holding two items with its key at the
- * player's feet, and a cracked statue holding one (level_dev_features());
+ * player's feet, and a cracked statue holding one, and traps on the free
+ * tiles around the player, all found but one (level_dev_features(), game/player);
  * V pans the view a pixel
  * at a time while a movement key is held, to check the pixel camera; M
  * spends 1 of the player's MP, or restores them all at 0, to check the

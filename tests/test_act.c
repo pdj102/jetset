@@ -370,6 +370,95 @@ static void test_container(void)
     CHECK(NGE_ENTITY_STATE(statue) == NGE_ENTITY_FREE && NGE_OWNER_OF(s1) == AREA && at(s1, 2, 3));
 }
 
+/* Traps (docs/features.md 4.8): act_spring(), and the reaction to a creature moving onto one */
+static void test_traps(void)
+{
+    nge_entity_id_t h;
+    nge_entity_id_t bat;
+    nge_entity_id_t dart;
+    nge_entity_id_t rune;
+    nge_entity_id_t pit;
+    act_t a;
+    int hp;
+    int n;
+    int i;
+
+    uint8_t x;
+    uint8_t y;
+
+    events();
+    nge_entity_init();
+    for (y = 0; y < 10; y++) {                                      /* the earlier tests' tiles gone: all floor */
+        for (x = 0; x < 10; x++) {
+            NGE_MAP_TILE(x, y).tile_id = FLOOR;
+        }
+    }
+    nge_map_set_block(LOOK_TRAP, NGE_BLOCK_NONE);                  /* as the level sets it: a found trap's tile is walked on */
+    h = gen_creature(CR_BANDIT, AREA);
+    nge_location_set(h, 2, 2);
+    effects_set_base(h, ATTR_HP_MAX, 200);
+    health_hp[h] = 200;
+    dart = gen_feature(FT_DART_TRAP, AREA);
+    feature_place(dart, 3, 6);
+    rune = gen_feature(FT_FIRE_RUNE, AREA);
+    feature_place(rune, 4, 6);
+    events();
+
+    /* Hidden, as its kind starts: drawn as the floor, blocking nothing */
+    CHECK(FEATURE_IS_HIDDEN(dart) && NGE_MAP_TILE(3, 6).tile_id == FLOOR && NGE_BLOCK_OF(dart) == NGE_BLOCK_NONE);
+
+    /* A 1: it goes off and is found, then misses; no hit hook */
+    srand(seed_for_roll(1));
+    act_spring(dart, h);
+    n = events();
+    CHECK(n >= 3 && is(0, dart, EV_TRIGGERED, h) && is(1, dart, EV_FOUND, NGE_EVENT_NONE) && is(2, h, EV_MISSED, dart));
+    CHECK(!FEATURE_IS_HIDDEN(dart) && NGE_MAP_TILE(3, 6).tile_id == LOOK_TRAP && health_hp[h] == 200 &&
+          seen_at(h, EV_EFFECT_STARTED) < 0);
+    /* A 20: it hits, 1d4 piercing, then its hit hook (poison) on what it left alive; found already */
+    srand(seed_for_roll(20));
+    act_spring(dart, h);
+    n = events();
+    CHECK(is(0, dart, EV_TRIGGERED, h) && seen_at(dart, EV_FOUND) < 0 && is(1, h, EV_HIT, dart));
+    CHECK(health_hp[h] >= 196 && health_hp[h] <= 199 && seen_at(h, EV_EFFECT_STARTED) > 0);
+
+    /* No attack: it always goes off, its effect at its power (6 fire) */
+    hp = health_hp[h];
+    act_spring(rune, h);
+    n = events();
+    CHECK(is(0, rune, EV_TRIGGERED, h) && health_hp[h] == hp - 6 && seen_at(h, EV_DAMAGED) > 0);
+
+    /* Moved onto: the reaction to EV_STOOD_ON sets it off at a walker... */
+    pit = gen_feature(FT_PIT, AREA);
+    feature_place(pit, 2, 3);                                       /* south of the bandit */
+    events();
+    srand(seed_for_roll(20));
+    a = move(h, 0, 1);
+    CHECK(act_move(&a, ACT_DO) == ACT_SUCCESS && at(h, 2, 3));
+    n = events();
+    for (i = 0; i < n; i++) {
+        feature_on_event(&seen[i]);
+    }
+    n = events();
+    CHECK(is(0, pit, EV_TRIGGERED, h) && STATUS_HAS(h, STATUS_ROOTED));   /* in the pit: held */
+    effect_cure(h, STATUS_ROOTED);
+    events();
+    /* ...and not at one that flies (it passes holes) */
+    bat = gen_creature(CR_BAT, AREA);
+    nge_location_set(bat, 1, 4);
+    nge_block_add(bat, NGE_BLOCK_OCCUPIED, NGE_BLOCK_NO_FLOOR);
+    a = move(bat, 1, -1);
+    CHECK(act_move(&a, ACT_DO) == ACT_FAIL);                        /* the bandit is there: step aside first */
+    nge_location_set(h, 5, 5);
+    events();
+    a = move(bat, 1, -1);
+    CHECK(act_move(&a, ACT_DO) == ACT_SUCCESS && at(bat, 2, 3));
+    n = events();
+    for (i = 0; i < n; i++) {
+        feature_on_event(&seen[i]);
+    }
+    CHECK(events() == 0);
+}
+
 static void test_exchange(void)
 {
     nge_entity_id_t h = gen_creature(CR_BANDIT, AREA);
@@ -2019,6 +2108,7 @@ int main(void)
 
     test_operate();
     test_container();
+    test_traps();
 
     return test_summary("act");
 }

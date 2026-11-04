@@ -13,7 +13,7 @@
 #      headers.
 #   Game code (src/game) is linked only into the tests listed with it below
 #   (GEN_GAME_SRCS, with the components and effects, for test_gen, LEVEL_GAME_SRCS and those for test_level,
-#   ACT_GAME_SRCS (with the AI files that act) and the level and gen ones for test_act and test_ai, the gen ones for
+#   ACT_GAME_SRCS (with the AI files that act, and the features' reactions, which act) and the level and gen ones for test_act and test_ai, the gen ones for
 #   test_inventory, UI_GAME_SRCS and the action ones for test_ui and test_target).
 #   Library files that only work on the Next (inline asm traps, Layer 2
 #   drawing by address) are listed in LIB_EXCLUDE and replaced by fakes in
@@ -62,7 +62,8 @@ LEVEL_ONLY_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(LEVEL_GAME_SRCS
                    $(BUILD)/data/tile_rules_data.o
 LEVEL_GAME_OBJS := $(LEVEL_ONLY_OBJS) $(GEN_GAME_OBJS)
 # The stairs actions send entities between levels: the actions need the level module
-ACT_GAME_SRCS := $(wildcard $(GAMEDIR)/actions/*.c) $(addprefix $(GAMEDIR)/ai/,ai_act.c ai_sense.c ai_think.c)
+ACT_GAME_SRCS := $(wildcard $(GAMEDIR)/actions/*.c) $(addprefix $(GAMEDIR)/ai/,ai_act.c ai_sense.c ai_think.c) \
+                 $(GAMEDIR)/components/feature_event.c
 ACT_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(ACT_GAME_SRCS)) $(LEVEL_GAME_OBJS)
 UI_GAME_SRCS := $(wildcard $(GAMEDIR)/ui/*.c) \
                 $(addprefix $(GAMEDIR)/,player/player.c player/player_bank.c messages/messages_bank.c \

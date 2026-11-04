@@ -39,6 +39,8 @@ static void set_up_blocks(void)
     nge_map_set_block(LOOK_FOUNTAIN_DRY, NGE_BLOCK_NONE);
     nge_map_set_block(LOOK_CHEST_SHUT, NGE_BLOCK_NONE);
     nge_map_set_block(LOOK_CHEST_OPEN, NGE_BLOCK_NONE);
+    nge_map_set_block(LOOK_TRAP, NGE_BLOCK_NONE);
+    nge_map_set_block(LOOK_WEB, NGE_BLOCK_NONE);
 }
 
 void level_redraw(uint8_t x, uint8_t y) NGE_BANKED

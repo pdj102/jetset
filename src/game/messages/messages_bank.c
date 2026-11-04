@@ -173,6 +173,14 @@ static const char *const operate_you[FVERB_COUNT] = {
     "You use the ", "You pray at the ", "You drink from the ", "You touch the ", "You step on the ", "You fall into the ",
 };
 
+/* What the player is told when a trap goes off at them, or at a monster in sight, by its kind's verb */
+static const char *const trap_you[FVERB_COUNT] = {
+    "You set off a ", "You set off a ", "You set off a ", "You set off a ", "You step on a ", "You fall into a ",
+};
+static const char *const trap_it[FVERB_COUNT] = {
+    " sets off a ", " sets off a ", " sets off a ", " sets off a ", " steps on a ", " falls into a ",
+};
+
 /* How item is used (USE_*), from its subclass */
 static uint8_t use_verb(nge_entity_id_t item)
 {
@@ -333,6 +341,13 @@ void messages_on_event(const nge_event_t *e) NGE_BANKED
     case EV_OPERATED:
         if (source == actor_player) {   /* its effect's own message follows */
             say_named(operate_you[gen_feature_verb(kind_index[target])], target, ".");
+        }
+        break;
+    case EV_TRIGGERED:
+        if (source == actor_player) {
+            say_named(trap_you[gen_feature_verb(kind_index[target])], target, "!");
+        } else if (seen_ai(source)) {
+            say_did(source, trap_it[gen_feature_verb(kind_index[target])], target);
         }
         break;
     case EV_UNLOCKED:

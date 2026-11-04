@@ -28,6 +28,8 @@
  * | EV_CAST           | the entity aimed at, or the caster | the caster | p1: SP_* |
  * | EV_SPELL_LEARNED  | the entity          | -        | p1: SP_* |
  * | EV_OPERATED       | the feature         | operator | p1: EF_* |
+ * | EV_TRIGGERED      | the trap            | the creature it fires at | - |
+ * | EV_FOUND          | the hidden feature  | finder, or NGE_EVENT_NONE if it went off | - |
  * | EV_EFFECT_ENDED   | the entity affected | the effect (dying) | p1: EF_*, p2: EFFECT_END_* |
  * | EV_ATTRS_CHANGED  | the entity          | -        | -        |
  * | EV_OPENED         | the feature         | opener   | -        |
@@ -77,5 +79,7 @@
 #define EV_CAST           (NGE_EVENT_USER + 29)    /**< Spell p1 was cast at it by the source, or by itself (act_cast()); the effect's events follow. */
 #define EV_SPELL_LEARNED  (NGE_EVENT_USER + 30)    /**< Learned spell p1 (spell_learn(), game/spells/spells.h). */
 #define EV_OPERATED       (NGE_EVENT_USER + 31)    /**< Operated by the source (act_operate()): its effect p1 follows. */
+#define EV_TRIGGERED      (NGE_EVENT_USER + 32)    /**< A trap went off at the source (act_spring()): its attack's or effect's events follow. */
+#define EV_FOUND          (NGE_EVENT_USER + 33)    /**< A hidden feature was found by the source, or went off (NGE_EVENT_NONE). */
 
 #endif

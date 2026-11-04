@@ -28,3 +28,5 @@ look fountain
 look fountain_dry
 look chest_shut
 look chest_open
+look trap
+look web

@@ -310,6 +310,19 @@ uint8_t act_close(act_t *a, uint8_t mode) NGE_BANKED;
 uint8_t act_operate(act_t *a, uint8_t mode) NGE_BANKED;
 
 /**
+ * @brief A trap goes off at victim (docs/features.md 4.8): not an action,
+ *        but a reaction (feature_on_event()), striking as an action does.
+ *
+ * Posts EV_TRIGGERED (source: the victim); a hidden trap is found
+ * (feature_find(), EV_FOUND). With an attack, it rolls against the victim's
+ * AC as a monster's bite (act_strike(), the trap the attacker), its hit
+ * hook on a hit that leaves the victim alive; without one, its hit hook
+ * applies at once. Does nothing if the trap or the victim is gone, or the
+ * victim has no hit points.
+ */
+void act_spring(nge_entity_id_t trap, nge_entity_id_t victim) NGE_BANKED;
+
+/**
  * @brief Go up the stairs the actor stands on (game/level/level.h).
  *
  * In: actor (alive, placed on the current level). Succeeds if a feature

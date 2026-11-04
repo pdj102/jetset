@@ -165,4 +165,100 @@ const gen_feature_kind_t gen_features[FT_COUNT] = {
         .holds = 2,
         .where = { .depth = 1, .depth_max = 10, .rarity = 6 },
     },
+    /* Traps (docs/features.md 5.3): fire at a walker that moves onto them; most start hidden */
+    [FT_DART_TRAP] = {
+        .name = "dart trap",
+        .info = {
+            .look = { { LOOK_TRAP, LOOK_TRAP_BANK }, { LOOK_TRAP, LOOK_TRAP_BANK } },
+            .can = FCAN_TRAP | FCAN_DISARM,
+            .block_shut = NGE_BLOCK_NONE,
+        },
+        .state = FEAT_HIDDEN,
+        .verb = FVERB_STEP,
+        .dc = 12,
+        .attack = { .to_hit = 4, .dice = 1, .sides = 4, .type = DMG_PIERCE, .range = 1 },
+        .hooks = { [GEN_HOOK_HIT] = { EF_POISON, 1 } },
+        .where = { .depth = 1, .depth_max = 6, .rarity = 4 },
+    },
+    [FT_PIT] = {
+        .name = "pit",   /* stuck in it: a hold */
+        .info = {
+            .look = { { LOOK_TRAP, LOOK_TRAP_BANK }, { LOOK_TRAP, LOOK_TRAP_BANK } },
+            .can = FCAN_TRAP | FCAN_DISARM,
+            .block_shut = NGE_BLOCK_NONE,
+        },
+        .state = FEAT_HIDDEN,
+        .verb = FVERB_FALL,
+        .dc = 10,
+        .attack = { .to_hit = 8, .dice = 1, .sides = 6, .type = DMG_BLUNT, .range = 1 },
+        .hooks = { [GEN_HOOK_HIT] = { EF_HOLD, 1 } },
+        .where = { .depth = 1, .depth_max = 10, .rarity = 4 },
+    },
+    [FT_FIRE_RUNE] = {
+        .name = "fire rune",   /* no attack: it always goes off */
+        .info = {
+            .look = { { LOOK_TRAP, LOOK_TRAP_BANK }, { LOOK_TRAP, LOOK_TRAP_BANK } },
+            .can = FCAN_TRAP | FCAN_DISARM,
+            .block_shut = NGE_BLOCK_NONE,
+        },
+        .state = FEAT_HIDDEN,
+        .verb = FVERB_STEP,
+        .dc = 14,
+        .hooks = { [GEN_HOOK_HIT] = { EF_BOLT_FIRE, 6 } },
+        .where = { .depth = 4, .depth_max = 10, .rarity = 3 },
+    },
+    [FT_WEB] = {
+        .name = "spider web",   /* seen, not disarmed: cut or burnt (3 hp) */
+        .info = {
+            .look = { { LOOK_WEB, LOOK_WEB_BANK }, { LOOK_WEB, LOOK_WEB_BANK } },
+            .can = FCAN_TRAP,
+            .block_shut = NGE_BLOCK_NONE,
+        },
+        .state = 0,
+        .verb = FVERB_STEP,
+        .dc = 0,
+        .health = { .hp_max = 3, .immune = DMG_BIT(DMG_POISON), .vuln = DMG_BIT(DMG_FIRE), .ac = 1 },
+        .hooks = { [GEN_HOOK_HIT] = { EF_HOLD, 1 } },
+        .where = { .depth = 3, .depth_max = 7, .rarity = 3 },
+    },
+    /* Pending (D15): complete, but rarity 0 until sleep, teleport and summoning are built */
+    [FT_SLEEP_GAS] = {
+        .name = "sleeping gas trap",
+        .info = {
+            .look = { { LOOK_TRAP, LOOK_TRAP_BANK }, { LOOK_TRAP, LOOK_TRAP_BANK } },
+            .can = FCAN_TRAP | FCAN_DISARM,
+            .block_shut = NGE_BLOCK_NONE,
+        },
+        .state = FEAT_HIDDEN,
+        .verb = FVERB_STEP,
+        .dc = 13,
+        .hooks = { [GEN_HOOK_HIT] = { EF_SLEEP, 1 } },
+        .where = { .depth = 3, .depth_max = 10, .rarity = 0 },
+    },
+    [FT_TELEPORT_RUNE] = {
+        .name = "teleport rune",
+        .info = {
+            .look = { { LOOK_TRAP, LOOK_TRAP_BANK }, { LOOK_TRAP, LOOK_TRAP_BANK } },
+            .can = FCAN_TRAP | FCAN_DISARM,
+            .block_shut = NGE_BLOCK_NONE,
+        },
+        .state = FEAT_HIDDEN,
+        .verb = FVERB_STEP,
+        .dc = 13,
+        .hooks = { [GEN_HOOK_HIT] = { EF_TELEPORT, 1 } },
+        .where = { .depth = 3, .depth_max = 10, .rarity = 0 },
+    },
+    [FT_SUMMON_RUNE] = {
+        .name = "summoning rune",
+        .info = {
+            .look = { { LOOK_TRAP, LOOK_TRAP_BANK }, { LOOK_TRAP, LOOK_TRAP_BANK } },
+            .can = FCAN_TRAP | FCAN_DISARM,
+            .block_shut = NGE_BLOCK_NONE,
+        },
+        .state = FEAT_HIDDEN,
+        .verb = FVERB_STEP,
+        .dc = 15,
+        .hooks = { [GEN_HOOK_HIT] = { EF_SUMMON, 1 } },
+        .where = { .depth = 5, .depth_max = 10, .rarity = 0 },
+    },
 };

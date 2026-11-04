@@ -83,6 +83,8 @@ static int locks_seen;
 static int features_seen;   /* random features, over every level checked */
 static int contents_seen;   /* items held by containers */
 static int chest_locks_seen;
+static int traps_seen;
+static int traps_in_corridors;
 
 /* The events posted: kept to look at, then thrown away */
 static nge_event_t seen[32];
@@ -470,7 +472,9 @@ static int check_level(int depth)
             if (nge_map_block((uint8_t)x, (uint8_t)y) != terrain_block(terrain((uint8_t)x, (uint8_t)y))) {
                 return fail(depth, "a cell's look doesn't block what its terrain blocks");
             }
-            if (nge_location_find(LEVEL_AREA, (uint8_t)x, (uint8_t)y, COMPONENT_FEATURE, 0) == NGE_ENTITY_INVALID) {
+            nge_entity_id_t f = nge_location_find(LEVEL_AREA, (uint8_t)x, (uint8_t)y, COMPONENT_FEATURE, 0);
+
+            if (f == NGE_ENTITY_INVALID || FEATURE_IS_HIDDEN(f)) {   /* a hidden trap leaves its cell drawn */
                 level_decorate((uint8_t)x, (uint8_t)y);
                 if (memcmp(&before, &NGE_MAP_TILE(x, y), sizeof(before)) != 0) {
                     return fail(depth, "a cell isn't drawn as the decorator draws it");
@@ -556,9 +560,23 @@ static int check_level(int depth)
 
             gen_feature_info(kind_index[id], &info);
             if (!NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_LOCATION) || NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_SPRITE) ||
-                entities_at(fx, fy) != 1 || tile(fx, fy) != info.look[0].tile_id || NGE_BLOCK_OF(id) != info.block_shut ||
-                nge_map_block(fx, fy) != NGE_BLOCK_NONE) {
+                entities_at(fx, fy) != 1 || NGE_BLOCK_OF(id) != info.block_shut || nge_map_block(fx, fy) != NGE_BLOCK_NONE ||
+                (!FEATURE_IS_HIDDEN(id) && tile(fx, fy) != info.look[0].tile_id)) {
                 return fail(depth, "a random feature isn't placed alone, drawn and blocking as its kind");
+            }
+            if (feature_state[id] != gen_features[kind_index[id]].state && !FEATURE_IS_LOCKED(id)) {
+                return fail(depth, "a random feature isn't in its kind's state");
+            }
+            /* A trap: on room floor outside the locked rooms, or a corridor; never a doorway (R18) */
+            if (info.block_shut == NGE_BLOCK_NONE &&
+                !(terrain(fx, fy) == TERRAIN_CORRIDOR || (is_floor(fx, fy) && r >= 0 && !LEVEL_CELL_LOCKED(r)))) {
+                return fail(depth, "a trap isn't on free room floor or a corridor");
+            }
+            if (info.can & FCAN_TRAP) {
+                traps_seen++;
+                if (terrain(fx, fy) == TERRAIN_CORRIDOR) {
+                    traps_in_corridors++;
+                }
             }
             if (gen_features[kind_index[id]].where.rarity == 0 || depth < gen_features[kind_index[id]].where.depth ||
                 depth > gen_features[kind_index[id]].where.depth_max) {
@@ -822,6 +840,8 @@ int main(void)
     CHECK(features_seen > SEEDS * LEVEL_DEPTH_BOTTOM && features_seen < SEEDS * LEVEL_DEPTH_BOTTOM * 3);
     /* Containers come with items, and some chests are locked */
     CHECK(contents_seen > 0 && chest_locks_seen > 0);
+    /* Traps are generated, about 3 in 4 of them in corridors, where walkers go */
+    CHECK(traps_seen > 0 && traps_in_corridors > traps_seen * 6 / 10 && traps_in_corridors < traps_seen * 9 / 10);
 
     /* Every side room is locked, about one a level: fewer would hardly be seen (Next's rand: 0.98) */
     CHECK(locks_seen > SEEDS * LEVEL_DEPTH_BOTTOM * 3 / 4);

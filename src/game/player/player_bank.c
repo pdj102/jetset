@@ -11,6 +11,8 @@
 
 #include "game/player/player.h"
 
+#include <stddef.h>
+
 #include "core/nge_util.h"
 #include "ecs/components/nge_location.h"
 #include "ecs/systems/nge_timer.h"
@@ -200,6 +202,38 @@ static void close_command(void)
         player_act(ACT_CLOSE, &a);
     }
 }
+
+#if GAME_DEV_KIT
+/*
+ * Development (the T key, with level_dev_features()): a dart trap, a pit, a
+ * fire rune and a web on the free tiles around the player, found, to be
+ * stepped on, and a second dart trap on the next free tile, hidden
+ * (docs/features.md, step 5)
+ */
+static void dev_traps(void)
+{
+    static const uint8_t traps[] = { FT_DART_TRAP, FT_PIT, FT_FIRE_RUNE, FT_WEB, FT_DART_TRAP };
+    nge_entity_id_t id;
+    uint8_t k = 0;
+    uint8_t x;
+    uint8_t y;
+
+    for (y = (uint8_t)(NGE_LOCATION_Y(actor_player) - 1); y <= (uint8_t)(NGE_LOCATION_Y(actor_player) + 1); y++) {
+        for (x = (uint8_t)(NGE_LOCATION_X(actor_player) - 1); x <= (uint8_t)(NGE_LOCATION_X(actor_player) + 1); x++) {
+            if (k < sizeof(traps) && nge_location_find(LEVEL_AREA, x, y, 0, 0) == NGE_ENTITY_INVALID &&
+                nge_block_can_enter(LEVEL_AREA, x, y, NGE_BLOCK_NONE, NGE_ENTITY_INVALID, NULL)) {
+                id = gen_feature(traps[k++], LEVEL_AREA);
+                if (id != NGE_ENTITY_INVALID) {
+                    feature_place(id, x, y);
+                    if (k < sizeof(traps)) {
+                        feature_find(id);   /* all found but the last: a dart trap left hidden */
+                    }
+                }
+            }
+        }
+    }
+}
+#endif
 
 /* Operate a feature next to the player: pray at a shrine, drink from a fountain (docs/features.md 4.6) */
 static void operate_command(void)
@@ -444,6 +478,7 @@ void player_command(nge_key_event_t ev) NGE_BANKED
         break;
     case 'T':
         level_dev_features(actor_player);   /* development: features to check, near the player (no turn used) */
+        dev_traps();
         break;
     case 'M':
         /* Development: spend 1 MP, or restore them all at 0, to see the stats follow (no turn used) */

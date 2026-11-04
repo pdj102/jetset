@@ -938,6 +938,21 @@ int main(void)
         nge_entity_destroy(shrine);
         nge_event_flush();
     }
+
+    /* ---- a trap going off at the player: by its kind's verb (docs/features.md 4.11) ---- */
+    {
+        nge_entity_id_t dart = gen_feature(FT_DART_TRAP, AREA);
+        nge_entity_id_t pit = gen_feature(FT_PIT, AREA);
+
+        nge_event_post(dart, EV_TRIGGERED, actor_player, 0, 0);
+        nge_event_process(messages_on_event);
+        CHECK(said("You step on a dart trap!"));
+        nge_event_post(pit, EV_TRIGGERED, actor_player, 0, 0);
+        nge_event_process(messages_on_event);
+        CHECK(said("You fall into a pit!"));
+        nge_entity_destroy(dart);
+        nge_entity_destroy(pit);
+    }
     press(EV(NGE_KEY_A));                                          /* not a direction */
     player_command(EV(NGE_KEY_C));
     CHECK(said("Never mind.") && player_turn);

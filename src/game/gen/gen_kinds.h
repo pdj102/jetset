@@ -213,7 +213,14 @@
 #define FT_FOUNTAIN_MANA 11
 #define FT_FOUNTAIN_FOUL 12
 #define FT_CHEST        13
-#define FT_COUNT        14
+#define FT_DART_TRAP    14
+#define FT_PIT          15
+#define FT_FIRE_RUNE    16
+#define FT_WEB          17
+#define FT_SLEEP_GAS    18
+#define FT_TELEPORT_RUNE 19
+#define FT_SUMMON_RUNE  20
+#define FT_COUNT        21
 
 /* Item subclasses, in each item's kind record */
 #define ITEM_POTION     0

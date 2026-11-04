@@ -68,8 +68,8 @@ static void game_on_event(const nge_event_t *e)
     anim_on_event(e);    /* first: the animations start in the frame the action happened */
     player_on_event(e);
     quest_on_event(e);
-    if (e->id == EV_OPENED) {
-        feature_on_event(e);   /* a container spills: filtered here, as the call is banked */
+    if (e->id == EV_OPENED || e->id == EV_STOOD_ON) {
+        feature_on_event(e);   /* a container spills, a trap fires: filtered here, as the call is banked */
     }
     ai_on_event(e);      /* before the messages: its EV_AI_CHANGED comes after the attack's */
     messages_on_event(e);

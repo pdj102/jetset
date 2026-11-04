@@ -124,7 +124,8 @@ void level_dev_bandit(nge_entity_id_t player) NGE_BANKED;
 /*
  * Development (the T key): features to check, near the player, on interior
  * tiles: a locked chest holding two items, its iron key at the player's
- * feet, and a cracked statue holding one (docs/features.md, step 4)
+ * feet, and a cracked statue holding one (docs/features.md, step 4). The
+ * key's traps are game/player's
  */
 void level_dev_features(nge_entity_id_t player) NGE_BANKED;
 #endif

@@ -122,9 +122,11 @@ void feature_unlock(nge_entity_id_t id) NGE_BANKED;
 
 /**
  * @brief The features' reactions to events (docs/features.md 4.7): a
- *        container opened (EV_OPENED) drops what it holds on its tile.
- *        A broken one needs nothing: the clean-up drops a dying holder's
- *        items. game_on_event() calls it only for the events it handles.
+ *        container opened (EV_OPENED) drops what it holds on its tile (a
+ *        broken one needs nothing: the clean-up drops a dying holder's
+ *        items); a trap stood on (EV_STOOD_ON) by a walker goes off at it
+ *        (act_spring(), game/actions/act.h), not at one that flies.
+ *        game_on_event() calls it only for the events it handles.
  */
 void feature_on_event(const nge_event_t *e) NGE_BANKED;
 
