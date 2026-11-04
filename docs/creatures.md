@@ -21,7 +21,7 @@ goblin's, the player's and the coins' patterns are reused, in other banks.
 |---|---|---|---|---|---|---|---|
 | 1-4 | 10 | rat | rat | earth | <1 | Poison bite | |
 | 1-6 | 6 | goblin | goblin | green | 1-1 | Weak to fire, wields, opens doors | |
-| 1-4 | 8 | bat | bat (new) | purple | <1 | Fast | Erratic flight |
+| 1-4 | 8 | bat | bat (new) | purple | <1 | Fast; flies over holes and traps (features.md R15) | Erratic flight |
 | 1-5 | 7 | green snake | snake (new) | green | 1 | Poison bite | |
 | 1-5 | 5 | lichen | lichen (new) | bone | 1 | Rooted, a touch that holds, slow | |
 | 2-6 | 6 | green slime | slime (new) | lime | 2 | Acid touch, resists blunt and pierce, slow | Splits, corrodes gear |
@@ -35,7 +35,7 @@ goblin's, the player's and the coins' patterns are reused, in other banks.
 | 4-8 | 3 | floating eye | eye (new) | blue | 3+ | Rooted, no attack, slow | A paralysing gaze |
 | 4-9 | 3 | mimic | coins | gold | 4 | Rooted, looks like treasure | Hidden until touched |
 | 5-8 | 8 | ogre | ogre (new) | earth | 5 | Hits hard, wields | |
-| 5-9 | 5 | ghost | ghost (new) | bone | 5 | Resists weapons, immune to cold | Passes through walls |
+| 5-9 | 5 | ghost | ghost (new) | bone | 5 | Resists weapons, immune to cold; floats over holes and traps | Passes through walls |
 | 6-10 | 5 | wraith | ghost | dark | 6 | Touch weakens, resists weapons | |
 | 7-10 | 6 | troll | ogre | green | 7 | Regenerates; weak to fire and acid | |
 | 9-10 | 2 | dragon | dragon (new) | red | 10 | Immune to fire, weak to cold | Fire breath |

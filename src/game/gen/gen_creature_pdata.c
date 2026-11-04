@@ -119,7 +119,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
     [CR_BAT] = {                                        /* later: erratic flight */
         .name = "bat",
         .render = SHAPE_BAT(BANK_PURPLE),
-        .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
+        .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NO_FLOOR },   /* flies: over holes and traps */
         .stats = { .speed = MONSTER_FAST, .ability = { 4, 15, 8, 2, 12, 6 } },
         .health = { .hp_max = 3, .ac = 13 },
         .melee = { .to_hit = 0, .dice = 1, .sides = 2, .bonus = 0, .type = DMG_PIERCE, .range = 1 },  /* bite */
@@ -309,7 +309,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
     [CR_GHOST] = {                                      /* later: passes through walls */
         .name = "ghost",
         .render = SHAPE_GHOST(BANK_BONE),
-        .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
+        .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NO_FLOOR },   /* floats: over holes and traps */
         .stats = { .speed = MONSTER_SPEED, .ability = { 2, 14, 10, 10, 12, 12 } },
         .health = { .hp_max = 20, .immune = IMMUNE_UNDEAD | DMG_BIT(DMG_COLD), .resist = RESIST_WEAPONS, .ac = 15 },
         .melee = { .to_hit = 4, .dice = 1, .sides = 8, .bonus = 0, .type = DMG_COLD, .range = 1 },    /* a chill touch */
