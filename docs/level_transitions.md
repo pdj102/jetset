@@ -120,7 +120,8 @@ that differs from the original request; section 4 gives the reasons.
 - **R16** Arrival: going down the stairs puts the player on the new level's
   up stairs, and going up puts them on its down stairs. **Changed** (the
   request didn't say): any other transition (a fall, a teleport) puts them on
-  random free floor.
+  random free floor. A trapdoor is such a fall, set off or taken with `>`
+  (features.md, step 7).
 - **R17** Time carries on across a transition: the turn counter, the player's
   timer and the player's active effects continue. The new level's monsters
   first act one period after they are created.

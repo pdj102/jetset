@@ -174,9 +174,9 @@ a move that is refused, followed by a melee.
   no theft can take the quest item (winning.md R6).
 - **R29** Stacks merge and two-handed weapons and sticky curses are enforced, in the
   existing actions (section 6.8). Using up counts other than ammo comes later.
-- **R30 (later)** Features that do something when operated, hidden features and traps
-  have their actions (`ACT_OPERATE`, `ACT_SEARCH`, `ACT_DISARM`), once such features
-  exist.
+- **R30** Features that do something when operated, hidden features and traps
+  have their actions (`ACT_OPERATE`, `ACT_SEARCH`, `ACT_DISARM`). Built with the
+  features themselves: [features.md](features.md), section 4.6.
 
 ## 4. Design
 
@@ -543,9 +543,9 @@ actions are listed, and one of them is needed by items the game already generate
 | `ACT_UNLOCK`, built | 7 item kinds: keys and lock picks | Needed | Nothing: locks are placed (section 6.12) |
 | `ACT_CAST` | Mana exists and nothing spends it; the goblin shaman | Wanted | Its own spec: what spells exist, who knows them |
 | `ACT_STEAL` | The bandit's "steals and runs" | Wanted | An AI that flees (ai.md R18) |
-| `ACT_OPERATE` | Fountains and the like | If added | No such feature kind: there are only doors and stairs |
-| `ACT_SEARCH` | Hidden features, `FEAT_HIDDEN` | If added | As above |
-| `ACT_DISARM` | Traps | If added | As above |
+| `ACT_OPERATE`, built | Shrines, altars, fountains | - | Built by features.md |
+| `ACT_SEARCH`, built | Hidden traps, `FEAT_HIDDEN` | - | Built by features.md |
+| `ACT_DISARM`, built | Traps | - | Built by features.md |
 
 Those kinds, 7 of 160 with firing and aiming done, generated at their real rarity, and do nothing today
 (items.md, "Inert finds"). The reasons, events and keys below are suggestions in the
@@ -555,10 +555,10 @@ form `act.h` will need.
 
 | Addition | Names |
 |---|---|
-| Actions | `ACT_CAST` 15 and `ACT_EXCHANGE` 16 (built), `ACT_STEAL` 17, `ACT_OPERATE` 18, `ACT_SEARCH` 19, `ACT_DISARM` 20 |
-| Refused reasons | `ACT_R_NO_MANA` 38 and `ACT_R_NO_SPELL` 39 (built), `ACT_R_NOTHING_TO_STEAL`, `ACT_R_CANT_OPERATE`, `ACT_R_SPENT` |
-| Attempted reasons | `ACT_R_CAUGHT` |
-| Events | `EV_CAST` (built), `EV_STOLEN` |
+| Actions | `ACT_CAST` 15, `ACT_EXCHANGE` 16, `ACT_OPERATE` 17, `ACT_SEARCH` 18 and `ACT_DISARM` 19 (built), `ACT_STEAL` |
+| Refused reasons | `ACT_R_NO_MANA` 38, `ACT_R_NO_SPELL` 39, `ACT_R_CANT_OPERATE` 40, `ACT_R_SPENT` 41 and `ACT_R_CANT_DISARM` 42 (built), `ACT_R_NOTHING_TO_STEAL` |
+| Attempted reasons | `ACT_R_DISARM_FAILED` 43 and `ACT_R_SET_OFF` 44 (built), `ACT_R_CAUGHT` |
+| Events | `EV_CAST`, `EV_OPERATED`, `EV_TRIGGERED`, `EV_FOUND`, `EV_DISARMED`, `EV_SEARCHED` (built), `EV_STOLEN` |
 
 Numbers are given only for ordering: each gets its number when it is built, as
 `ACT_COUNT` sizes `modes[]`.
@@ -750,10 +750,11 @@ A blinded reader and an unconscious actor are other rules to add, as no rule rea
 those statuses (attributes.md, "Not built yet"). Unconscious belongs in whatever gives
 the actor its turn, not in each action (ai.md R19).
 
-### 6.9 Features: operate, search, disarm
+### 6.9 Features: operate, search, disarm, built
 
-`feature.h` promises chests, fountains and traps, and reserves `FEAT_HIDDEN` and
-`FEAT_SPENT`, but `FT_COUNT` is 3. These wait until those kinds are specified.
+Built by [features.md](features.md) (2026-11-04), which specifies them in its
+section 4.6 and records the differences in its section 12. The table is the
+plan they were built to.
 
 | Action | What it does | Notes |
 |---|---|---|

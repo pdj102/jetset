@@ -3,9 +3,10 @@
 How features work in Jetset: what the design requires, how it is built, and
 why, and the set of features proposed for the dungeon.
 
-Status: proposed (2026-11-04); the questions in section 10 answered the same
-day. Only the door and the two staircases are built. Everything else here
-waits for review of D1 to D17.
+Status: implemented (2026-11-04), steps 1 to 7 of section 7, each with its
+CSpect checks passed the same day. The questions in section 10 were answered
+before the build. Not yet tried on hardware. Section 12 lists where the build
+differs from the design.
 
 The data is not repeated here. The kinds are in
 [gen_feature_pdata.c](../src/game/gen/gen_feature_pdata.c), the component in
@@ -124,8 +125,9 @@ disarmed trap needs no saving. A revisited depth is a new level.
   success it is destroyed. Failing by 5 or more fires it at the disarmer.
   Otherwise the attempt fails and uses the turn.
 - **R15 (New)** A creature that flies doesn't set off traps. A flier is one
-  whose pass flags include `NGE_BLOCK_NO_FLOOR`. Reason: bats and ghosts
-  already pass holes this way, so no new flag is needed.
+  whose pass flags include `NGE_BLOCK_NO_FLOOR`, the flag for passing holes,
+  so no new flag is needed. *(As built: no kind had it; the bat and the ghost
+  now do, section 12.)*
 - **R16 (New)** Every walking creature sets off traps, not only the player.
   Reason: one rule for every actor (creatures.md D4), and a monster lured
   onto a trap is a tactic. Monsters don't avoid traps (section 8).
@@ -134,9 +136,10 @@ disarmed trap needs no saving. A revisited depth is a new level.
 
 - **R17** A level has up to `LEVEL_FEATURES_MAX` random features (Q1),
   picked by depth and rarity.
-- **R18** Furniture is placed only where it can't cut a path: on room floor
-  whose eight neighbours are all room floor. Traps go on free room or
-  corridor floor, never on a doorway or a stairs tile.
+- **R18 (Changed when built)** Furniture is placed only where it can't cut a
+  path: on room floor whose eight neighbours are all room floor. Traps go on
+  a free corridor tile 3 times in 4, else on free room floor, never on a
+  doorway or a stairs tile. Reason: section 12.
 - **R19** Nothing else is generated on a feature's tile, and no feature goes
   in a locked room (actions.md R35).
 - **R20** A feature never cuts off the stairs or the quest item. Locks and
@@ -678,3 +681,95 @@ CSpect checks:
 - **zsdcc.** `FCAN_ONCE` is `0x80` and must be written as a constant, not
   `1 << 7` (the signed-char shift trap). Read the asm of `update()` and the
   firing after changing them ([toolchain.md](guidelines/toolchain.md)).
+
+## 12. As built: differences from the design
+
+### Behaviour
+
+- **R15, flying (changed).** No creature kind passed `NGE_BLOCK_NO_FLOOR`, so
+  the rule had nothing to act on. The bat and the ghost now pass it
+  (creatures.md, answered 2026-11-04): they fly over traps, and would over
+  holes, which the generator doesn't make yet.
+- **R18, where traps go (changed).** A trap goes on a free corridor tile 3
+  times in 4 (`free_corridor()`), else on room floor. Reason: with "room or
+  corridor" alike, CSpect check 3 met no hidden trap in 8 levels. About 0.6
+  traps a level are made, and most now lie where walkers go.
+- **D12, a step into a known web strikes it** (answered 2026-11-04), as a
+  bump into a boulder does: it is never walked into once seen. A web can't
+  be disarmed, and effects don't reach it (D16), so it is cut, struck or
+  shot.
+- **`D` with a known trap underfoot** disarms that one without asking. The
+  direction prompt has the four directions only, and `.` is the wait key.
+- **A failed disarm that sets the trap off** says "You set off a dart trap!",
+  not the kind's step or fall verb: `EV_TRIGGERED`'s message checks whether
+  the victim stands on the trap.
+- **Spent:** "The healing shrine is spent.", not "The shrine is silent.": the
+  longer wording wrapped onto two lines.
+- **`EV_SEARCHED` (new),** posted by every search with the count found, so
+  the player is told "You find nothing.". Events are numbered: `EV_OPERATED`
+  31, `EV_TRIGGERED` 32, `EV_FOUND` 33, `EV_DISARMED` 34, `EV_SEARCHED` 35
+  (above `NGE_EVENT_USER`).
+- **`FVERB_DROP` (new),** for the trapdoor: "You fall through a trapdoor!".
+- **Monsters open chests** when one blocks their step, as they open doors:
+  `ai_step()` opens any closed feature. Its contents spill as for the player.
+- **Numbers.** Actions `ACT_OPERATE` 17, `ACT_SEARCH` 18, `ACT_DISARM` 19.
+  Reasons `ACT_R_CANT_OPERATE` 40, `ACT_R_SPENT` 41, `ACT_R_CANT_DISARM` 42,
+  and the attempted `ACT_R_DISARM_FAILED` 43 and `ACT_R_SET_OFF` 44. Kinds
+  `FT_BOULDER` 3 to `FT_TRAPDOOR` 21, 22 in all.
+
+### Code
+
+- **`act_find_feature()`** (`act_shared.c`) is the one finder for open, close,
+  unlock, operate and disarm. A hidden feature is "nothing there" to all of
+  them.
+- **The reactions are in `feature_event.c`,** page 132 with the component,
+  not in `feature.c`: they call `act_spring()`, and the PC tests that link
+  the component without the actions would not link. `game_on_event()` calls
+  `feature_on_event()` only for `EV_OPENED` and `EV_STOOD_ON`.
+- **`act_spring()`** is public (`act.h`) and banked in `BANK_56` with
+  `act_strike()`. It is not an action: it has no entry in `act_do()`.
+- **A hidden feature has no third look.** It blocks nothing and leaves its
+  tile alone: it starts hidden, is placed on drawn terrain, and only being
+  found changes that.
+- **`level_redraw()` draws the features around a cell again.** It redraws a
+  3 x 3 of terrain, so a feature destroyed next to a door painted over the
+  door. Nothing was destroyed in play before traps.
+- **The search and disarm rolls** are rules of the component, as the lock
+  pick's is: `feature_found_by()`, `feature_disarm_margin()`,
+  `FEAT_DISARM_SET_OFF`.
+- **Locks** share `lock_kind()` and `place_key()` in `level_gen.c`, and
+  `place_locks()` returns its count for `place_features()`.
+
+### Development aid
+
+- **The `T` key** (debug builds, dev.h): a locked chest with two items and
+  its key at the player's feet, and a cracked statue with one, on the nearest
+  interior tiles tried (`level_dev_features()`, page 102); and a dart trap, a
+  pit, a fire rune and a web, found, on the free tiles around the player, with
+  a trapdoor hidden on the next (`dev_traps()`, page 114).
+
+### Memory
+
+- **Page 102 filled up.** `place_features()` and its helpers left 63 bytes, so
+  `level_travel.c` moved unchanged to a pair of its own, 136/137 (`banks.inc`):
+  it reads none of page 103's data. Page 102 now has 266 bytes free in debug
+  builds, with the `T` key's code.
+- **Common memory:** 4,309 bytes free before step 1, 4,203 after: about 25
+  bytes for each `act_do()` case calling a banked action, a byte a reason,
+  and the event filter. No library routine was linked (the map was compared).
+- **Pages:** 122 has 6,893 bytes free and 123 (the kinds) 7,170, well within
+  R25; 132 (the component and reactions) 14,437 in its pair; `BANK_56` 2,758;
+  136/137 15,294.
+- **Tiles:** 13 metatiles, as section 5.4: 41 of 64, one bank of 13 colours.
+  Three colours were added: glow and two of water (tile_style.md 6.5.2).
+
+### Checks
+
+- **The asm was read** for `update()`, `feature_on_event()`, `act_operate()`
+  and `act_spring()`: the state bits, the abilities (`FCAN_ONCE` as bit 7,
+  tested with `rlca`), the pass flag, and the offsets of `look`, `can` and
+  `block_shut` in the copied info are right.
+- **Tests:** `test_act` 577 checks (513 before), `test_feature` 55,
+  `test_gen` 84 (the record's rules in its loop), `test_level` 86, `test_ui`
+  502 (490 before). The probability of meeting a trap in play has no test:
+  CSpect check 3 covered it.

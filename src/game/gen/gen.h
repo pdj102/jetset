@@ -152,8 +152,8 @@ void gen_creature_seqs(uint8_t kind, gen_seq_t *seq) NGE_BANKED;
 uint16_t gen_creature_xp(uint8_t kind) NGE_BANKED;
 
 /* Hooks: the effect (EF_*, game/effects/effects.h) and power a kind record names for each */
-#define GEN_HOOK_USE     0   /**< Items: applied to the user when used up (drunk, eaten, read: act_use()). */
-#define GEN_HOOK_HIT     1   /**< Weapons, ammo and creatures: applied to what a hit leaves alive (act_strike()). */
+#define GEN_HOOK_USE     0   /**< Items: applied to the user when used up (act_use()); features: to the operator (act_operate()). */
+#define GEN_HOOK_HIT     1   /**< Weapons, ammo, creatures and traps: applied to what a hit leaves alive (act_strike(), act_spring()). */
 #define GEN_HOOK_WORN    2   /**< Items: its modifiers and statuses count while equipped. */
 #define GEN_HOOK_INNATE  3   /**< Creatures: applied when generated. */
 #define GEN_HOOK_AIM     4   /**< Items: sent at a chosen target (wands, staves, parchments): no action reads it yet. */

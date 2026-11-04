@@ -4,34 +4,43 @@
 /**
  * @file feature.h
  * @brief The feature component: a fixed, interactive part of a level (a
- *        door, stairs; later chests, fountains, traps), and its state.
+ *        door, stairs, a chest, a shrine, a boulder, a trap), and its state.
  *
  * A feature is an entity of CLASS_FEATURE (game/components/kind.h),
- * generated from its kind record (gen_feature(), game/gen/gen.h).
- * What a kind can do and how it looks are fixed by kind, in the record;
- * the component holds what is per entity: its state (FEAT_*).
+ * generated from its kind record (gen_feature(), game/gen/gen.h). A kind is
+ * a set of abilities (FCAN_*) and optional parts: hit points if it can be
+ * broken, an attack if it strikes, a DC, the items a container holds, the
+ * verb the messages use (docs/features.md). Code tests what a kind can do,
+ * never which kind it is. The component holds what is per entity: its
+ * state (FEAT_*).
  *
  * A feature is owned by an area and placed in it with feature_place(),
  * which gives it a location and draws it: features are drawn as map tiles
- * (its kind's look for its state), not sprites, so they use no hardware
- * sprites; the map's own tiles under a feature block nothing, and the
- * feature blocks through the block component (a closed door blocks
- * walking, so a move into it finds the door as the blocker). When a placed
- * feature is destroyed, the game draws its cell's look again (level_redraw()).
- * Features never move or change owner (they aren't items).
+ * (its kind's ready look, or its used look when open or spent), not
+ * sprites, so they use no hardware sprites; the map's own tiles under a
+ * feature block nothing, and the feature blocks through the block
+ * component (a closed door blocks walking, so a move into it finds the
+ * door as the blocker). A hidden feature blocks nothing and leaves its
+ * cell's terrain drawn. When a placed feature is destroyed, the game draws
+ * its cell's look again (level_redraw(), which draws the features around
+ * it again too). Features never move or change owner (they aren't items).
  *
- * feature_open() and feature_close() change the state without checking
- * the rules, keeping the block component and the tile in step: the actions
- * (act_open(), act_close(), game/actions/act.h) check the rules first.
+ * feature_open(), feature_close(), feature_find() and feature_spend()
+ * change the state without checking the rules, keeping the block component
+ * and the tile in step: the actions (act_open(), act_operate(),
+ * act_search(), game/actions/act.h) check the rules first. The rolls to
+ * find and disarm one are here (feature_found_by(), feature_disarm_margin()),
+ * and so are the reactions to events (feature_on_event(), feature_event.c):
+ * a container spills, a trap goes off.
  *
  * A closed feature can be locked. The lock's kind (KEY_*) is in the state,
  * and so are the rules of what opens it: a key that fits, or a pick that
  * beats FEAT_PICK_DC. feature_lock() and feature_unlock() don't change how
  * it looks, and a locked door looks like any closed door. The level
- * generator locks side rooms only (game/level/level_gen.c).
+ * generator locks side rooms, then chests (game/level/level_gen.c).
  *
  * The tables are in slot 0 (feature_cdata.c). Banking: the functions are
- * banked (NGE_BANKED, page 132, a pair of its own).
+ * banked (NGE_BANKED, page 132, a pair of its own: feature.c, feature_event.c).
  * Features are drawn into the one map (nge_map): the current level's.
  */
 

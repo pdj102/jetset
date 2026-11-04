@@ -5,7 +5,7 @@
  * @file health.h
  * @brief The health component: an entity that can be damaged, and is
  *        destroyed when its hit points reach 0 (the player, monsters,
- *        later chests and doors).
+ *        features that can be broken: boulders, cracked statues, webs).
  *
  * Each has current hit points (hp, at most hp_max), an armour class (ac:
  * what an attack roll must reach to hit it, game/components/attack.h) and

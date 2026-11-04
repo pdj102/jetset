@@ -173,8 +173,10 @@ following docs/tile_style.md".
 - A tile that is all transparent but isn't rock has a few `k` pixels, so
   it isn't the empty tile to Aseprite or to the block table (the pit).
 - Every tile is placed on the canvas once, under its slices. The canvas
-  has a sample room, the features in row 7, and an empty row 8, outside
-  the tilemap's cel, where `rock` is named.
+  has a sample room, the features in row 7, and an empty row 8, where
+  `rock` is named. The features of docs/features.md are in rows 9 and 10
+  (the canvas grew to 128 x 176); each is a floor flag with the feature
+  standing on it, as the pillar is.
 - Tiles are drawn whole: the hardware can mirror and rotate each 8 x 8
   tile, but the game gives a metatile's four tiles one attribute, and the
   light from the top left (D6) isn't symmetrical anyway. A left and a
@@ -351,9 +353,9 @@ How to use it:
 
 | Budget | Limit | Before | Now (section 9) |
 |---|---|---|---|
-| Metatiles | 64, tile 0 included (tileset_import.md R8) | 25 | 28 |
+| Metatiles | 64, tile 0 included (tileset_import.md R8) | 25 | 28; 41 with the features (docs/features.md 5.4) |
 | Banks | 8 for the art (D9), of 16 | 1 | 1 |
-| Colours | 15 a bank | 9 | 10 |
+| Colours | 15 a bank | 9 | 10; 13 with the features' glow and water |
 
 Proposed share of the 64 metatiles:
 

@@ -4,8 +4,9 @@
 /**
  * @file inventory.h
  * @brief The inventory component: an entity that can hold items (the
- *        player, some creatures, later chests), and moving items between
- *        the floor and holders.
+ *        player, some creatures), and moving items between the floor and
+ *        holders. A container (a chest) holds items by owning them, with no
+ *        inventory; inv_drop_all() spills them (docs/features.md 4.9).
  *
  * There are no lists of items: an item records where it is (game/
  * components/item.h). A holder's inventory is the items it owns that

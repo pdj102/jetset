@@ -315,6 +315,7 @@ cascades:
 | `EV_DIED`, killed by the player | `player_on_pc_event()` through `pc_gain_xp()` | `EV_XP_GAINED`, and for each level gained `EV_ATTRS_CHANGED`, `EV_HEALED`, `EV_ATTRS_CHANGED`, `EV_MANA_RESTORED`, `EV_LEVEL_GAINED`, `EV_SPELL_LEARNED` |
 | `EV_PICKED_UP`, the quest item, first time | `quest_on_event()` | `EV_QUEST_FOUND` |
 | `EV_HIT`, `EV_MISSED`, `EV_DAMAGED`, `EV_CAST` at another | `ai_on_event()` through `ai_stimulus()` | `EV_AI_CHANGED`, if the state changed |
+| `EV_STOOD_ON`, a trap stood on by a walker | `feature_on_event()` through `act_spring()` | `EV_TRIGGERED`, `EV_FOUND` if it was hidden, then `EV_HIT` and `EV_DAMAGED` or `EV_MISSED`, or its effect's events; `EV_LEFT_LEVEL` for a monster down a trapdoor |
 
 `NGE_EVENT_PROCESS_MAX` (64) catches handlers that keep posting. It is a guard, not a
 budget: the game is turn-based, so a long cascade only delays the next frame (D15).
@@ -326,12 +327,17 @@ Reactions marked **rule** change the game's state. The rest only show something.
 | Event | Posted by | Reactions |
 |---|---|---|
 | `EV_MOVED` | `act_move()` | anim: a slide |
-| `EV_STOOD_ON` | `act_move()`, for each entity on the tile | messages: "You see a..." |
+| `EV_STOOD_ON` | `act_move()`, for each entity on the tile | **rule** features: a trap goes off; messages: "You see a..." |
 | `EV_USED` | `act_use()` | messages |
 | `EV_PICKED_UP` | `act_pickup()` | **rule** quest: found; messages |
 | `EV_DROPPED` | `act_drop()` | messages |
 | `EV_EQUIPPED`, `EV_UNEQUIPPED` | `act_equip()`, `act_unequip()` | messages |
-| `EV_OPENED`, `EV_CLOSED` | `act_open()`, `act_close()` | messages |
+| `EV_OPENED`, `EV_CLOSED` | `act_open()`, `act_close()` | **rule** features: a container opened spills its items; messages |
+| `EV_OPERATED` | `act_operate()` | messages, by the kind's verb |
+| `EV_TRIGGERED` | `act_spring()` | messages, by the kind's verb |
+| `EV_FOUND` | `act_spring()`, `act_search()` | messages, when found by searching |
+| `EV_DISARMED` | `act_disarm()` | messages |
+| `EV_SEARCHED` | `act_search()` | messages: "You find nothing." |
 | `EV_UNLOCKED` | `act_unlock()` | messages |
 | `EV_HIT`, `EV_MISSED` | `act_strike()` | anim: a lunge; **rule** AI: hurt; messages |
 | `EV_FIRED` | `act_fire()`, for the player and monsters | messages; the projectile animation when it comes |
