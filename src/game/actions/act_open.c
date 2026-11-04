@@ -19,50 +19,11 @@
 #include "game/components/kind.h"
 #include "game/events.h"
 #include "game/gen/gen.h"
-#include "map/nge_map.h"
 
-/*
- * Steps 1 and 2 for all three: the feature (a->target, or the one in direction
- * dx, dy, put in a->target), one that opens, next to the actor or on its
- * tile (closing the door it stands in: then something is in the way).
- * Returns ACT_R_NONE or why not
- */
+/* Steps 1 and 2 for all three: a feature that opens (act_find_feature()) */
 static uint8_t find_openable(act_t *a)
 {
-    gen_feature_info_t info;
-    nge_entity_id_t actor = a->actor;
-    nge_entity_id_t target = a->target;
-    nge_owner_t area;
-    uint8_t x;
-    uint8_t y;
-
-    nge_util_assert(actor < NGE_ENTITY_MAX && NGE_ENTITY_IS_ALIVE(actor));
-    nge_util_assert(NGE_ENTITY_HAS_COMPONENT(actor, NGE_COMPONENT_LOCATION));
-    nge_util_assert(target == NGE_ENTITY_INVALID || target < NGE_ENTITY_MAX);
-
-    area = NGE_OWNER_OF(actor);
-    x = NGE_LOCATION_X(actor);
-    y = NGE_LOCATION_Y(actor);
-    if (target == NGE_ENTITY_INVALID) {
-        nge_util_assert(a->dx >= -1 && a->dx <= 1 && a->dy >= -1 && a->dy <= 1 && (a->dx | a->dy) != 0);
-        target = nge_location_find(area, (uint8_t)(x + a->dx), (uint8_t)(y + a->dy), COMPONENT_FEATURE, 0);
-        a->target = target;
-        if (target == NGE_ENTITY_INVALID) {
-            return ACT_R_NOTHING_THERE;
-        }
-    }
-    if (!NGE_ENTITY_IS_ALIVE(target) || !FEATURE_IS(target)) {
-        return ACT_R_CANT_OPEN;
-    }
-    gen_feature_info(kind_index[target], &info);
-    if (!(info.can & FCAN_OPEN)) {
-        return ACT_R_CANT_OPEN;
-    }
-    if (!NGE_ENTITY_HAS_COMPONENT(target, NGE_COMPONENT_LOCATION) || NGE_OWNER_OF(target) != area ||
-        !nge_map_within(x, y, NGE_LOCATION_X(target), NGE_LOCATION_Y(target), 1)) {
-        return ACT_R_OUT_OF_RANGE;
-    }
-    return ACT_R_NONE;
+    return act_find_feature(a, FCAN_OPEN, ACT_R_CANT_OPEN);
 }
 
 uint8_t act_open(act_t *a, uint8_t mode) NGE_BANKED

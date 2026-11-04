@@ -230,6 +230,83 @@ static void wear(nge_entity_id_t actor, nge_entity_id_t item, uint8_t slot)
 }
 
 /* ---- exchange (docs/actions.md, section 6.14): a bandit, capacity 6 ---- */
+/* Operate (docs/features.md 4.6): a bandit at (7, 7), a healing shrine east, a foul fountain south, a door west */
+static void test_operate(void)
+{
+    nge_entity_id_t h;
+    nge_entity_id_t shrine;
+    nge_entity_id_t foul;
+    nge_entity_id_t door;
+    nge_entity_id_t far;
+    nge_entity_id_t hidden;
+    act_t a;
+    int healed;
+
+    /* Run last, with every entity free again: the tests before it use them all */
+    events();
+    nge_entity_init();
+    h = gen_creature(CR_BANDIT, AREA);
+    shrine = gen_feature(FT_SHRINE_HEALING, AREA);
+    foul = gen_feature(FT_FOUNTAIN_FOUL, AREA);
+    door = gen_feature(FT_DOOR, AREA);
+    far = gen_feature(FT_ALTAR_MIGHT, AREA);
+    hidden = gen_feature(FT_SHRINE_CLEANSING, AREA);
+    nge_location_set(h, 7, 7);
+    feature_place(shrine, 8, 7);
+    feature_place(foul, 7, 8);
+    feature_place(door, 6, 7);
+    feature_place(far, 9, 9);                                       /* two moves away */
+    feature_state[hidden] = FEAT_HIDDEN;
+    feature_place(hidden, 6, 6);
+    health_hp[h] = 1;
+    healed = health_hp_max[h] < 16 ? health_hp_max[h] : 16;        /* 15 at power 15, up to its maximum */
+    events();
+
+    /* Refused, no turn: nothing there, a hidden one (unknown is not there), a door, too far */
+    a = ctx(h);
+    a.dy = -1;
+    CHECK(act_operate(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_NOTHING_THERE && a.used == 0);
+    a = ctx(h);
+    a.dx = -1;
+    a.dy = -1;
+    CHECK(act_operate(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_NOTHING_THERE && a.used == 0);
+    a = ctx(h);
+    a.dx = -1;
+    CHECK(act_operate(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_CANT_OPERATE && a.target == door && a.used == 0);
+    a = ctx(h);
+    a.target = far;
+    CHECK(act_operate(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_OUT_OF_RANGE && a.used == 0);
+    CHECK(events() == 0);
+
+    /* Check: possible, its effect said, nothing changes */
+    a = ctx(h);
+    a.dx = 1;
+    CHECK(act_operate(&a, ACT_CHECK) == ACT_SUCCESS && a.used == 0 && a.target == shrine && a.effect == EF_HEALING);
+    CHECK(health_hp[h] == 1 && !FEATURE_IS_SPENT(shrine) && events() == 0);
+
+    /* Done: EV_OPERATED first, then the healing; spent, drawn spent, still blocking */
+    a = ctx(h);
+    a.dx = 1;
+    CHECK(act_operate(&a, ACT_DO) == ACT_SUCCESS && a.used == 1 && health_hp[h] == healed);
+    CHECK(events() >= 2 && is(0, shrine, EV_OPERATED, h) && seen[0].p1 == EF_HEALING && seen_at(h, EV_HEALED) > 0);
+    CHECK(FEATURE_IS_SPENT(shrine) && NGE_MAP_TILE(8, 7).tile_id == LOOK_SHRINE_SPENT && NGE_BLOCK_OF(shrine) == NGE_BLOCK_SOLID);
+
+    /* Again: spent, refused, no turn */
+    a = ctx(h);
+    a.dx = 1;
+    CHECK(act_operate(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_SPENT && a.used == 0 && events() == 0);
+
+    /* Held fast, it still operates (it doesn't leave its tile): the foul fountain, by target */
+    effect_apply(EF_HOLD, 1, h, NGE_ENTITY_INVALID);
+    CHECK(STATUS_HAS(h, STATUS_ROOTED));
+    events();
+    a = ctx(h);
+    a.target = foul;
+    CHECK(act_do(ACT_OPERATE, &a, ACT_DO) == ACT_SUCCESS && a.effect == EF_POISON && FEATURE_IS_SPENT(foul));
+    CHECK(events() >= 1 && is(0, foul, EV_OPERATED, h) && seen[0].p1 == EF_POISON &&
+          NGE_MAP_TILE(7, 8).tile_id == LOOK_FOUNTAIN_DRY);
+}
+
 static void test_exchange(void)
 {
     nge_entity_id_t h = gen_creature(CR_BANDIT, AREA);
@@ -856,6 +933,7 @@ int main(void)
         a.dy = -1;
         CHECK(act_melee(&a, ACT_DO) == ACT_SUCCESS && a.target == boulder && health_hp[boulder] == 0);
         CHECK(events() == 3 && seen[0].id == EV_HIT && seen[2].id == EV_DIED && NGE_ENTITY_STATE(boulder) == NGE_ENTITY_DYING);
+        NGE_MAP_TILE(4, 4).tile_id = FLOOR;   /* as the game's clean-up would redraw it */
     }
     /* Refused: nothing changes, no turn */
     a = ctx(player);
@@ -1875,6 +1953,8 @@ int main(void)
     events();
     TEST_EXPECT_HALT(cast(player, SPELL_COUNT, 3, 2, ACT_DO));
     CHECK(test_halt_count == 1);
+
+    test_operate();
 
     return test_summary("act");
 }

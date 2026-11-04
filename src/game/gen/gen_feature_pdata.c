@@ -74,4 +74,83 @@ const gen_feature_kind_t gen_features[FT_COUNT] = {
                     .resist = DMG_BIT(DMG_SLASH) | DMG_BIT(DMG_PIERCE), .ac = 1 },
         .where = { .depth = 3, .depth_max = 10, .rarity = 1 },
     },
+    /* Operated once (docs/features.md 5.2): the use hook applies to the operator, then it is spent */
+    [FT_SHRINE_HEALING] = {
+        .name = "healing shrine",
+        .info = {
+            .look = { { LOOK_SHRINE, LOOK_SHRINE_BANK }, { LOOK_SHRINE_SPENT, LOOK_SHRINE_SPENT_BANK } },
+            .can = FCAN_OPERATE | FCAN_ONCE,
+            .block_shut = NGE_BLOCK_SOLID,
+        },
+        .verb = FVERB_PRAY,
+        .hooks = { [GEN_HOOK_USE] = { EF_HEALING, 15 } },
+        .where = { .depth = 1, .depth_max = 10, .rarity = 3 },
+    },
+    [FT_SHRINE_CLEANSING] = {
+        .name = "cleansing shrine",
+        .info = {
+            .look = { { LOOK_SHRINE, LOOK_SHRINE_BANK }, { LOOK_SHRINE_SPENT, LOOK_SHRINE_SPENT_BANK } },
+            .can = FCAN_OPERATE | FCAN_ONCE,
+            .block_shut = NGE_BLOCK_SOLID,
+        },
+        .verb = FVERB_PRAY,
+        .hooks = { [GEN_HOOK_USE] = { EF_CURE_ALL, 1 } },
+        .where = { .depth = 2, .depth_max = 10, .rarity = 2 },
+    },
+    [FT_ALTAR_MIGHT] = {
+        .name = "altar of might",
+        .info = {
+            .look = { { LOOK_ALTAR, LOOK_ALTAR_BANK }, { LOOK_ALTAR_SPENT, LOOK_ALTAR_SPENT_BANK } },
+            .can = FCAN_OPERATE | FCAN_ONCE,
+            .block_shut = NGE_BLOCK_SOLID,
+        },
+        .verb = FVERB_TOUCH,
+        .hooks = { [GEN_HOOK_USE] = { EF_MIGHT, 2 } },
+        .where = { .depth = 3, .depth_max = 10, .rarity = 2 },
+    },
+    [FT_ALTAR_ANCIENT] = {
+        .name = "ancient altar",
+        .info = {
+            .look = { { LOOK_ALTAR, LOOK_ALTAR_BANK }, { LOOK_ALTAR_SPENT, LOOK_ALTAR_SPENT_BANK } },
+            .can = FCAN_OPERATE | FCAN_ONCE,
+            .block_shut = NGE_BLOCK_SOLID,
+        },
+        .verb = FVERB_TOUCH,
+        .hooks = { [GEN_HOOK_USE] = { EF_VITALITY, 2 } },
+        .where = { .depth = 5, .depth_max = 10, .rarity = 1 },
+    },
+    [FT_FOUNTAIN_RENEW] = {
+        .name = "fountain",
+        /* The three fountains: one name and one look, a gamble (docs/features.md D9) */
+        .info = {
+            .look = { { LOOK_FOUNTAIN, LOOK_FOUNTAIN_BANK }, { LOOK_FOUNTAIN_DRY, LOOK_FOUNTAIN_DRY_BANK } },
+            .can = FCAN_OPERATE | FCAN_ONCE,
+            .block_shut = NGE_BLOCK_SOLID,
+        },
+        .verb = FVERB_DRINK,
+        .hooks = { [GEN_HOOK_USE] = { EF_RENEW, 1 } },
+        .where = { .depth = 1, .depth_max = 10, .rarity = 2 },
+    },
+    [FT_FOUNTAIN_MANA] = {
+        .name = "fountain",
+        .info = {
+            .look = { { LOOK_FOUNTAIN, LOOK_FOUNTAIN_BANK }, { LOOK_FOUNTAIN_DRY, LOOK_FOUNTAIN_DRY_BANK } },
+            .can = FCAN_OPERATE | FCAN_ONCE,
+            .block_shut = NGE_BLOCK_SOLID,
+        },
+        .verb = FVERB_DRINK,
+        .hooks = { [GEN_HOOK_USE] = { EF_MANA, 4 } },
+        .where = { .depth = 1, .depth_max = 10, .rarity = 2 },
+    },
+    [FT_FOUNTAIN_FOUL] = {
+        .name = "fountain",
+        .info = {
+            .look = { { LOOK_FOUNTAIN, LOOK_FOUNTAIN_BANK }, { LOOK_FOUNTAIN_DRY, LOOK_FOUNTAIN_DRY_BANK } },
+            .can = FCAN_OPERATE | FCAN_ONCE,
+            .block_shut = NGE_BLOCK_SOLID,
+        },
+        .verb = FVERB_DRINK,
+        .hooks = { [GEN_HOOK_USE] = { EF_POISON, 1 } },
+        .where = { .depth = 1, .depth_max = 10, .rarity = 2 },
+    },
 };

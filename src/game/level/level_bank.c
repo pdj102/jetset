@@ -31,6 +31,12 @@ static void set_up_blocks(void)
     nge_map_set_block(LOOK_STAIRS_DOWN, NGE_BLOCK_NONE);
     nge_map_set_block(LOOK_BOULDER, NGE_BLOCK_NONE);
     nge_map_set_block(LOOK_STATUE, NGE_BLOCK_NONE);
+    nge_map_set_block(LOOK_SHRINE, NGE_BLOCK_NONE);
+    nge_map_set_block(LOOK_SHRINE_SPENT, NGE_BLOCK_NONE);
+    nge_map_set_block(LOOK_ALTAR, NGE_BLOCK_NONE);
+    nge_map_set_block(LOOK_ALTAR_SPENT, NGE_BLOCK_NONE);
+    nge_map_set_block(LOOK_FOUNTAIN, NGE_BLOCK_NONE);
+    nge_map_set_block(LOOK_FOUNTAIN_DRY, NGE_BLOCK_NONE);
 }
 
 void level_redraw(uint8_t x, uint8_t y) NGE_BANKED

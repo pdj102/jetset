@@ -284,8 +284,11 @@ Levels 0-7 a channel (R, G, B). The key is the grid letter.
 | `W` | (5,3,1) | Wood lit | Doors (sprite slot 7) |
 | `w` | (4,2,1) | Wood | Doors |
 | `v` | (2,1,0) | Wood dark | Planks' gaps; a door's edge |
+| `g` | (7,6,2) | Glow | A shrine's candle, an altar's gold (docs/features.md) |
+| `b` | (4,6,7) | Water light | A fountain's spray and the lit water |
+| `c` | (2,4,6) | Water | A fountain's water |
 
-10 colours: the whole set is one bank, with 5 free slots.
+13 colours: the whole set is one bank, with 2 free slots.
 
 How to use it:
 

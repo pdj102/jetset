@@ -98,7 +98,8 @@ void player_act(uint8_t action, act_t *a) NGE_BANKED;
 /* The direction prompt's questions: rows of a table (player_bank.c) */
 #define PLAYER_PROMPT_CLOSE  0   /**< Close in which direction? */
 #define PLAYER_PROMPT_UNLOCK 1   /**< Unlock in which direction? */
-#define PLAYER_PROMPT_COUNT  2
+#define PLAYER_PROMPT_OPERATE 2  /**< Use what, in which direction? */
+#define PLAYER_PROMPT_COUNT  3
 
 /**
  * @brief The direction prompt, a chooser: ask the question, wait for a key

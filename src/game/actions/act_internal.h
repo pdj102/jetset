@@ -65,4 +65,14 @@ uint8_t act_line(act_t *a, uint8_t range, uint8_t how);
 /* 1 if id can't leave its tile (STATUS_ROOTED): an actor without stats has no statuses */
 uint8_t act_rooted(nge_entity_id_t id);
 
+/*
+ * Steps 1 and 2 of the feature actions: the feature a->target, or (with
+ * a->target NGE_ENTITY_INVALID) the one in direction a->dx, a->dy, put in
+ * a->target. It must be alive, found (not FEAT_HIDDEN: unknown to the actor
+ * is not there), able to do `can` (FCAN_*), in the actor's area, next to
+ * the actor or on its tile. Returns ACT_R_NONE, or why not:
+ * ACT_R_NOTHING_THERE, `cant` (it can't do that), ACT_R_OUT_OF_RANGE
+ */
+uint8_t act_find_feature(act_t *a, uint8_t can, uint8_t cant);
+
 #endif

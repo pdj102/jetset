@@ -108,7 +108,8 @@ typedef struct act {
 #define ACT_UNLOCK  14
 #define ACT_CAST    15
 #define ACT_EXCHANGE 16
-#define ACT_COUNT   17
+#define ACT_OPERATE 17
+#define ACT_COUNT   18
 
 /** How far an aimed item reaches (nge_map_within()): a kind has no range of its own. */
 #define ACT_AIM_RANGE  8
@@ -154,7 +155,9 @@ typedef struct act {
 #define ACT_R_PICK_FAILED       37  /**< Attempted: the lock pick lost its roll, and a use. */
 #define ACT_R_NO_MANA           38  /**< Refused: not enough MP for the spell, or no mana. */
 #define ACT_R_NO_SPELL          39  /**< Refused: the actor doesn't know the spell. */
-#define ACT_R_COUNT             40
+#define ACT_R_CANT_OPERATE      40  /**< Refused: the feature does nothing when used (a door). a->target: it. */
+#define ACT_R_SPENT             41  /**< Refused: it has been used, and works once. a->target: the feature. */
+#define ACT_R_COUNT             42
 
 /**
  * @brief Move one tile.
@@ -290,6 +293,21 @@ uint8_t act_open(act_t *a, uint8_t mode) NGE_BANKED;
  *        ACT_R_ALREADY_CLOSED or ACT_R_OBSTRUCTED.
  */
 uint8_t act_close(act_t *a, uint8_t mode) NGE_BANKED;
+
+/**
+ * @brief Operate a feature next to the actor: pray at a shrine, drink
+ *        from a fountain (docs/features.md 4.6).
+ *
+ * In: actor (alive, placed in an area), and target, or (with target
+ * NGE_ENTITY_INVALID) a direction dx, dy. Out: target, effect (its use
+ * hook's, EF_*). Succeeds if it is a found feature that can be operated
+ * (FCAN_OPERATE), at most one move away, and not spent: posts EV_OPERATED
+ * (p1: the effect), applies its use hook to the actor at its power (the
+ * feature as the source), and spends it if it works once (FCAN_ONCE).
+ * Refused with ACT_R_NOTHING_THERE, ACT_R_CANT_OPERATE, ACT_R_OUT_OF_RANGE
+ * or ACT_R_SPENT. A rooted actor can operate.
+ */
+uint8_t act_operate(act_t *a, uint8_t mode) NGE_BANKED;
 
 /**
  * @brief Go up the stairs the actor stands on (game/level/level.h).

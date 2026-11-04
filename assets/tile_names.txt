@@ -20,3 +20,9 @@ look stairs_up
 look stairs_down
 look boulder
 look statue
+look shrine
+look shrine_spent
+look altar
+look altar_spent
+look fountain
+look fountain_dry

@@ -205,7 +205,14 @@
 #define FT_BOULDER      3
 #define FT_STATUE       4
 #define FT_CRACKED_STATUE 5
-#define FT_COUNT        6
+#define FT_SHRINE_HEALING 6
+#define FT_SHRINE_CLEANSING 7
+#define FT_ALTAR_MIGHT  8
+#define FT_ALTAR_ANCIENT 9
+#define FT_FOUNTAIN_RENEW 10
+#define FT_FOUNTAIN_MANA 11
+#define FT_FOUNTAIN_FOUL 12
+#define FT_COUNT        13
 
 /* Item subclasses, in each item's kind record */
 #define ITEM_POTION     0

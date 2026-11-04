@@ -17,7 +17,9 @@
 #include "ecs/components/nge_location.h"
 #include "event/nge_event.h"
 #include "game/components/attack.h"
+#include "game/components/feature.h"
 #include "game/components/health.h"
+#include "game/components/kind.h"
 #include "game/components/stats.h"
 #include "game/effects/effects.h"
 #include "game/events.h"
@@ -97,6 +99,47 @@ uint8_t act_line(act_t *a, uint8_t range, uint8_t how)
         }
     }
     return ACT_R_NO_TARGET;
+}
+
+uint8_t act_find_feature(act_t *a, uint8_t can, uint8_t cant)
+{
+    gen_feature_info_t info;
+    nge_entity_id_t actor = a->actor;
+    nge_entity_id_t target = a->target;
+    nge_owner_t area;
+    uint8_t x;
+    uint8_t y;
+
+    nge_util_assert(actor < NGE_ENTITY_MAX && NGE_ENTITY_IS_ALIVE(actor));
+    nge_util_assert(NGE_ENTITY_HAS_COMPONENT(actor, NGE_COMPONENT_LOCATION));
+    nge_util_assert(target == NGE_ENTITY_INVALID || target < NGE_ENTITY_MAX);
+
+    area = NGE_OWNER_OF(actor);
+    x = NGE_LOCATION_X(actor);
+    y = NGE_LOCATION_Y(actor);
+    if (target == NGE_ENTITY_INVALID) {
+        nge_util_assert(a->dx >= -1 && a->dx <= 1 && a->dy >= -1 && a->dy <= 1);
+        target = nge_location_find(area, (uint8_t)(x + a->dx), (uint8_t)(y + a->dy), COMPONENT_FEATURE, 0);
+        a->target = target;
+        if (target == NGE_ENTITY_INVALID) {
+            return ACT_R_NOTHING_THERE;
+        }
+    }
+    if (!NGE_ENTITY_IS_ALIVE(target) || !FEATURE_IS(target)) {
+        return cant;
+    }
+    if (FEATURE_IS_HIDDEN(target)) {
+        return ACT_R_NOTHING_THERE;
+    }
+    gen_feature_info(kind_index[target], &info);
+    if (!(info.can & can)) {
+        return cant;
+    }
+    if (!NGE_ENTITY_HAS_COMPONENT(target, NGE_COMPONENT_LOCATION) || NGE_OWNER_OF(target) != area ||
+        !nge_map_within(x, y, NGE_LOCATION_X(target), NGE_LOCATION_Y(target), 1)) {
+        return ACT_R_OUT_OF_RANGE;
+    }
+    return ACT_R_NONE;
 }
 
 uint8_t act_rooted(nge_entity_id_t id)

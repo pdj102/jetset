@@ -201,6 +201,17 @@ static void close_command(void)
     }
 }
 
+/* Operate a feature next to the player: pray at a shrine, drink from a fountain (docs/features.md 4.6) */
+static void operate_command(void)
+{
+    act_t a = { 0 };
+
+    if (player_ask_direction(PLAYER_PROMPT_OPERATE, &a.dx, &a.dy)) {
+        a.target = NGE_ENTITY_INVALID;   /* what is in that direction */
+        player_act(ACT_OPERATE, &a);
+    }
+}
+
 /*
  * Fire: a check on the player's own tile says whether they can, and the
  * range (act_fire()), so having nothing to fire is said before the cursor
@@ -378,6 +389,9 @@ void player_command(nge_key_event_t ev) NGE_BANKED
     case 'p':
         item_command(ACT_UNLOCK);
         break;
+    case 'o':
+        operate_command();
+        break;
     case 'f':
         fire_command();
         break;
@@ -527,6 +541,7 @@ typedef struct player_prompt {
 static const player_prompt_t prompts[PLAYER_PROMPT_COUNT] = {
     [PLAYER_PROMPT_CLOSE] = { "Close in which direction?", "Direction: close   Other keys: back" },
     [PLAYER_PROMPT_UNLOCK] = { "Unlock in which direction?", "Direction: unlock   Other keys: back" },
+    [PLAYER_PROMPT_OPERATE] = { "Use what? Which direction?", "Direction: use   Other keys: back" },
 };
 
 uint8_t player_direction_key(nge_key_event_t ev, int8_t *dx, int8_t *dy) NGE_BANKED

@@ -917,6 +917,27 @@ int main(void)
     press(EV(NGE_KEY_H));                                          /* west: nothing there */
     player_command(EV(NGE_KEY_C));
     CHECK(said("There is nothing there.") && player_turn);
+
+    /* ---- operate: o and a direction; the kind's verb; spent, told so, the turn kept ---- */
+    {
+        nge_entity_id_t shrine = gen_feature(FT_SHRINE_HEALING, AREA);
+
+        feature_place(shrine, 5, 4);                               /* north of the player */
+        nge_event_flush();
+        player_turn = 1;
+        press(EV(NGE_KEY_K));
+        player_command(EV(NGE_KEY_O));
+        CHECK(said("Use what? Which direction?") && FEATURE_IS_SPENT(shrine) && !player_turn);
+        nge_event_process(messages_on_event);
+        CHECK(shown("You pray at the healing shrine."));   /* the healing's own message after it */
+        player_turn = 1;
+        press(EV(NGE_KEY_K));
+        player_command(EV(NGE_KEY_O));
+        CHECK(said("The healing shrine is spent.") && player_turn);
+        nge_location_remove(shrine);                               /* out of the way of what follows */
+        nge_entity_destroy(shrine);
+        nge_event_flush();
+    }
     press(EV(NGE_KEY_A));                                          /* not a direction */
     player_command(EV(NGE_KEY_C));
     CHECK(said("Never mind.") && player_turn);

@@ -18,6 +18,7 @@
 #include "game/actors.h"
 #include "game/ai/ai.h"
 #include "game/components/components.h"
+#include "game/components/feature.h"
 #include "game/components/health.h"
 #include "game/components/item.h"
 #include "game/components/kind.h"
@@ -166,6 +167,11 @@ static void say_did(nge_entity_id_t actor, const char *verb, nge_entity_id_t thi
 
 static const char *const use_you[USE_COUNT] = { "You drink the ", "You eat the ", "You read the " };
 static const char *const use_it[USE_COUNT] = { " drinks the ", " eats the ", " reads the " };
+
+/* What the player is told on operating a feature, by its kind's verb (FVERB_*, docs/features.md 4.11) */
+static const char *const operate_you[FVERB_COUNT] = {
+    "You use the ", "You pray at the ", "You drink from the ", "You touch the ", "You step on the ", "You fall into the ",
+};
 
 /* How item is used (USE_*), from its subclass */
 static uint8_t use_verb(nge_entity_id_t item)
@@ -322,6 +328,11 @@ void messages_on_event(const nge_event_t *e) NGE_BANKED
             say_named("You open the ", target, ".");
         } else if (seen_ai(source)) {
             say_did(source, " opens the ", target);
+        }
+        break;
+    case EV_OPERATED:
+        if (source == actor_player) {   /* its effect's own message follows */
+            say_named(operate_you[gen_feature_verb(kind_index[target])], target, ".");
         }
         break;
     case EV_UNLOCKED:
@@ -481,6 +492,12 @@ void messages_act_failed(const act_t *a) NGE_BANKED
         break;
     case ACT_R_NO_SPELL:
         screen_message("You don't know that spell.");
+        break;
+    case ACT_R_CANT_OPERATE:
+        say_named("You can't use the ", target, ".");
+        break;
+    case ACT_R_SPENT:
+        say_named("The ", target, " is spent.");
         break;
     case ACT_R_CANT_USE:
         screen_message("You can't use that.");
