@@ -11,6 +11,8 @@
 
 #include "game/level/level_internal.h"
 
+#include "ecs/components/nge_location.h"
+#include "game/components/feature.h"
 #include "game/ui/screen_main.h"
 
 /*
@@ -31,7 +33,25 @@ static void set_up_blocks(void)
 
 void level_redraw(uint8_t x, uint8_t y) NGE_BANKED
 {
+    nge_entity_id_t id;
+    uint8_t cx;
+    uint8_t cy;
+    uint8_t i;
+    uint8_t j;
+
     level_decorate_around(x, y);
+    /* The terrain drew over its neighbours' features: draw them again (a dying one isn't found) */
+    for (j = 0; j < 3; j++) {
+        cy = (uint8_t)(y + j - 1);
+        for (i = 0; i < 3; i++) {
+            cx = (uint8_t)(x + i - 1);
+            if (cx < LEVEL_WIDTH && cy < LEVEL_HEIGHT) {
+                NGE_LOCATION_FOR_EACH_AT(id, LEVEL_AREA, cx, cy, COMPONENT_FEATURE) {
+                    feature_redraw(id);
+                }
+            }
+        }
+    }
 }
 
 void level_init(void) NGE_BANKED

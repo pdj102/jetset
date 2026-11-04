@@ -6,7 +6,7 @@
  * @brief Entity generators: create an entity of a given kind, with all
  *        its components, from its kind data.
  *
- * Each class of entity (creatures, items; features later) has a table of
+ * Each class of entity (creatures, items, features) has a table of
  * kind records: constant data, one per kind (gen_kinds.h), defined as
  * data in the class's page data file (gen_<class>_pdata.c). A generator
  * creates an entity, gives it its owner and its kind (game/components/
@@ -78,6 +78,23 @@ nge_entity_id_t gen_item_random(uint8_t depth, nge_owner_t owner) NGE_BANKED;
  * @return The entity, or NGE_ENTITY_INVALID if no entity is free.
  */
 nge_entity_id_t gen_feature(uint8_t kind, nge_owner_t owner) NGE_BANKED;
+
+/**
+ * @brief Create a random feature that appears at depth, weighted by rarity
+ *        (see gen_creature_random()): not placed, and a container's contents
+ *        not made (the caller does both).
+ * @return The entity, or NGE_ENTITY_INVALID if no entity is free or no kind appears there.
+ */
+nge_entity_id_t gen_feature_random(uint8_t depth, nge_owner_t owner) NGE_BANKED;
+
+/** @brief A feature kind's (FT_*) DC, to find it when hidden and to disarm it. Banked with the feature table (page 122). */
+uint8_t gen_feature_dc(uint8_t kind) NGE_BANKED;
+
+/** @brief A container kind's (FT_*) most random items: 0 if it isn't one. Banked with the feature table (page 122). */
+uint8_t gen_feature_holds(uint8_t kind) NGE_BANKED;
+
+/** @brief A feature kind's (FT_*) verb (FVERB_*, game/components/feature.h). Banked with the feature table (page 122). */
+uint8_t gen_feature_verb(uint8_t kind) NGE_BANKED;
 
 /** A feature's look: a map tile and its metatile's palette bank (TILE_BANK(), data/tile_data.h). */
 typedef struct gen_feature_look {

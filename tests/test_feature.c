@@ -146,6 +146,32 @@ int main(void)
     TEST_EXPECT_HALT(feature_lock(door, KEY_IRON));                /* open */
     CHECK(test_halt_count == 1);
 
+    /* ---- hidden: blocks nothing, its cell's tile left as it is; found, drawn and blocking ---- */
+    other = gen_feature(FT_DOOR, AREA);
+    feature_state[other] = FEAT_HIDDEN;                            /* as a kind that starts hidden */
+    feature_place(other, 1, 8);
+    CHECK(FEATURE_IS_HIDDEN(other) && NGE_MAP_TILE(1, 8).tile_id == FLOOR && NGE_BLOCK_OF(other) == NGE_BLOCK_NONE &&
+          nge_block_can_enter(AREA, 1, 8, NGE_BLOCK_NONE, NGE_ENTITY_INVALID, NULL));
+    feature_redraw(other);                                         /* drawn again: still the floor */
+    CHECK(NGE_MAP_TILE(1, 8).tile_id == FLOOR);
+    feature_find(other);
+    CHECK(!FEATURE_IS_HIDDEN(other) && door_is(other, 1, 8, 0));
+
+    /* ---- spent: the used look, still blocking as when closed; drawn again the same ---- */
+    feature_spend(other);
+    CHECK(FEATURE_IS_SPENT(other) && !FEATURE_IS_OPEN(other) && NGE_MAP_TILE(1, 8).tile_id == LOOK_DOOR_OPEN &&
+          NGE_BLOCK_OF(other) == NGE_BLOCK_SOLID);
+    NGE_MAP_TILE(1, 8).tile_id = FLOOR;
+    feature_redraw(other);
+    CHECK(NGE_MAP_TILE(1, 8).tile_id == LOOK_DOOR_OPEN && NGE_BLOCK_OF(other) == NGE_BLOCK_SOLID);
+
+    /* ---- the record's new parts: none for a door; nothing random among the built kinds ---- */
+    CHECK(gen_feature_dc(FT_DOOR) == 0 && gen_feature_holds(FT_DOOR) == 0 && gen_feature_verb(FT_DOOR) == FVERB_NONE);
+    CHECK(!NGE_ENTITY_HAS_COMPONENT(door, COMPONENT_HEALTH) && !NGE_ENTITY_HAS_COMPONENT(door, COMPONENT_MELEE));
+    for (x = 1; x <= LEVEL_DEPTH_BOTTOM; x++) {
+        CHECK(gen_feature_random(x, AREA) == NGE_ENTITY_INVALID);  /* doors and stairs have rarity 0 */
+    }
+
     /* ---- asserts ---- */
     other = gen_feature(FT_DOOR, NGE_OWNER_WORLD);                 /* not in an area */
     TEST_EXPECT_HALT(feature_place(other, 1, 1));

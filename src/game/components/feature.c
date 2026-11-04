@@ -30,18 +30,30 @@ static void check_feature(nge_entity_id_t id)
     nge_util_assert(FEATURE_IS(id) && KIND_IS(id, CLASS_FEATURE));
 }
 
-/* Make a placed feature block and look as its state says */
+/*
+ * Make a placed feature block and look as its state says (docs/features.md
+ * 4.4): hidden, it blocks nothing and its tile is left as it is, its cell's
+ * terrain (a feature starts hidden and is placed on drawn terrain, and only
+ * finding it changes that); open, it blocks nothing; spent, it blocks as
+ * when closed; either has its used look
+ */
 static void update(nge_entity_id_t id)
 {
     gen_feature_info_t info;   /* its kind's: on the stack, in common memory */
     nge_tile_t tile;
-    uint8_t open = FEATURE_IS_OPEN(id);
+    uint8_t state = feature_state[id];
+    uint8_t open = (state & FEAT_OPEN) != 0;
+    uint8_t used = (state & (FEAT_OPEN | FEAT_SPENT)) != 0;
 
     nge_util_assert(NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_LOCATION));
+    if (state & FEAT_HIDDEN) {
+        nge_block_add(id, NGE_BLOCK_NONE, NGE_BLOCK_NONE);
+        return;
+    }
     gen_feature_info(kind_index[id], &info);
     nge_block_add(id, open ? NGE_BLOCK_NONE : info.block_shut, NGE_BLOCK_NONE);
-    tile.tile_id = info.look[open].tile_id;
-    tile.tile_attr = (uint8_t)(info.look[open].bank << 4);
+    tile.tile_id = info.look[used].tile_id;
+    tile.tile_attr = (uint8_t)(info.look[used].bank << 4);
     nge_map_set(NGE_LOCATION_X(id), NGE_LOCATION_Y(id), &tile);
 }
 
@@ -76,6 +88,29 @@ void feature_close(nge_entity_id_t id) NGE_BANKED
     check_feature(id);
 
     feature_state[id] &= (uint8_t)~FEAT_OPEN;
+    update(id);
+}
+
+void feature_redraw(nge_entity_id_t id) NGE_BANKED
+{
+    check_feature(id);
+
+    update(id);
+}
+
+void feature_find(nge_entity_id_t id) NGE_BANKED
+{
+    check_feature(id);
+
+    feature_state[id] &= (uint8_t)~FEAT_HIDDEN;
+    update(id);
+}
+
+void feature_spend(nge_entity_id_t id) NGE_BANKED
+{
+    check_feature(id);
+
+    feature_state[id] |= FEAT_SPENT;
     update(id);
 }
 

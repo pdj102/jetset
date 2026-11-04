@@ -194,6 +194,50 @@ static int kind_ok(uint8_t kind)
     }
 }
 
+/* A feature kind's record is well formed for its abilities (docs/features.md, section 9) */
+static int feature_kind_ok(uint8_t kind)
+{
+    const gen_feature_kind_t *k = &gen_features[kind];
+    const gen_hook_t *use = &k->hooks[GEN_HOOK_USE];
+    const gen_hook_t *hit = &k->hooks[GEN_HOOK_HIT];
+    uint8_t can = k->info.can;
+    uint8_t i;
+
+    if (strlen(k->name) > 19 || k->verb >= FVERB_COUNT || k->where.depth_max > LEVEL_DEPTH_BOTTOM) {
+        return 0;
+    }
+    if (k->where.rarity != 0 && (k->where.depth < 1 || k->where.depth > k->where.depth_max)) {
+        return 0;
+    }
+    for (i = 0; i < GEN_HOOK_COUNT; i++) {   /* a power for each effect named (items.md D3); only use and hit */
+        if (k->hooks[i].ef >= EF_COUNT || (k->hooks[i].ef == EF_NONE) != (k->hooks[i].power == 0) ||
+            (i != GEN_HOOK_USE && i != GEN_HOOK_HIT && k->hooks[i].ef != EF_NONE)) {
+            return 0;
+        }
+    }
+    /* Operated: a use hook and a verb; nothing else has a use hook */
+    if (((can & FCAN_OPERATE) != 0) != (use->ef != EF_NONE) || ((can & FCAN_OPERATE) && k->verb == FVERB_NONE)) {
+        return 0;
+    }
+    /* A trap blocks nothing and does something when it fires; only a trap fires */
+    if (can & FCAN_TRAP) {
+        if (k->info.block_shut != NGE_BLOCK_NONE ||
+            (hit->ef == EF_NONE && k->attack.dice == 0 && !(can & FCAN_DESCEND))) {
+            return 0;
+        }
+    } else if (hit->ef != EF_NONE || k->attack.dice != 0 || (can & FCAN_DISARM)) {
+        return 0;
+    }
+    /* Disarmed or found by a roll against a DC; a container holds something */
+    if (((can & FCAN_DISARM) || (k->state & FEAT_HIDDEN)) && k->dc == 0) {
+        return 0;
+    }
+    if (((can & FCAN_CONTAINER) != 0) != (k->holds != 0)) {
+        return 0;
+    }
+    return k->health.hp_max == 0 || k->health.ac >= 1;
+}
+
 static int item_ok(nge_entity_id_t id, nge_owner_t owner, uint8_t kind)
 {
     return made(id, owner, CLASS_ITEM, kind) && render_is(id, &gen_items[kind].render) &&
@@ -312,6 +356,14 @@ int main(void)
             ok = ok && hook_is(gen_feature_hook(kind, (uint8_t)i), &gen_features[kind].hooks[i]) &&
                  hook_is(gen_hook_of(id, (uint8_t)i), &gen_features[kind].hooks[i]);
         }
+        /* Its parts: health if it can be broken, a melee attack if it strikes */
+        ok = ok && feature_kind_ok(kind) &&
+             (NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_HEALTH) != 0) == (gen_features[kind].health.hp_max != 0) &&
+             (gen_features[kind].health.hp_max == 0 || health_hp[id] == gen_features[kind].health.hp_max) &&
+             (gen_features[kind].attack.dice == 0 ? !ATTACK_HAS(id, ATTACK_MELEE)
+                                                   : melee_is(id, &gen_features[kind].attack)) &&
+             gen_feature_dc(kind) == gen_features[kind].dc && gen_feature_holds(kind) == gen_features[kind].holds &&
+             gen_feature_verb(kind) == gen_features[kind].verb;
     }
     CHECK(ok);
     CHECK(gen_features[FT_DOOR].info.can == FCAN_OPEN && gen_features[FT_DOOR].state == 0 &&

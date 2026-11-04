@@ -125,7 +125,8 @@ void level_dev_bandit(nge_entity_id_t player) NGE_BANKED;
 /**
  * @brief Draw (x, y) by its terrain again, and its neighbours: where a
  *        destroyed feature was (game.c's clean-up), its look under the
- *        feature comes back.
+ *        feature comes back. The alive features on those tiles are drawn
+ *        again over their terrain (feature_redraw()).
  */
 void level_redraw(uint8_t x, uint8_t y) NGE_BANKED;
 

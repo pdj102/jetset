@@ -118,8 +118,13 @@ typedef struct gen_feature_kind {
     const char        *name;   /* in the table's page */
     gen_feature_info_t info;   /* its looks, what it can do, what it blocks when closed */
     uint8_t            state;  /* FEAT_* it starts in */
-    gen_hook_t         hooks[GEN_HOOK_COUNT];   /* by GEN_HOOK_* (none yet) */
-    gen_where_t        where;  /* for random features, later (gen_feature_random()) */
+    uint8_t            verb;   /* FVERB_*: what the messages say it is used by */
+    uint8_t            dc;     /* to find it when hidden, and to disarm it */
+    uint8_t            holds;  /* a container's most random items (FCAN_CONTAINER); 0 if not one */
+    health_kind_t      health; /* hp_max 0 for none: else it can be broken (docs/features.md 4.10) */
+    attack_kind_t      attack; /* a trap's (FCAN_TRAP); dice 0 for none: it always hits */
+    gen_hook_t         hooks[GEN_HOOK_COUNT];   /* by GEN_HOOK_*: use (operated), hit (a trap's) */
+    gen_where_t        where;  /* band and rarity for gen_feature_random(); rarity 0: placed by the level generator */
 } gen_feature_kind_t;
 
 /* The tables, in the classes' odd pages: read only by their own page's code */
