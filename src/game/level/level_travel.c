@@ -1,7 +1,8 @@
 /*
  * Leaving a level, and entities going from one level to another: banked
- * in page 102 with the level generator. Runs once per change of level, or
- * when an entity leaves the level.
+ * in page 136, a page of its own (page 102, the level generator's, is full).
+ * It reads none of the level's page data (page 103). Runs once per change
+ * of level, or when an entity leaves the level.
  *
  * Kept entities (level.h) survive a level: the persistent ones, and what
  * they own. Everything else a level's area owns, directly or through other
@@ -11,8 +12,8 @@
  * entities, once per change.
  */
 #ifdef __SDCC
-#pragma codeseg PAGE_102
-#pragma constseg PAGE_102
+#pragma codeseg PAGE_136
+#pragma constseg PAGE_136
 #endif
 
 #include "game/level/level_internal.h"

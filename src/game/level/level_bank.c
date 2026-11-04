@@ -29,6 +29,8 @@ static void set_up_blocks(void)
     nge_map_set_block(LOOK_DOOR_OPEN, NGE_BLOCK_NONE);
     nge_map_set_block(LOOK_STAIRS_UP, NGE_BLOCK_NONE);
     nge_map_set_block(LOOK_STAIRS_DOWN, NGE_BLOCK_NONE);
+    nge_map_set_block(LOOK_BOULDER, NGE_BLOCK_NONE);
+    nge_map_set_block(LOOK_STATUE, NGE_BLOCK_NONE);
 }
 
 void level_redraw(uint8_t x, uint8_t y) NGE_BANKED

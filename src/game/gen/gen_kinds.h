@@ -202,7 +202,10 @@
 #define FT_DOOR         0
 #define FT_STAIRS_UP    1
 #define FT_STAIRS_DOWN  2
-#define FT_COUNT        3
+#define FT_BOULDER      3
+#define FT_STATUE       4
+#define FT_CRACKED_STATUE 5
+#define FT_COUNT        6
 
 /* Item subclasses, in each item's kind record */
 #define ITEM_POTION     0

@@ -20,7 +20,7 @@
 #define TILE_PALETTE_PAGE   153  /**< SECTION PAGE_153 in tile_palette_data.asm. */
 #define TILE_PALETTE_BANKS  1    /**< Banks in tile_palette, 16 entries each. */
 #define TILE_PALETTE_ENTRIES 16  /**< Entries in tile_palette: load them from index 0. */
-#define TILE_METATILES      28   /**< Metatiles in the tileset, tile 0 included. */
+#define TILE_METATILES      30   /**< Metatiles in the tileset, tile 0 included. */
 
 #define TILE_BANK_0  0
 #define TILE_BANK_1  0
@@ -50,6 +50,8 @@
 #define TILE_BANK_25  0
 #define TILE_BANK_26  0
 #define TILE_BANK_27  0
+#define TILE_BANK_28  0
+#define TILE_BANK_29  0
 
 /** A metatile's bank, from a metatile number that is a constant. */
 #define TILE_BANK(m)    TILE_BANK_X(m)
@@ -59,6 +61,8 @@
  * Looks, by the names of the tileset's slices (docs/dungeon_decoration.md
  * 5.2): LOOK_<NAME> is its variant 1, LOOK_<NAME>_BANK its bank.
  */
+#define LOOK_BOULDER                     29
+#define LOOK_BOULDER_BANK                0
 #define LOOK_CORRIDOR                    26
 #define LOOK_CORRIDOR_BANK               0
 #define LOOK_DOOR_OPEN                   22
@@ -79,6 +83,8 @@
 #define LOOK_STAIRS_DOWN_BANK            0
 #define LOOK_STAIRS_UP                   2
 #define LOOK_STAIRS_UP_BANK              0
+#define LOOK_STATUE                      28
+#define LOOK_STATUE_BANK                 0
 #define LOOK_WALL                        24
 #define LOOK_WALL_BANK                   0
 #define LOOK_WALL_DFWX                   14

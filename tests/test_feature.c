@@ -165,12 +165,32 @@ int main(void)
     feature_redraw(other);
     CHECK(NGE_MAP_TILE(1, 8).tile_id == LOOK_DOOR_OPEN && NGE_BLOCK_OF(other) == NGE_BLOCK_SOLID);
 
-    /* ---- the record's new parts: none for a door; nothing random among the built kinds ---- */
+    /* ---- the record's new parts: none for a door ---- */
     CHECK(gen_feature_dc(FT_DOOR) == 0 && gen_feature_holds(FT_DOOR) == 0 && gen_feature_verb(FT_DOOR) == FVERB_NONE);
     CHECK(!NGE_ENTITY_HAS_COMPONENT(door, COMPONENT_HEALTH) && !NGE_ENTITY_HAS_COMPONENT(door, COMPONENT_MELEE));
+
+    /* ---- random: a kind of the depth, never a door or stairs (rarity 0) ---- */
     for (x = 1; x <= LEVEL_DEPTH_BOTTOM; x++) {
-        CHECK(gen_feature_random(x, AREA) == NGE_ENTITY_INVALID);  /* doors and stairs have rarity 0 */
+        other = gen_feature_random(x, AREA);
+        CHECK(other != NGE_ENTITY_INVALID && KIND_IS(other, CLASS_FEATURE) && NGE_OWNER_OF(other) == AREA &&
+              gen_features[kind_index[other]].where.rarity != 0 && x >= gen_features[kind_index[other]].where.depth &&
+              x <= gen_features[kind_index[other]].where.depth_max);
+        nge_entity_destroy(other);
     }
+
+    /* ---- breakable: a boulder has its hit points, AC and masks, and is destroyed at 0 hp ---- */
+    other = gen_feature(FT_BOULDER, AREA);
+    feature_place(other, 8, 1);
+    CHECK(NGE_ENTITY_HAS_COMPONENT(other, COMPONENT_HEALTH) && health_hp[other] == 12 && health_ac[other] == 1 &&
+          (health_resist[other] & DMG_BIT(DMG_SLASH)) && (health_immune[other] & DMG_BIT(DMG_POISON)) &&
+          NGE_MAP_TILE(8, 1).tile_id == LOOK_BOULDER && NGE_BLOCK_OF(other) == NGE_BLOCK_SOLID &&
+          !NGE_ENTITY_HAS_COMPONENT(other, COMPONENT_MELEE));
+    health_damage(other, NGE_ENTITY_INVALID, 6, DMG_SLASH);        /* resisted: half */
+    CHECK(health_hp[other] == 9 && NGE_ENTITY_IS_ALIVE(other));
+    health_damage(other, NGE_ENTITY_INVALID, 9, DMG_BLUNT);
+    CHECK(health_hp[other] == 0 && !NGE_ENTITY_IS_ALIVE(other));
+    other = gen_feature(FT_STATUE, AREA);                          /* not breakable */
+    CHECK(!NGE_ENTITY_HAS_COMPONENT(other, COMPONENT_HEALTH));
 
     /* ---- asserts ---- */
     other = gen_feature(FT_DOOR, NGE_OWNER_WORLD);                 /* not in an area */

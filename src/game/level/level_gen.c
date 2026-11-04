@@ -27,9 +27,11 @@
 #include <stdlib.h>
 
 #include "core/nge_util.h"
+#include "ecs/components/nge_block.h"
 #include "ecs/components/nge_location.h"
 #include "game/ai/ai.h"
 #include "game/components/feature.h"
+#include "game/components/kind.h"
 #include "game/dev.h"
 #include "game/gen/gen.h"
 
@@ -618,6 +620,90 @@ static void place_locks(uint8_t depth)
 }
 
 /*
+ * A random interior tile of a room not locked, for furniture: two cells in
+ * from its walls (so never by a doorway), with no entity on it and nothing
+ * blocking on it or around it, so a blocking feature there can't cut a path
+ * (docs/features.md R18). Returns 1 and the tile in (x, y), or 0 if none
+ * was found in PLACE_ATTEMPTS tries
+ */
+static uint8_t interior_floor(uint8_t *x, uint8_t *y)
+{
+    const level_room_t *r;
+    uint8_t tries;
+    uint8_t cell;
+    uint8_t x1;   /* the room's fields in locals (T-ZSDCC-1) */
+    uint8_t y1;
+    uint8_t x2;
+    uint8_t y2;
+    uint8_t i;
+    uint8_t j;
+    uint8_t clear;
+
+    for (tries = 0; tries < PLACE_ATTEMPTS; tries++) {
+        cell = level_room_cells[roll(level_room_count)];
+        if (LEVEL_CELL_LOCKED(cell)) {
+            continue;
+        }
+        r = &level_rooms[cell];
+        x1 = r->x1;
+        y1 = r->y1;
+        x2 = r->x2;
+        y2 = r->y2;
+        if ((uint8_t)(x2 - x1) < 4 || (uint8_t)(y2 - y1) < 4) {
+            continue;   /* no interior: a room one or two cells across */
+        }
+        *x = roll_between((uint8_t)(x1 + 2), (uint8_t)(x2 - 2));
+        *y = roll_between((uint8_t)(y1 + 2), (uint8_t)(y2 - 2));
+        if (nge_location_find(LEVEL_AREA, *x, *y, 0, 0) != NGE_ENTITY_INVALID) {
+            continue;
+        }
+        clear = 1;
+        for (j = 0; j < 3; j++) {
+            for (i = 0; i < 3; i++) {
+                if (nge_block_find(LEVEL_AREA, (uint8_t)(*x + i - 1), (uint8_t)(*y + j - 1), NGE_BLOCK_NONE,
+                                   NGE_ENTITY_INVALID) != NGE_ENTITY_INVALID) {
+                    clear = 0;
+                }
+            }
+        }
+        if (clear) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/*
+ * Up to LEVEL_FEATURES_MAX random features for the depth (docs/features.md
+ * 4.12). Where one goes follows from what it blocks: furniture on an
+ * interior tile, anything else on free floor. One with nowhere to go is
+ * destroyed, unplaced
+ */
+static void place_features(uint8_t depth)
+{
+    gen_feature_info_t info;
+    nge_entity_id_t id;
+    uint8_t n = roll_between(0, LEVEL_FEATURES_MAX);
+    uint8_t found;
+    uint8_t x;
+    uint8_t y;
+
+    while (n-- > 0) {
+        id = gen_feature_random(depth, LEVEL_AREA);
+        if (id == NGE_ENTITY_INVALID) {
+            continue;
+        }
+        gen_feature_info(kind_index[id], &info);
+        found = (info.block_shut != NGE_BLOCK_NONE) ? interior_floor(&x, &y) : free_floor(&x, &y);
+        if (found) {
+            feature_place(id, x, y);
+        } else {
+            nge_entity_destroy(id);
+        }
+    }
+}
+
+/*
  * Up to n random entities (gen_item_random() or gen_creature_random()) for
  * the depth, each on free floor in a room. A tile is found first, so an
  * entity is only created where it can go
@@ -732,6 +818,7 @@ void level_generate(uint8_t depth, nge_entity_id_t player, uint8_t arrival) NGE_
     place_stairs(depth);
     place_doors();
     place_locks(depth);
+    place_features(depth);
     place_random(roll_between(LEVEL_ITEMS_MIN, LEVEL_ITEMS_MAX), depth, 0);
     place_random(roll_between(LEVEL_MONSTERS_MIN, LEVEL_MONSTERS_MAX), depth, 1);
     /* ...then what depends on play, so it can't change the rest */

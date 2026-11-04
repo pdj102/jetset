@@ -49,6 +49,7 @@
 #define LEVEL_DOORS_MAX     12 /* door entities per level */
 #define LEVEL_DOOR_CHANCE   3  /* a doorway gets a door 1 time in LEVEL_DOOR_CHANCE */
 #define LEVEL_LOCKS_MAX     2  /* locked rooms per level */
+#define LEVEL_FEATURES_MAX  4  /* random features per level (docs/features.md R17) */
 #define LEVEL_ITEMS_MIN     4  /* items per level, not counting a locked room's */
 #define LEVEL_ITEMS_MAX     10
 #define LEVEL_MONSTERS_MIN  2  /* monsters per level */

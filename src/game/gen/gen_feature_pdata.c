@@ -43,4 +43,35 @@ const gen_feature_kind_t gen_features[FT_COUNT] = {
         .state = 0,
         .where = { .depth = 0, .depth_max = 0, .rarity = 0 },
     },
+    /* Furniture (docs/features.md 5.2): blocks walking, placed only where it can't cut a path */
+    [FT_BOULDER] = {
+        .name = "boulder",
+        .info = {
+            .look = { { LOOK_BOULDER, LOOK_BOULDER_BANK }, { LOOK_BOULDER, LOOK_BOULDER_BANK } },
+            .block_shut = NGE_BLOCK_SOLID,
+        },
+        /* Broken by blows: blunt weapons pay */
+        .health = { .hp_max = 12, .immune = DMG_BIT(DMG_POISON),
+                    .resist = DMG_BIT(DMG_SLASH) | DMG_BIT(DMG_PIERCE), .ac = 1 },
+        .where = { .depth = 1, .depth_max = 10, .rarity = 4 },
+    },
+    [FT_STATUE] = {
+        .name = "statue",
+        .info = {
+            .look = { { LOOK_STATUE, LOOK_STATUE_BANK }, { LOOK_STATUE, LOOK_STATUE_BANK } },
+            .block_shut = NGE_BLOCK_SOLID,   /* cover: it blocks sight too */
+        },
+        .where = { .depth = 2, .depth_max = 10, .rarity = 2 },
+    },
+    [FT_CRACKED_STATUE] = {
+        .name = "cracked statue",
+        .info = {
+            .look = { { LOOK_STATUE, LOOK_STATUE_BANK }, { LOOK_STATUE, LOOK_STATUE_BANK } },
+            .block_shut = NGE_BLOCK_SOLID,
+        },
+        /* It holds an item from step 4 (FCAN_CONTAINER): until then, only breakable */
+        .health = { .hp_max = 8, .immune = DMG_BIT(DMG_POISON),
+                    .resist = DMG_BIT(DMG_SLASH) | DMG_BIT(DMG_PIERCE), .ac = 1 },
+        .where = { .depth = 3, .depth_max = 10, .rarity = 1 },
+    },
 };

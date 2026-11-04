@@ -845,6 +845,18 @@ int main(void)
     a.target = gob;
     CHECK(act_do(ACT_MELEE, &a, ACT_DO) == ACT_SUCCESS && health_hp[gob] == 0);
     CHECK(events() == 3 && seen[2].id == EV_DIED && NGE_ENTITY_STATE(gob) == NGE_ENTITY_DYING);
+    /* A boulder north (docs/features.md 4.10): found in that direction by its health, struck, destroyed at 0 hp */
+    {
+        nge_entity_id_t boulder = gen_feature(FT_BOULDER, NGE_OWNER_OF(player));
+
+        feature_place(boulder, 4, 4);
+        health_hp[boulder] = 1;
+        srand(seed_for_roll(20));
+        a = ctx(player);
+        a.dy = -1;
+        CHECK(act_melee(&a, ACT_DO) == ACT_SUCCESS && a.target == boulder && health_hp[boulder] == 0);
+        CHECK(events() == 3 && seen[0].id == EV_HIT && seen[2].id == EV_DIED && NGE_ENTITY_STATE(boulder) == NGE_ENTITY_DYING);
+    }
     /* Refused: nothing changes, no turn */
     a = ctx(player);
     a.target = gob;                                           /* dying */

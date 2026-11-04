@@ -68,7 +68,10 @@
 //                                 (unused)
 //                        134/135  spells: the spells' functions / the spell
 //                                 definitions and each caster's known spells
-//                        136-151  free
+//                        136/137  level travel: leaving a level, entities going
+//                                 between levels (game/level/level_travel.c) /
+//                                 (unused)
+//                        138-151  free
 //             152-223  game assets (maps, graphics, level data):
 //                        153  the map tiles' palette (slot 7, via nge_palette_load9();
 //                             src/data/tile_palette_data.asm, generated)
@@ -151,6 +154,9 @@
 
 // game spells: the spells (game/spells)
 #pragma define CRT_ORG_PAGE_134 = 0x86C000
+
+// game level travel: leaving a level (game/level/level_travel.c)
+#pragma define CRT_ORG_PAGE_136 = 0x88C000
 
 // nge map: set-up functions
 #pragma define CRT_ORG_PAGE_44 = 0x2CC000

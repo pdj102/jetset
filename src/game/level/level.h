@@ -34,10 +34,10 @@
  * with level_generate(): never inside the action, timer or event handler
  * that asks for it.
  *
- * Banking: level_init(), level_generate(), level_redraw(),
- * level_send() and level_park() are banked (NGE_BANKED, page 102, with
- * their data in page 103): don't call them while game code has its own
- * page mapped in slot 6 or 7. level_can_enter(), level_holds(), the
+ * Banking: level_init(), level_generate() and level_redraw() are banked
+ * (NGE_BANKED, page 102, with their data in page 103); level_send(),
+ * level_park() and level_leave() too, in page 136 (level_travel.c): don't
+ * call them while game code has its own page mapped in slot 6 or 7. level_can_enter(), level_holds(), the
  * requests and level_release_dying() are in common memory.
  */
 

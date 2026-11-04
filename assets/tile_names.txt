@@ -18,3 +18,5 @@ look door_shut
 look door_open
 look stairs_up
 look stairs_down
+look boulder
+look statue

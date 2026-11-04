@@ -34,6 +34,7 @@
 #include "game/effects/effects.h"
 #include "game/events.h"
 #include "game/gen/gen.h"
+#include "game/gen/gen_internal.h"   /* the feature kinds' bands, to check random features */
 #include "game/level/level_internal.h"
 #include "game/quest/quest.h"
 #include "game/ui/screen_main.h"
@@ -79,6 +80,7 @@ static int doors_open;
 static int doors_shut;
 static int doorways_seen;
 static int locks_seen;
+static int features_seen;   /* random features, over every level checked */
 
 /* The events posted: kept to look at, then thrown away */
 static nge_event_t seen[32];
@@ -351,6 +353,7 @@ static int check_level(int depth)
     int items = 0;
     int monsters = 0;
     int doors = 0;
+    int features = 0;
     int ups = 0;
     int downs = 0;
     int up_room = -1;
@@ -517,6 +520,50 @@ static int check_level(int depth)
             }
             continue;
         }
+        if (KIND_IS(id, CLASS_FEATURE) && kind_index[id] != FT_DOOR) {
+            /*
+             * Random features (docs/features.md 4.12): a kind of the depth,
+             * placed alone and drawn as its ready look. Furniture is on a
+             * room's interior, two cells from its walls, outside locked rooms,
+             * with nothing else blocking around it, so it cuts no path (R18)
+             */
+            gen_feature_info_t info;
+            uint8_t fx = NGE_LOCATION_X(id);
+            uint8_t fy = NGE_LOCATION_Y(id);
+            int r = room_of(fx, fy);
+            int ax;
+            int ay;
+
+            gen_feature_info(kind_index[id], &info);
+            if (!NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_LOCATION) || NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_SPRITE) ||
+                entities_at(fx, fy) != 1 || tile(fx, fy) != info.look[0].tile_id || NGE_BLOCK_OF(id) != info.block_shut ||
+                nge_map_block(fx, fy) != NGE_BLOCK_NONE) {
+                return fail(depth, "a random feature isn't placed alone, drawn and blocking as its kind");
+            }
+            if (gen_features[kind_index[id]].where.rarity == 0 || depth < gen_features[kind_index[id]].where.depth ||
+                depth > gen_features[kind_index[id]].where.depth_max) {
+                return fail(depth, "a random feature's kind isn't of the depth");
+            }
+            if (info.block_shut != NGE_BLOCK_NONE) {
+                if (r < 0 || LEVEL_CELL_LOCKED(r) || fx < level_rooms[r].x1 + 2 || fx > level_rooms[r].x2 - 2 ||
+                    fy < level_rooms[r].y1 + 2 || fy > level_rooms[r].y2 - 2) {
+                    return fail(depth, "furniture isn't on the interior of a room not locked");
+                }
+                for (ay = fy - 1; ay <= fy + 1; ay++) {
+                    for (ax = fx - 1; ax <= fx + 1; ax++) {
+                        nge_entity_id_t near = nge_location_find(LEVEL_AREA, (uint8_t)ax, (uint8_t)ay, COMPONENT_FEATURE, 0);
+
+                        if (!is_floor((uint8_t)ax, (uint8_t)ay) ||
+                            (near != NGE_ENTITY_INVALID && near != id && NGE_BLOCK_OF(near) != NGE_BLOCK_NONE)) {
+                            return fail(depth, "furniture has other furniture, or no floor, around it");
+                        }
+                    }
+                }
+            }
+            features++;
+            features_seen++;
+            continue;
+        }
         if (KIND_IS(id, CLASS_FEATURE)) {
             /*
              * Doors: placed alone in a doorway, drawn as a map tile (no
@@ -595,6 +642,9 @@ static int check_level(int depth)
         return fail(depth, "monster count");
     }
     /* Doors: at most the maximum; every doorway is doorway terrain, drawn as one if it has no door; two per link */
+    if (features > LEVEL_FEATURES_MAX) {
+        return fail(depth, "feature count");
+    }
     if (doors > LEVEL_DOORS_MAX + locks) {
         return fail(depth, "door count");
     }
@@ -708,6 +758,9 @@ int main(void)
     /* About a third of doorways get doors, about half of them open */
     CHECK(doors_open + doors_shut > doorways_seen / 5 && doors_open + doors_shut < doorways_seen / 2);
     CHECK(doors_open > (doors_open + doors_shut) / 3 && doors_shut > (doors_open + doors_shut) / 3);
+
+    /* Random features: 0 to LEVEL_FEATURES_MAX a level, so about 2; most find a place */
+    CHECK(features_seen > SEEDS * LEVEL_DEPTH_BOTTOM && features_seen < SEEDS * LEVEL_DEPTH_BOTTOM * 3);
 
     /* Every side room is locked, about one a level: fewer would hardly be seen (Next's rand: 0.98) */
     CHECK(locks_seen > SEEDS * LEVEL_DEPTH_BOTTOM * 3 / 4);
