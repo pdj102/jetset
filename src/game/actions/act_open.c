@@ -57,6 +57,7 @@ uint8_t act_open(act_t *a, uint8_t mode) NGE_BANKED
 
 uint8_t act_close(act_t *a, uint8_t mode) NGE_BANKED
 {
+    gen_feature_info_t info;
     nge_entity_id_t target;
     nge_entity_id_t id;
     uint8_t reason;
@@ -69,6 +70,10 @@ uint8_t act_close(act_t *a, uint8_t mode) NGE_BANKED
     target = a->target;
     if (!FEATURE_IS_OPEN(target)) {
         return act_fail(a, ACT_R_ALREADY_CLOSED);
+    }
+    gen_feature_info(kind_index[target], &info);
+    if (info.can & FCAN_CONTAINER) {
+        return act_fail(a, ACT_R_CANT_OPEN);   /* it has spilled: there is nothing to close it on */
     }
     NGE_LOCATION_FOR_EACH_AT(id, NGE_OWNER_OF(target), NGE_LOCATION_X(target), NGE_LOCATION_Y(target), 0) {
         if (id != target) {

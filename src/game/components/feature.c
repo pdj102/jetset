@@ -17,6 +17,7 @@
 #include "game/components/inventory.h"
 #include "game/components/kind.h"
 #include "game/components/stats.h"
+#include "game/events.h"
 #include "game/gen/gen.h"
 
 typedef char feature_key_check[(KEY_COUNT <= (FEAT_KEY_MASK >> FEAT_KEY_SHIFT) + 1) ? 1 : -1];
@@ -112,6 +113,20 @@ void feature_spend(nge_entity_id_t id) NGE_BANKED
 
     feature_state[id] |= FEAT_SPENT;
     update(id);
+}
+
+void feature_on_event(const nge_event_t *e) NGE_BANKED
+{
+    gen_feature_info_t info;
+    nge_entity_id_t target = e->target;   /* locals: see messages_on_event() */
+    uint8_t id = e->id;
+
+    if (id == EV_OPENED && NGE_ENTITY_IS_ALIVE(target) && FEATURE_IS(target)) {
+        gen_feature_info(kind_index[target], &info);
+        if (info.can & FCAN_CONTAINER) {
+            inv_drop_all(target);   /* its tile is open now: the items are picked up from it */
+        }
+    }
 }
 
 void feature_lock(nge_entity_id_t id, uint8_t key) NGE_BANKED

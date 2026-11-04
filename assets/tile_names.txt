@@ -26,3 +26,5 @@ look altar
 look altar_spent
 look fountain
 look fountain_dry
+look chest_shut
+look chest_open

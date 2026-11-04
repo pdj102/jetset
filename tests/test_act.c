@@ -307,6 +307,69 @@ static void test_operate(void)
           NGE_MAP_TILE(7, 8).tile_id == LOOK_FOUNTAIN_DRY);
 }
 
+/* Containers (docs/features.md 4.9): a bandit at (2, 2), a locked chest east of it holding two items */
+static void test_container(void)
+{
+    nge_entity_id_t h;
+    nge_entity_id_t chest;
+    nge_entity_id_t statue;
+    nge_entity_id_t i1;
+    nge_entity_id_t i2;
+    nge_entity_id_t s1;
+    nge_entity_id_t key;
+    act_t a;
+    int n;
+    int i;
+
+    events();
+    nge_entity_init();
+    h = gen_creature(CR_BANDIT, AREA);
+    nge_location_set(h, 2, 2);
+    chest = gen_feature(FT_CHEST, AREA);
+    feature_place(chest, 3, 2);
+    i1 = gen_item(IT_DAGGER, chest);                                /* held off the map, as a pack's */
+    i2 = gen_item(IT_SWORD, chest);
+    feature_lock(chest, KEY_IRON);
+    key = gen_item(IT_KEY_IRON, h);
+    events();
+
+    /* Locked: it won't open; its key unlocks it, as a door's */
+    a = ctx(h);
+    a.dx = 1;
+    CHECK(act_open(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_LOCKED && a.used == 0);
+    a = ctx(h);
+    a.dx = 1;
+    a.item = key;
+    CHECK(act_unlock(&a, ACT_DO) == ACT_SUCCESS && !FEATURE_IS_LOCKED(chest));
+    events();
+
+    /* Opened: EV_OPENED, and its reaction spills what it holds on its tile, open and drawn open */
+    a = ctx(h);
+    a.dx = 1;
+    CHECK(act_open(&a, ACT_DO) == ACT_SUCCESS && FEATURE_IS_OPEN(chest));
+    CHECK(NGE_OWNER_OF(i1) == chest && !NGE_ENTITY_HAS_COMPONENT(i1, NGE_COMPONENT_LOCATION));   /* not until the event */
+    n = events();
+    for (i = 0; i < n; i++) {
+        feature_on_event(&seen[i]);
+    }
+    CHECK(NGE_OWNER_OF(i1) == AREA && at(i1, 3, 2) && NGE_OWNER_OF(i2) == AREA && at(i2, 3, 2));
+    CHECK(NGE_MAP_TILE(3, 2).tile_id == LOOK_CHEST_OPEN && NGE_BLOCK_OF(chest) == NGE_BLOCK_NONE);
+    /* Spilled: it doesn't close again */
+    a = ctx(h);
+    a.dx = 1;
+    CHECK(act_close(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_CANT_OPEN && a.used == 0);
+
+    /* A cracked statue: broken, its item dropped on its tile by the clean-up */
+    statue = gen_feature(FT_CRACKED_STATUE, AREA);
+    feature_place(statue, 2, 3);
+    s1 = gen_item(IT_DAGGER, statue);
+    health_damage(statue, h, 100, DMG_BLUNT);
+    CHECK(NGE_ENTITY_STATE(statue) == NGE_ENTITY_DYING && NGE_OWNER_OF(s1) == statue);
+    events();
+    level_release_dying();
+    CHECK(NGE_ENTITY_STATE(statue) == NGE_ENTITY_FREE && NGE_OWNER_OF(s1) == AREA && at(s1, 2, 3));
+}
+
 static void test_exchange(void)
 {
     nge_entity_id_t h = gen_creature(CR_BANDIT, AREA);
@@ -1955,6 +2018,7 @@ int main(void)
     CHECK(test_halt_count == 1);
 
     test_operate();
+    test_container();
 
     return test_summary("act");
 }

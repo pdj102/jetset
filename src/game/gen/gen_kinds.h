@@ -212,7 +212,8 @@
 #define FT_FOUNTAIN_RENEW 10
 #define FT_FOUNTAIN_MANA 11
 #define FT_FOUNTAIN_FOUL 12
-#define FT_COUNT        13
+#define FT_CHEST        13
+#define FT_COUNT        14
 
 /* Item subclasses, in each item's kind record */
 #define ITEM_POTION     0

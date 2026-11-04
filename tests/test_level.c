@@ -81,6 +81,8 @@ static int doors_shut;
 static int doorways_seen;
 static int locks_seen;
 static int features_seen;   /* random features, over every level checked */
+static int contents_seen;   /* items held by containers */
+static int chest_locks_seen;
 
 /* The events posted: kept to look at, then thrown away */
 static nge_event_t seen[32];
@@ -193,6 +195,22 @@ static nge_entity_id_t locked_door_at(int x, int y)
     return (id != NGE_ENTITY_INVALID && FEATURE_IS_LOCKED(id)) ? id : NGE_ENTITY_INVALID;
 }
 
+/* A key to locks of kind lock (KEY_*) lies on the floor outside the locked rooms */
+static int key_outside(uint8_t lock)
+{
+    nge_entity_id_t id;
+    uint8_t i;
+
+    NGE_OWNER_FOR_EACH_OWNED(i, id, LEVEL_AREA) {
+        if (ITEM_IS(id) && NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_LOCATION) &&
+            gen_item_subclass(kind_index[id]) == ITEM_KEY && gen_item_group(kind_index[id]) == lock &&
+            !LEVEL_CELL_LOCKED(room_of(NGE_LOCATION_X(id), NGE_LOCATION_Y(id)))) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 static int flood_stops_at_locks;   /* flood() treats a locked door as a wall */
 
 static void flood(uint8_t x, uint8_t y)
@@ -299,7 +317,7 @@ static int check_locks(int depth, int *locks)
         return fail(depth, "too many locks");
     }
     NGE_OWNER_FOR_EACH_OWNED(i, id, LEVEL_AREA) {
-        if (FEATURE_IS(id) && FEATURE_IS_LOCKED(id)) {
+        if (FEATURE_IS(id) && FEATURE_IS_LOCKED(id) && kind_index[id] == FT_DOOR) {   /* chests: check_level() */
             doors++;
         }
     }
@@ -359,6 +377,8 @@ static int check_level(int depth)
     int up_room = -1;
     int down_room = -1;
     int locks = 0;
+    int contents = 0;
+    int chest_locks = 0;
     int x;
     int y;
     uint8_t i;
@@ -560,6 +580,38 @@ static int check_level(int depth)
                     }
                 }
             }
+            /*
+             * Containers (4.9): their items held off the map, at most their
+             * kind's `holds`; one locked opens, and has its key outside the
+             * locked rooms (D17). Nothing else holds anything
+             */
+            {
+                nge_entity_id_t held;
+                uint8_t j;
+                int n = 0;
+
+                NGE_OWNER_FOR_EACH_OWNED(j, held, id) {
+                    if (!ITEM_IS(held) || NGE_ENTITY_HAS_COMPONENT(held, NGE_COMPONENT_LOCATION)) {
+                        return fail(depth, "a feature holds something not an item, or on the map");
+                    }
+                    n++;
+                }
+                if (n > gen_features[kind_index[id]].holds) {
+                    return fail(depth, "a container holds more than its kind holds");
+                }
+                contents += n;
+                contents_seen += n;
+                if (FEATURE_IS_LOCKED(id)) {
+                    if (!(info.can & FCAN_OPEN) || !(info.can & FCAN_CONTAINER)) {
+                        return fail(depth, "a random feature is locked but isn't a container that opens");
+                    }
+                    if (!key_outside((uint8_t)((feature_state[id] & FEAT_KEY_MASK) >> FEAT_KEY_SHIFT))) {
+                        return fail(depth, "a locked chest has no key outside the locked rooms");
+                    }
+                    chest_locks++;
+                    chest_locks_seen++;
+                }
+            }
             features++;
             features_seen++;
             continue;
@@ -635,7 +687,14 @@ static int check_level(int depth)
         return 0;
     }
     locks_seen += locks;
-    if (items < LEVEL_ITEMS_MIN || items > LEVEL_ITEMS_MAX + 2 * locks) {   /* each lock: its key, its room's item */
+    if (locks + chest_locks > LEVEL_LOCKS_MAX) {
+        return fail(depth, "more locks, on rooms and chests, than LEVEL_LOCKS_MAX");
+    }
+    if (contents > LEVEL_CONTENTS_MAX) {
+        return fail(depth, "more items in containers than LEVEL_CONTENTS_MAX");
+    }
+    /* Each locked room: its key, its room's item; each locked chest: its key */
+    if (items < LEVEL_ITEMS_MIN || items > LEVEL_ITEMS_MAX + 2 * locks + chest_locks) {
         return fail(depth, "item count");
     }
     if (monsters < LEVEL_MONSTERS_MIN || monsters > LEVEL_MONSTERS_MAX) {
@@ -761,6 +820,8 @@ int main(void)
 
     /* Random features: 0 to LEVEL_FEATURES_MAX a level, so about 2; most find a place */
     CHECK(features_seen > SEEDS * LEVEL_DEPTH_BOTTOM && features_seen < SEEDS * LEVEL_DEPTH_BOTTOM * 3);
+    /* Containers come with items, and some chests are locked */
+    CHECK(contents_seen > 0 && chest_locks_seen > 0);
 
     /* Every side room is locked, about one a level: fewer would hardly be seen (Next's rand: 0.98) */
     CHECK(locks_seen > SEEDS * LEVEL_DEPTH_BOTTOM * 3 / 4);

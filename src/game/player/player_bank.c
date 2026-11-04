@@ -442,6 +442,9 @@ void player_command(nge_key_event_t ev) NGE_BANKED
     case 'L':
         lock_nearest();   /* development: no turn used */
         break;
+    case 'T':
+        level_dev_features(actor_player);   /* development: features to check, near the player (no turn used) */
+        break;
     case 'M':
         /* Development: spend 1 MP, or restore them all at 0, to see the stats follow (no turn used) */
         if (MANA_IS(actor_player)) {

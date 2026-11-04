@@ -39,6 +39,7 @@
 
 #include "core/nge_bank.h"
 #include "ecs/components/nge_block.h"
+#include "event/nge_event.h"
 #include "ecs/nge_entity.h"
 #include "game/components/components.h"
 
@@ -118,6 +119,14 @@ void feature_lock(nge_entity_id_t id, uint8_t key) NGE_BANKED;
 
 /** @brief Unlock a feature: it stays closed. */
 void feature_unlock(nge_entity_id_t id) NGE_BANKED;
+
+/**
+ * @brief The features' reactions to events (docs/features.md 4.7): a
+ *        container opened (EV_OPENED) drops what it holds on its tile.
+ *        A broken one needs nothing: the clean-up drops a dying holder's
+ *        items. game_on_event() calls it only for the events it handles.
+ */
+void feature_on_event(const nge_event_t *e) NGE_BANKED;
 
 /** @brief 1 if item is a key that fits locked feature id: its KEY_*, or KEY_ANY. */
 uint8_t feature_key_fits(nge_entity_id_t id, nge_entity_id_t item) NGE_BANKED;

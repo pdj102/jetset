@@ -120,6 +120,13 @@ void level_generate(uint8_t depth, nge_entity_id_t player, uint8_t arrival) NGE_
  * Apart from level_generate(), so a level stays what the level tests ask
  */
 void level_dev_bandit(nge_entity_id_t player) NGE_BANKED;
+
+/*
+ * Development (the T key): features to check, near the player, on interior
+ * tiles: a locked chest holding two items, its iron key at the player's
+ * feet, and a cracked statue holding one (docs/features.md, step 4)
+ */
+void level_dev_features(nge_entity_id_t player) NGE_BANKED;
 #endif
 
 /**

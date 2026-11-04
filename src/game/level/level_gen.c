@@ -581,31 +581,45 @@ static void place_item(nge_entity_id_t item, const level_room_t *r)
     }
 }
 
+/* A lock's kind (KEY_*) for the depth: harder locks come deeper, iron to gold */
+static uint8_t lock_kind(uint8_t depth)
+{
+    uint8_t kinds = (uint8_t)(1 + (unsigned int)depth / 3);
+
+    if (kinds > KEY_GOLD) {
+        kinds = KEY_GOLD;
+    }
+    return (uint8_t)(KEY_IRON + roll(kinds));
+}
+
+/* The key to a lock of kind key (KEY_*), on free floor outside the locked rooms (none if no tile is found) */
+static void place_key(uint8_t key)
+{
+    place_item(gen_item((uint8_t)(IT_KEY_IRON + key - KEY_IRON), LEVEL_AREA), NULL);
+}
+
 /*
  * Every side room locked, LEVEL_LOCKS_MAX at most, each with a random item
  * inside: there are few of them, about one a level.
  * The rooms are all marked first, so the keys then land outside every one
  * of them. Harder locks come with depth; a key is made by kind, as its
- * lock's, whatever depths that kind turns up at by chance
+ * lock's, whatever depths that kind turns up at by chance.
+ * Returns how many: chests may lock with what is left (place_features())
  */
-static void place_locks(uint8_t depth)
+static uint8_t place_locks(uint8_t depth)
 {
     uint8_t keys[LEVEL_LOCKS_MAX];
-    uint8_t kinds = (uint8_t)(1 + (unsigned int)depth / 3);
     uint8_t locks = 0;
     uint8_t i;
     uint8_t cell;
     uint8_t d;
 
-    if (kinds > KEY_GOLD) {
-        kinds = KEY_GOLD;
-    }
     level_locked_cells = 0;
     for (i = 0; i < level_room_count && locks < LEVEL_LOCKS_MAX; i++) {
         cell = level_room_cells[i];
         d = side_room_doorway(&level_rooms[cell]);
         if (d != LEVEL_DOORWAYS_MAX) {
-            keys[locks] = (uint8_t)(KEY_IRON + roll(kinds));
+            keys[locks] = lock_kind(depth);
             if (!lock_doorway(d, keys[locks])) {
                 break;
             }
@@ -615,8 +629,9 @@ static void place_locks(uint8_t depth)
         }
     }
     for (i = 0; i < locks; i++) {
-        place_item(gen_item((uint8_t)(IT_KEY_IRON + keys[i] - KEY_IRON), LEVEL_AREA), NULL);
+        place_key(keys[i]);
     }
+    return locks;
 }
 
 /*
@@ -677,14 +692,19 @@ static uint8_t interior_floor(uint8_t *x, uint8_t *y)
  * Up to LEVEL_FEATURES_MAX random features for the depth (docs/features.md
  * 4.12). Where one goes follows from what it blocks: furniture on an
  * interior tile, anything else on free floor. One with nowhere to go is
- * destroyed, unplaced
+ * destroyed, unplaced. A container gets 1 to its `holds` random items,
+ * LEVEL_CONTENTS_MAX a level, held off the map (4.9); one that opens is
+ * locked one time in three while locks are left of LEVEL_LOCKS_MAX, the
+ * side rooms' first (D17), with its key on free floor
  */
-static void place_features(uint8_t depth)
+static void place_features(uint8_t depth, uint8_t locks)
 {
     gen_feature_info_t info;
     nge_entity_id_t id;
     uint8_t n = roll_between(0, LEVEL_FEATURES_MAX);
-    uint8_t found;
+    uint8_t contents = 0;
+    uint8_t holds;
+    uint8_t key;
     uint8_t x;
     uint8_t y;
 
@@ -694,11 +714,24 @@ static void place_features(uint8_t depth)
             continue;
         }
         gen_feature_info(kind_index[id], &info);
-        found = (info.block_shut != NGE_BLOCK_NONE) ? interior_floor(&x, &y) : free_floor(&x, &y);
-        if (found) {
-            feature_place(id, x, y);
-        } else {
+        if (!((info.block_shut != NGE_BLOCK_NONE) ? interior_floor(&x, &y) : free_floor(&x, &y))) {
             nge_entity_destroy(id);
+            continue;
+        }
+        feature_place(id, x, y);
+        holds = gen_feature_holds(kind_index[id]);
+        if (holds != 0) {
+            holds = roll_between(1, holds);
+            while (holds-- > 0 && contents < LEVEL_CONTENTS_MAX &&
+                   gen_item_random(depth, id) != NGE_ENTITY_INVALID) {
+                contents++;
+            }
+            if ((info.can & FCAN_OPEN) && locks < LEVEL_LOCKS_MAX && roll(3) == 0) {
+                key = lock_kind(depth);
+                feature_lock(id, key);
+                place_key(key);
+                locks++;
+            }
         }
     }
 }
@@ -792,6 +825,56 @@ void level_dev_bandit(nge_entity_id_t player) NGE_BANKED
         nge_location_set(gen_creature(CR_GOBLIN_SHAMAN, LEVEL_AREA), x, y);   /* to watch a caster (docs/spells_plan.md, step 4) */
     }
 }
+
+/* Development: a feature of kind on the interior tile nearest the player of those tried; NGE_ENTITY_INVALID if none */
+static nge_entity_id_t dev_feature(uint8_t kind, nge_entity_id_t player)
+{
+    nge_entity_id_t id;
+    uint8_t px = NGE_LOCATION_X(player);
+    uint8_t py = NGE_LOCATION_Y(player);
+    uint8_t best = 0xFF;
+    uint8_t bx = 0;
+    uint8_t by = 0;
+    uint8_t d;
+    uint8_t x;
+    uint8_t y;
+    uint8_t tries;
+
+    for (tries = 0; tries < PLACE_ATTEMPTS; tries++) {
+        if (interior_floor(&x, &y)) {
+            d = (uint8_t)(((x > px) ? x - px : px - x) + ((y > py) ? y - py : py - y));
+            if (d < best) {
+                best = d;
+                bx = x;
+                by = y;
+            }
+        }
+    }
+    id = (best != 0xFF) ? gen_feature(kind, LEVEL_AREA) : NGE_ENTITY_INVALID;
+    if (id != NGE_ENTITY_INVALID) {
+        feature_place(id, bx, by);
+    }
+    return id;
+}
+
+void level_dev_features(nge_entity_id_t player) NGE_BANKED
+{
+    nge_entity_id_t id;
+
+    /* A locked chest holding two items, its iron key at the player's feet */
+    id = dev_feature(FT_CHEST, player);
+    if (id != NGE_ENTITY_INVALID) {
+        gen_item_random(level_depth, id);
+        gen_item_random(level_depth, id);
+        feature_lock(id, KEY_IRON);
+        nge_location_set(gen_item(IT_KEY_IRON, LEVEL_AREA), NGE_LOCATION_X(player), NGE_LOCATION_Y(player));
+    }
+    /* A cracked statue holding one */
+    id = dev_feature(FT_CRACKED_STATUE, player);
+    if (id != NGE_ENTITY_INVALID) {
+        gen_item_random(level_depth, id);
+    }
+}
 #endif
 
 void level_generate(uint8_t depth, nge_entity_id_t player, uint8_t arrival) NGE_BANKED
@@ -817,8 +900,7 @@ void level_generate(uint8_t depth, nge_entity_id_t player, uint8_t arrival) NGE_
     level_decorate_all();   /* the terrain is complete: draw it, before features draw over it */
     place_stairs(depth);
     place_doors();
-    place_locks(depth);
-    place_features(depth);
+    place_features(depth, place_locks(depth));
     place_random(roll_between(LEVEL_ITEMS_MIN, LEVEL_ITEMS_MAX), depth, 0);
     place_random(roll_between(LEVEL_MONSTERS_MIN, LEVEL_MONSTERS_MAX), depth, 1);
     /* ...then what depends on play, so it can't change the rest */
