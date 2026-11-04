@@ -171,14 +171,17 @@ static const char *const use_it[USE_COUNT] = { " drinks the ", " eats the ", " r
 /* What the player is told on operating a feature, by its kind's verb (FVERB_*, docs/features.md 4.11) */
 static const char *const operate_you[FVERB_COUNT] = {
     "You use the ", "You pray at the ", "You drink from the ", "You touch the ", "You step on the ", "You fall into the ",
+    "You fall through the ",
 };
 
 /* What the player is told when a trap goes off at them, or at a monster in sight, by its kind's verb */
 static const char *const trap_you[FVERB_COUNT] = {
     "You set off a ", "You set off a ", "You set off a ", "You set off a ", "You step on a ", "You fall into a ",
+    "You fall through a ",
 };
 static const char *const trap_it[FVERB_COUNT] = {
     " sets off a ", " sets off a ", " sets off a ", " sets off a ", " steps on a ", " falls into a ",
+    " falls through a ",
 };
 
 /* How item is used (USE_*), from its subclass */

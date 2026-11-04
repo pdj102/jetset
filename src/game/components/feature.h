@@ -74,7 +74,8 @@
 #define FVERB_TOUCH  3   /**< "You touch the altar." */
 #define FVERB_STEP   4   /**< A trap: "You step on a dart trap!" */
 #define FVERB_FALL   5   /**< A trap: "You fall into a pit!" */
-#define FVERB_COUNT  6
+#define FVERB_DROP   6   /**< A trap that leads down: "You fall through a trapdoor!" */
+#define FVERB_COUNT  7
 
 /* Tables in slot 0 (feature_cdata.c): read-only for game code; meaningful only with COMPONENT_FEATURE */
 extern uint8_t feature_state[NGE_ENTITY_MAX];   /**< FEAT_* bits. */

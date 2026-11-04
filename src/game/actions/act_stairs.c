@@ -20,7 +20,8 @@
 
 /*
  * Both: stairs that can (FCAN_ASCEND or FCAN_DESCEND) on the actor's tile,
- * then the level step levels down (-1: up)
+ * then the level step levels down (-1: up). A known trapdoor leads down
+ * too, arriving anywhere (docs/features.md, step 7)
  */
 static uint8_t take_stairs(act_t *a, uint8_t mode, uint8_t can, int8_t step)
 {
@@ -28,6 +29,7 @@ static uint8_t take_stairs(act_t *a, uint8_t mode, uint8_t can, int8_t step)
     nge_entity_id_t actor = a->actor;
     nge_entity_id_t id;
     nge_entity_id_t stairs = NGE_ENTITY_INVALID;
+    uint8_t fall = 0;
     uint8_t depth;
 
     /* 1. Context: the stairs here */
@@ -37,8 +39,9 @@ static uint8_t take_stairs(act_t *a, uint8_t mode, uint8_t can, int8_t step)
 
     NGE_LOCATION_FOR_EACH_AT(id, LEVEL_AREA, NGE_LOCATION_X(actor), NGE_LOCATION_Y(actor), COMPONENT_FEATURE) {
         gen_feature_info(kind_index[id], &info);
-        if (info.can & can) {
+        if ((info.can & can) && !FEATURE_IS_HIDDEN(id)) {   /* a hidden trapdoor isn't known to be there */
             stairs = id;
+            fall = (info.can & FCAN_TRAP) != 0;   /* a trapdoor: no stairs at the bottom, so anywhere */
             break;
         }
     }
@@ -63,7 +66,7 @@ static uint8_t take_stairs(act_t *a, uint8_t mode, uint8_t can, int8_t step)
 
     /* 4. Apply: the player at the end of the frame, anyone else now */
     if (PC_IS(actor)) {
-        level_request(depth, step > 0 ? LEVEL_ARRIVE_UP_STAIRS : LEVEL_ARRIVE_DOWN_STAIRS);
+        level_request(depth, fall ? LEVEL_ARRIVE_ANY : (step > 0 ? LEVEL_ARRIVE_UP_STAIRS : LEVEL_ARRIVE_DOWN_STAIRS));
     } else {
         level_send(actor, depth);
     }

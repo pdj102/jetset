@@ -560,6 +560,78 @@ static void test_search_disarm(void)
     CHECK(feature_disarm_margin(h, far, 12) == 0 && feature_disarm_margin(h, far, 7) == FEAT_DISARM_SET_OFF);
 }
 
+/* The trapdoor (docs/features.md, step 7): at depth 0 here, so the area is the level's */
+static void test_trapdoor(void)
+{
+    nge_entity_id_t pc;
+    nge_entity_id_t gob;
+    nge_entity_id_t td;
+    nge_entity_id_t td2;
+    act_t a;
+    uint8_t depth;
+    uint8_t arrival;
+    uint8_t x;
+    uint8_t y;
+
+    events();
+    nge_entity_init();
+    for (y = 0; y < 10; y++) {
+        for (x = 0; x < 10; x++) {
+            NGE_MAP_TILE(x, y).tile_id = FLOOR;
+        }
+    }
+    nge_map_set_block(LOOK_TRAPDOOR, NGE_BLOCK_NONE);
+    level_clear_request();
+    CHECK(level_depth == 0 && LEVEL_AREA == AREA);
+    pc = gen_creature(CR_PLAYER, AREA);
+    nge_location_set(pc, 2, 2);
+    td = gen_feature(FT_TRAPDOOR, AREA);
+    feature_place(td, 2, 2);
+    events();
+
+    /* Hidden, '>' doesn't find it */
+    a = ctx(pc);
+    CHECK(act_descend(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_NO_STAIRS && !level_pending());
+
+    /* Gone off at the player: found, and the player asks for the next depth, anywhere on it */
+    act_spring(td, pc);
+    CHECK(events() == 2 && is(0, td, EV_TRIGGERED, pc) && is(1, td, EV_FOUND, NGE_EVENT_NONE) && !FEATURE_IS_HIDDEN(td));
+    CHECK(level_pending() && NGE_ENTITY_IS_ALIVE(pc));
+    level_take_request(&depth, &arrival);
+    CHECK(depth == 1 && arrival == LEVEL_ARRIVE_ANY);
+
+    /* Known, '>' takes it down, arriving anywhere: no stairs at the bottom of it */
+    a = ctx(pc);
+    CHECK(act_descend(&a, ACT_DO) == ACT_SUCCESS && a.target == td && level_pending());
+    level_take_request(&depth, &arrival);
+    CHECK(depth == 1 && arrival == LEVEL_ARRIVE_ANY);
+
+    /* Held fast, nobody falls */
+    effect_apply(EF_HOLD, 1, pc, NGE_ENTITY_INVALID);
+    events();
+    act_spring(td, pc);
+    CHECK(!level_pending());
+    effect_cure(pc, STATUS_ROOTED);
+    events();
+
+    /* From the bottom level, nowhere to fall */
+    level_depth = LEVEL_DEPTH_BOTTOM;
+    act_spring(td, pc);
+    level_depth = 0;
+    CHECK(!level_pending());
+    events();
+
+    /* A monster leaves the level for the next depth now */
+    gob = gen_creature(CR_GOBLIN, AREA);
+    nge_location_set(gob, 5, 5);
+    td2 = gen_feature(FT_TRAPDOOR, AREA);
+    feature_place(td2, 5, 5);
+    events();
+    act_spring(td2, gob);
+    CHECK(NGE_ENTITY_STATE(gob) == NGE_ENTITY_DYING && !level_pending() && events() >= 2);
+    CHECK(seen_at(gob, EV_LEFT_LEVEL) >= 0 && seen[seen_at(gob, EV_LEFT_LEVEL)].p1 == 1);
+}
+
 static void test_exchange(void)
 {
     nge_entity_id_t h = gen_creature(CR_BANDIT, AREA);
@@ -2212,6 +2284,7 @@ int main(void)
     test_container();
     test_traps();
     test_search_disarm();
+    test_trapdoor();
 
     return test_summary("act");
 }

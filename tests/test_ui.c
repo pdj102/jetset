@@ -954,6 +954,16 @@ int main(void)
         nge_event_post(pit, EV_TRIGGERED, actor_player, 0, 0);
         nge_event_process(messages_on_event);
         CHECK(said("You fall into a pit!"));
+        {
+            nge_entity_id_t td = gen_feature(FT_TRAPDOOR, AREA);
+
+            feature_place(td, px, py);
+            nge_event_post(td, EV_TRIGGERED, actor_player, 0, 0);
+            nge_event_process(messages_on_event);
+            CHECK(said("You fall through a trapdoor!"));
+            nge_location_remove(td);
+            nge_entity_destroy(td);
+        }
         /* Off its tile, a failed disarm set it off */
         nge_location_set(pit, (uint8_t)(px + 1), py);
         nge_event_post(pit, EV_TRIGGERED, actor_player, 0, 0);

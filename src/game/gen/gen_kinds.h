@@ -220,7 +220,8 @@
 #define FT_SLEEP_GAS    18
 #define FT_TELEPORT_RUNE 19
 #define FT_SUMMON_RUNE  20
-#define FT_COUNT        21
+#define FT_TRAPDOOR     21
+#define FT_COUNT        22
 
 /* Item subclasses, in each item's kind record */
 #define ITEM_POTION     0

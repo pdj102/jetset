@@ -30,3 +30,4 @@ look chest_shut
 look chest_open
 look trap
 look web
+look trapdoor

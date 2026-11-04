@@ -349,7 +349,10 @@ uint8_t act_disarm(act_t *a, uint8_t mode) NGE_BANKED;
  * (feature_find(), EV_FOUND). With an attack, it rolls against the victim's
  * AC as a monster's bite (act_strike(), the trap the attacker), its hit
  * hook on a hit that leaves the victim alive; without one, its hit hook
- * applies at once. Does nothing if the trap or the victim is gone, or the
+ * applies at once. A trap that leads down (FCAN_DESCEND) then drops the
+ * victim, if alive and not rooted, to the next depth, anywhere on it: the
+ * player by level_request(), anyone else by level_send(); not from the
+ * bottom level. Does nothing if the trap or the victim is gone, or the
  * victim has no hit points.
  */
 void act_spring(nge_entity_id_t trap, nge_entity_id_t victim) NGE_BANKED;

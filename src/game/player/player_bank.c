@@ -239,12 +239,12 @@ static void close_command(void)
 /*
  * Development (the T key, with level_dev_features()): a dart trap, a pit, a
  * fire rune and a web on the free tiles around the player, found, to be
- * stepped on, and a second dart trap on the next free tile, hidden
+ * stepped on, and a trapdoor on the next free tile, hidden
  * (docs/features.md, step 5)
  */
 static void dev_traps(void)
 {
-    static const uint8_t traps[] = { FT_DART_TRAP, FT_PIT, FT_FIRE_RUNE, FT_WEB, FT_DART_TRAP };
+    static const uint8_t traps[] = { FT_DART_TRAP, FT_PIT, FT_FIRE_RUNE, FT_WEB, FT_TRAPDOOR };
     nge_entity_id_t id;
     uint8_t k = 0;
     uint8_t x;
@@ -258,7 +258,7 @@ static void dev_traps(void)
                 if (id != NGE_ENTITY_INVALID) {
                     feature_place(id, x, y);
                     if (k < sizeof(traps)) {
-                        feature_find(id);   /* all found but the last: a dart trap left hidden */
+                        feature_find(id);   /* all found but the last: a trapdoor left hidden */
                     }
                 }
             }

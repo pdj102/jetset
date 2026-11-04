@@ -20,7 +20,7 @@
 #define TILE_PALETTE_PAGE   153  /**< SECTION PAGE_153 in tile_palette_data.asm. */
 #define TILE_PALETTE_BANKS  1    /**< Banks in tile_palette, 16 entries each. */
 #define TILE_PALETTE_ENTRIES 16  /**< Entries in tile_palette: load them from index 0. */
-#define TILE_METATILES      40   /**< Metatiles in the tileset, tile 0 included. */
+#define TILE_METATILES      41   /**< Metatiles in the tileset, tile 0 included. */
 
 #define TILE_BANK_0  0
 #define TILE_BANK_1  0
@@ -62,6 +62,7 @@
 #define TILE_BANK_37  0
 #define TILE_BANK_38  0
 #define TILE_BANK_39  0
+#define TILE_BANK_40  0
 
 /** A metatile's bank, from a metatile number that is a constant. */
 #define TILE_BANK(m)    TILE_BANK_X(m)
@@ -113,6 +114,8 @@
 #define LOOK_STATUE_BANK                 0
 #define LOOK_TRAP                        38
 #define LOOK_TRAP_BANK                   0
+#define LOOK_TRAPDOOR                    40
+#define LOOK_TRAPDOOR_BANK               0
 #define LOOK_WALL                        24
 #define LOOK_WALL_BANK                   0
 #define LOOK_WALL_DFWX                   14

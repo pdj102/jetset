@@ -1,7 +1,8 @@
 /*
  * A trap going off: banked in BANK_56 with the actions, as it strikes with
  * act_strike(). Not an action (no actor chose it): a reaction to a creature
- * moving onto a trap (feature_on_event()), and a failed disarm (later).
+ * moving onto a trap (feature_on_event()), and a disarm failed badly
+ * (act_disarm()).
  * See docs/features.md 4.8.
  */
 #ifdef __SDCC
@@ -18,10 +19,14 @@
 #include "game/components/health.h"
 #include "game/effects/effects.h"
 #include "game/events.h"
+#include "game/components/kind.h"
+#include "game/components/pc.h"
 #include "game/gen/gen.h"
+#include "game/level/level.h"
 
 void act_spring(nge_entity_id_t trap, nge_entity_id_t victim) NGE_BANKED
 {
+    gen_feature_info_t info;
     act_t a = { 0 };
     uint16_t hook;
 
@@ -44,11 +49,25 @@ void act_spring(nge_entity_id_t trap, nge_entity_id_t victim) NGE_BANKED
         a.target = victim;
         a.item = NGE_ENTITY_INVALID;
         act_strike(&a, trap, ATTACK_MELEE, trap, 0, 0);
-        return;
+    } else {
+        /* 4. Without one, it always hits: its hit hook at once (any saving throw is the effect's) */
+        hook = gen_hook_of(trap, GEN_HOOK_HIT);
+        if (GEN_HOOK_EF(hook) != EF_NONE) {
+            effect_apply(GEN_HOOK_EF(hook), GEN_HOOK_POWER(hook), victim, trap);
+        }
     }
-    /* 4. Without one, it always hits: its hit hook at once (any saving throw is the effect's) */
-    hook = gen_hook_of(trap, GEN_HOOK_HIT);
-    if (GEN_HOOK_EF(hook) != EF_NONE) {
-        effect_apply(GEN_HOOK_EF(hook), GEN_HOOK_POWER(hook), victim, trap);
+    /*
+     * 5. A trap that leads down drops what it left alive, and not held, to
+     * the next depth, anywhere on it: the player at the end of the frame
+     * (a request, G-FLOW-1), anyone else now. Not from the bottom level
+     */
+    gen_feature_info(kind_index[trap], &info);
+    if ((info.can & FCAN_DESCEND) && NGE_ENTITY_IS_ALIVE(victim) && health_hp[victim] != 0 && !act_rooted(victim) &&
+        level_depth < LEVEL_DEPTH_BOTTOM) {
+        if (PC_IS(victim)) {
+            level_request((uint8_t)(level_depth + 1), LEVEL_ARRIVE_ANY);
+        } else {
+            level_send(victim, (uint8_t)(level_depth + 1));
+        }
     }
 }

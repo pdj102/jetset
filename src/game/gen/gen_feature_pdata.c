@@ -261,4 +261,17 @@ const gen_feature_kind_t gen_features[FT_COUNT] = {
         .hooks = { [GEN_HOOK_HIT] = { EF_SUMMON, 1 } },
         .where = { .depth = 5, .depth_max = 10, .rarity = 0 },
     },
+    /* A trap that leads down (docs/features.md 4.8, step 7): what it fires at falls to the next depth */
+    [FT_TRAPDOOR] = {
+        .name = "trapdoor",
+        .info = {
+            .look = { { LOOK_TRAPDOOR, LOOK_TRAPDOOR_BANK }, { LOOK_TRAPDOOR, LOOK_TRAPDOOR_BANK } },
+            .can = FCAN_TRAP | FCAN_DISARM | FCAN_DESCEND,
+            .block_shut = NGE_BLOCK_NONE,
+        },
+        .state = FEAT_HIDDEN,
+        .verb = FVERB_DROP,
+        .dc = 12,
+        .where = { .depth = 2, .depth_max = 9, .rarity = 2 },   /* never on the bottom level: there is no lower */
+    },
 };
