@@ -74,6 +74,13 @@ static const nge_panel_t panels[SCREEN_INV_COUNT] = {
 /* A key's answer, besides an action (ACT_*) and SCREEN_INV_BACK: stay open */
 #define KEY_STAY  (ACT_COUNT + 1)
 
+/* A mode of the screen's own, besides browse and the actions': which of two worn items goes (R21). Not
+   KEY_STAY: choosing in it answers the mode */
+#define MODE_WHICH  (ACT_COUNT + 2)
+
+/* which_slot()'s answer when the question is given up: no slot */
+#define WHICH_BACK  SLOT_COUNT
+
 /* A mode: browse (SCREEN_INV_BROWSE), or choosing an item for an action */
 typedef struct inv_mode {
     const char *title;
@@ -82,7 +89,7 @@ typedef struct inv_mode {
     uint8_t     list;    /* LIST_* */
 } inv_mode_t;
 
-static const inv_mode_t modes[ACT_COUNT + 1] = {
+static const inv_mode_t modes[MODE_WHICH + 1] = {
     [SCREEN_INV_BROWSE] = { "Worldly Possessions", NULL, "You are carrying nothing.", LIST_ALL },
     [ACT_DROP]    = { "Shed a Burden", "Letter/ENTER: drop it  SPACE: back", "You have nothing to drop.",
                       LIST_STOWED },
@@ -95,6 +102,9 @@ static const inv_mode_t modes[ACT_COUNT + 1] = {
     [ACT_AIM]     = { "Take Aim", "Letter/ENTER: aim it  SPACE: back", "You have nothing to aim.",
                       LIST_AIMABLE },
     [ACT_UNLOCK]  = { "Try a Lock", "Letter/ENTER: try it  SPACE: back", "You have no key or pick.", LIST_TOOLS },
+    [ACT_EXCHANGE] = { "Exchange Thy Gear", "Letter/ENTER: wear it  SPACE: back", "You have nothing to equip.",
+                       LIST_EQUIPPABLE },
+    [MODE_WHICH]  = { "Which Shall Go?", "Letter/ENTER: take it off  SPACE: back", "", LIST_EQUIPPED },
 };
 
 /* The actions done in the screen in browse mode, which stays open (R1) */
@@ -102,8 +112,15 @@ static const inv_mode_t modes[ACT_COUNT + 1] = {
                           (action) == ACT_USE)
 
 /* The browse keys of the actions, as the help line lists them, in this order */
-static const uint8_t help_actions[5] = { ACT_EQUIP, ACT_UNEQUIP, ACT_DROP, ACT_USE, ACT_AIM };
-static const char *const help_words[5] = { " w:wear", " r:off", " d:drop", " u:use", " a:aim" };
+typedef struct help_key {
+    uint8_t     action;
+    const char *words;
+} help_key_t;
+
+static const help_key_t help_keys[] = {
+    { ACT_EQUIP, " w:wear" }, { ACT_EXCHANGE, " x:swap" }, { ACT_UNEQUIP, " r:off" },
+    { ACT_DROP, " d:drop" },  { ACT_USE, " u:use" },       { ACT_AIM, " a:aim" },
+};
 
 /* ---- The items ---- */
 
@@ -140,13 +157,16 @@ static uint8_t collect_stowed(uint8_t list, uint8_t n)
     return n;
 }
 
-/* The items in use, in slot order, appended to the list from n */
-static uint8_t collect_equipped(uint8_t n)
+/* The items in use in slots (a mask of SLOT_BIT()), in slot order, appended to the list from n */
+static uint8_t collect_equipped(uint8_t n, uint16_t slots)
 {
     nge_entity_id_t id;
     uint8_t slot;
 
     for (slot = 1; slot < SLOT_COUNT && n < SCREEN_INV_MAX; slot++) {
+        if ((slots & SLOT_BIT(slot)) == 0) {
+            continue;
+        }
         id = inv_equipped(actor_player, slot);
         if (id != NGE_ENTITY_INVALID) {
             screen_inv_ids[n++] = id;
@@ -160,9 +180,9 @@ static uint8_t collect(uint8_t list)
 {
     switch (list) {
     case LIST_EQUIPPED:
-        return collect_equipped(0);
+        return collect_equipped(0, SLOTS_HUMANOID);
     case LIST_ALL:
-        return collect_stowed(LIST_STOWED, collect_equipped(0));
+        return collect_stowed(LIST_STOWED, collect_equipped(0, SLOTS_HUMANOID));
     default:
         return collect_stowed(list, 0);
     }
@@ -172,6 +192,34 @@ static uint8_t collect(uint8_t list)
 static nge_entity_id_t selected(void)
 {
     return screen_inv_ids[screen_inv_list.cursor];
+}
+
+/* The slots an item fits that the player has */
+static uint16_t fitting(nge_entity_id_t id)
+{
+    return gen_item_fits(kind_index[id]) & inv_slots[actor_player];
+}
+
+/*
+ * The player must say which item an exchange replaces (R21): it is stowed,
+ * and more than one item in use is in a slot it fits (two rings)
+ */
+static uint8_t must_ask(nge_entity_id_t id)
+{
+    uint16_t slots;
+    uint8_t slot;
+    uint8_t n = 0;
+
+    if (item_slot[id] != SLOT_NONE) {
+        return 0;   /* the exchange refuses it (R22) */
+    }
+    slots = fitting(id);
+    for (slot = 1; slot < SLOT_COUNT; slot++) {
+        if ((slots & SLOT_BIT(slot)) != 0 && inv_equipped(actor_player, slot) != NGE_ENTITY_INVALID) {
+            n++;
+        }
+    }
+    return n > 1;
 }
 
 /*
@@ -188,7 +236,7 @@ static uint8_t allowed(uint8_t action, uint8_t say)
     }
     a.actor = actor_player;
     a.item = selected();
-    a.slot = SLOT_NONE;   /* equip: the first free slot it fits */
+    a.slot = SLOT_NONE;   /* equip: the first free slot it fits; exchange: the first taken */
     a.x = NGE_LOCATION_X(actor_player);   /* aim: its own tile asks about the item alone (act_aim()) */
     a.y = NGE_LOCATION_Y(actor_player);
     if (act_do(action, &a, ACT_CHECK) == ACT_SUCCESS) {
@@ -350,7 +398,9 @@ static void show_help(uint8_t mode)
 {
     char help[HELP_MAX];
     const char *own = modes[mode].help;
-    uint8_t i;
+    const help_key_t *k;
+    uint8_t action;
+    uint8_t wear = 0;
 
     if (own != NULL) {
         screen_help(own);
@@ -358,9 +408,17 @@ static void show_help(uint8_t mode)
     }
     strcpy(help, "jk:select");
     if (screen_inv_list.count != 0) {
-        for (i = 0; i < sizeof(help_actions); i++) {
-            if (allowed(help_actions[i], 0)) {
-                strncat(help, help_words[i], sizeof(help) - 1 - strlen(help));
+        /* By pointer: an index into a banked table makes z80asm warn "integer range" (pc_screen.md) */
+        for (k = help_keys; k != help_keys + sizeof(help_keys) / sizeof(help_keys[0]); k += 1) {
+            action = k->action;
+            if (action == ACT_EXCHANGE && wear) {
+                continue;   /* on a free slot x does what w does: the line has no room for both (R24) */
+            }
+            if (allowed(action, 0)) {
+                strncat(help, k->words, sizeof(help) - 1 - strlen(help));
+                if (action == ACT_EQUIP) {
+                    wear = 1;
+                }
             }
         }
     }
@@ -384,12 +442,19 @@ static void moved(uint8_t mode, uint8_t old, uint8_t change)
     show_help(mode);
 }
 
-/* Draw the whole screen */
-static void draw(uint8_t mode)
+/* The title row: the mode's title and the pack's count */
+static void draw_title(uint8_t mode)
 {
+    nge_text_cls(screen_inv_streams[SCREEN_INV_TITLE]);   /* the title before, maybe longer: the ring question's */
     nge_text_ink(NGE_INK_YELLOW, screen_inv_streams[SCREEN_INV_TITLE]);
     nge_panel_centre(&panels[SCREEN_INV_TITLE], 0, modes[mode].title, screen_inv_streams[SCREEN_INV_TITLE]);
     draw_pack();
+}
+
+/* Draw the whole screen, the status line apart: it keeps an action's words */
+static void draw(uint8_t mode)
+{
+    draw_title(mode);
     nge_text_ink(NGE_INK_YELLOW, screen_inv_streams[SCREEN_INV_STATUS]);
     draw_rows(mode);
     show_help(mode);
@@ -398,21 +463,18 @@ static void draw(uint8_t mode)
 /* ---- Actions done here (browse mode) ---- */
 
 /*
- * Do action with the selected item, which the check allowed: its words go
- * to the message window and the status line (R5), its events are handled
- * at once (D2). Then list again, the cursor on the same item if it is
- * still listed, or in its place (D4), and redraw
+ * Do action with item, in slot (equip, exchange; SLOT_NONE for the
+ * action's choice): its words go to the message window and the status
+ * line (R5), its events are handled at once (D2)
  */
-static void act_here(uint8_t action)
+static void act_here(uint8_t action, nge_entity_id_t item, uint8_t slot)
 {
     NGE_FILE *status = screen_inv_streams[SCREEN_INV_STATUS];
     act_t a = { 0 };
-    uint8_t i;
-    uint8_t place = screen_inv_list.cursor;
 
     a.actor = actor_player;
-    a.item = selected();
-    a.slot = SLOT_NONE;   /* equip: the first free slot it fits */
+    a.item = item;
+    a.slot = slot;
     nge_text_cls(status);
     screen_message_copy(status);
     if (act_do(action, &a, ACT_DO) == ACT_FAIL) {
@@ -423,10 +485,19 @@ static void act_here(uint8_t action)
     if (a.used) {
         screen_inv_used = 1;
     }
+}
 
-    nge_list_init(&screen_inv_list, collect(LIST_ALL), LIST_ROWS);
+/*
+ * List mode's items again, the cursor on item if it is still listed, or
+ * at place (D4), and redraw the rows, the pack's count and the help
+ */
+static void relist(uint8_t mode, nge_entity_id_t item, uint8_t place)
+{
+    uint8_t i;
+
+    nge_list_init(&screen_inv_list, collect(modes[mode].list), LIST_ROWS);
     for (i = 0; i < screen_inv_list.count; i++) {
-        if (screen_inv_ids[i] == a.item) {
+        if (screen_inv_ids[i] == item) {
             place = i;
             break;
         }
@@ -434,20 +505,28 @@ static void act_here(uint8_t action)
     if (screen_inv_list.count != 0) {
         nge_list_set(&screen_inv_list, place);   /* clamped to the last */
     }
-    draw_rows(SCREEN_INV_BROWSE);
+    draw_rows(mode);
     draw_pack();
-    show_help(SCREEN_INV_BROWSE);
+    show_help(mode);
 }
 
 /* ---- Keys ---- */
 
-/* Try action with the selected item: the action if the game allows it, or stay (told why) */
+/*
+ * Try action with the selected item: the action if the game allows it, or
+ * stay (told why). The ring question's choice, and an exchange that asks
+ * it, are checked once the slot is known: a cursed left ring mustn't stop
+ * the right one going
+ */
 static uint8_t try(uint8_t action)
 {
-    if (screen_inv_list.count == 0 || !allowed(action, 1)) {
+    if (screen_inv_list.count == 0) {
         return KEY_STAY;
     }
-    return action;
+    if (action == MODE_WHICH || (action == ACT_EXCHANGE && must_ask(selected()))) {
+        return action;
+    }
+    return allowed(action, 1) ? action : KEY_STAY;
 }
 
 /* What ENTER does with the selected item in browse mode */
@@ -517,6 +596,8 @@ static uint8_t key(uint8_t mode, nge_key_event_t ev)
         return try(ACT_EQUIP);
     case 'r':
         return try(ACT_UNEQUIP);
+    case 'x':
+        return try(ACT_EXCHANGE);
     case 'd':
         return try(ACT_DROP);
     case 'u':
@@ -526,6 +607,54 @@ static uint8_t key(uint8_t mode, nge_key_event_t ev)
     default:
         return KEY_STAY;
     }
+}
+
+/*
+ * The slot an exchange of item replaces: SLOT_NONE for the action's choice,
+ * or the slot of the item in use the player chooses, when more than one
+ * could go (R21); WHICH_BACK if the player gives the question up
+ */
+static uint8_t which_slot(nge_entity_id_t item)
+{
+    uint8_t answer;
+
+    if (!must_ask(item)) {
+        return SLOT_NONE;
+    }
+    nge_list_init(&screen_inv_list, collect_equipped(0, fitting(item)), LIST_ROWS);
+    nge_text_cls(screen_inv_streams[SCREEN_INV_STATUS]);
+    draw(MODE_WHICH);
+    do {
+        answer = key(MODE_WHICH, screen_wait_key());
+    } while (answer == KEY_STAY);
+    return (answer == SCREEN_INV_BACK) ? WHICH_BACK : item_slot[selected()];
+}
+
+/*
+ * Exchange the selected item, asking which goes if it must, in mode
+ * (browse, or choose for ACT_EXCHANGE). Done in the screen in both modes,
+ * as choose mode can't return the slot chosen: in choose mode it then
+ * closes, as a letter finishes the command (R23). Returns KEY_STAY or
+ * SCREEN_INV_BACK
+ */
+static uint8_t exchange(uint8_t mode)
+{
+    nge_entity_id_t item = selected();
+    uint8_t place = screen_inv_list.cursor;
+    uint8_t slot = which_slot(item);
+    uint8_t asked = slot != SLOT_NONE;
+
+    if (slot != WHICH_BACK) {
+        act_here(ACT_EXCHANGE, item, slot);
+        if (mode != SCREEN_INV_BROWSE || game_is_over()) {
+            return SCREEN_INV_BACK;
+        }
+    }
+    if (asked) {
+        draw_title(mode);   /* the question's title; relist() draws the rest */
+    }
+    relist(mode, item, place);
+    return KEY_STAY;
 }
 
 uint8_t screen_inv_run(uint8_t mode, nge_entity_id_t *item, uint8_t *used) NGE_BANKED
@@ -549,9 +678,18 @@ uint8_t screen_inv_run(uint8_t mode, nge_entity_id_t *item, uint8_t *used) NGE_B
     draw(mode);
     do {
         answer = key(mode, screen_wait_key());
-        if (mode == SCREEN_INV_BROWSE && BUNDLED(answer)) {
-            act_here(answer);
-            answer = game_is_over() ? SCREEN_INV_BACK : KEY_STAY;   /* the player died: close (R3a) */
+        if (answer == ACT_EXCHANGE) {
+            answer = exchange(mode);
+        } else if (mode == SCREEN_INV_BROWSE && BUNDLED(answer)) {
+            nge_entity_id_t item = selected();
+
+            act_here(answer, item, SLOT_NONE);
+            if (game_is_over()) {
+                answer = SCREEN_INV_BACK;   /* the player died: close (R3a) */
+            } else {
+                relist(SCREEN_INV_BROWSE, item, screen_inv_list.cursor);
+                answer = KEY_STAY;
+            }
         }
     } while (answer == KEY_STAY);
     if (answer != SCREEN_INV_BACK) {

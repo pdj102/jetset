@@ -86,6 +86,8 @@ uint8_t act_do(uint8_t action, act_t *a, uint8_t mode)
         return act_unlock(a, mode);
     case ACT_CAST:
         return act_cast(a, mode);
+    case ACT_EXCHANGE:
+        return act_exchange(a, mode);
     default:
         nge_util_abort("bad action");
         return ACT_FAIL;

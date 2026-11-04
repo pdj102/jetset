@@ -197,6 +197,201 @@ static int stowed(nge_entity_id_t id, nge_entity_id_t holder)
     return NGE_OWNER_OF(id) == holder && !NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_LOCATION);
 }
 
+/* act_exchange() by actor of item into slot (SLOT_NONE for its choice): its result, and the context in last */
+static uint8_t exchange(nge_entity_id_t actor, nge_entity_id_t item, uint8_t slot, uint8_t mode)
+{
+    last = ctx(actor);
+    last.item = item;
+    last.slot = slot;
+    return act_exchange(&last, mode);
+}
+
+/* Where event id about target is among those seen, or -1 */
+static int seen_at(nge_entity_id_t target, uint8_t id)
+{
+    int i;
+
+    for (i = 0; i < seen_count; i++) {
+        if (seen[i].target == target && seen[i].id == id) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/* Equip item on actor, by the action */
+static void wear(nge_entity_id_t actor, nge_entity_id_t item, uint8_t slot)
+{
+    act_t a = ctx(actor);
+
+    a.item = item;
+    a.slot = slot;
+    CHECK(act_equip(&a, ACT_DO) == ACT_SUCCESS);
+}
+
+/* ---- exchange (docs/actions.md, section 6.14): a bandit, capacity 6 ---- */
+static void test_exchange(void)
+{
+    nge_entity_id_t h = gen_creature(CR_BANDIT, AREA);
+    nge_entity_id_t sword = gen_item(IT_SWORD, h);
+    nge_entity_id_t sword2 = gen_item(IT_SWORD, h);
+    nge_entity_id_t staff = gen_item(IT_QUARTERSTAFF, h);
+    nge_entity_id_t shield = gen_item(IT_SHIELD, h);
+    nge_entity_id_t potion = gen_item(IT_HEAL_POTION, h);
+    nge_entity_id_t ring1;
+    nge_entity_id_t ring2;
+    nge_entity_id_t ring3;
+    nge_entity_id_t cursed;
+    nge_entity_id_t frail;
+    act_t a;
+    nge_entity_id_t id;
+    unsigned int r1;
+    unsigned int r2;
+    int hp;
+    int n;
+    int i;
+
+    nge_location_set(h, 1, 1);
+    events();
+
+    /* A free slot: equipped, as equip would (R43); no target */
+    CHECK(exchange(h, sword, SLOT_NONE, ACT_DO) == ACT_SUCCESS && last.used == 1 && last.slot == SLOT_WEAPON &&
+          last.target == NGE_ENTITY_INVALID && item_slot[sword] == SLOT_WEAPON);
+    CHECK(events() >= 1 && seen_at(sword, EV_EQUIPPED) >= 0 && seen_at(sword, EV_UNEQUIPPED) < 0);
+
+    /* One for one, with a full pack (R41): the check first, changing nothing and drawing no numbers */
+    inv_capacity[h] = inv_count(h);
+    srand(5);
+    r1 = (unsigned int)rand();
+    srand(5);
+    CHECK(exchange(h, sword2, SLOT_NONE, ACT_CHECK) == ACT_SUCCESS && last.used == 0 && last.slot == SLOT_WEAPON &&
+          last.target == sword);
+    r2 = (unsigned int)rand();
+    CHECK(r1 == r2 && item_slot[sword] == SLOT_WEAPON && item_slot[sword2] == SLOT_NONE && events() == 0);
+    CHECK(act_do(ACT_EXCHANGE, &last, ACT_DO) == ACT_SUCCESS && last.used == 1 && last.target == sword &&
+          item_slot[sword2] == SLOT_WEAPON && item_slot[sword] == SLOT_NONE && stowed(sword, h));
+    CHECK(inv_count(h) == inv_capacity[h]);
+    /* Off, then on */
+    CHECK(events() >= 2 && seen_at(sword, EV_UNEQUIPPED) >= 0 &&
+          seen_at(sword, EV_UNEQUIPPED) < seen_at(sword2, EV_EQUIPPED) &&
+          seen[seen_at(sword2, EV_EQUIPPED)].p1 == SLOT_WEAPON && seen[seen_at(sword, EV_UNEQUIPPED)].source == h);
+    /* Equip still refuses a taken slot (D31) */
+    a = ctx(h);
+    a.item = sword;
+    CHECK(act_equip(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_SLOT_TAKEN && a.target == sword2);
+
+    /* The shared refusals: in use already, can't be equipped, not carried, no inventory */
+    CHECK(exchange(h, sword2, SLOT_NONE, ACT_DO) == ACT_FAIL && last.reason == ACT_R_ALREADY_EQUIPPED && last.used == 0);
+    CHECK(exchange(h, potion, SLOT_NONE, ACT_DO) == ACT_FAIL && last.reason == ACT_R_CANT_EQUIP);
+    id = gen_item(IT_SWORD, AREA);   /* on the floor */
+    nge_location_set(id, 2, 2);
+    CHECK(exchange(h, id, SLOT_NONE, ACT_DO) == ACT_FAIL && last.reason == ACT_R_NOT_CARRIED);
+    nge_entity_destroy(id);
+    nge_entity_release(nge_entity_next_dying());
+    CHECK(exchange(h, sword, SLOT_HEAD, ACT_DO) == ACT_FAIL && last.reason == ACT_R_NO_SLOT);
+    CHECK(item_slot[sword] == SLOT_NONE && item_slot[sword2] == SLOT_WEAPON && events() == 0);
+    inv_capacity[h] = 6;
+
+    /* A shield with a one-handed sword: the shield slot is free, so just equipped */
+    CHECK(exchange(h, shield, SLOT_NONE, ACT_DO) == ACT_SUCCESS && last.slot == SLOT_SHIELD &&
+          last.target == NGE_ENTITY_INVALID && item_slot[sword2] == SLOT_WEAPON);
+    events();
+
+    /* A two-hander for a sword and a shield, two for one (R45): a full pack refuses, target the shield */
+    inv_capacity[h] = inv_count(h);
+    CHECK(exchange(h, staff, SLOT_NONE, ACT_CHECK) == ACT_FAIL && last.reason == ACT_R_FULL && last.target == shield);
+    CHECK(exchange(h, staff, SLOT_NONE, ACT_DO) == ACT_FAIL && last.reason == ACT_R_FULL && last.used == 0 &&
+          item_slot[sword2] == SLOT_WEAPON && item_slot[shield] == SLOT_SHIELD && item_slot[staff] == SLOT_NONE &&
+          events() == 0);
+    /* With a free place both come off, the weapon first */
+    inv_capacity[h] = (uint8_t)(inv_count(h) + 1);
+    CHECK(exchange(h, staff, SLOT_NONE, ACT_DO) == ACT_SUCCESS && last.slot == SLOT_WEAPON && last.target == sword2 &&
+          item_slot[staff] == SLOT_WEAPON && item_slot[sword2] == SLOT_NONE && item_slot[shield] == SLOT_NONE);
+    CHECK(inv_count(h) == inv_capacity[h]);
+    CHECK(events() >= 3 && seen_at(sword2, EV_UNEQUIPPED) >= 0 &&
+          seen_at(sword2, EV_UNEQUIPPED) < seen_at(shield, EV_UNEQUIPPED) &&
+          seen_at(shield, EV_UNEQUIPPED) < seen_at(staff, EV_EQUIPPED));
+
+    /* A shield with a two-hander wielded, full pack: the two-hander is exchanged (R46) */
+    inv_capacity[h] = inv_count(h);
+    CHECK(exchange(h, shield, SLOT_NONE, ACT_DO) == ACT_SUCCESS && last.slot == SLOT_SHIELD && last.target == staff &&
+          item_slot[shield] == SLOT_SHIELD && item_slot[staff] == SLOT_NONE);
+    events();
+    /* A two-hander with only a shield worn: the shield is exchanged (R46) */
+    CHECK(exchange(h, staff, SLOT_NONE, ACT_DO) == ACT_SUCCESS && last.slot == SLOT_WEAPON && last.target == shield &&
+          item_slot[staff] == SLOT_WEAPON && item_slot[shield] == SLOT_NONE);
+    events();
+    inv_capacity[h] = 6;
+
+    /* A cursed weapon in the slot: refused, target it, nothing changes (R42) */
+    nge_entity_destroy(potion);
+    nge_entity_release(nge_entity_next_dying());
+    cursed = gen_item(IT_RUSTY_SWORD, h);
+    CHECK(exchange(h, cursed, SLOT_NONE, ACT_DO) == ACT_SUCCESS && last.target == staff);
+    events();
+    CHECK(exchange(h, sword, SLOT_NONE, ACT_CHECK) == ACT_FAIL && last.reason == ACT_R_CURSED && last.target == cursed);
+    CHECK(exchange(h, sword, SLOT_NONE, ACT_DO) == ACT_FAIL && last.reason == ACT_R_CURSED && last.used == 0 &&
+          last.target == cursed && item_slot[cursed] == SLOT_WEAPON && item_slot[sword] == SLOT_NONE && events() == 0);
+    /* A cursed sword in the way of a two-hander: refused the same way */
+    CHECK(exchange(h, staff, SLOT_NONE, ACT_DO) == ACT_FAIL && last.reason == ACT_R_CURSED && last.target == cursed);
+    inv_drop_all(h);   /* the curse doesn't stop a death's drop: start again with an empty pack */
+    events();
+
+    /* Rings: the one in use goes, not the free slot (R44); a slot asked for; worn effects counted */
+    ring1 = gen_item(IT_RING_HEALTH_2, h);
+    ring2 = gen_item(IT_RING_HEALTH_2, h);
+    ring3 = gen_item(IT_RING_HEALTH_2, h);
+    frail = gen_item(IT_RING_FRAILTY, h);
+    wear(h, ring1, SLOT_RING_L);
+    events();
+    inv_capacity[h] = inv_count(h);
+    CHECK(exchange(h, ring2, SLOT_NONE, ACT_DO) == ACT_SUCCESS && last.slot == SLOT_RING_L && last.target == ring1 &&
+          item_slot[ring2] == SLOT_RING_L && item_slot[ring1] == SLOT_NONE &&
+          inv_equipped(h, SLOT_RING_R) == NGE_ENTITY_INVALID);
+    events();
+    inv_capacity[h] = 6;
+    wear(h, ring3, SLOT_RING_R);
+    events();
+    /* Both worn: asked for the right one; and with none asked, the left */
+    CHECK(exchange(h, ring1, SLOT_RING_R, ACT_DO) == ACT_SUCCESS && last.target == ring3 && item_slot[ring1] == SLOT_RING_R &&
+          item_slot[ring2] == SLOT_RING_L && item_slot[ring3] == SLOT_NONE);
+    events();
+    CHECK(exchange(h, ring3, SLOT_NONE, ACT_DO) == ACT_SUCCESS && last.target == ring2 && item_slot[ring3] == SLOT_RING_L);
+    events();
+    /* Frailty, cursed, for the left ring: its worn effect replaces health's, recomputed once */
+    hp = health_hp_max[h];
+    CHECK(exchange(h, frail, SLOT_RING_L, ACT_DO) == ACT_SUCCESS && last.target == ring3 && effects_check(h));
+    CHECK(health_hp_max[h] < hp);   /* ring3's +2 gone, and frailty's own penalty */
+    CHECK(events() >= 3 && seen_at(h, EV_ATTRS_CHANGED) >= 0);
+    for (n = 0, i = 0; i < seen_count; i++) {
+        n += seen[i].id == EV_ATTRS_CHANGED;
+    }
+    CHECK(n == 1);
+    /* The cursed ring stays: the left can't be exchanged, the right can */
+    CHECK(exchange(h, ring2, SLOT_RING_L, ACT_DO) == ACT_FAIL && last.reason == ACT_R_CURSED && last.target == frail);
+    CHECK(exchange(h, ring2, SLOT_RING_R, ACT_DO) == ACT_SUCCESS && last.target == ring1);
+    events();
+
+    /* Gone, so the tests after find the tiles empty */
+    inv_drop_all(h);
+    NGE_ENTITY_RELEASE_EACH_DYING(id) {
+    }
+    events();
+    nge_entity_destroy(sword);
+    nge_entity_destroy(sword2);
+    nge_entity_destroy(staff);
+    nge_entity_destroy(shield);
+    nge_entity_destroy(cursed);
+    nge_entity_destroy(ring1);
+    nge_entity_destroy(ring2);
+    nge_entity_destroy(ring3);
+    nge_entity_destroy(frail);
+    nge_entity_destroy(h);
+    NGE_ENTITY_RELEASE_EACH_DYING(id) {
+    }
+    events();
+}
+
 int main(void)
 {
     nge_entity_id_t sword;
@@ -568,6 +763,11 @@ int main(void)
         nge_entity_release(nge_entity_next_dying());
         events();
     }
+
+    test_exchange();
+    a = ctx(rat);
+    a.item = ring1;
+    CHECK(act_exchange(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_NO_INVENTORY);
 
     /* ---- who can equip: the rat has no inventory, the goblin no ring slots ---- */
     a = ctx(rat);

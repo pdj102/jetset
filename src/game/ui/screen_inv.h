@@ -22,19 +22,21 @@
  *
  * It opens in one of two modes:
  * - browse (SCREEN_INV_BROWSE, the i key): everything the player has. The
- *   cursor keys (or j and k) select; w wear, r take off, d drop, u use,
- *   a aim, ENTER the item's obvious action (take off what is in use, use
- *   what can be used, aim what can be aimed, wear the rest). Wear, take
- *   off, drop and use are done here, the screen staying open, as many as
+ *   cursor keys (or j and k) select; w wear, x exchange (wear in place
+ *   of what is in the slot), r take off, d drop, u use, a aim, ENTER the item's obvious action (take off what is in use, use
+ *   what can be used, aim what can be aimed, wear the rest). Wear, exchange,
+ *   take off, drop and use are done here, the screen staying open, as many as
  *   the player likes for one turn: their words show on the status line
  *   and in the message window, and their events are handled at once
  *   (game_pause_events()). Aim needs the map, so it closes the screen and
  *   is returned. The help line lists the actions allowed for the selected
  *   item. If the player dies, the screen closes.
  * - choose, for an action (ACT_DROP, ACT_EQUIP, ACT_UNEQUIP, ACT_USE,
- *   ACT_AIM, ACT_UNLOCK: the d, w, r, u, a and p keys): only the items it
- *   applies to, lettered; a letter, or the cursor and ENTER, chooses, and
- *   the screen closes. With nothing to list, it isn't opened: it says so
+ *   ACT_AIM, ACT_UNLOCK, ACT_EXCHANGE: the d, w, r, u, a, p and e keys):
+ *   only the items it applies to, lettered; a letter, or the cursor and
+ *   ENTER, chooses, and the screen closes. An exchange is done here, in
+ *   either mode, and not returned: a ring with both ring slots in use
+ *   first asks which ring goes, a list of the two, lettered. With nothing to list, it isn't opened: it says so
  *   in the message window.
  *
  * SPACE goes back. An action is offered only if the game would allow it:
@@ -61,7 +63,8 @@
  * @brief Show the inventory, do what the player does in it (browse mode),
  *        and wait for the player's choice.
  * @param mode SCREEN_INV_BROWSE, or the action to choose an item for:
- *             ACT_DROP, ACT_EQUIP, ACT_UNEQUIP, ACT_USE, ACT_AIM or ACT_UNLOCK.
+ *             ACT_DROP, ACT_EQUIP, ACT_UNEQUIP, ACT_USE, ACT_AIM, ACT_UNLOCK
+ *             or ACT_EXCHANGE (done here: SCREEN_INV_BACK, *used set).
  * @param item Where the chosen item goes (on the caller's stack); left as
  *             it was when nothing is chosen.
  * @param used Set to 1 if actions done in the screen used the turn, else

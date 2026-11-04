@@ -366,6 +366,9 @@ void player_command(nge_key_event_t ev) NGE_BANKED
     case 'r':
         item_command(ACT_UNEQUIP);
         break;
+    case 'e':
+        item_command(ACT_EXCHANGE);   /* done in the screen, which returns SCREEN_INV_BACK */
+        break;
     case 'u':
         item_command(ACT_USE);
         break;

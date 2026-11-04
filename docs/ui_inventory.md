@@ -3,7 +3,8 @@
 Status: implemented (2026-11-03); the PC tests pass. The CSpect and
 hardware checks in section 7 are not run yet. Agreed on 2026-11-03, with the
 questions answered in section 9. Section 11 lists where the build differs
-from the design.
+from the design. Section 12, the exchange key, agreed and implemented
+2026-11-04; its PC tests pass and its CSpect checks (12.5) passed 2026-11-04.
 
 Builds on [ui_screens.md](ui_screens.md) (the screen framework and the first
 inventory screen) and [items.md](items.md) (kinds, attacks, stacks). It
@@ -358,3 +359,130 @@ only when a hidden panel is painted.
   routines (the map compared before and after). The signed printing
   (`put_signed()`, the AC's power) was read in the asm and is correct.
 
+
+## 12. Exchange: requirements and design
+
+Status: agreed and implemented 2026-11-04, with Q8 to Q10 answered; the PC tests
+pass, and the CSpect checks in 12.5 passed 2026-11-04; hardware not yet. Section 12.7 lists
+where the build differs. The action is `ACT_EXCHANGE`,
+[actions.md](actions.md) section 6.14 (R40-R46, D31-D36): what it takes off and puts on,
+and why. This section is its keys and its place in the screen.
+
+### 12.1 Requirements
+
+- **R18** In browse mode, `x` exchanges the selected item: a stowed item that can be
+  equipped goes into its slot, and what was there goes into the pack. It is bundled (R1):
+  the screen stays open and redraws, and the visit's one turn covers it (R2).
+- **R19** `x` needs no free place in the pack (actions.md R41), and on a free slot it
+  equips, as `w` does (actions.md R43).
+- **R20** A refused exchange shows its reason on the status line and changes nothing (R4),
+  as for the other bundled actions: "It is cursed: it won't come off.", "You can't carry any
+  more." (actions.md R45).
+- **R21 (New)** A ring with both ring slots in use asks which one goes: the list shows the
+  two worn rings, lettered, under the title "Which Shall Go?", and a letter (or the cursor and
+  ENTER) chooses; SPACE goes back to browse with nothing done. With one ring worn, `x`
+  replaces that one and doesn't ask (actions.md R44). *Reason: the player must say which
+  (user requirement 6), and the rings are the only items that fit two slots, so no other
+  item asks.*
+- **R22 (New)** `x` on an item in use is refused, as `w` is ("You are already using that.",
+  `ACT_R_ALREADY_EQUIPPED`): the selected item is always the one put on (Q9).
+- **R23 (Changed)** On the main screen the key is **`e`**, not `x`, which is look. It opens
+  choose mode, "Exchange Thy Gear", listing the equippable items in the pack, as `w` does;
+  a letter exchanges and closes (R16, D7), with R21's question for a ring. *Reason: `x` is
+  look on the main screen, and stays look (Q8).*
+- **R24** The help line shows ` x:swap` for a stowed item that can be equipped only when
+  `w` is refused because the slot is taken. When the slot is free, `w` and `x` do the same
+  and only ` w:wear` is shown. *Reason: the line is 40 characters, and
+  `jk:select w:wear x:swap d:drop SPACE:done` is 41.*
+
+### 12.2 Decisions
+
+- **D8 `x` is checked and done as the other bundled actions are.** `allowed(ACT_EXCHANGE)`
+  checks with `slot` `SLOT_NONE`, then `act_do(ACT_EXCHANGE, ACT_DO)` and the events, as in
+  5.3. The cursor follows the item put on, now in use (D4); the item taken off appears in
+  the pack. *Rejected:* the screen doing `r` and then `w`: it needs a free place, which is
+  the case the request is for.
+- **D9 The ring question is a choose list in the same screen.** On `x`, if the item fits
+  both ring slots and both are taken, the screen switches its list to the two worn rings
+  (a new `LIST_REPLACEABLE`, built from the slots the item fits), lettered, then does the
+  exchange with `slot` set to the chosen ring's slot, and switches back to browse. It reuses
+  choose mode's letters and drawing. *Rejected:* a question on the status line ("l: left,
+  r: right"): the screen shows no left and right since D3, so the player would have to
+  remember which ring is where; the names say which. *Rejected:* exchanging the left ring
+  always: breaks requirement 6.
+- **D10 The two messages, off then on, reach the status line and the log** (R5, actions.md
+  D34). The status line has two rows (section 11), so both show.
+
+### 12.3 Layout
+
+The ring question, after `x` on a ring of armour +1 with two rings worn:
+
+```
+row 0  |       Which Shall Go?        Pack 20/20 |
+row 2  | a)   1 ring of health +1                |   both in use: cyan
+       | b)   1 ring of strength +1              |
+row 29 |                                         |
+row 31 | Letter/ENTER: take it off  SPACE: back
+```
+
+### 12.4 Memory
+
+Page 116, estimated 200 bytes: the `x` key, the help rule (R24), `LIST_REPLACEABLE` and the
+switch to the ring question, the `modes[]` row (7 bytes, actions.md 4.9) and the main
+screen's choose mode. Page 114: the `e` key, about 10 bytes. Common: none.
+
+### 12.5 Tests
+
+PC tests (`test_ui`):
+
+- `x` on a sword with a sword wielded and a full pack: exchanged, the screen open, one turn
+  for the visit, the cursor on the new sword.
+- `x` on a free slot: equipped, as `w`.
+- `x` refused (a cursed item worn): the reason shown, nothing changed, no turn if nothing
+  else was done.
+- The ring question: both worn, `b` replaces the second; SPACE does nothing; one worn, no
+  question.
+- `x` on an item in use: refused.
+- The help line: ` x:swap` only when `w` is refused for a taken slot; never over 40.
+- Main screen `e`: choose mode, a letter exchanges and closes.
+
+CSpect and hardware checks:
+
+1. With a full pack, `i`, `x` on a second weapon: both messages on the status line, the
+   pack's count unchanged, SPACE closes, one turn passed.
+2. Two rings worn, `x` on a third: the question, a letter, the chosen one in the pack.
+3. `x` on a free slot: equipped, one message.
+4. `x` with a cursed item worn: refused, the screen stays.
+5. `e` from the main screen: choose mode, a letter, closes; one turn.
+6. The stats panel's AC and attack after closing.
+
+### 12.6 Questions answered (2026-11-04)
+
+- **Q8 (R23)** The main-screen key is **`e`**; look stays on `x`.
+- **Q9 (R22)** `x` on a worn item is **refused**.
+- **Q10 (R21, R23)** The titles **"Which Shall Go?"** and **"Exchange Thy Gear"**: agreed.
+
+### 12.7 As built: differences from the design
+
+- **Choose mode does the exchange itself (R23, D7).** `screen_inv_run()` returns an item, and
+  the ring question's slot has no way out, so `e`'s letter exchanges inside the screen, as a
+  bundled action would, then closes; it returns `SCREEN_INV_BACK` with `*used` set. One action,
+  then the screen closes, as R16 wants. `item_command()` needs no change.
+- **The check before the question (D8).** `x` on an item that will ask is not checked with
+  `SLOT_NONE` first: that checks the left ring, so a cursed left ring would refuse an exchange
+  of the right one. The exchange is checked with the slot chosen, and a refusal shows its reason
+  (the cursed-ring test). The help line's ` x:swap` still asks with `SLOT_NONE`.
+- **The question asks whenever two or more items in use could go,** not only "the rings":
+  only rings fit two slots, so it is the same today, and needs no list of kinds.
+- **The help line's table is one array of key and action,** walked by pointer: an index into
+  a table in page 116 gave z80asm's "integer range" warning (as in pc_screen.md).
+- **`MODE_WHICH` is `ACT_COUNT + 2`,** not `+ 1`, which is `KEY_STAY`: the question's answer is
+  its mode, and equal to `KEY_STAY` it never closed (found by the PC tests).
+- **Memory:** page 116 6,399 -> 7,031 bytes of 8,192, where 12.4 said about 200 more: the ring
+  question, `relist()` and `draw_title()` split out of the action loop, and the new mode's row
+  in `modes[]`. 1,161 bytes are left. Page 114: 17 bytes for `e`. Common memory: as
+  actions.md section 9 says.
+- **Tests:** `test_ui`'s exchange block works out each item's row from the list's rule (in
+  use by slot, then the pack by ID) rather than fixing them, as destroyed items' IDs are reused.
+  The question's own frame isn't seen by the tests (they see the last frame); what it does is,
+  and the title it leaves.

@@ -71,7 +71,7 @@ typedef struct act {
     /* One byte, named by the action using it: an action reads or writes one name only */
     union {
         uint8_t kind;         /**< Any of them, for code that doesn't care which. */
-        uint8_t slot;         /**< Equip: in and out, the slot (SLOT_*). */
+        uint8_t slot;         /**< Equip, exchange: in and out, the slot (SLOT_*). */
         uint8_t damage;       /**< Melee, fire: out, the damage type (DMG_*)... */
         uint8_t effect;       /**< Use, aim: out, the effect (EF_*). */
         uint8_t spell;        /**< Cast: in, the spell (SP_*). */
@@ -107,7 +107,8 @@ typedef struct act {
 #define ACT_AIM     13
 #define ACT_UNLOCK  14
 #define ACT_CAST    15
-#define ACT_COUNT   16
+#define ACT_EXCHANGE 16
+#define ACT_COUNT   17
 
 /** How far an aimed item reaches (nge_map_within()): a kind has no range of its own. */
 #define ACT_AIM_RANGE  8
@@ -208,6 +209,25 @@ uint8_t act_drop(act_t *a, uint8_t mode) NGE_BANKED;
  * the hands).
  */
 uint8_t act_equip(act_t *a, uint8_t mode) NGE_BANKED;
+
+/**
+ * @brief Equip a stowed item in place of what is in its slot, in one action.
+ *
+ * In: actor (alive), item, slot (the slot to use; SLOT_NONE for the first
+ * slot it fits that is taken, or the first it fits if all are free). The
+ * item in the slot, and whatever is in the way of the hands (the shield
+ * for a two-handed item, a two-handed weapon for a shield), are stowed and
+ * the item takes the slot. One for one needs no room in the pack; two for
+ * one (a two-hander for a weapon and a shield) needs a free place. A free
+ * slot is simply equipped. Posts EV_UNEQUIPPED for each item taken off, in
+ * that order, then EV_EQUIPPED (p1: the slot). Out: slot, the slot used;
+ * target, the first item taken off, or NGE_ENTITY_INVALID if none.
+ * Refused with ACT_R_NO_INVENTORY, ACT_R_NOT_CARRIED,
+ * ACT_R_ALREADY_EQUIPPED, ACT_R_CANT_EQUIP, ACT_R_NO_SLOT, ACT_R_CURSED
+ * (a->target: the cursed item) or ACT_R_FULL (a->target: the second item
+ * to come off). See docs/actions.md, section 6.14.
+ */
+uint8_t act_exchange(act_t *a, uint8_t mode) NGE_BANKED;
 
 /**
  * @brief Take off an equipped item, back into the inventory.

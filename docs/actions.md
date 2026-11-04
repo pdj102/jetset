@@ -19,6 +19,8 @@ Status: D10 to D23 agreed 2026-10-31. D21, D22, D23, `ACT_FIRE`, `ACT_AIM` and `
 (spells.md) are built, and the rest not yet. The rest of section 6 is proposed. Line modes
 (section 6.13, R36 to R39, D27 to D30) agreed and built 2026-11-03, `ACT_CAST`'s part with it.
 The CSpect check is to do.
+`ACT_EXCHANGE` (section 6.14, R40 to R46, D31 to D36) agreed and built 2026-11-04, with Q6 and Q7 answered; the PC
+tests pass, and the CSpect checks passed 2026-11-04 (ui_inventory.md, section 12.5). What differs is in section 9, "Exchange".
 
 ## 1. Overview
 
@@ -189,7 +191,7 @@ a move that is refused, followed by a melee.
 | `act_move.c` | `BANK_56` | Move | 946 |
 | `act_pickup.c` | `BANK_56` | Pick up | 1,044 |
 | `act_drop.c` | `BANK_56` | Drop | 468 |
-| `act_equip.c` | `BANK_56` | Equip and unequip | 1,155 |
+| `act_equip.c` | `BANK_56` | Equip, exchange and unequip | 2,053, after exchange |
 | `act_melee.c` | `BANK_56` | Melee, as far as validation | 1,072 |
 | `act_fire.c` | `BANK_56` | Fire | 830 |
 | `act_aim.c` | `BANK_56` | Aim | 706 |
@@ -230,6 +232,7 @@ Who reads what:
 | Pick up | In or find; out | | | |
 | Drop | | In | | |
 | Equip | Out: the item in the slot | In | | In and out: `slot` |
+| Exchange | Out: the first item taken off, or invalid | In | | In and out: `slot` |
 | Unequip | | In | | |
 | Melee | In or find; out | Out: the weapon | If `target` is invalid | Out: `damage` |
 | Use | | In | | Out: `effect` |
@@ -284,6 +287,7 @@ Consequences are direct calls, because the rest of the action reads their result
 | `ACT_DROP` | Puts a stowed item on the actor's tile | `EV_DROPPED` | No |
 | `ACT_EQUIP` | Puts a stowed item in a slot, and recomputes | `EV_EQUIPPED` | No |
 | `ACT_UNEQUIP` | Stows an equipped item, and recomputes | `EV_UNEQUIPPED` | No |
+| `ACT_EXCHANGE` | Puts a stowed item in a slot in place of what is there, which it stows, and recomputes (section 6.14) | `EV_UNEQUIPPED` for each taken off, then `EV_EQUIPPED` | No |
 | `ACT_MELEE` | Attacks an adjacent entity with the wielded weapon or its own attack | `EV_HIT` or `EV_MISSED`, then the damage's and hit effect's | Yes |
 | `ACT_USE` | Uses up a stowed item with a use hook | `EV_USED`, then the effect's | No |
 | `ACT_OPEN` | Opens a feature that opens | `EV_OPENED` | No |
@@ -354,6 +358,7 @@ lists. P-ACT-1 asks for a text for each new reason, and these three are the exce
 | `ACT_DROP` | `d` | No |
 | `ACT_EQUIP` | `w` | `opt_wield()` |
 | `ACT_UNEQUIP` | `r` | No |
+| `ACT_EXCHANGE` | `x` on the inventory screen, `e` on the main screen | No (D36) |
 | `ACT_MELEE` | Bump | `opt_attack()` |
 | `ACT_USE` | `u` | `opt_drink()` |
 | `ACT_OPEN` | Bump | `ai_step()` |
@@ -550,7 +555,7 @@ form `act.h` will need.
 
 | Addition | Names |
 |---|---|
-| Actions | `ACT_CAST` 15 (built), `ACT_STEAL` 16, `ACT_OPERATE` 17, `ACT_SEARCH` 18, `ACT_DISARM` 19 |
+| Actions | `ACT_CAST` 15 and `ACT_EXCHANGE` 16 (built), `ACT_STEAL` 17, `ACT_OPERATE` 18, `ACT_SEARCH` 19, `ACT_DISARM` 20 |
 | Refused reasons | `ACT_R_NO_MANA` 38 and `ACT_R_NO_SPELL` 39 (built), `ACT_R_NOTHING_TO_STEAL`, `ACT_R_CANT_OPERATE`, `ACT_R_SPENT` |
 | Attempted reasons | `ACT_R_CAUGHT` |
 | Events | `EV_CAST` (built), `EV_STOLEN` |
@@ -769,7 +774,7 @@ a new action. A trap going off is a reaction to `EV_STOOD_ON` (G-ARCH-3), not an
 | Rest, running, travelling | A player command that repeats `ACT_WAIT` or `ACT_MOVE`, stopping when something happens |
 | Looking, the PC screen | They change nothing, so they use no turn (targeting.md) |
 | Bump to unlock | A caller combining actions (R13) |
-| Swapping weapons | `ACT_UNEQUIP`, then `ACT_EQUIP`: two turns (R10) |
+| Swapping weapons | `ACT_EXCHANGE`, one turn (section 6.14) |
 | Delayed actions | A timer's handler fills a context and calls `act_do()`. None does yet. It must test its actor is alive first |
 | Teleport, falling through a hole | Effects and level requests, not actor choices |
 | Corroding gear, splitting, webs | Hit effects and reactions |
@@ -950,6 +955,156 @@ CSpect: aim the wand of teleport and the staff of healing past a creature, by th
 - **Q5 spells.md.** The third shape is written there now, not when `ACT_CAST` is built.
 - **R37** Agreed: walls and closed doors stop a direct line.
 
+### 6.14 `ACT_EXCHANGE`
+
+Agreed and built 2026-11-04, with Q6 and Q7 answered; what differs is in section 9, "Exchange". The keys and the inventory screen's part are
+in [ui_inventory.md](ui_inventory.md), section 12.
+
+**Putting something on in place of what is there.** Today an actor wearing a short sword must
+take it off (`ACT_UNEQUIP`) and then wield the long sword (`ACT_EQUIP`): two actions, and the
+first needs a free place in the pack. `ACT_EXCHANGE` does both in one action: the item in the
+slot goes into the pack, and the new item comes out of it into the slot.
+
+Inside the inventory screen a visit is already one turn (ui_inventory.md R2), so take off and
+wear there cost one turn today. What the exchange adds there is that a full pack doesn't stop
+it. Outside the screen, from the main screen's key and for monsters, it also halves the time.
+
+#### Requirements
+
+- **R40 New.** `ACT_EXCHANGE` puts a stowed item in a slot it fits, and stows whatever was in
+  that slot, in one action and one turn (R10). Any actor with an inventory can do it (R1).
+- **R41 New.** An exchange of one item for one needs no free place in the pack: the item put
+  on leaves the pack as the one taken off enters it.
+- **R42 New.** If anything that must come off can't, the exchange is refused and nothing
+  changes: a cursed item gives `ACT_R_CURSED`, with the item as `target`.
+- **R43 New.** If the slot is free, the exchange equips the item, as `ACT_EQUIP` would. That
+  is a success, not a failure.
+- **R44 New.** The exchange replaces an item that is in use rather than filling a free slot.
+  An item that fits two slots (the rings) replaces the one in the slot asked for. Asked for
+  no slot, it replaces the one in the first taken slot, and fills a free slot only if all the
+  slots it fits are free.
+- **R45 Changed.** A two-handed weapon put on in place of a weapon *and* a shield takes both
+  off, so two items enter the pack and one leaves it: that needs one free place, or it is
+  refused with `ACT_R_FULL` (`target`: the shield). *Reason: R41 can't hold when two come off
+  for one. Q6: exchange both, not refuse.*
+- **R46 New.** A shield put on with a two-handed weapon wielded exchanges the weapon (the shield
+  slot is free, but the hands are not); a two-handed weapon put on with only a shield worn
+  exchanges the shield. Each is one for one (R41). *Reason: today's equip refuses both with
+  `ACT_R_SLOT_TAKEN` (section 6.8); R44 says the item in the way is the one exchanged.*
+
+#### Decisions
+
+- **D31 A new action, not a change to `ACT_EQUIP`.** Equip keeps its rule, the first free
+  slot, refused when every slot is taken. The AI relies on that refusal: `opt_wield()` arms
+  monsters with what they pick up and must not strip off a better sword for a worse one,
+  which an equip that exchanged would do. *Rejected:* `ACT_EQUIP` exchanging when the slot is
+  taken, for that reason, and because the `w` key would then also lose the free ring slot
+  (R44 wants the opposite of what `w` does). *Rejected:* a flag in `act_t` asking equip to
+  exchange: `act_t` has no spare field, and one action with two rules is two actions in one
+  (D2).
+- **D32 It doesn't call equip and unequip, it shares their code.** An action never calls an
+  action (R13), and unequip then equip would need the free place R41 rules out. So
+  `act_exchange()` is in `act_equip.c`, and the checks it shares with equip (carried, stowed,
+  fits a slot the actor has, the slot asked for) move into a static helper both call. The
+  rules it reads are the ones equip and unequip read: `gen_item_fits()`, `inv_equipped()`,
+  `inv_hands_taken()`, `inv_cursed()`, `inv_count()` (R12). *Rejected:* the caller combining
+  unequip and equip (D6): two turns outside the screen, and a full pack refuses the first.
+- **D33 The slot is an input, as for equip.** `a->slot` is the slot to exchange in, or
+  `SLOT_NONE` for the action to choose by R44. Only the rings need it, so the AI and every
+  other caller pass `SLOT_NONE`. *Rejected:* `a->target` as the item to replace: the same
+  answer for the rings, but it needs a check that the target is in a slot the item fits, and
+  "nothing to replace" (R43) has no target to name.
+- **D34 The existing events, in order: off, then on.** `EV_UNEQUIPPED` for each item taken off
+  (the weapon, then the shield, for R45), then `EV_EQUIPPED`. The messages read "You take off a
+  short sword." then "You equip a long sword.", and every handler of the two events (the stats
+  panel, messages, monsters seen arming) works unchanged. The worn effects are recomputed once,
+  before the events, so one `EV_ATTRS_CHANGED`. *Rejected:* a new `EV_EXCHANGED` with both items,
+  one line ("You swap the short sword for a long sword."): a new message with two names, a new
+  case in every handler of the two events, and the stats panel and the AI would have to learn it.
+- **D35 No new reasons.** Every refusal is one equip or unequip already gives, with its text
+  (section 4.6): `ACT_R_NO_INVENTORY`, `ACT_R_NOT_CARRIED`, `ACT_R_ALREADY_EQUIPPED`,
+  `ACT_R_CANT_EQUIP`, `ACT_R_NO_SLOT`, `ACT_R_CURSED`, `ACT_R_FULL`. `ACT_R_SLOT_TAKEN` can't
+  happen: what is in the way is exchanged.
+- **D36 The AI doesn't exchange yet.** The action serves monsters (R40), but no option calls it:
+  that needs a rule for which of two items is better, which nothing has. `opt_wield()` stays on
+  `ACT_EQUIP` (Q7).
+
+#### Design
+
+**Inputs and outputs** (`act_t`, section 4.2):
+
+| Action | `target` | `item` | `dx`, `dy` | `kind` |
+|---|---|---|---|---|
+| Exchange | Out: the first item taken off, or `NGE_ENTITY_INVALID` if none | In: the item to put on | | In and out: `slot` |
+
+**The steps:**
+
+1. **Context.** The actor, the item, `want = a->slot`.
+2. **Validate**, all refused, in this order:
+   - the shared checks with equip (D32): `ACT_R_NO_INVENTORY`, `ACT_R_NOT_CARRIED`,
+     `ACT_R_ALREADY_EQUIPPED`, `ACT_R_CANT_EQUIP`, `ACT_R_NO_SLOT`, leaving the mask of slots
+     the item fits, the actor has and (if `want` is set) was asked for;
+   - the slot: the first slot in the mask with an item in it; if none, the first in the mask
+     (R43, R44);
+   - what comes off: `off1`, the item in the slot, and `off2`, `inv_hands_taken()`'s answer for
+     the slot (R45, R46). Either may be none;
+   - each that comes off is not cursed: `ACT_R_CURSED`, `target` the cursed one (R42);
+   - room, only when both come off: `inv_count() < inv_capacity[]`, else `ACT_R_FULL`, `target`
+     `off2` (R45);
+   - out: `a->slot`, and `a->target` = `off1`, else `off2`, else invalid. Check mode stops here.
+3. **Resolve.** Nothing to roll.
+4. **Apply.** `off1` and `off2` to `SLOT_NONE`, the item to the slot, `effects_recompute()`
+   once, then `EV_UNEQUIPPED` for `off1`, for `off2`, and `EV_EQUIPPED` for the item, p1 the
+   slot (D34).
+
+**Cases:**
+
+| Worn | Put on | Slot asked | Result |
+|---|---|---|---|
+| Short sword | Long sword | None | Sword off, long sword on |
+| Nothing in the weapon slot | Long sword | None | Long sword on (R43) |
+| Ring L, ring R free | Ring | None | Ring L off, the new one in L (R44) |
+| Rings L and R | Ring | `SLOT_RING_R` | Ring R off, the new one in R |
+| Rings L and R | Ring | None | Ring L off, the new one in L |
+| Sword and shield | Two-handed sword | None | Both off, if the pack has a free place; else `ACT_R_FULL` (R45) |
+| Shield only | Two-handed sword | None | Shield off, the two-hander on (R46) |
+| Two-handed sword | Shield | None | The two-hander off, the shield on (R46) |
+| Cursed helmet | Helmet | None | `ACT_R_CURSED`, nothing changes (R42) |
+
+**Number.** `ACT_EXCHANGE` is 16, so `ACT_COUNT` is 17. The reserved numbers in section 6.1
+moved up one (`ACT_STEAL` 17 and so on): they are only an order.
+
+Section 6.10's "Swapping weapons" and the rows of sections 4.2, 4.5 and 4.7 say so.
+
+#### Memory
+
+| Where | Change |
+|---|---|
+| `BANK_56` | About 350 bytes, estimated: the action, less what moves into the shared helper. 5,900 free |
+| Common | A `case` in `act_do()` and one row of the reason table's size: none, as no reason is new. About 8 bytes |
+| Page 116 | 7 bytes for the new row of `modes[]` (section 4.9), and the screen's part (ui_inventory.md, section 12) |
+
+#### Tests
+
+`test_act`:
+
+- every row of the cases table above, with the events in order and the slots after;
+- R41: a full pack exchanges one for one; R45 with a full pack is `ACT_R_FULL` and changes
+  nothing, with a free place both come off;
+- a cursed item in the slot, and a cursed shield in the way of a two-hander: `ACT_R_CURSED`,
+  `target` the cursed item, nothing changed;
+- each shared refusal, as for equip;
+- check mode: the same answer, the same `slot` and `target`, nothing changed, no events;
+- worn effects: the old item's effect gone and the new one's counted, one `EV_ATTRS_CHANGED`;
+- `act_do(ACT_EXCHANGE)` matches the direct call;
+- `ACT_EQUIP` unchanged: still refuses a taken slot (D31).
+
+#### Questions answered (2026-11-04)
+
+- **Q6 (R45)** A two-hander in place of a sword and a shield: **exchange both** when the pack
+  has a free place, as proposed; `ACT_R_FULL` otherwise.
+- **Q7 (D36)** Monsters **stay on `ACT_EQUIP`** for now: `opt_wield()` doesn't exchange.
+
 ## 7. Tests
 
 `test_act` covers:
@@ -1005,6 +1160,19 @@ To add with section 6:
 ## 9. As built
 
 What differs from section 6 and [actions_plan.md](actions_plan.md).
+
+- **Exchange (section 6.14):**
+  - `BANK_56` grew by 822 bytes in the debug build, to 11,918, where the spec said about 350:
+    `act_exchange()` 759, and the shared checks moved into `fitting_slots()` (325), which equip
+    calls. 4,466 bytes of the section are free. The items that come off are a two-byte array
+    and loops: a first version with two named locals was 108 bytes larger.
+  - Common memory: 26 bytes for `act_do()`'s case, where the spec said 8 (4,335 to 4,309 free
+    below the stack in the debug build). No library routine was linked: the map's other common
+    symbols didn't move.
+  - `ACT_R_FULL`'s `target` is the second item to come off (the shield), and `ACT_R_CURSED`'s
+    the cursed one, as designed.
+  - A cursed shield in the way of a two-hander isn't tested: no shield kind is cursed. The
+    two-hander's own case is, a cursed sword in the slot.
 
 - **Line modes (section 6.13):**
   - `BANK_56` grew by 258 bytes in the debug build, to 10,484, where the spec said about 30:

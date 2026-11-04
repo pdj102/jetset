@@ -71,8 +71,8 @@ void player_show_stats(void) NGE_BANKED;
  * @brief Carry out the command for a key event, during the player's turn:
  *        movement keys (cursor keys or h j k l) move (into a creature:
  *        attack; into a closed door: open it), g (or ,) picks up the item
- *        here, i shows the inventory, d w r u choose an item to drop,
- *        equip, take off or use, f and c ask a direction to fire or close
+ *        here, i shows the inventory, d w r u e choose an item to drop,
+ *        equip, take off, use or exchange, f and c ask a direction to fire or close
  *        in, m casts a spell (the spell list, then a tile for a bolt), x looks (targeting, game/target/target.h), . waits a turn,
  *        Q quits. Other keys do nothing. A command may run frames while
  *        the player chooses.

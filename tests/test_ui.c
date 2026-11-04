@@ -26,6 +26,7 @@
 #include "game/components/feature.h"
 #include "game/components/inventory.h"
 #include "game/components/item.h"
+#include "game/components/kind.h"
 #include "game/components/mana.h"
 #include "game/components/pc.h"
 #include "game/components/stats.h"
@@ -260,6 +261,49 @@ static int stowed(nge_entity_id_t id)
 {
     return NGE_OWNER_OF(id) == actor_player && item_slot[id] == SLOT_NONE &&
            !NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_LOCATION);
+}
+
+/* Press DOWN n times: the cursor to row n */
+static void down(int n)
+{
+    while (n-- > 0) {
+        press(EV(NGE_KEY_DOWN));
+    }
+}
+
+/* The row of the player's item id in browse mode, as listed now: in use by slot, then the pack in ID order */
+static int inv_pos(nge_entity_id_t id)
+{
+    nge_entity_id_t e = NGE_ENTITY_INVALID;
+    uint8_t slot;
+    int n = 0;
+
+    for (slot = 1; slot < SLOT_COUNT; slot++) {
+        if (inv_equipped(actor_player, slot) != NGE_ENTITY_INVALID) {
+            if (item_slot[id] == slot) {
+                return n;
+            }
+            n++;
+        }
+    }
+    while ((e = inv_next(actor_player, e)) != NGE_ENTITY_INVALID && e != id) {
+        n++;
+    }
+    return n;
+}
+
+/* The letter of the stowed item id in the e key's list: the pack's items that can be equipped, in ID order */
+static nge_key_event_t inv_letter(nge_entity_id_t id)
+{
+    static const uint8_t keys[] = { NGE_KEY_A, NGE_KEY_B, NGE_KEY_C, NGE_KEY_D };
+    nge_entity_id_t e = NGE_ENTITY_INVALID;
+    int n = 0;
+
+    while ((e = inv_next(actor_player, e)) != NGE_ENTITY_INVALID && e != id) {
+        n += (gen_item_fits(kind_index[e]) & inv_slots[actor_player]) != 0;
+    }
+    CHECK(n < (int)sizeof(keys));
+    return EV(keys[n]);
 }
 
 int main(void)
@@ -606,6 +650,141 @@ int main(void)
     CHECK(paused == 0 && test_layer2_buffer == SCREEN_BUFFER_MAIN);
     CHECK(said("You have nothing to drop."));
     CHECK(screen_inv_run(ACT_UNEQUIP, &chosen, &used) == SCREEN_INV_BACK && said("You aren't using anything."));
+
+    /* ---- exchange (docs/ui_inventory.md, section 12): x in browse, e from the main screen; the pack empty ---- */
+    {
+        nge_entity_id_t blade = gen_item(IT_SWORD, actor_player);
+        nge_entity_id_t dagger = gen_item(IT_DAGGER, actor_player);
+        nge_entity_id_t ra = gen_item(IT_RING_HEALTH_2, actor_player);
+        nge_entity_id_t rb = gen_item(IT_RING_HEALTH_2, actor_player);
+        nge_entity_id_t rc = gen_item(IT_RING_ARMOUR_1, actor_player);
+        nge_entity_id_t frail;
+
+        /* The sword in use; a full pack */
+        item_slot[blade] = SLOT_WEAPON;
+        effects_recompute(actor_player);
+        nge_event_flush();
+        inv_capacity[actor_player] = inv_count(actor_player);
+        /* The help: w refused for the taken slot, so x:swap (R24) */
+        fresh();
+        down(inv_pos(dagger));
+        press(EV(NGE_KEY_SPACE));
+        screen_inv_run(SCREEN_INV_BROWSE, &chosen, &used);
+        CHECK(RAN_AND_CLOSED() && starts(HELP(), "jk:select x:swap d:drop SPACE:back"));
+        /* On a free slot only w:wear, though x would do the same */
+        fresh();
+        down(inv_pos(ra));
+        press(EV(NGE_KEY_SPACE));
+        screen_inv_run(SCREEN_INV_BROWSE, &chosen, &used);
+        CHECK(RAN_AND_CLOSED() && starts(HELP(), "jk:select w:wear d:drop SPACE:back"));
+        /* x with a full pack: one for one, the screen stays open, the cursor with the dagger, now first */
+        fresh();
+        player_turn = 1;
+        down(inv_pos(dagger));
+        press(EV(NGE_KEY_X));
+        press(EV(NGE_KEY_SPACE));
+        player_command(EV(NGE_KEY_I));
+        CHECK(RAN_AND_CLOSED() && !player_turn && nge_event_count() == 0);
+        CHECK(item_slot[dagger] == SLOT_WEAPON && stowed(blade));
+        CHECK(starts(LIST_ROW(0), "    1 dagger") && HIGHLIGHTED(0) && INK(2, 6) == L2_CYAN);
+        CHECK(starts(STATUS(), "You take off a sword.") && starts(STATUS2(), "You equip a dagger."));
+        CHECK(said("You equip a dagger.") && shown("You take off a sword."));
+        CHECK(strcmp(OVER_ROW(0) + 30, "Pack  4/ 4") == 0);
+        CHECK(starts(HELP(), "jk:select SPACE:done"));               /* a full pack: no r:off */
+        /* x on what is in use: refused, as w is (R22) */
+        fresh();
+        press(EV(NGE_KEY_X));
+        press(EV(NGE_KEY_SPACE));
+        CHECK(screen_inv_run(SCREEN_INV_BROWSE, &chosen, &used) == SCREEN_INV_BACK && !used && RAN_AND_CLOSED());
+        CHECK(starts(STATUS(), "You are already using that.") && item_slot[dagger] == SLOT_WEAPON);
+        /* A free ring slot: x equips (R19) */
+        fresh();
+        down(inv_pos(ra));
+        press(EV(NGE_KEY_X));
+        press(EV(NGE_KEY_SPACE));
+        CHECK(screen_inv_run(SCREEN_INV_BROWSE, &chosen, &used) == SCREEN_INV_BACK && used && RAN_AND_CLOSED());
+        CHECK(item_slot[ra] == SLOT_RING_L && starts(STATUS(), "You equip a ring of health +2."));
+        /* One ring worn: x replaces it, without asking, and the right hand stays free (R21) */
+        fresh();
+        down(inv_pos(rc));
+        press(EV(NGE_KEY_X));
+        press(EV(NGE_KEY_SPACE));
+        CHECK(screen_inv_run(SCREEN_INV_BROWSE, &chosen, &used) == SCREEN_INV_BACK && used && RAN_AND_CLOSED());
+        CHECK(item_slot[rc] == SLOT_RING_L && stowed(ra) &&
+              inv_equipped(actor_player, SLOT_RING_R) == NGE_ENTITY_INVALID);
+        /* Both worn: the question, and b, the right one, goes */
+        item_slot[rb] = SLOT_RING_R;
+        effects_recompute(actor_player);
+        nge_event_flush();
+        fresh();
+        down(inv_pos(ra));
+        press(EV(NGE_KEY_X));
+        press(EV(NGE_KEY_B));
+        press(EV(NGE_KEY_SPACE));
+        CHECK(screen_inv_run(SCREEN_INV_BROWSE, &chosen, &used) == SCREEN_INV_BACK && used && RAN_AND_CLOSED());
+        CHECK(item_slot[ra] == SLOT_RING_R && stowed(rb) && item_slot[rc] == SLOT_RING_L);
+        CHECK(starts(OVER_ROW(0), "          Worldly Possessions"));     /* the question's title gone */
+        CHECK(starts(STATUS(), "You take off a ring of health +2.") && HIGHLIGHTED(inv_pos(ra)));
+        /* The question given up: nothing done, back to browse, the cursor where it was */
+        fresh();
+        down(inv_pos(rb));
+        press(EV(NGE_KEY_X));
+        press(EV(NGE_KEY_SPACE));
+        press(EV(NGE_KEY_SPACE));
+        CHECK(screen_inv_run(SCREEN_INV_BROWSE, &chosen, &used) == SCREEN_INV_BACK && !used && RAN_AND_CLOSED());
+        CHECK(stowed(rb) && HIGHLIGHTED(inv_pos(rb)) && starts(OVER_ROW(0), "          Worldly Possessions"));
+        /* A cursed ring on the left: chosen, refused with its reason, the screen stays */
+        frail = gen_item(IT_RING_FRAILTY, actor_player);
+        item_slot[rc] = SLOT_NONE;
+        item_slot[frail] = SLOT_RING_L;
+        effects_recompute(actor_player);
+        nge_event_flush();
+        fresh();
+        down(inv_pos(rb));
+        press(EV(NGE_KEY_X));
+        press(EV(NGE_KEY_A));                   /* the cursed one, on the left */
+        press(EV(NGE_KEY_SPACE));
+        CHECK(screen_inv_run(SCREEN_INV_BROWSE, &chosen, &used) == SCREEN_INV_BACK && !used && RAN_AND_CLOSED());
+        CHECK(starts(STATUS(), "It is cursed: it won't come off.") && item_slot[frail] == SLOT_RING_L &&
+              stowed(rb));
+        /* e from the main screen: choose mode; a letter, then the question's b; it closes, one turn */
+        fresh();
+        player_turn = 1;
+        press(inv_letter(rb));
+        press(EV(NGE_KEY_B));                   /* ra, on the right */
+        player_command(EV(NGE_KEY_E));
+        CHECK(RAN_AND_CLOSED() && !player_turn && nge_event_count() == 0);
+        CHECK(item_slot[rb] == SLOT_RING_R && stowed(ra) && said("You equip a ring of health +2."));
+        /* e, the question given up: back to the list, then SPACE; no turn */
+        fresh();
+        player_turn = 1;
+        press(inv_letter(rc));
+        press(EV(NGE_KEY_SPACE));
+        press(EV(NGE_KEY_SPACE));
+        player_command(EV(NGE_KEY_E));
+        CHECK(RAN_AND_CLOSED() && player_turn && stowed(rc));
+        CHECK(starts(OVER_ROW(0), "           Exchange Thy Gear"));       /* (40 - 17) / 2 */
+        /* e on a weapon: no question; it closes, one turn */
+        fresh();
+        player_turn = 1;
+        press(inv_letter(blade));
+        player_command(EV(NGE_KEY_E));
+        CHECK(RAN_AND_CLOSED() && !player_turn && item_slot[blade] == SLOT_WEAPON && stowed(dagger));
+
+        /* Gone, for the tests below */
+        item_slot[blade] = SLOT_NONE;
+        item_slot[rb] = SLOT_NONE;
+        item_slot[frail] = SLOT_NONE;
+        nge_entity_destroy(blade);
+        nge_entity_destroy(dagger);
+        nge_entity_destroy(ra);
+        nge_entity_destroy(rb);
+        nge_entity_destroy(rc);
+        nge_entity_destroy(frail);
+        inv_capacity[actor_player] = 20;
+        effects_recompute(actor_player);
+        nge_event_flush();
+    }
 
     /* ---- the details: an attack's dice and bonuses, ammo's bonuses, AC, a count's meaning; stacks counted ---- */
     {
