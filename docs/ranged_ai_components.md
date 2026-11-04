@@ -192,6 +192,6 @@ tables now; every monster gets AI.
   the creatures; and `test_attack` checks the ranged hit rule against the
   melee one on the same entity (each its own to-hit).
 - zsdcc's "conditional flow changed by optimizer" note at
-  `attack_add()` and `attack_remove()` is unchanged (docs/component_tables.md
-  section 10).
+  `attack_add()` and `attack_remove()` is unchanged (docs/ecs.md
+  section 8).
 

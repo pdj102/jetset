@@ -173,7 +173,7 @@ equipment, light and vision, spells known if monsters cast spells.
   kind component and the kind index. When the bits run out, the mask
   becomes 32 bits (`nge_component_mask_t`, ecs/nge_entity.h). *(Since
   replaced by three byte tables, 24 components:
-  docs/component_tables.md.)* **Option (Q4):** a game entity flag instead (`NGE_ENTITY_FLAG_USER`: 5 free), or no
+  docs/ecs.md, section 4.7.)* **Option (Q4):** a game entity flag instead (`NGE_ENTITY_FLAG_USER`: 5 free), or no
   marker at all, `KIND_IS_PLAYER()` as now; no component bit used.
 
 - **D4 It is called `pc`: `COMPONENT_PC`, game/components/pc.{h,c},

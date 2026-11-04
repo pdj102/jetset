@@ -6,8 +6,7 @@ dies, who owns it, and where its data is kept.
 The public interface is in [nge_entity.h](../src/nge/ecs/nge_entity.h),
 [nge_owner.h](../src/nge/ecs/nge_owner.h) and
 [nge_ecs.h](../src/nge/ecs/nge_ecs.h). The component model is in
-[nge_components.h](../src/nge/ecs/components/nge_components.h), and why it has
-tables in [component_tables.md](component_tables.md). Addresses and page data are
+[nge_components.h](../src/nge/ecs/components/nge_components.h). Addresses and page data are
 in [memory_map.md](memory_map.md). Persistent and parked entities are specified in
 [level_transitions.md](level_transitions.md).
 
@@ -154,7 +153,13 @@ and effects find their way out when it goes.
 ### Components
 
 - **R25** A component has a number, a handle, and one bit per entity. Numbers 0 to
-  `NGE_COMPONENT_USER`-1 are nge's, and the game's follow.
+  `NGE_COMPONENT_USER`-1 are nge's, and the game's follow. The compiler stops the
+  game going past `NGE_COMPONENT_MAX`.
+- **R25a** Testing, adding or removing one component reads or writes one byte, with
+  no 16- or 32-bit arithmetic. With a handle named by a constant, the byte is at a
+  fixed address plus the ID.
+- **R25b** A handle is 16 bits, so it can be kept in a struct field or passed as a
+  parameter where a component must be named at run time.
 - **R26** A component's data is one table per field, indexed by ID, and means nothing
   for an entity without the bit.
 - **R27** A component's add function sets every field. Neither `nge_entity_create()`
@@ -416,30 +421,37 @@ a location. One that is held has no location (items.md, section 4.3).
 
 ### 4.7 Components
 
-A handle packs the table in its high byte and the bit in its low byte, so
-`NGE_ENTITY_HAS_COMPONENT()` with a constant handle is one byte test at a fixed
-address plus the ID. A handle names one component and must never be ORed with
-another. [component_tables.md](component_tables.md) has the reasoning.
+The component bits are `NGE_COMPONENT_TABLES` byte tables, one byte per entity each,
+in page 50. Table t holds the bits of components 8t to 8t+7. A handle packs the table
+in its high byte and the bit in its low byte (D16, D17), so:
 
-There are 3 tables of 8, which is 24 components. nge has 4 and the game 12
-([components.h](../src/game/components/components.h)), so 8 are free.
+- with a constant handle, `NGE_ENTITY_HAS_COMPONENT()`, `_ADD_` and `_REMOVE_` fold
+  to one byte operation at a fixed address plus the ID;
+- with a handle in a variable, such as an effect attribute's component or
+  `nge_location_find()`'s filter, the table's offset costs one multiply (`MLT DE` on
+  the Next), worked out once outside a loop.
 
-| Component | Number | Data | Where the data is | Added by |
-|---|---|---|---|---|
-| `NGE_COMPONENT_LOCATION` | 0 | Column, row, pixel in the tile | Slot 0 | `nge_location_set()` |
-| `NGE_COMPONENT_SPRITE` | 1 | Pattern, animation, motion | Page 53, the render system's | `nge_render_add()` |
-| `NGE_COMPONENT_BLOCK` | 2 | What it blocks, what it can enter | Slot 0 | `nge_block_add()` |
-| `NGE_COMPONENT_TIMER` | 3 | Count, period, cycles, kind | Slot 0 | `nge_timer_add()` |
+A component's add and remove functions use the macros, not the tables, so only
+nge_entity.h knows the layout. Which table a component falls in matters to no caller.
 
-**The bit is the truth.** Release clears the bits and leaves the data, so going needs
-no work per component and no destroy hook. A table's old values remain under a free
-entity's ID (R27), and anything searching a table directly must test the state and
-bit, as `nge_location_find()` does after its `memchr`.
+**One component per handle (D18).** Two handles are never ORed: from different
+tables the result names the wrong table, silently. Code that needs two components
+tests them one at a time. Handle 0 names no component, and `nge_location_find()`
+takes it to mean any entity with a location.
+
+**The bit is the truth.** Release clears the bits in every table and leaves the data,
+so going needs no work per component and no destroy hook. A table's old values remain
+under a free entity's ID (R27), and anything searching a table directly must test the
+state and bit, as `nge_location_find()` does after its `memchr`.
 
 The checked functions assert on the ID, on the state and on the handle being one bit
 in a table that exists. The setters want an entity in use. The tests,
 `nge_entity_has_flags()` and `nge_entity_has_component()`, check only the ID, and
 answer 0 for a free entity.
+
+nge's components and the game's are listed in
+[nge_components.h](../src/nge/ecs/components/nge_components.h) and
+[components.h](../src/game/components/components.h), with the header of each.
 
 ### 4.8 Systems
 
@@ -560,6 +572,30 @@ bookkeeping is in page 49 because only the lifecycle uses it (N-DATA-1).
 - **D15 Three loops, named for what they do.** Alive entities are what nearly every
   loop wants, the entities in use are the same walk unfiltered, and emptying the dying
   stack isn't a walk at all, as the loop adds to what it consumes.
+- **D16 Component bits are byte tables, one two-dimensional array.** Every test, add
+  and remove is one byte (R25a), and a constant handle folds to one address. Measured
+  with zsdcc `-SO3`, in instructions per test function with its frame:
+
+  | Pattern | `uint16_t` mask | `uint32_t` mask | Byte tables |
+  |---|---|---|---|
+  | Test one component | 17-18 | 23-25 | 16 |
+  | Add or remove one | 18 | 28 | 10 |
+  | Test a handle in a variable | 27 | 44 | 22 |
+
+  *Rejected:* a `uint32_t` mask, with 40-75% more code at every test, multi-bit tests
+  that copy the long to the stack, and masks in structs and parameters doubled.
+  *Rejected:* one array per table by name, as a handle in a variable would need a
+  pointer table or a switch to find its array. *Rejected:* a 16-bit mask plus a byte
+  table for the rest, which makes two kinds of component.
+- **D17 A handle is the table and the bit, not the component number.** A number would
+  be one byte, but every macro would need the compiler to fold `n >> 3` and
+  `1 << (n & 7)`, and a number in a variable would cost a shift loop for the bit.
+  The handle's type, `nge_component_t`, names one component, not a mask.
+- **D18 One component per handle and per test.** ORing handles is right only within
+  one table, and wrong silently across two. Few places test two components, and none
+  per frame, so they make two tests. The checked functions assert on it.
+  *Rejected:* allowing OR within a table, a rule about which numbers share a table
+  that every caller would have to keep, to save one byte load.
 
 ## 6. Not built yet
 
@@ -568,6 +604,7 @@ bookkeeping is in page 49 because only the lifecycle uses it (N-DATA-1).
 | Saving a game | Most ECS state is in page 50, so one page holds nearly all of it. The stacks and `nge_entity_used_pos[]` are in page 49, and the render system's sprite data in page 53, so those must be saved too or rebuilt |
 | The game's flags | Five are defined, and nothing uses them |
 | Interrupts | A future IM2 handler must not read slot 0 (memory_map.md, "When slot 0 is mapped out") |
+| More than 24 components | Raise `NGE_COMPONENT_TABLES` to 4: page 50 grows by `NGE_ENTITY_MAX` bytes, and the handle and API don't change |
 
 ## 7. Tests
 
@@ -642,3 +679,7 @@ page 50 between `$0100` and `$1FFF`.
   check at all.
 - **zsdcc.** `NGE_COMPONENT()` must keep its unsigned shifts: zsdcc types `1 << 7` as a
   signed char, which would make table 255. The PC tests can't catch that being lost.
+  Read the asm of a test with a variable handle after changing the macros. zsdcc's
+  "conditional flow changed by optimizer" note at `attack_add()` and
+  `attack_remove()` is harmless: their ternary picks between two components in the
+  same table, so its table part folds away.
