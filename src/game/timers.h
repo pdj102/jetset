@@ -8,7 +8,9 @@
  * Time is in ticks, NGE_TIMER_TICKS_PER_TURN (10) to a turn. An actor's
  * timer fires every `speed` ticks (game/components/stats.h): at speed 10
  * it acts once a turn, whatever the action. The game's dispatch function
- * (game.c) calls the handler for each kind.
+ * (game.c) calls the handler for each kind. The game's kinds are numbered
+ * from NGE_TIMER_KIND_USER: those below are nge's, fired by nge's own
+ * handlers.
  *
  * | Kind          | Entity                  | Handler                                     |
  * |---------------|-------------------------|---------------------------------------------|
@@ -22,9 +24,9 @@
 
 #include "ecs/systems/nge_timer.h"
 
-#define TIMER_PLAYER   0   /**< The player's turn: wait for a command. */
-#define TIMER_EFFECT   1   /**< An active effect: its period's op; it ends on its last cycle. */
-#define TIMER_AI       2   /**< An AI entity's turn: the AI decides what it does. */
-#define TIMER_COUNT    3   /**< The number of timer kinds. */
+#define TIMER_PLAYER   (NGE_TIMER_KIND_USER + 0)   /**< The player's turn: wait for a command. */
+#define TIMER_EFFECT   (NGE_TIMER_KIND_USER + 1)   /**< An active effect: its period's op; it ends on its last cycle. */
+#define TIMER_AI       (NGE_TIMER_KIND_USER + 2)   /**< An AI entity's turn: the AI decides what it does. */
+#define TIMER_COUNT    3   /**< The game's timer kinds: the next is NGE_TIMER_KIND_USER + TIMER_COUNT. */
 
 #endif
