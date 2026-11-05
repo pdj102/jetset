@@ -40,13 +40,14 @@
 /** Component numbers are below this: one bit each in the component tables. */
 #define NGE_COMPONENT_MAX   (NGE_COMPONENT_TABLES * 8)
 /** The game's first component number: those below are nge's. */
-#define NGE_COMPONENT_USER  4
+#define NGE_COMPONENT_USER  5
 
 /* nge's components: numbers 0 to NGE_COMPONENT_USER-1 */
 #define NGE_COMPONENT_LOCATION  NGE_COMPONENT(0)   /**< Position in an area's map (ecs/components/nge_location.h). */
 #define NGE_COMPONENT_SPRITE    NGE_COMPONENT(1)   /**< Drawn as hardware sprites (ecs/systems/nge_render.h). */
 #define NGE_COMPONENT_BLOCK     NGE_COMPONENT(2)   /**< What it blocks and can enter (ecs/components/nge_block.h). */
 #define NGE_COMPONENT_TIMER     NGE_COMPONENT(3)   /**< Fires every period (ecs/systems/nge_timer.h). */
+#define NGE_COMPONENT_EFFECT    NGE_COMPONENT(4)   /**< An active effect: kind and power (ecs/systems/nge_effect.h). */
 
 /* Every table number fits the handle's high byte */
 typedef char nge_component_tables_check[(NGE_COMPONENT_TABLES >= 1 && NGE_COMPONENT_TABLES <= 255) ? 1 : -1];

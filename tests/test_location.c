@@ -154,7 +154,7 @@ int main(void)
     test_init();
 
     CHECK(NGE_COMPONENT_LOCATION == NGE_COMPONENT(0));
-    CHECK(NGE_COMPONENT_USER == 4);
+    CHECK(NGE_COMPONENT_USER == 5);
 
     nge_entity_init();
     a = nge_entity_create();

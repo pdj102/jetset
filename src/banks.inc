@@ -33,6 +33,8 @@
 //             54/55  timer system: code / (unused); its data is in page 50
 //             56/57  block component: the line test and walk / (unused); its data
 //                    is in page 50
+//             58/59  effect system: active effects' lifecycle / the effect
+//                    component and the game's hook
 //   88-99   further nge modules (6 pairs)
 //             88/89  input: setup, ASCII tables and waiting / (unused)
 //             90/91  layer2: Layer 2 drawing / (unused); the layer itself is
@@ -97,6 +99,9 @@
 
 // nge ecs block component: the line test and walk
 #pragma define CRT_ORG_PAGE_56 = 0x38C000
+
+// nge ecs effect system: active effects' lifecycle
+#pragma define CRT_ORG_PAGE_58 = 0x3AC000
 
 // nge input: setup, ASCII tables and waiting
 #pragma define CRT_ORG_PAGE_88 = 0x58C000
