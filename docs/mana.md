@@ -93,7 +93,7 @@ with the reason.
   it.
 
 - **D2 Maximum MP is a plain value for now, not an attribute.** Hit points'
-  maximum is an attribute (`ATTR_HP_MAX`, game/components/attrs.h), so
+  maximum is an attribute (`ATTR_HP_MAX`, game/attrs/attrs.h), so
   equipment and effects can change it, and `effects_recompute()` keeps hit
   points within it. Nothing changes maximum MP yet (R14), so it is set once
   by `mana_add()`. When the first item or effect needs to change it, it

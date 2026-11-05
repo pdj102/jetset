@@ -815,6 +815,7 @@ int main(void)
     nge_entity_init();
     nge_render_init();
     nge_timer_init();
+    nge_effect_init(effects_hook);
     nge_event_init();
     level_init();
 
@@ -931,7 +932,7 @@ int main(void)
     poison = NGE_ENTITY_INVALID;
     regen = NGE_ENTITY_INVALID;
     NGE_OWNER_FOR_EACH_OWNED(i, id, boss) {
-        if (NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_EFFECT)) {
+        if (NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_EFFECT)) {
             if (nge_timer_cycles[id] != 0) {
                 poison = id;
             } else {

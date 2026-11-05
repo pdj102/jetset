@@ -8,7 +8,7 @@
  *
  * An effect is a definition (EF_*): constant data in a table
  * (effects_pdata.c) that bundles
- * - modifiers: amounts added to attributes (game/components/attrs.h), or
+ * - modifiers: amounts added to attributes (game/attrs/attrs.h), or
  *   bits ORed into mask attributes, while the effect lasts;
  * - statuses granted while it lasts (STATUS_POISONED);
  * - ops: what it does on_start (when applied), on_tick (each period) and
@@ -21,11 +21,11 @@
  * - a duration:
  *   instant  its on_start op runs once; nothing is left behind (a healing
  *            potion; raising a base is how an effect is permanent);
- *   timed    an active effect: an entity owned by the target, with
- *            COMPONENT_EFFECT and a timer (TIMER_EFFECT, game/timers.h)
- *            that runs its on_tick op every period for its cycles (0: for
- *            ever), then ends it. It keeps its power, as what started it
- *            may be gone. Its definition may name a saving throw
+ *   timed    an active effect (ecs/systems/nge_effect.h): an entity owned
+ *            by the target, with NGE_COMPONENT_EFFECT and a timer that
+ *            nge fires, which runs its on_tick op every period for its
+ *            cycles (0: for ever), then ends it. It keeps its power, as what
+ *            started it may be gone. Its definition may name a saving throw
  *            the target tries at each firing, after the tick op: passed,
  *            it ends early. It goes when its target goes. Applied again,
  *            it is refreshed (its timer restarted, the stronger power
@@ -34,13 +34,21 @@
  *            statuses count while the item is equipped, with no instance,
  *            at the power the item's hook names.
  *
- * An attribute's value (game/components/attrs.h: kind value, base,
- * value) is always its base plus the modifiers of the worn effects of
- * equipped items and of the target's active effects. effects_recompute()
- * works the values out from scratch, so a modifier can't be left behind;
- * the code that changes any of these calls it (equipping, an effect
- * starting or ending, a base raised). A pool's current amount (hit
+ * An attribute's value (game/attrs/attrs.h: kind value, base, value) is
+ * always its base plus the modifiers of the worn effects of equipped items
+ * and of the target's active effects. effects_recompute() (the attributes
+ * module) works the values out from scratch, so a modifier can't be left
+ * behind; the code that changes any of these calls it (equipping, an
+ * effect starting or ending, a base raised). A pool's current amount (hit
  * points) is kept within its value; a higher maximum doesn't heal.
+ *
+ * Lifecycle: nge holds which effects an entity has, at what power and for
+ * how long, and calls effects_hook() when one starts, is refreshed, fires
+ * or ends; the game does the rest there (ops, saving throws, recomputing,
+ * events). Effects off the level don't act at their firings (game.c). nge ends an
+ * effect only when its time runs out; cures and saving throws are decided
+ * here. An active effect's kind and power: nge_effect_kind(),
+ * nge_effect_power(); a target's active effects: NGE_EFFECT_FOR_EACH.
  *
  * Effects are applied by direct calls, not by events: by actions (using an
  * item, a hit's hook), by generators (a creature's innate hook) and by ops
@@ -51,14 +59,15 @@
  * ID that is later reused; its ops name the effect as the cause.
  *
  * Banking: everything here is banked (NGE_BANKED, page 120, with the
- * definitions and the active effects' kinds in page 121). Don't call
- * these while game code has its own page mapped in slot 6 or 7.
+ * definitions in page 121), except effects_hook(), in common memory. Don't
+ * call these while game code has its own page mapped in slot 6 or 7.
  */
 
 #include <stdint.h>
 
 #include "core/nge_bank.h"
 #include "ecs/nge_entity.h"
+#include "ecs/systems/nge_effect.h"
 #include "game/components/components.h"
 
 /*
@@ -125,7 +134,7 @@
 #define EF_COUNT             54
 
 /* Why an effect ended: EV_EFFECT_ENDED's p2 */
-#define EFFECT_END_EXPIRED  0   /**< Its time ran out, or effect_end(). */
+#define EFFECT_END_EXPIRED  0   /**< Its time ran out, or effect_end(): NGE_EFFECT_END_EXPIRED. */
 #define EFFECT_END_CURED    1   /**< effect_cure() (or a cure op). */
 #define EFFECT_END_SAVED    2   /**< Its target passed its saving throw. */
 #define EFFECT_END_COUNT    3
@@ -160,40 +169,23 @@ uint8_t effect_apply(uint8_t ef, int8_t power, nge_entity_id_t target, nge_entit
 void effect_end(nge_entity_id_t effect) NGE_BANKED;
 
 /**
+ * @brief The game's side of nge_effect's hooks: in common memory, for the
+ *        game's dispatch function (game.c, which skips firings off the
+ *        level) or nge_effect_init() directly. STARTED: the on_start op,
+ *        recompute the target, EV_EFFECT_STARTED; REFRESHED: recompute if
+ *        the power rose, EV_EFFECT_STARTED; TICK: the on_tick op, then the
+ *        saving throw (passed, it ends: EFFECT_END_SAVED); ENDED (unless
+ *        the target is dead): the on_end op, recompute, EV_EFFECT_ENDED
+ *        with the reason.
+ */
+void effects_hook(const nge_effect_hook_t *h);
+
+/**
  * @brief End target's active effects that grant any of statuses
  *        (EV_EFFECT_ENDED, p2 EFFECT_END_CURED), but not innate ones.
  * @return How many were ended.
  */
 uint8_t effect_cure(nge_entity_id_t target, uint8_t statuses) NGE_BANKED;
-
-/**
- * @brief An active effect's timer handler (TIMER_EFFECT): its on_tick op on
- *        its target, then its saving throw, if it has one (passed, it ends:
- *        EFFECT_END_SAVED); on its last cycle (cycles 1) it ends.
- */
-void effects_on_timer(nge_entity_id_t effect, uint8_t cycles) NGE_BANKED;
-
-/**
- * @brief Work out an entity's derived attributes and statuses from its
- *        bases, its equipped items' worn effects and its active effects,
- *        clamped to their ranges; keep hp within the maximum and an
- *        actor's timer period equal to its speed. Posts EV_ATTRS_CHANGED
- *        if anything changed. Does nothing to an entity that isn't alive
- *        or has no health.
- */
-void effects_recompute(nge_entity_id_t id) NGE_BANKED;
-
-/**
- * @brief 1 if an entity's derived attributes and statuses are what
- *        effects_recompute() would make them (for asserts and tests).
- */
-uint8_t effects_check(nge_entity_id_t id) NGE_BANKED;
-
-/** @brief Set attribute attr's base for good, then recompute (an alive entity with health and the attribute's component). */
-void effects_set_base(nge_entity_id_t id, uint8_t attr, uint8_t value) NGE_BANKED;
-
-/** @brief The kind (EF_*) of an active effect. */
-uint8_t effect_kind_of(nge_entity_id_t effect) NGE_BANKED;
 
 /**
  * @brief Copy effect ef's start or end text, or its name (EFFECT_TEXT_*),

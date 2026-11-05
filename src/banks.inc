@@ -57,8 +57,8 @@
 //                                 screen's set-up and stats, the inventory, the
 //                                 title) / the inventory's list
 //                        118/119  messages: what the player is told / (unused)
-//                        120/121  effects: the effect system / the effect
-//                                 definitions and the active effects' kinds
+//                        120/121  effects: applying and curing effects, nge_effect's
+//                                 hooks / the effect definitions
 //                        122/123  gen feature: feature generator / feature kinds
 //                        124/125  target: targeting and its cursor / (unused)
 //                        126/127  anim: starting the action animations / the
@@ -73,7 +73,9 @@
 //                        136/137  level travel: leaving a level, entities going
 //                                 between levels (game/level/level_travel.c) /
 //                                 (unused)
-//                        138-151  free
+//                        138/139  attrs: deriving attribute values / (unused:
+//                                 page 121 is mapped into slot 7 by hand)
+//                        140-151  free
 //             152-223  game assets (maps, graphics, level data):
 //                        153  the map tiles' palette (slot 7, via nge_palette_load9();
 //                             src/data/tile_palette_data.asm, generated)
@@ -136,7 +138,7 @@
 // game messages: what the player is told (game/messages)
 #pragma define CRT_ORG_PAGE_118 = 0x76C000
 
-// game effects: applying, ending and recomputing effects (game/effects)
+// game effects: applying and curing effects, nge_effect's hooks (game/effects)
 #pragma define CRT_ORG_PAGE_120 = 0x78C000
 
 // game gen: the feature generator
@@ -162,6 +164,9 @@
 
 // game level travel: leaving a level (game/level/level_travel.c)
 #pragma define CRT_ORG_PAGE_136 = 0x88C000
+
+// game attrs: deriving attribute values (game/attrs)
+#pragma define CRT_ORG_PAGE_138 = 0x8AC000
 
 // nge map: set-up functions
 #pragma define CRT_ORG_PAGE_44 = 0x2CC000

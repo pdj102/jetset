@@ -12,7 +12,8 @@
 #      and folders are included too. Next register and IO port names come from z88dk's own
 #      headers.
 #   Game code (src/game) is linked only into the tests listed with it below
-#   (GEN_GAME_SRCS, with the components and effects, for test_gen, LEVEL_GAME_SRCS and those for test_level,
+#   (GEN_GAME_SRCS, with the components, effects and attributes, for test_gen,
+#   LEVEL_GAME_SRCS and those for test_level,
 #   ACT_GAME_SRCS (with the AI files that act, and the features' reactions, which act) and the level and gen ones for test_act and test_ai, the gen ones for
 #   test_inventory, UI_GAME_SRCS and the action ones for test_ui and test_target).
 #   Library files that only work on the Next (inline asm traps, Layer 2
@@ -51,15 +52,15 @@ GEN_GAME_SRCS := $(addprefix $(GAMEDIR)/,gen/gen.c gen/gen_shared_bank.c \
                  ai/ai.c ai/ai_bank.c ai/ai_brains.c ai/ai_pdata.c \
                  components/feature.c components/feature_cdata.c \
                  gen/gen_feature_bank.c gen/gen_feature_pdata.c \
-                 effects/effects_core.c effects/effects_game.c effects/effects_pdata.c \
+                 effects/effects.c effects/effects_bank.c effects/effects_pdata.c attrs/attrs_bank.c \
                  spells/spells_bank.c spells/spells_pdata.c)
-GEN_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(GEN_GAME_SRCS))
 LEVEL_GAME_SRCS := $(addprefix $(GAMEDIR)/,level/level.c level/level_bank.c level/level_gen.c level/level_deco.c \
                    level/level_travel.c level/level_pdata.c quest/quest.c quest/quest_bank.c)
 # The decorator's tables, generated into src/data (docs/dungeon_decoration.md)
 DATADIR := ../src/data
 LEVEL_ONLY_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(LEVEL_GAME_SRCS)) \
                    $(BUILD)/data/tile_rules_data.o
+GEN_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(GEN_GAME_SRCS))
 LEVEL_GAME_OBJS := $(LEVEL_ONLY_OBJS) $(GEN_GAME_OBJS)
 # The stairs actions send entities between levels: the actions need the level module
 ACT_GAME_SRCS := $(wildcard $(GAMEDIR)/actions/*.c) $(addprefix $(GAMEDIR)/ai/,ai_act.c ai_sense.c ai_think.c) \
@@ -91,19 +92,9 @@ CFLAGS := -std=gnu11 -O1 -g -Wall -MMD -MP
 
 all: run
 
-# The effects core knows nothing of the game's components: it reaches them
-# through its seam (src/game/effects/effects_core.h)
-EFFECTS_CORE := $(GAMEDIR)/effects/effects_core.c $(GAMEDIR)/effects/effects_core.h
-EFFECTS_CORE_BANNED := ^\#include "game/(components/(health|item|stats|inventory|attack|kind|mana|pc)|gen/|timers|actions/|actors|player/)
-
-.PHONY: check-effects-core
-check-effects-core:
-	@if grep -nE '$(EFFECTS_CORE_BANNED)' $(EFFECTS_CORE); then \
-	  echo "effects core includes game content: use the seam (effects_core.h)"; exit 1; fi
-
 # Build everything, run every test, and fail if any test fails. The
 # scripts' tests (tests/scripts/test_*.py, Python's unittest) run too
-run: check-effects-core $(TESTS)
+run: $(TESTS)
 	@failed=0; \
 	for t in $(TESTS); do ./$$t || failed=1; done; \
 	python3 -I -m unittest discover -s scripts || failed=1; \

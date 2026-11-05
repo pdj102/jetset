@@ -1,24 +1,20 @@
-/* nge-dataseg: PAGE_121 */
 /*
  * The effects' page data, in page 121 (slot 7 while the effects' code in
- * page 120 runs): the definitions, constant data with their texts, the
- * game's side's data for the core (effects_core.h: the attributes' tables,
- * the timer kind), and the kind and power of each active effect
- * (uninitialised: set when one starts). Tables are here, not in page 120, whose addresses carry
- * the page in their high bits. See "Page data" in docs/memory_map.md.
+ * page 120 runs): the definitions, constant data with their texts
+ * (effects_defs.h). The attributes module (page 138) maps this page in by
+ * hand to copy a row's statuses and modifiers (EFFECTS_PDATA_PAGE). Tables
+ * are here, not in page 120, whose addresses carry the page in their high
+ * bits. See "Page data" in docs/memory_map.md.
  */
 #ifdef __SDCC
 #pragma constseg PAGE_121
 #endif
 
-#include "game/effects/effects_game.h"
+#include "game/effects/effects_defs.h"
 
 #include "ecs/systems/nge_timer.h"
-#include "game/components/attrs.h"
 #include "game/components/health.h"
-#include "game/components/mana.h"
 #include "game/components/stats.h"
-#include "game/timers.h"
 
 #define TURNS(n)  ((n) * NGE_TIMER_TICKS_PER_TURN)
 
@@ -336,26 +332,3 @@ const effect_def_t effect_defs[EF_COUNT] = {
         .duration = EFFECT_WORN,
     },
 };
-
-/* ---- The game's side, read by the core ---- */
-
-const effects_attr_t effects_game_attrs[ATTR_COUNT] = {
-    [ATTR_HP_MAX] = { health_hp_max_base,               COMPONENT_HEALTH, 0 },
-    [ATTR_AC]     = { health_ac_base,                   COMPONENT_HEALTH, 0 },
-    [ATTR_SPEED]  = { stats_speed_base,                 COMPONENT_STATS,  0 },
-    [ATTR_IMMUNE] = { health_immune_base,               COMPONENT_HEALTH, 1 },
-    [ATTR_RESIST] = { health_resist_base,               COMPONENT_HEALTH, 1 },
-    [ATTR_VULN]   = { health_vuln_base,                 COMPONENT_HEALTH, 1 },
-    [ATTR_STR]    = { &stats_ability_base[ABIL_STR][0], COMPONENT_STATS,  0 },
-    [ATTR_DEX]    = { &stats_ability_base[ABIL_DEX][0], COMPONENT_STATS,  0 },
-    [ATTR_CON]    = { &stats_ability_base[ABIL_CON][0], COMPONENT_STATS,  0 },
-    [ATTR_INT]    = { &stats_ability_base[ABIL_INT][0], COMPONENT_STATS,  0 },
-    [ATTR_WIS]    = { &stats_ability_base[ABIL_WIS][0], COMPONENT_STATS,  0 },
-    [ATTR_CHA]    = { &stats_ability_base[ABIL_CHA][0], COMPONENT_STATS,  0 },
-    [ATTR_MP_MAX] = { mana_mp_max_base,                 COMPONENT_MANA,   0 },
-};
-
-const uint8_t effects_game_timer_kind = TIMER_EFFECT;
-
-uint8_t effect_kind[NGE_ENTITY_MAX];
-int8_t effect_power[NGE_ENTITY_MAX];

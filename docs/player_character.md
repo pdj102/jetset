@@ -213,7 +213,7 @@ equipment, light and vision, spells known if monsters cast spells.
 
 - **D8 A new level goes through the effects (R10).** `pc_gain_xp()` raises
   the maximum hit points with `effects_set_base(ATTR_HP_MAX)` (the one way
-  to change a base, game/components/attrs.h), stopping at 255, then
+  to change a base, game/attrs/attrs.h), stopping at 255, then
   `health_heal()` gives the same amount, which posts `EV_HEALED`. The hit
   die is d8 (`PC_HIT_DIE`) until classes come (R16); the Constitution
   modifier is `STATS_MOD()` of the player's Constitution as it is then,

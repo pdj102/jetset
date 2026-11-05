@@ -11,10 +11,10 @@
 
 #include "core/nge_util.h"
 #include "event/nge_event.h"
+#include "game/attrs/attrs.h"
 #include "game/components/inventory.h"
 #include "game/components/item.h"
 #include "game/components/kind.h"
-#include "game/effects/effects.h"
 #include "game/events.h"
 #include "game/gen/gen.h"
 

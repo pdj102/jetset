@@ -14,11 +14,10 @@
 
 #include "core/nge_util.h"
 #include "event/nge_event.h"
-#include "game/components/attrs.h"
+#include "game/attrs/attrs.h"
 #include "game/components/health.h"
 #include "game/components/mana.h"
 #include "game/components/stats.h"
-#include "game/effects/effects.h"
 #include "game/events.h"
 #include "game/spells/spells.h"
 

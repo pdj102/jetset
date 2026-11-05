@@ -1,4 +1,4 @@
-/* game/effects: applying, timing, ending and recomputing effects. */
+/* game/effects, game/attrs: applying, timing, ending and recomputing effects. */
 #include "test.h"
 
 #include <stdlib.h>
@@ -6,17 +6,18 @@
 
 #include "ecs/nge_entity.h"
 #include "ecs/nge_owner.h"
+#include "ecs/systems/nge_effect.h"
 #include "ecs/systems/nge_timer.h"
 #include "event/nge_event.h"
 
-#include "game/components/attrs.h"
+#include "game/attrs/attrs_internal.h"
 #include "game/components/health.h"
 #include "game/components/inventory.h"
 #include "game/components/inventory.h"
 #include "game/components/item.h"
 #include "game/components/mana.h"
 #include "game/components/stats.h"
-#include "game/effects/effects_game.h"
+#include "game/effects/effects_internal.h"
 #include "game/events.h"
 #include "game/gen/gen.h"
 #include "game/timers.h"
@@ -61,15 +62,23 @@ static int find_event(int from, uint8_t id)
     return -1;
 }
 
-/* The timers: effects fire through effects_on_timer(); each effect firing is counted */
+/* The timers: effects fire through nge_effect and the effects' hook; each effect firing is counted */
 static int fired;
 
+static void hook(const nge_effect_hook_t *h)
+{
+    if (h->what == NGE_EFFECT_TICK) {
+        fired++;
+    }
+    effects_hook(h);
+}
+
+/* The game's timers: none of an effect's comes here */
 static void dispatch(nge_entity_id_t id, uint8_t kind, uint8_t cycles)
 {
-    if (kind == TIMER_EFFECT) {
-        fired++;
-        effects_on_timer(id, cycles);
-    }
+    (void)id;
+    (void)cycles;
+    CHECK(kind >= NGE_TIMER_KIND_USER);
 }
 
 /* Move time on until n more effect firings, or 1000 steps */
@@ -91,7 +100,7 @@ static int count_effects(nge_entity_id_t target, uint8_t ef)
     int n = 0;
 
     NGE_OWNER_FOR_EACH_OWNED(i, id, target) {
-        if (NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_EFFECT) && effect_kind_of(id) == ef) {
+        if (NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_EFFECT) && nge_effect_kind(id) == ef) {
             n++;
         }
     }
@@ -105,7 +114,7 @@ static nge_entity_id_t effect_on(nge_entity_id_t target, uint8_t ef)
     uint8_t i;
 
     NGE_OWNER_FOR_EACH_OWNED(i, id, target) {
-        if (NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_EFFECT) && effect_kind_of(id) == ef) {
+        if (NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_EFFECT) && nge_effect_kind(id) == ef) {
             return id;
         }
     }
@@ -148,6 +157,7 @@ static void reset(void)
 {
     nge_entity_init();
     nge_timer_init();
+    nge_effect_init(hook);
     nge_event_init();
     fired = 0;
 }
@@ -240,8 +250,8 @@ int main(void)
     g = goblin();
     CHECK(effect_apply(EF_POISON, 1, g, NGE_ENTITY_INVALID) == 1);
     e = effect_on(g, EF_POISON);
-    CHECK(e != NGE_ENTITY_INVALID && NGE_OWNER_OF(e) == g && effect_kind_of(e) == EF_POISON);
-    CHECK(NGE_ENTITY_HAS_COMPONENT(e, NGE_COMPONENT_TIMER) && nge_timer_kind[e] == TIMER_EFFECT &&
+    CHECK(e != NGE_ENTITY_INVALID && NGE_OWNER_OF(e) == g && nge_effect_kind(e) == EF_POISON && nge_effect_power(e) == 1);
+    CHECK(NGE_ENTITY_HAS_COMPONENT(e, NGE_COMPONENT_TIMER) && nge_timer_kind[e] == NGE_TIMER_EFFECT &&
           nge_timer_period[e] == 30 && nge_timer_cycles[e] == 4 && nge_timer_count[e] == 30);
     CHECK(STATUS_HAS(g, STATUS_POISONED) && effects_check(g));
     CHECK(events() == 2 && is(0, g, EV_ATTRS_CHANGED, NGE_EVENT_NONE, 0) &&
@@ -278,27 +288,27 @@ int main(void)
 
     /* ---- saving throws: 1d20 + the ability's modifier >= DC ---- */
     seed_for_rolls(1, 9, 9);
-    CHECK(effects_game_save(g, ABIL_CON, 10) == 0);                /* Con 10: +0 */
+    CHECK(effects_save(g, ABIL_CON, 10) == 0);                /* Con 10: +0 */
     seed_for_rolls(1, 10, 10);
-    CHECK(effects_game_save(g, ABIL_CON, 10) == 1);
+    CHECK(effects_save(g, ABIL_CON, 10) == 1);
     seed_for_rolls(1, 10, 10);
-    CHECK(effects_game_save(g, ABIL_CON, 11) == 0);                /* a higher DC */
+    CHECK(effects_save(g, ABIL_CON, 11) == 0);                /* a higher DC */
     stats_ability[ABIL_CON][g] = 30;                               /* +10: a 1 passes */
     seed_for_rolls(1, 1, 1);
-    CHECK(effects_game_save(g, ABIL_CON, 10) == 1);
+    CHECK(effects_save(g, ABIL_CON, 10) == 1);
     stats_ability[ABIL_CON][g] = 1;                                /* -5 */
     seed_for_rolls(1, 14, 14);
-    CHECK(effects_game_save(g, ABIL_CON, 10) == 0);
+    CHECK(effects_save(g, ABIL_CON, 10) == 0);
     seed_for_rolls(1, 15, 15);
-    CHECK(effects_game_save(g, ABIL_CON, 10) == 1);
+    CHECK(effects_save(g, ABIL_CON, 10) == 1);
     seed_for_rolls(1, 9, 9);
-    CHECK(effects_game_save(g, ABIL_STR, 7) == 1);                 /* the ability named: Str 8, -1 */
+    CHECK(effects_save(g, ABIL_STR, 7) == 1);                 /* the ability named: Str 8, -1 */
     stats_remove(g);                                               /* no stats: +0, whatever its scores */
     seed_for_rolls(1, 14, 14);
-    CHECK(effects_game_save(g, ABIL_CON, 10) == 1);
+    CHECK(effects_save(g, ABIL_CON, 10) == 1);
     seed_for_rolls(1, 9, 9);
-    CHECK(effects_game_save(g, ABIL_CON, 10) == 0);
-    TEST_EXPECT_HALT(effects_game_save(g, ABIL_COUNT, 10));
+    CHECK(effects_save(g, ABIL_CON, 10) == 0);
+    TEST_EXPECT_HALT(effects_save(g, ABIL_COUNT, 10));
     CHECK(test_halt_count == 1);
 
     /* ---- no saving throw (DC 0): no roll ---- */
@@ -496,16 +506,15 @@ int main(void)
     /* The game's attributes: each a base table and a component; the damage masks are ORed, the rest added */
     ok = 1;
     for (i = 0; i < ATTR_COUNT; i++) {
-        ok = ok && effects_game_attrs[i].base != NULL && effects_game_attrs[i].component != 0 &&
-             effects_game_attrs[i].is_mask == (i == ATTR_IMMUNE || i == ATTR_RESIST || i == ATTR_VULN);
+        ok = ok && attrs_table[i].base != NULL && attrs_table[i].component != 0 &&
+             attrs_table[i].is_mask == (i == ATTR_IMMUNE || i == ATTR_RESIST || i == ATTR_VULN);
     }
     CHECK(ok);
-    CHECK(effects_game_attrs[ATTR_HP_MAX].base == health_hp_max_base &&
-          effects_game_attrs[ATTR_HP_MAX].component == COMPONENT_HEALTH &&
-          effects_game_attrs[ATTR_SPEED].base == stats_speed_base &&
-          effects_game_attrs[ATTR_SPEED].component == COMPONENT_STATS &&
-          effects_game_attrs[ATTR_ABILITY(ABIL_CHA)].base == stats_ability_base[ABIL_CHA]);
-    CHECK(effects_game_timer_kind == TIMER_EFFECT);
+    CHECK(attrs_table[ATTR_HP_MAX].base == health_hp_max_base &&
+          attrs_table[ATTR_HP_MAX].component == COMPONENT_HEALTH &&
+          attrs_table[ATTR_SPEED].base == stats_speed_base &&
+          attrs_table[ATTR_SPEED].component == COMPONENT_STATS &&
+          attrs_table[ATTR_ABILITY(ABIL_CHA)].base == stats_ability_base[ABIL_CHA]);
 
     /* ---- a target that dies: its effects stop acting, and no end event ---- */
     reset();
@@ -574,8 +583,8 @@ int main(void)
 
     /* ---- maximum MP: an attribute, at least 1; a lower maximum takes MP down with it, a higher restores none ---- */
     events();
-    CHECK(effects_game_attrs[ATTR_MP_MAX].base == mana_mp_max_base &&
-          effects_game_attrs[ATTR_MP_MAX].component == COMPONENT_MANA);
+    CHECK(attrs_table[ATTR_MP_MAX].base == mana_mp_max_base &&
+          attrs_table[ATTR_MP_MAX].component == COMPONENT_MANA);
     effects_set_base(player, ATTR_MP_MAX, 9);
     CHECK(mana_mp_max_base[player] == 9 && mana_mp_max[player] == 9 && mana_mp[player] == 5 && effects_check(player));
     effects_set_base(player, ATTR_MP_MAX, 3);
@@ -716,20 +725,20 @@ int main(void)
     g = goblin();
     effect_apply(EF_POISON, 2, g, NGE_ENTITY_INVALID);
     e = effect_on(g, EF_POISON);
-    CHECK(effect_power[e] == 2);
+    CHECK(nge_effect_power(e) == 2);
     srand(seed_for_rolls(1, 1, 1));
     fire(1);
     CHECK(health_hp[g] == 4);
     /* Refreshed: the stronger power stays, the weaker can't dilute it */
-    CHECK(effect_apply(EF_POISON, 1, g, NGE_ENTITY_INVALID) == 1 && effect_power[e] == 2);
-    CHECK(effect_apply(EF_POISON, 3, g, NGE_ENTITY_INVALID) == 1 && effect_power[e] == 3 && count_effects(g, EF_POISON) == 1);
+    CHECK(effect_apply(EF_POISON, 1, g, NGE_ENTITY_INVALID) == 1 && nge_effect_power(e) == 2);
+    CHECK(effect_apply(EF_POISON, 3, g, NGE_ENTITY_INVALID) == 1 && nge_effect_power(e) == 3 && count_effects(g, EF_POISON) == 1);
     /* Stacked: each instance keeps its own */
     reset();
     g = goblin();
     effect_apply(EF_REGEN, 1, g, NGE_ENTITY_INVALID);
     e = effect_on(g, EF_REGEN);
     effect_apply(EF_REGEN, 2, g, NGE_ENTITY_INVALID);
-    CHECK(count_effects(g, EF_REGEN) == 2 && effect_power[e] == 1);
+    CHECK(count_effects(g, EF_REGEN) == 2 && nge_effect_power(e) == 1);
 
     /* ---- asserts ---- */
     reset();

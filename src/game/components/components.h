@@ -48,13 +48,12 @@
 #define COMPONENT_HEALTH     NGE_COMPONENT(NGE_COMPONENT_USER + 4)   /**< Hit points, armour class, damage masks (health.h). */
 #define COMPONENT_MELEE      NGE_COMPONENT(NGE_COMPONENT_USER + 5)   /**< A melee attack (attack.h). */
 #define COMPONENT_RANGED     NGE_COMPONENT(NGE_COMPONENT_USER + 6)   /**< A ranged attack (attack.h): launchers and thrown ammo. */
-#define COMPONENT_EFFECT     NGE_COMPONENT(NGE_COMPONENT_USER + 7)   /**< An active effect (game/effects/effects.h). */
-#define COMPONENT_FEATURE    NGE_COMPONENT(NGE_COMPONENT_USER + 8)   /**< A fixed, interactive part of a level (feature.h). */
-#define COMPONENT_MANA       NGE_COMPONENT(NGE_COMPONENT_USER + 9)   /**< Mana points, spent on spells (mana.h). */
-#define COMPONENT_PC         NGE_COMPONENT(NGE_COMPONENT_USER + 10)  /**< The player character: name, level, XP, gold (pc.h). */
-#define COMPONENT_AI         NGE_COMPONENT(NGE_COMPONENT_USER + 11)  /**< The game decides its turns: monsters (game/ai/ai.h). */
-#define COMPONENT_SPELLS     NGE_COMPONENT(NGE_COMPONENT_USER + 12)  /**< Knows spells: a caster (game/spells/spells.h). */
-#define COMPONENT_COUNT      13  /**< The game's components: the next is NGE_COMPONENT_USER + COMPONENT_COUNT. */
+#define COMPONENT_FEATURE    NGE_COMPONENT(NGE_COMPONENT_USER + 7)   /**< A fixed, interactive part of a level (feature.h). */
+#define COMPONENT_MANA       NGE_COMPONENT(NGE_COMPONENT_USER + 8)   /**< Mana points, spent on spells (mana.h). */
+#define COMPONENT_PC         NGE_COMPONENT(NGE_COMPONENT_USER + 9)   /**< The player character: name, level, XP, gold (pc.h). */
+#define COMPONENT_AI         NGE_COMPONENT(NGE_COMPONENT_USER + 10)  /**< The game decides its turns: monsters (game/ai/ai.h). */
+#define COMPONENT_SPELLS     NGE_COMPONENT(NGE_COMPONENT_USER + 11)  /**< Knows spells: a caster (game/spells/spells.h). */
+#define COMPONENT_COUNT      12  /**< The game's components: the next is NGE_COMPONENT_USER + COMPONENT_COUNT. */
 
 /* Every game component has a number below NGE_COMPONENT_MAX */
 typedef char components_count_check[(NGE_COMPONENT_USER + COMPONENT_COUNT <= NGE_COMPONENT_MAX) ? 1 : -1];

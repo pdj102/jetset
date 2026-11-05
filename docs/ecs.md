@@ -11,9 +11,12 @@ in [memory_map.md](memory_map.md). Persistent and parked entities are specified 
 [level_transitions.md](level_transitions.md).
 
 This spec covers the entities, ownership, the data page and how the components and
-systems use them. What the timer and render systems do beyond that is in their
-headers, [nge_timer.h](../src/nge/ecs/systems/nge_timer.h) and
-[nge_render.h](../src/nge/ecs/systems/nge_render.h).
+systems use them. What the timer, render and effect systems do beyond that is in
+their headers, [nge_timer.h](../src/nge/ecs/systems/nge_timer.h),
+[nge_render.h](../src/nge/ecs/systems/nge_render.h) and
+[nge_effect.h](../src/nge/ecs/systems/nge_effect.h) (designed in
+[effects_nge.md](effects_nge.md)). Timer kinds below `NGE_TIMER_KIND_USER` are
+nge's, as component numbers below `NGE_COMPONENT_USER` are.
 
 ## 1. Overview
 
@@ -201,7 +204,7 @@ and effects find their way out when it goes.
 | `nge_owner_cdata.c` | Page 50 | `nge_owner_of[]` |
 | `nge_ecs.c` | Common | `nge_ecs_init()`, the guard check |
 | `components/` | Common, tables in page 50 | Location and block; the line test and walk are in page 56 |
-| `systems/` | Pages 52-55 | The render and timer systems |
+| `systems/` | Pages 52-55, 58/59 | The render, timer and effect systems |
 
 `nge_ecs.c` is in common memory because `nge_ecs_init()` maps slot 0 and so can't
 run from it.
@@ -283,7 +286,7 @@ later:
 | `nge_timer_advance()` | Doesn't fire, even later in the same tick |
 | `nge_render_update()` | Not drawn, and `nge_render_follow()` no longer moves the camera |
 | Game code that loops by ID (`inv_next()`, `inv_equipped()`) | Tests `NGE_ENTITY_IS_ALIVE()` itself |
-| `effects_game_affectable()` | Refuses it, so effects don't act on it |
+| The effects module's test of its target (`affectable()`, `effects_bank.c`) | Refuses it, so effects don't act on it |
 | Event handlers | Can read its flags, components, owner and data |
 | `nge_owner_count()`, `nge_owner_move_all()` | Counted and moved, as an owner must still pass it on |
 | Checked setters, `nge_owner_set()`, `nge_location_set()`, `nge_timer_add()` | Accepted, for clean-up. They don't bring it back |

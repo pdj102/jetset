@@ -8,9 +8,9 @@
 #include "core/nge_util.h"
 
 #include "game/actors.h"
+#include "game/attrs/attrs.h"
 #include "game/components/health.h"
 #include "game/components/mana.h"
-#include "game/effects/effects.h"
 #include "game/events.h"
 #include "game/ui/screen_main.h"
 

@@ -12,10 +12,11 @@
 #include "ecs/systems/nge_timer.h"
 
 #include "game/ai/ai_internal.h"
-#include "game/effects/effects_game.h"
+#include "game/effects/effects_defs.h"
 #include "game/gen/gen_internal.h"
 #include "game/level/level.h"
 #include "game/timers.h"
+#include "game/effects/effects.h"
 
 #define AREA  NGE_OWNER_AREA(0)
 
@@ -252,6 +253,7 @@ static void reset(void)
     nge_entity_init();
     nge_render_init();
     nge_timer_init();
+    nge_effect_init(effects_hook);
 }
 
 int main(void)
@@ -276,7 +278,7 @@ int main(void)
         static const nge_component_t masks[] = {
             NGE_COMPONENT_LOCATION, NGE_COMPONENT_SPRITE, NGE_COMPONENT_BLOCK, NGE_COMPONENT_TIMER, NGE_COMPONENT_EFFECT,
             COMPONENT_KIND, COMPONENT_STATS, COMPONENT_ITEM, COMPONENT_INVENTORY, COMPONENT_HEALTH,
-            COMPONENT_MELEE, COMPONENT_RANGED, COMPONENT_EFFECT, COMPONENT_FEATURE, COMPONENT_MANA, COMPONENT_PC,
+            COMPONENT_MELEE, COMPONENT_RANGED, COMPONENT_FEATURE, COMPONENT_MANA, COMPONENT_PC,
             COMPONENT_AI, COMPONENT_SPELLS,
         };
         uint8_t seen[NGE_COMPONENT_TABLES] = {0};
@@ -446,7 +448,7 @@ int main(void)
         nge_event_init();
         id = gen_creature(kind, AREA);
         NGE_OWNER_FOR_EACH_OWNED(i, owned, id) {
-            n += NGE_ENTITY_HAS_COMPONENT(owned, COMPONENT_EFFECT) && effect_kind_of(owned) == EF_MANA_REGEN;
+            n += NGE_ENTITY_HAS_COMPONENT(owned, NGE_COMPONENT_EFFECT) && nge_effect_kind(owned) == EF_MANA_REGEN;
         }
         ok = ok && n == (MANA_KIND_HAS(&gen_creatures[kind].mana) ? 1 : 0);
     }

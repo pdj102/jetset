@@ -347,7 +347,7 @@ Reactions marked **rule** change the game's state. The rest only show something.
 | `EV_HEALED` | `health_heal()` | player: hit points |
 | `EV_DIED` | `health_damage()` | **rule** player: XP, maybe a level; messages; **rule** death: game over |
 | `EV_SPELL_LEARNED` | `spell_learn()` | messages, for the player |
-| `EV_EFFECT_STARTED`, `EV_EFFECT_ENDED` | `effects_core.c` | messages |
+| `EV_EFFECT_STARTED`, `EV_EFFECT_ENDED` | `effects_bank.c` | messages |
 | `EV_ATTRS_CHANGED` | `effects_recompute()` | player: the stats |
 | `EV_MANA_SPENT`, `EV_MANA_RESTORED` | `mana.c` | player: MP |
 | `EV_XP_GAINED` | `pc_gain_xp()` | player: XP |

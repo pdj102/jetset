@@ -31,7 +31,7 @@
  * drops where it died). An entity at 0 hp takes no more damage and can't be
  * healed.
  *
- * hp_max, ac and the masks are attributes (game/components/attrs.h):
+ * hp_max, ac and the masks are attributes (game/attrs/attrs.h):
  * kind value, base, derived value. Hit points are a pool: hp is its
  * current amount, kept within hp_max. Change the attributes only through
  * the effects (game/effects/effects.h).

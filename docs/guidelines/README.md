@@ -57,8 +57,7 @@ No rule repeats these:
 - `scripts/check-banks.sh`, run after every link: banked code and literals
   carry their page; no odd code pages; `*_cdata.c` symbols in their page and
   range; nge's `banked_call`, not z88dk's.
-- `make test`: the PC tests, and the effects core's include ban
-  (`check-effects-core` in `tests/Makefile`).
+- `make test`: the PC tests.
 
 ## Using the guidelines
 

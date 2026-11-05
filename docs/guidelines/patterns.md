@@ -58,11 +58,16 @@ in `game/components/components.h`.
 Check: `grep -rn "NGE_COMPONENT(" src` finds masks only in the two lists
 (and `NGE_COMPONENT()` itself in `ecs/nge_entity.h`).
 
-### P-EFFECT-1 · must · Effects follow game/effects/effects.h and effects_core.h
+### P-EFFECT-1 · must · Effects follow game/effects/effects.h and effects_defs.h
 - A new effect is a row in `effects_pdata.c` named from a kind's hook. Only
-  a new kind of op needs code, in `effects_game.c`.
-- The core includes only `effects_core.h`, nge headers and `game/events.h`
-  (`make test` checks it). Game knowledge goes through the seam.
+  a new kind of op needs code, in `effects_bank.c`.
+- Active effects' lifecycle is nge's (`ecs/systems/nge_effect.h`): the game
+  starts and ends them through it, reads kind and power through it, and
+  walks them with `NGE_EFFECT_FOR_EACH`. What they do is decided in the
+  hooks (`effects_on_hook()`), not in nge.
+- Derived values are the attributes module's (`game/attrs/attrs.h`): it
+  reads a definition's statuses and modifiers by mapping page 121, never
+  across a banked call.
 
 ### P-EVENT-1 · must · Events follow game/events.h and event/nge_event.h
 - An event is named in the past tense, `EV_<WHAT_HAPPENED>`, and has a row

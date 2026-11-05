@@ -17,7 +17,7 @@
 #include "game/actions/act.h"
 #include "game/actions/act_internal.h"
 #include "game/components/attack.h"
-#include "game/components/attrs.h"
+#include "game/attrs/attrs.h"
 #include "game/components/health.h"
 #include "game/components/inventory.h"
 #include "game/components/feature.h"
@@ -850,6 +850,7 @@ int main(void)
     nge_entity_init();
     nge_render_init();
     nge_timer_init();
+    nge_effect_init(effects_hook);
     nge_event_init();
     player = creature(CR_PLAYER, 4, 5);
     rat = creature(CR_RAT, 6, 5);
@@ -1783,6 +1784,7 @@ int main(void)
     nge_entity_init();
     nge_render_init();
     nge_timer_init();
+    nge_effect_init(effects_hook);
     nge_event_init();
     player = creature(CR_PLAYER, 1, 1);
     rat = creature(CR_RAT, 1, 2);
@@ -1811,6 +1813,7 @@ int main(void)
     nge_entity_init();
     nge_render_init();
     nge_timer_init();
+    nge_effect_init(effects_hook);
     nge_event_init();
     nge_map_set_block('O', NGE_BLOCK_NO_FLOOR);
     for (y = 0; y < 10; y++) {
@@ -1902,6 +1905,7 @@ int main(void)
     nge_entity_init();
     nge_render_init();
     nge_timer_init();
+    nge_effect_init(effects_hook);
     nge_event_init();
     for (y = 0; y < 10; y++) {
         for (x = 0; x < 10; x++) {
@@ -2018,6 +2022,7 @@ int main(void)
     nge_entity_init();
     nge_render_init();
     nge_timer_init();
+    nge_effect_init(effects_hook);
     nge_event_init();
     player = creature(CR_PLAYER, 0, 2);
     i1 = gen_item(IT_ARROWS, player);
@@ -2079,6 +2084,7 @@ int main(void)
     nge_entity_init();
     nge_render_init();
     nge_timer_init();
+    nge_effect_init(effects_hook);
     nge_event_init();
     player = creature(CR_PLAYER, 0, 2);
     rat = creature(CR_RAT, 3, 2);
@@ -2176,6 +2182,7 @@ int main(void)
     nge_entity_init();
     nge_render_init();
     nge_timer_init();
+    nge_effect_init(effects_hook);
     nge_event_init();
     player = creature(CR_PLAYER, 0, 2);
     rat = creature(CR_RAT, 3, 2);

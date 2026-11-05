@@ -15,7 +15,7 @@
  *
  * An ability score is 1-30, 10-11 average; its modifier, STATS_MOD(), is
  * (score - 10) / 2 rounded down: -5 at 1, +10 at 30. Speed and the
- * abilities are attributes (game/components/attrs.h): stats_add() sets
+ * abilities are attributes (game/attrs/attrs.h): stats_add() sets
  * their bases and values from their kind values (stats_kind_t, part of a
  * creature's kind record in game/gen/), and effects change them
  * (game/effects/effects.h).

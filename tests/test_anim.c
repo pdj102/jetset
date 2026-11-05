@@ -18,6 +18,7 @@
 #include "game/events.h"
 #include "game/gen/gen.h"
 #include "game/level/level.h"
+#include "game/effects/effects.h"
 
 #define AREA  NGE_OWNER_AREA(0)
 
@@ -72,6 +73,7 @@ int main(void)
     nge_entity_init();
     nge_render_init();
     nge_timer_init();
+    nge_effect_init(effects_hook);
     nge_event_init();
     level_depth = 0;                                     /* LEVEL_AREA is AREA */
     nge_render_set_view(AREA);

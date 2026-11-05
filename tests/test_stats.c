@@ -3,7 +3,7 @@
 
 #include "ecs/nge_entity.h"
 
-#include "game/components/attrs.h"
+#include "game/attrs/attrs.h"
 #include "game/components/stats.h"
 
 /* The reference: (score - 10) / 2 rounded down */

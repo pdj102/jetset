@@ -10,14 +10,13 @@
  * it acts once a turn, whatever the action. The game's dispatch function
  * (game.c) calls the handler for each kind. The game's kinds are numbered
  * from NGE_TIMER_KIND_USER: those below are nge's, fired by nge's own
- * handlers.
+ * handlers: active effects' timers are nge's (NGE_TIMER_EFFECT,
+ * ecs/systems/nge_effect.h), which calls the effects module's hook.
  *
  * | Kind          | Entity                  | Handler                                     |
  * |---------------|-------------------------|---------------------------------------------|
  * | TIMER_PLAYER  | the player              | player_on_turn(): their turn: no time       |
  * |               |                         | passes until a command uses it (player.h)   |
- * | TIMER_EFFECT  | an active effect, owned | effects_on_timer(): its op each period, and |
- * |               | by what it affects      | its end after its cycles (game/effects)     |
  * | TIMER_AI      | an entity with the AI   | ai_on_turn(): its state's handler           |
  * |               | component: a monster    | (game/ai/ai.h)                              |
  */
@@ -25,8 +24,7 @@
 #include "ecs/systems/nge_timer.h"
 
 #define TIMER_PLAYER   (NGE_TIMER_KIND_USER + 0)   /**< The player's turn: wait for a command. */
-#define TIMER_EFFECT   (NGE_TIMER_KIND_USER + 1)   /**< An active effect: its period's op; it ends on its last cycle. */
-#define TIMER_AI       (NGE_TIMER_KIND_USER + 2)   /**< An AI entity's turn: the AI decides what it does. */
-#define TIMER_COUNT    3   /**< The game's timer kinds: the next is NGE_TIMER_KIND_USER + TIMER_COUNT. */
+#define TIMER_AI       (NGE_TIMER_KIND_USER + 1)   /**< An AI entity's turn: the AI decides what it does. */
+#define TIMER_COUNT    2   /**< The game's timer kinds: the next is NGE_TIMER_KIND_USER + TIMER_COUNT. */
 
 #endif

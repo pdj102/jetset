@@ -253,7 +253,7 @@ features:
 | `GEN_HOOK_HIT` | When a trap hits and leaves its target alive | The creature it fired at |
 
 The effect is applied with the feature as its source. Effects never act on a
-feature: it has no attributes (`effects_game_affectable()`), so a fire bolt at
+feature: it has no attributes (`affectable()` in `effects_bank.c`), so a fire bolt at
 a boulder does nothing (Q6).
 
 ### 4.6 Actions

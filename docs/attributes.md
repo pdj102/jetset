@@ -3,7 +3,7 @@
 How Jetset stores a creature's numbers and flags, how equipment and effects
 change them, and how conditions end.
 
-The list of attributes is in [attrs.h](../src/game/components/attrs.h), the
+The list of attributes is in [attrs.h](../src/game/attrs/attrs.h), the
 statuses in [stats.h](../src/game/components/stats.h), and the effect
 definitions in [effects_pdata.c](../src/game/effects/effects_pdata.c). What items
 do with effects is in [items.md](items.md), and the effects module is specified in
@@ -34,9 +34,10 @@ item is equipped, an effect starts or ends, a base changes),
 therefore can't be left behind, and removing a source needs no undo.
 
 **Attributes belong to their components.** Each attribute's tables sit in the
-component they describe, and `attrs.h` only numbers them, so that effect data can
-name them. The effects module finds them through one table, which lets its core
-stay free of game knowledge.
+component they describe, and `attrs.h` numbers them, so that effect data can
+name them. The attributes module (`game/attrs`, page 138) finds them through one
+table, and derives the values. It reads each source's modifiers from the effect
+definitions, and the active effects from nge ([effects_nge.md](effects_nge.md)).
 
 **Statuses work the same way.** A status is a flag that an effect grants, and
 the status mask is worked out from scratch with the values. A **condition** is a
@@ -85,13 +86,14 @@ is a resource that damage and healing change. Hit points are a pool.
 - **R8** `attrs.h` explains attributes once. Other headers point to it, and every
   derived table says that it is derived.
 
-### The effects core
+### The attributes module
 
-- **R9** The core reads and writes bases only through the seam
-  (`effects_core.h`). It includes nothing of the components.
-- **R10** The core knows nothing of what a status means, of abilities or of dice.
-  It ORs the bits of the effects granting them, ends effects by the bits they
-  grant, and asks the game's side whether a saving throw is passed.
+- **R9** Only the attributes module reads and writes bases through its table, and
+  derives values. It walks active effects through nge's iterator and equipped items
+  through ownership.
+- **R10** nge's effect system knows nothing of what a status means, of abilities or
+  of dice. The attributes module ORs the bits of the effects granting them; the
+  effects module ends effects by the bits they grant, and rolls saving throws.
 
 ### Statuses and conditions
 
@@ -133,7 +135,7 @@ order.
 | Base | `_base` | `health_ac_base`, `health_hp_max_base`, `stats_ability_base[a]` |
 | Current | The pool's name | `health_hp` |
 
-Bases are read-only outside their component and the effects module.
+Bases are read-only outside their component and the attributes module.
 
 ### 4.3 Setting and recomputing
 
@@ -141,10 +143,13 @@ Bases are read-only outside their component and the effects module.
   values. There are no modifiers yet, so no recompute is needed.
 - **`effects_recompute()`** calls `derive()`, which starts from each base (0 for an
   attribute the entity hasn't) and adds the worn effects of equipped items and the
-  entity's active effects. `effects_game_store()` then clamps and stores the
-  results, and `EV_ATTRS_CHANGED` is posted if anything changed.
-- **`effects_set_base()`** and `OP_RAISE_BASE` change a base for good, then
-  recompute: potions that raise an ability, and gaining a level.
+  entity's active effects, copying each one's statuses and modifiers from the
+  definitions in page 121 (mapped into slot 7 for the copy only). `store()` then
+  clamps and stores the results, and `EV_ATTRS_CHANGED` is posted if anything
+  changed.
+- **`effects_set_base()`** and `OP_RAISE_BASE` (through `effects_raise_base()`)
+  change a base for good, then recompute: potions that raise an ability, and
+  gaining a level.
 - **Pools:** a lower maximum takes the current amount down with it, and a higher one
   doesn't heal.
 - **Speed** also sets the entity's timer period, so its turns follow it.
@@ -152,19 +157,19 @@ Bases are read-only outside their component and the effects module.
 `effects_check()` compares what a recompute would make with what is stored, for
 asserts and tests.
 
-### 4.4 The seam
+### 4.4 The module
 
-The effects core could become an nge module, so it doesn't include the components.
-Three things connect it to the game:
+The attributes module (`game/attrs/attrs_bank.c`, page 138) holds:
 
-- **`effects_game_attrs[]`** has one row per attribute: its base table, the
-  component that has it, and whether modifiers are ORed. `derive()` reads it
+- **`attrs_table[]`** (`attrs_internal.h`), one row per attribute: its base table,
+  the component that has it, and whether modifiers are ORed. `derive()` reads it
   directly, and `base_of()` adds the assert for R7.
-- **`effects_game_store()`** keeps the special cases: the clamps, hit points within
-  the maximum, and the timer period.
-- **`effects_game_save()`** rolls a saving throw.
+- **`store()`**, which keeps the special cases: the clamps, hit points within the
+  maximum, and the timer period.
 
-`check-effects-core`, part of `make test`, fails if the core includes game content.
+Its functions keep the `effects_` prefix they had in the effects module, so their
+callers didn't change. Page 139 is unused: page 121 is mapped into slot 7 while
+`derive()` copies a definition's row, and never across a banked call.
 
 ### 4.5 Statuses and conditions
 
@@ -188,19 +193,20 @@ only where a rule acts on conditions as a group: a cure-all
 `effect_def_t.save` holds an ability and a DC, with DC 0 for no saving throw. It
 works on any timed effect, so a non-condition such as slowness can have one.
 
-At each firing of a timed effect, `effects_on_timer()` runs the tick op and then, if
-the effect and its target are still there, calls `effects_game_save()`. That rolls
+At each firing of a timed effect, the `TICK` hook (`effects_on_hook()`) runs the
+tick op and then, if the effect and its target are still there, calls
+`effects_save()`. That rolls
 1d20 + the ability's modifier against the DC, with modifier 0 for an entity without
 stats. A pass ends the effect.
 
 ### 4.7 How an effect ends
 
-The core ends an effect through one internal function, with a reason in
-`EV_EFFECT_ENDED`'s p2:
+Every ending goes through `nge_effect_end()`, with a reason in `EV_EFFECT_ENDED`'s
+p2:
 
 | Reason | When |
 |---|---|
-| `EFFECT_END_EXPIRED` | Its last firing, or `effect_end()` |
+| `EFFECT_END_EXPIRED` | Its last firing (nge's `NGE_EFFECT_END_EXPIRED`), or `effect_end()` |
 | `EFFECT_END_CURED` | `effect_cure()` or `OP_CURE`, which end effects by the statuses they grant, except innate ones |
 | `EFFECT_END_SAVED` | Its saving throw was passed |
 
@@ -215,25 +221,26 @@ The core ends an effect through one internal function, with a reason in
   prefixes (`base_hp_max`, `cur_hp`), which split them apart.
 - **D3 "Derived" for base plus modifiers,** with "value" as its short form in prose.
   *Rejected:* "effective", a second word for the same thing.
-- **D4 The core finds bases through a table.** It is data, and sits beside the
-  effect definitions. *Rejected:* get and set functions on the seam, which need a
+- **D4 The attributes module finds bases through a table.** It is data, in the
+  module's page. *Rejected:* get and set functions in each component, which need a
   switch over every attribute.
-- **D5 `attrs.h` stays with the components.** Attributes are the components'; effects
-  only change them.
+- **D5 `attrs.h` is the attributes module's header** (effects_nge.md, D13).
+  The tables stay with the components; deriving them is a module of its own.
+  *Replaced:* `attrs.h` in `components/`, with derivation in the effects core.
 - **D6 A condition is a status the game marks as one.** *Rejected:* a separate
   condition mask, which means two masks, two definition fields and two cures for
   flags that work the same way.
 - **D7 The status mask is in the stats component,** because conditions are about
   creatures. *Rejected:* health, which would give a door statuses, and the effects
   module, as the mask describes the creature.
-- **D8 Statuses are derived; the core never sets or clears a bit.** *Rejected:*
+- **D8 Statuses are derived; nothing sets or clears a bit.** *Rejected:*
   setting a bit when an effect starts and clearing it when one ends. With two
   sources of one bit, the first to end would clear it while the other still grants
   it, and a cure that cleared the bit would leave its effect running. Avoiding that
   needs a count per bit per entity.
 - **D9 A saving throw is a field of the definition, rolled by the game's side.**
   *Rejected:* a game op in `on_tick`, because an effect has one tick op and poison
-  uses it for damage. *Rejected:* the core rolling the d20, because abilities and
+  uses it for damage. *Rejected:* nge rolling the d20, because abilities and
   dice are the game's rules.
 
 ## 6. Not built yet
@@ -244,7 +251,7 @@ The core ends an effect through one internal function, with a reason in
 | Other ways to avoid or end a condition | A saving throw when it is applied, waking when damaged, condition immunities (which could be a mask attribute) |
 | Messages by reason | The reason is in the event, but every ending uses the effect's one text |
 | More than 8 statuses | The mask and the definitions' `status` field would become `uint16_t` |
-| A table-driven `effects_game_store()` | It keeps its special cases as code |
+| A table-driven `store()` | It keeps its special cases as code |
 
 ## 7. Tests
 
@@ -253,13 +260,12 @@ The core ends an effect through one internal function, with a reason in
 - **`test_effects`:** the table's rows; the assert on a missing component;
   recomputes, including an entity without stats; saving throws, with the ability
   modifier and with DC 0; and each reason for ending.
-- **`check-effects-core`:** the core stays free of game content.
 
 ## 8. Known risks
 
-- **zsdcc.** `derive()` and `effects_on_timer()` read struct fields in code that
+- **zsdcc.** `derive()` and `effects_on_hook()` read struct fields in code that
   branches, so they copy the fields into locals first (T-ZSDCC-1). A row of a 2D
-  array isn't a constant initialiser, so `effects_game_attrs[]` writes
+  array isn't a constant initialiser, so `attrs_table[]` writes
   `&stats_ability_base[a][0]`.
 - **Saves shorten effects.** Tuning an effect's duration or damage has to allow for
   its save: poison's DC 10 Constitution save usually ends it within two of its four

@@ -8,10 +8,11 @@
 #include "ecs/systems/nge_timer.h"
 #include "event/nge_event.h"
 
-#include "game/effects/effects_core.h"
+#include "game/effects/effects_defs.h"
 #include "game/events.h"
 #include "game/gen/gen_internal.h"
 #include "game/spells/spells_internal.h"
+#include "game/effects/effects.h"
 
 #define AREA  NGE_OWNER_AREA(0)
 
@@ -46,6 +47,7 @@ static void reset(void)
     nge_entity_init();
     nge_render_init();
     nge_timer_init();
+    nge_effect_init(effects_hook);
     nge_event_init();
 }
 

@@ -81,7 +81,7 @@ void level_park(nge_entity_id_t id, nge_owner_t area) NGE_BANKED
     }
     /* Effects that would run out end now: skipping their firings would still count their cycles */
     NGE_OWNER_FOR_EACH_OWNED(i, owned, id) {
-        if (NGE_ENTITY_HAS_COMPONENT(owned, COMPONENT_EFFECT) &&
+        if (NGE_ENTITY_HAS_COMPONENT(owned, NGE_COMPONENT_EFFECT) &&
             NGE_ENTITY_HAS_COMPONENT(owned, NGE_COMPONENT_TIMER) && nge_timer_cycles[owned] != 0) {
             effect_end(owned);
         }

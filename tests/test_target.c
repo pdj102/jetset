@@ -24,6 +24,7 @@
 #include "game/ui/screen.h"
 #include "game/ui/screen_main.h"
 #include "game/target/target.h"
+#include "game/effects/effects.h"
 
 #define EV(k)  ((nge_key_event_t)(k))
 
@@ -160,6 +161,7 @@ int main(void)
     nge_entity_init();
     nge_render_init();
     nge_timer_init();
+    nge_effect_init(effects_hook);
     nge_event_init();
     nge_input_init();
     screen_init();

@@ -7,7 +7,7 @@
  *        spent to cast spells (the player). See docs/mana.md.
  *
  * MP are a pool: each has current MP (mp, 0 to mp_max) and a maximum
- * (mp_max), an attribute (ATTR_MP_MAX, game/components/attrs.h): its base
+ * (mp_max), an attribute (ATTR_MP_MAX, game/attrs/attrs.h): its base
  * is set from the kind value in its kind record (mana_kind_t, game/gen),
  * and effects change it (docs/spells.md, D11). A lower maximum takes
  * current MP down with it; a higher one restores none. An entity starts
