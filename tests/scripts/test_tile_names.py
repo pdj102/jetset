@@ -225,8 +225,8 @@ class TestTables(TempDir, unittest.TestCase):
         _, rules, _ = self.tables([('wall_xwfw', 1, 1), ('wall_wwww_xfxx', 2, 1)])
         by_name = {name: want for want, _, _, name in rules}
         X = tile_names.ANY_VALUE
-        self.assertEqual(by_name['wall_xwfw'], [X, X, 1, X, 2, X, 1, X])   # N any, E wall, S floor, W wall
-        self.assertEqual(by_name['wall_wwww_xfxx'], [1, X, 1, 2, 1, X, 1, X])
+        self.assertEqual(by_name['wall_xwfw'], [X, X, 2, X, 4, X, 2, X])   # N any, E wall, S floor, W wall: bits
+        self.assertEqual(by_name['wall_wwww_xfxx'], [2, X, 2, 4, 2, X, 2, X])
         self.assertEqual(by_name['wall'], [X] * 8)
 
     def test_most_specific_first_by_name_the_default_last(self):
@@ -246,6 +246,63 @@ class TestTables(TempDir, unittest.TestCase):
         _, _, entries = self.tables([('floor_3_w7', 1, 1), ('floor_2', 2, 1)])
         floor = [(tile, weight) for tile, _, weight, name in entries if name == 'floor']
         self.assertEqual(floor, [(2, 1), (7, 1), (6, 7)])                # by number: 1, 2, 3
+
+
+# Five terrains and sets of them (D15): p a room's perimeter, o outside; e and n share wall and floor, unnamed
+SETS = tile_names.Names([('r', 'rock'), ('w', 'wall'), ('f', 'floor'), ('c', 'corridor'), ('d', 'doorway')],
+                        ['door_shut'], [('p', ['wall', 'doorway']), ('o', ['rock', 'corridor']),
+                                        ('e', ['rock', 'wall', 'floor']), ('n', ['wall', 'floor', 'corridor'])])
+SETS_REQUIRED = REQUIRED + [('corridor', 2, 1), ('doorway', 1, 1)]
+ROOM_WALLS = ['wall_oppo', 'wall_oopp', 'wall_ppoo', 'wall_poop', 'wall_opfp', 'wall_fpop', 'wall_pfpo', 'wall_popf']
+
+
+class TestSets(TempDir, unittest.TestCase):
+
+    def collect_sets(self, names):
+        return self.collect(CANVAS, SETS_REQUIRED + [(name, 0, 1) for name in names], names=SETS)
+
+    def wall_rules(self, names):
+        looks, problems = self.collect_sets(names)
+        self.assertEqual(errors(problems), [])
+        bases, rules, _ = tile_names.tables(looks, SETS, [0] * 8)
+        _, first, count = bases[1]
+        return [rules[first + r] for r in range(count)]
+
+    def test_a_set_in_a_code_and_corners(self):
+        self.assertEqual(tile_names.parse('wall_oppo', SETS), ('wall', 'oppo', None, 1, 1))
+        self.assertEqual(tile_names.parse('wall_xpfp_xoxx_2', SETS), ('wall', 'xpfp', 'xoxx', 2, 1))
+        with self.assertRaisesRegex(ValueError, '"oppq" is not a code'):
+            tile_names.parse('wall_oppq', SETS)
+
+    def test_want_is_a_mask_of_the_sets_terrains(self):
+        rules = self.wall_rules(['wall_oppo', 'wall_xpfp_xoxx'])
+        by_name = {name: want for want, _, _, name in rules}
+        X = tile_names.ANY_VALUE
+        o, p = 0x01 | 0x08, 0x02 | 0x10                                 # rock and corridor; wall and doorway
+        self.assertEqual(by_name['wall_oppo'], [o, X, p, X, p, X, o, X])
+        self.assertEqual(by_name['wall_xpfp_xoxx'], [X, X, p, o, 0x04, X, p, X])
+
+    def test_a_tie_goes_to_fewer_terrains(self):
+        rules = self.wall_rules(['wall_opfp', 'wall_owfd', 'wall_xwww'])
+        self.assertEqual([name for *_, name in rules], ['wall_owfd', 'wall_opfp', 'wall_xwww', 'wall'])
+
+    def test_a_rooms_walls_dont_overlap(self):
+        _, problems = self.collect_sets(ROOM_WALLS)
+        self.assertEqual(problems, [])
+
+    def test_overlaps_with_sets(self):
+        _, problems = self.collect_sets(['wall_xppx', 'wall_xxpp'])
+        self.assertEqual(warnings(problems), ['warning: slices "wall_xppx" at (0, 1) and "wall_xxpp" at (0, 1) '
+                                              'both match "xppp": "wall_xppx" is used'])
+        _, problems = self.collect_sets(['wall_xppx', 'wall_xxpp', 'wall_xppp'])
+        self.assertEqual(warnings(problems), [])                        # a rule before them covers the cells
+        _, problems = self.collect_sets(['wall_exxx', 'wall_nxxx'])
+        self.assertEqual(warnings(problems), ['warning: slices "wall_exxx" at (0, 1) and "wall_nxxx" at (0, 1) '
+                                              'both match "[wf]xxx": "wall_exxx" is used'])
+        _, problems = self.collect_sets(['wall_oxxx', 'wall_pxxx'])
+        self.assertEqual(warnings(problems), [])                        # no terrain in common
+        _, problems = self.collect_sets(['wall_pxxx', 'wall_wxxx'])
+        self.assertEqual(warnings(problems), [])                        # not tied: wall_wxxx is tried first
 
 
 class TestOutput(TempDir, unittest.TestCase):
@@ -277,7 +334,8 @@ class TestOutput(TempDir, unittest.TestCase):
         with open(os.path.join(out, 'tile_rules_data.c')) as f:
             rules = f.read()
         self.assertIn('#pragma constseg PAGE_103', rules)
-        self.assertIn('    { { TILE_ANY, TILE_ANY, 1, TILE_ANY, 2, TILE_ANY, 1, TILE_ANY }, 1, 1 },   /* wall_xwfw */',
+        self.assertIn('    { { TILE_ANY, TILE_ANY, 0x02, TILE_ANY, 0x04, TILE_ANY, 0x02, TILE_ANY }, 1, 1 },'
+                      '   /* wall_xwfw */',
                       rules)
         self.assertIn('    { 1, 2 },   /* wall */', rules)
         self.assertIn('tiles with no name: 4, 5', summary[-1])
@@ -326,6 +384,12 @@ class TestNamesFile(TempDir, unittest.TestCase):
         self.assertEqual(names.looks, ['door_shut'])
         self.assertEqual(names.letters, {'r': 0, 'w': 1})
 
+    def test_sets(self):
+        names = self.names('terrain r rock\nterrain w wall\nterrain d doorway\nset p wall doorway  # perimeter\n')
+        self.assertEqual(names.sets, [('p', ['wall', 'doorway'])])
+        self.assertEqual((names.mask('p'), names.mask('w'), names.mask('x')), (0x06, 0x02, 0x07))
+        self.assertTrue(names.is_code('xppx'))
+
     def test_errors_name_the_line(self):
         for text, message in [('terrain r rock\nbase floor\n', ':2: expected'),
                               ('terrain rock\n', ':1: expected'), ('look door shut\n', ':1: expected'),
@@ -333,7 +397,13 @@ class TestNamesFile(TempDir, unittest.TestCase):
                               ('terrain r rock\nlook rock\n', ':2: "rock" is listed twice'),
                               ('terrain r rock\nterrain r ridge\n', ':2: the letter "r" is used twice'),
                               ('terrain x rock\n', ':1: "x": a terrain'), ('terrain ro rock\n', ':1: "ro"'),
-                              ('terrain 1 rock\n', ':1: "1"')]:
+                              ('terrain 1 rock\n', ':1: "1"'),
+                              ('terrain r rock\nterrain w wall\nset p wall\n', ':3: expected "set'),
+                              ('terrain r rock\nset p rock wall\nterrain w wall\n', ':2: "wall" is not a terrain'),
+                              ('terrain r rock\nterrain w wall\nset r rock wall\n', ':3: the letter "r" is used'),
+                              ('terrain r rock\nterrain w wall\nset x rock wall\n', ':3: "x": a set'),
+                              ('terrain r rock\nterrain w wall\nset p rock rock\n', ':3: "rock" is in the set twice'),
+                              (''.join(f'terrain {c} t{c}\n' for c in 'abcdefghi'), ':9: "ti": at most 8')]:
             with self.assertRaisesRegex(tile_names.NamesFileError, message, msg=text):
                 self.names(text)
 

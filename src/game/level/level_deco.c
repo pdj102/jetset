@@ -6,7 +6,10 @@
  *
  * A terrain has a base e.g. wall_, floor_,.
  * Each terrain has a set of rules, most specific first, that selects the look  
- * Each rule is a pattern based on the terrain and its 8 neighbours' terrains.
+ * Each rule is a pattern based on the terrain and its 8 neighbours' terrains:
+ * for each neighbour, a mask of the terrains it may be (a bit each), so one
+ * letter can stand for several (wall or doorway), and TILE_ANY, every bit,
+ * for any.
  * The first rule that matches gives the look; the last is the terrain's default look, which
  * matches any neighbours.
  * Then one of the look's variants is selected, by weight, from a 
@@ -48,6 +51,13 @@ typedef char deco_terrains_check[(TILE_TERRAINS == TERRAIN_COUNT &&
                                   TILE_TERRAIN_DOORWAY == TERRAIN_DOORWAY &&
                                   TILE_TERRAIN_HOLE == TERRAIN_HOLE) ? 1 : -1];
 
+#define DECO_TERRAINS_MAX  8   /* a rule's want is a byte, a bit a terrain */
+
+typedef char deco_terrain_bits_check[(TERRAIN_COUNT <= DECO_TERRAINS_MAX) ? 1 : -1];
+
+/* Each terrain's bit in a want, for every terrain there can be: a table, not a shift (zsdcc's 1 << 7 is signed) */
+static const uint8_t terrain_bits[DECO_TERRAINS_MAX] = { 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80 };
+
 /* The 8 neighbours, (dx, dy), in the signature's bit order: N, NE, E, SE, S, SW, W, NW */
 static const int8_t around_offsets[2 * DECO_AROUND] = { 0, -1, 1, -1, 1, 0, 1, 1, 0, 1, -1, 1, -1, 0, -1, -1 };
 
@@ -57,10 +67,13 @@ static const int8_t around_offsets[2 * DECO_AROUND] = { 0, -1, 1, -1, 1, 0, 1, 1
  * z80asm warns about ("integer range"), though the code is right.
  */
 
-/* A cell's terrain; rock off the map (a coordinate below 0 wraps past the edge) */
-static uint8_t terrain_at(uint8_t x, uint8_t y)
+/* A cell's terrain's bit; rock's off the map (a coordinate below 0 wraps past the edge) */
+static uint8_t terrain_bit_at(uint8_t x, uint8_t y)
 {
-    return (x < LEVEL_WIDTH && y < LEVEL_HEIGHT) ? level_terrain[y][x] : TERRAIN_ROCK;
+    const uint8_t *bit = terrain_bits;
+
+    bit += (x < LEVEL_WIDTH && y < LEVEL_HEIGHT) ? level_terrain[y][x] : TERRAIN_ROCK;
+    return *bit;
 }
 
 /* A cell's hash with the level's seed: picks its variants */
@@ -113,7 +126,7 @@ void level_decorate(uint8_t x, uint8_t y)
     typedef int check1[sizeof(((tile_rule_t *)0)->want) == DECO_AROUND ? 1 : -1];
 
     for (i = 0; i < DECO_AROUND; i++, offset += 2) {
-        around[i] = terrain_at((uint8_t)(x + offset[0]), (uint8_t)(y + offset[1]));
+        around[i] = terrain_bit_at((uint8_t)(x + offset[0]), (uint8_t)(y + offset[1]));
     }
     base += level_terrain[y][x];
     /* The fields in locals before the comparisons (T-ZSDCC-1) */
@@ -124,7 +137,7 @@ void level_decorate(uint8_t x, uint8_t y)
         want = rule->want;
         for (i = 0; i < DECO_AROUND; i++) {
             w = want[i];
-            if (w != TILE_ANY && w != around[i]) {
+            if ((w & around[i]) == 0) {
                 break;
             }
         }

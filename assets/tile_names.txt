@@ -13,6 +13,12 @@ terrain c corridor
 terrain d doorway
 terrain h hole
 
+# Sets: a letter for any of several terrains, in the looks' codes
+# (docs/dungeon_decoration.md D15): wall_oppo is a top-left corner whatever
+# doorways are beside it
+set p wall doorway      # a room's perimeter
+set o rock corridor     # outside a room
+
 # Other looks the game names: the features' (game/gen/gen_feature_pdata.c)
 look door_shut
 look door_open

@@ -8,7 +8,8 @@ A slice over a placed tile on the tilemap layer's canvas names that tile:
 
 - base: a terrain's name (wall, floor) or a feature's look (door_shut);
 - code: four letters, north, east, south, west: the letter of the terrain
-  that neighbour must be, or x for any. A terrain's looks only;
+  that neighbour must be, a set's letter for one of its terrains, or x for
+  any. A terrain's looks only;
 - corners: four more, north-east, south-east, south-west, north-west; all
   x if left out;
 - variant: a number from 1, for interchangeable looks of one name; 1 if
@@ -20,18 +21,21 @@ The game's terrains and looks are listed in a names file
 (assets/tile_names.txt), every one required:
 
     terrain w wall      the terrain with letter w; its base is its name
+    set p wall doorway  the letter p for any of these terrains (D15)
     look door_shut      a look the game names
 
 A terrain's rules are its looks, most specific first (more letters that
-aren't x), by name on a tie; its default, its name alone, matches any
-neighbours and comes last. Checking collects every problem: errors (the
+aren't x), then those whose letters allow fewer terrains, then by name; its
+default, its name alone, matches any neighbours and comes last. In the
+tables a rule's want is a mask of terrains, bit n for terrain n. Checking collects every problem: errors (the
 import stops) and warnings (the slice is ignored, or two rules overlap),
 each naming the slice and its canvas cell.
 """
 import re
 
 ANY = 'x'                       # a code's letter for any terrain
-ANY_VALUE = 0xFF                # its value in the tables (TILE_ANY)
+ANY_VALUE = 0xFF                # its value in the tables (TILE_ANY): every terrain's bit
+TERRAINS_MAX = 8                # a want is a byte, a bit a terrain
 WEIGHT_MAX = 255
 WEIGHT_TOTAL_MAX = 256          # the pick is an 8-bit hash modulo the total
 TABLE_MAX = 255                 # uint8_t indices
@@ -60,19 +64,44 @@ class Problem:
 
 
 class Names:
-    """The names file: the terrains, in TERRAIN_* order, and the other looks the game names."""
+    """
+    The names file: the terrains, in TERRAIN_* order, the sets of terrains
+    with a letter of their own, and the other looks the game names.
+    """
 
-    def __init__(self, terrains=(), looks=()):
+    def __init__(self, terrains=(), looks=(), sets=()):
         self.terrains = list(terrains)                   # (letter, name)
         self.looks = list(looks)
+        self.sets = list(sets)                           # (letter, [terrain name, ...])
         self.letters = {letter: n for n, (letter, _) in enumerate(self.terrains)}
         self.terrain_names = [name for _, name in self.terrains]
+        self.all_mask = (1 << len(self.terrains)) - 1
+        self.masks = {letter: 1 << n for letter, n in self.letters.items()}
+        for letter, members in self.sets:
+            mask = 0
+            for name in members:
+                mask |= 1 << self.terrain_names.index(name)
+            self.masks[letter] = mask
+        self.masks[ANY] = self.all_mask
 
     def all(self):
         return self.terrain_names + self.looks
 
     def is_code(self, part):
-        return len(part) == 4 and all(c == ANY or c in self.letters for c in part)
+        return len(part) == 4 and all(c in self.masks for c in part)
+
+    def mask(self, letter):
+        """The terrains a letter allows, a bit each; x all of them."""
+        return self.masks[letter]
+
+    def letter_of(self, mask):
+        """The letter for exactly these terrains, or their letters in brackets where none is."""
+        if mask == self.all_mask:
+            return ANY
+        for letter, m in self.masks.items():
+            if m == mask:
+                return letter
+        return '[' + ''.join(letter for letter, n in self.letters.items() if mask & (1 << n)) + ']'
 
 
 class Look:
@@ -104,15 +133,24 @@ class Look:
     def specificity(self):
         return sum(letter != ANY for letter in self.letters())
 
+    def breadth(self, names):
+        """How many terrains its letters other than x allow, in all: the order's tie (D15)."""
+        return sum(bin(names.mask(letter)).count('1') for letter in self.letters() if letter != ANY)
+
+    def masks(self, names):
+        """Its 8 letters' terrains, a mask each."""
+        return [names.mask(letter) for letter in self.letters()]
+
     def want(self, names):
-        """The rule's want[8]: each neighbour's terrain, or ANY_VALUE."""
-        return [ANY_VALUE if letter == ANY else names.letters[letter] for letter in self.letters()]
+        """The rule's want[8]: each neighbour's terrains as a mask, ANY_VALUE for any."""
+        return [ANY_VALUE if letter == ANY else names.mask(letter) for letter in self.letters()]
 
 
 def read_names(path):
     """The names file as Names; raises NamesFileError naming the line."""
     terrains = []
     looks = []
+    sets = []
     seen = set()
     letters = set()
     with open(path) as f:
@@ -120,8 +158,12 @@ def read_names(path):
             words = line.split('#', 1)[0].split()
             if not words:
                 continue
+            if words[0] == 'set':
+                sets.append(_read_set(path, number, words, terrains, letters))
+                continue
             if not ((words[0] == 'terrain' and len(words) == 3) or (words[0] == 'look' and len(words) == 2)):
-                raise NamesFileError(f'{path}:{number}: expected "terrain <letter> <name>" or "look <name>"')
+                raise NamesFileError(f'{path}:{number}: expected "terrain <letter> <name>", '
+                                     '"set <letter> <terrain> <terrain>..." or "look <name>"')
             name = words[-1]
             if not NAME_CHARS.fullmatch(name):
                 raise NamesFileError(f'{path}:{number}: "{name}": lower case letters, digits and _ only')
@@ -132,14 +174,36 @@ def read_names(path):
                 looks.append(name)
                 continue
             letter = words[1]
-            if not LETTER.fullmatch(letter) or letter == ANY:
-                raise NamesFileError(f'{path}:{number}: "{letter}": a terrain\'s letter is one lower case '
-                                     f'letter, not "{ANY}" (any)')
-            if letter in letters:
-                raise NamesFileError(f'{path}:{number}: the letter "{letter}" is used twice')
-            letters.add(letter)
+            _check_letter(path, number, letter, letters, "a terrain's")
+            if len(terrains) == TERRAINS_MAX:
+                raise NamesFileError(f'{path}:{number}: "{name}": at most {TERRAINS_MAX} terrains')
             terrains.append((letter, name))
-    return Names(terrains, looks)
+    return Names(terrains, looks, sets)
+
+
+def _check_letter(path, number, letter, letters, whose):
+    if not LETTER.fullmatch(letter) or letter == ANY:
+        raise NamesFileError(f'{path}:{number}: "{letter}": {whose} letter is one lower case '
+                             f'letter, not "{ANY}" (any)')
+    if letter in letters:
+        raise NamesFileError(f'{path}:{number}: the letter "{letter}" is used twice')
+    letters.add(letter)
+
+
+def _read_set(path, number, words, terrains, letters):
+    """A set line's (letter, [terrain name, ...]): two or more terrains listed above it."""
+    if len(words) < 4:
+        raise NamesFileError(f'{path}:{number}: expected "set <letter> <terrain> <terrain>...": '
+                             'two terrains or more')
+    letter, members = words[1], words[2:]
+    _check_letter(path, number, letter, letters, "a set's")
+    known = [name for _, name in terrains]
+    for i, name in enumerate(members):
+        if name not in known:
+            raise NamesFileError(f'{path}:{number}: "{name}" is not a terrain listed above')
+        if name in members[:i]:
+            raise NamesFileError(f'{path}:{number}: "{name}" is in the set twice')
+    return letter, members
 
 
 def _base_of(name, known):
@@ -272,49 +336,54 @@ def collect(sprite, names, layer=None):
     return looks, problems
 
 
-def terrain_rules(looks, terrain):
-    """A terrain's looks in the order they are tried: most specific first, by name, the default last."""
+def _rank(look, names):
+    """Its place in the order: the default last, most specific first, fewest terrains allowed (D15)."""
+    return look.code is None, -look.specificity(), look.breadth(names)
+
+
+def terrain_rules(looks, terrain, names):
+    """A terrain's looks in the order they are tried: by rank, then by name, the default last."""
     return sorted((look for look in looks.values() if look.base == terrain),
-                  key=lambda look: (look.code is None, -look.specificity(), look.name))
+                  key=lambda look: (_rank(look, names), look.name))
 
 
 def _shared(a, b):
-    """The letters of the cells two rules both match, or None if they share none."""
-    shared = []
-    for p, q in zip(a, b):
-        if p != ANY and q != ANY and p != q:
-            return None
-        shared.append(p if p != ANY else q)
-    return shared
+    """The terrains, a mask a position, of the cells two rules both match; None if they share none."""
+    shared = [p & q for p, q in zip(a, b)]
+    return None if 0 in shared else shared
 
 
 def _covers(rule, cells):
-    return all(p == ANY or p == q for p, q in zip(rule, cells))
+    return all(p & q == q for p, q in zip(rule, cells))
 
 
-def _code_text(letters):
-    """8 letters as a name's code: the corners only when they aren't all x."""
-    sides = ''.join(letters[p] for p in SIDE_POSITIONS)
-    corners = ''.join(letters[p] for p in CORNER_POSITIONS)
+def _code_text(cells, names):
+    """8 masks as a name's code: the corners only when they aren't all x."""
+    sides = ''.join(names.letter_of(cells[p]) for p in SIDE_POSITIONS)
+    corners = ''.join(names.letter_of(cells[p]) for p in CORNER_POSITIONS)
     return sides if corners == ANY * 4 else f'{sides}_{corners}'
 
 
 def overlaps(looks, names):
-    """Warnings for rules of the same specificity that match some cells alike, with no more specific rule there."""
+    """
+    Warnings for rules tied in the order (so their names decide) that match
+    some cells alike, where no rule tried before them matches those cells.
+    """
     problems = []
     for terrain in names.terrain_names:
-        rules = [look for look in terrain_rules(looks, terrain) if look.code and 1 in look.variants]
+        rules = [look for look in terrain_rules(looks, terrain, names) if look.code and 1 in look.variants]
         for i, a in enumerate(rules):
+            rank = _rank(a, names)
             for b in rules[i + 1:]:
-                if a.specificity() != b.specificity():
+                if _rank(b, names) != rank:
                     continue
-                cells = _shared(a.letters(), b.letters())
+                cells = _shared(a.masks(names), b.masks(names))
                 if cells is None:
                     continue
-                if any(r.specificity() > a.specificity() and _covers(r.letters(), cells) for r in rules):
+                if any(_rank(r, names) < rank and _covers(r.masks(names), cells) for r in rules):
                     continue
                 problems.append(Problem(False, f'slices "{a.name}" at {a.variants[1][2]} and "{b.name}" at '
-                                               f'{b.variants[1][2]} both match "{_code_text(cells)}": '
+                                               f'{b.variants[1][2]} both match "{_code_text(cells, names)}": '
                                                f'"{a.name}" is used'))
     return problems
 
@@ -334,7 +403,7 @@ def tables(looks, names, banks_of):
     bases = []
     for terrain in (names.terrain_names if names is not None else []):
         first_rule = len(rules)
-        for look in terrain_rules(looks, terrain):
+        for look in terrain_rules(looks, terrain, names):
             first = len(entries)
             for tile, weight, _ in look.ordered():
                 entries.append((tile, banks_of[tile], weight, look.name))

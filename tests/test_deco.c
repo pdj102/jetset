@@ -66,22 +66,29 @@ int main(void)
     level_deco_seed = 0;
 
     /* ---- a room: each wall piece by its place (assets/Tilesheet.aseprite's names) ---- */
+    /* Doorways beside two corners, and a corridor passing outside the top wall and the top-right corner */
     fill(TERRAIN_ROCK);
     room(2, 2, 8, 6);
-    level_terrain[2][5] = TERRAIN_DOORWAY;   /* a doorway in the top wall */
+    level_terrain[2][3] = TERRAIN_DOORWAY;   /* east of the top-left corner */
+    level_terrain[5][2] = TERRAIN_DOORWAY;   /* north of the bottom-left corner */
+    for (x = 4; x <= 9; x++) {
+        level_terrain[1][x] = TERRAIN_CORRIDOR;
+    }
+    for (y = 2; y <= 3; y++) {
+        level_terrain[y][9] = TERRAIN_CORRIDOR;
+    }
     level_decorate_all();
-    CHECK(look(2, 2) == LOOK_WALL_XWWX && look(8, 2) == LOOK_WALL_XXWW);   /* top corners */
-    CHECK(look(2, 6) == LOOK_WALL_WWXX && look(8, 6) == LOOK_WALL_WXXW);   /* bottom corners */
-    CHECK(look(3, 2) == LOOK_WALL_XWFW && look(4, 6) == LOOK_WALL_FWXW);   /* top, bottom */
-    CHECK(look(2, 4) == LOOK_WALL_WFWX && look(8, 4) == LOOK_WALL_WXWF);   /* left, right */
-    CHECK(look(4, 2) == LOOK_WALL_XDFW && look(6, 2) == LOOK_WALL_XWFD);   /* beside the doorway: its ends */
-    CHECK(look(5, 2) == LOOK_DOORWAY && look(0, 0) == LOOK_ROCK && look(5, 4) != LOOK_ROCK);
+    CHECK(look(2, 2) == LOOK_WALL_OPPO && look(8, 2) == LOOK_WALL_OOPP);   /* top corners: a doorway, a corridor */
+    CHECK(look(2, 6) == LOOK_WALL_PPOO && look(8, 6) == LOOK_WALL_POOP);   /* bottom corners: a doorway */
+    CHECK(look(4, 2) == LOOK_WALL_OPFP && look(5, 6) == LOOK_WALL_FPOP);   /* top (a doorway, a corridor), bottom */
+    CHECK(look(2, 4) == LOOK_WALL_PFPO && look(8, 3) == LOOK_WALL_POPF);   /* left (a doorway), right (a corridor) */
+    CHECK(look(3, 2) == LOOK_DOORWAY && look(0, 0) == LOOK_ROCK && look(5, 4) != LOOK_ROCK);
 
     /* Off the map is rock: a room in the top-left corner has the same corner */
     fill(TERRAIN_ROCK);
     room(0, 0, 6, 5);
     level_decorate(0, 0);
-    CHECK(look(0, 0) == LOOK_WALL_XWWX);
+    CHECK(look(0, 0) == LOOK_WALL_OPPO);
 
     /* A wall alone in the open: a pillar */
     fill(TERRAIN_FLOOR);
@@ -89,7 +96,7 @@ int main(void)
     level_decorate(10, 10);
     CHECK(look(10, 10) == LOOK_WALL_FFFF);
 
-    /* Walls all round: wall_wwww, though wall_wwwx and the corners match too (D12) */
+    /* Walls all round: wall_wwww, though the T junctions (wall_wwwx...) match too (D12) */
     fill(TERRAIN_WALL);
     level_decorate(10, 10);
     CHECK(look(10, 10) == LOOK_WALL_WWWW);

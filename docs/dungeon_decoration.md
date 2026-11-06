@@ -9,6 +9,11 @@ importer, most specific first (D12); a base's default is its variant 1,
 in place of fallbacks (D14). The revision's CSpect checks (5.10)
 passed on 2026-10-25, with the redrawn tileset. Section 7 lists where the build of the first design differed from
 it, and section 8 the revision's changes and where its build differs.
+Second revision proposed 2026-11-06, its decisions agreed and built the
+same day; its CSpect checks passed on 2026-11-06: sets of terrains with a
+letter of their own (`p` wall or doorway, `o` rock or corridor, D15), so
+one rule says "a wall or a doorway" where it now takes one rule for each
+(section 9).
 
 Separates what a map cell **is** (its terrain: rock, wall, floor...) from
 how it is **drawn** (one of several metatiles, its look). The generator
@@ -42,9 +47,10 @@ hand, and Aseprite renumbering its tiles changes nothing in the code.
 | Terrain | What a cell is, for the game's rules: `TERRAIN_ROCK`, `_WALL`, `_FLOOR`, `_CORRIDOR`, `_DOORWAY`, `_HOLE`. Each has a letter, for codes: `r`, `w`, `f`, `c`, `d`, `h` |
 | Look | A metatile that draws a terrain, or a feature's state (a shut door): named in Aseprite, `LOOK_<NAME>` in the code |
 | Base | The first part of a look's name. A terrain's base is its name (`wall`), and all its looks start with it; a feature's look is a base of its own (`door_shut`) |
-| Code | Four letters, read north, east, south, west: each the letter of the terrain that neighbour must be, or `x` for any (5.2). Four more letters, after the first four, do the same for the corners, north-east, south-east, south-west, north-west |
+| Code | Four letters, read north, east, south, west: each the letter of the terrain that neighbour must be, a set's letter for one of several (D15), or `x` for any (5.2). Four more letters, after the first four, do the same for the corners, north-east, south-east, south-west, north-west |
 | Rule | A look of a terrain's base: its code is its pattern. A look without a code is the rule that matches any neighbours, the terrain's default |
-| Specificity | How many of a rule's 8 letters are not `x`. A terrain's rules are tried most specific first (D12) |
+| Set | *(New, D15.)* A letter that stands for several terrains, defined in the names list: `p`, wall or doorway, a room's perimeter; `o`, rock or corridor, outside a room. `x` is the set of every terrain |
+| Specificity | How many of a rule's 8 letters are not `x`. A terrain's rules are tried most specific first, and on a tie the one whose letters allow fewer terrains (D12, D15) |
 | Variant | One of the interchangeable tiles of a name, by number (`floor_2`); a name without a number is variant 1 |
 | Decorating a cell | Choosing its look: of its terrain's rules, the first whose code matches its neighbours; then a weighted pick among that name's variants |
 
@@ -101,7 +107,7 @@ hand, and Aseprite renumbering its tiles changes nothing in the code.
   - `<base>`: one or more words: a terrain's name (`wall`, `floor`), or a
     feature's look (`door_shut`);
   - `<code>`: four letters, north, east, south, west: a terrain's letter,
-    or `x` for any. A terrain's base only: a feature's look has no code;
+    a set's letter (D15), or `x` for any. A terrain's base only: a feature's look has no code;
   - `<corners>`: four more letters, north-east, south-east, south-west,
     north-west, the same way; after a code only. Left out, all four are
     `x`;
@@ -124,7 +130,8 @@ hand, and Aseprite renumbering its tiles changes nothing in the code.
 - **R20** *(Changed: terrains, not bases, and nothing is optional, D13.)*
   The game's names are listed for the importer in `assets/tile_names.txt`
   (5.4): the terrains, in `TERRAIN_*` order, each with its letter (its
-  name is its base); and the other looks the game names (the features').
+  name is its base); *(new, D15)* the sets, each with its letter and its
+  terrains; and the other looks the game names (the features').
   It is an input of the tile import, like the tileset.
 - **R21** *(Changed: rewritten, D14.)* Every name the game uses has a
   tile, so every cell gets a look:
@@ -154,15 +161,16 @@ hand, and Aseprite renumbering its tiles changes nothing in the code.
     chosen (5.2);
   - **a name used twice:** one name and variant on two different tiles
     (`floor` and `floor_1` are the same name).
-- **R23** And **warnings**:
+- **R23** *(Changed: a tie is the whole order's, D15.)* And **warnings**:
   - **an unrecognised name:** a slice whose base isn't in the list (R20):
     it is ignored, and generates nothing;
   - **a repeated slice:** the same name and variant twice on one tile:
     the second is ignored;
   - **a slice with no name** (Aseprite's default `Slice 1`, ...):
     ignored;
-  - *(New, D12.)* **two rules that both match some cells**, of the same
-    specificity, where no more specific rule matches those cells: the
+  - *(New, D12.)* **two rules that both match some cells**, tied in the
+    order (the same specificity, and their letters allowing as many
+    terrains, D15), where no rule tried before them matches those cells: the
     first by name is used for them. The warning names both rules and the
     cells' code (`wall_xwwx` and `wall_xxww` both match `xwww`), so the
     artist can draw a look for that case, or make one of the codes exact.
@@ -207,11 +215,14 @@ hand, and Aseprite renumbering its tiles changes nothing in the code.
 - **R15 (later):** falling into a hole: a walker that enters one (pushed,
   or by choice) falls to the next depth, through a level request
   (level.h, `LEVEL_ARRIVE_ANY`), as the development kit's fall does.
-- **R16** *(Changed: no bases or join sets to give, up to 25 terrains.)*
+- **R16** *(Changed: no bases or join sets to give, up to 25 terrains.
+  Changed again, D15: up to 8 terrains.)*
   Adding a terrain is a constant, its block value, its line in the list
   with its letter, and where the generator places it (5.8); the decorator
   and the block table need no change, and the tests of R5 and R8 cover it
-  by themselves. Up to 25 terrains: a letter each, `x` being any.
+  by themselves. Up to 8 terrains (a rule's neighbour is a byte, a bit
+  for each, D15), and up to 25 letters for terrains and sets together,
+  `x` being any.
 
 ## 4. Decisions
 
@@ -287,7 +298,9 @@ hand, and Aseprite renumbering its tiles changes nothing in the code.
   common cases short, and absorbs what the generator puts outside a room
   (rock, or a corridor passing). Corners are a second group of four
   letters, so a code can say all 8 neighbours (`wall_wwww_xfxx`: walls on
-  four sides and floor only to the south-east). **Rejected:** names by
+  four sides and floor only to the south-east). *(Revised by D15: sets
+  of terrains are added, so the last rejection below no longer holds.)*
+  **Rejected:** names by
   place (`wall_top`, `wall_corner_tl`): they read well, but each needs its
   rule written by hand, and new shapes (ends, joins, pillars) need new
   words. **Rejected:** `x`/`o` codes by join sets (D3). **Rejected:** a
@@ -321,7 +334,9 @@ hand, and Aseprite renumbering its tiles changes nothing in the code.
   decides and the importer warns (R23). **Rejected:** ordering by hand,
   in the list: every look named twice, once in Aseprite and once in the
   list. **Rejected:** the slices' order: Aseprite doesn't show it, and
-  moving a slice would change the art.
+  moving a slice would change the art. *(Extended by D15: with sets, a tie
+  in specificity goes to the rule whose letters allow fewer terrains, so
+  a rule inside another is still always tried first.)*
 - **D13 (new, 2026-10-25) One base for each terrain, named after it.** With
   letter codes, one base says every case of a terrain, whatever its
   neighbours (D3): the floor's lip is `floor_xxhx`, not a `floor_lip`
@@ -341,6 +356,50 @@ hand, and Aseprite renumbering its tiles changes nothing in the code.
   of every base, optional in some, with the rule that the last base of a
   terrain had one. **Rejected:** a variant number required on every name:
   `door_shut_1` for a look with one tile.
+- **D15 (new, 2026-11-06) Sets of terrains, each with a letter.** The
+  names list can define a letter for several terrains: `set p wall
+  doorway`, a room's perimeter, and `set o rock corridor`, outside one. A code's letter is then a terrain, a set
+  or `x`. D9 rejected sets as "one more thing to learn; two rules, or
+  `x`, do the same". The art showed otherwise:
+  - a corner's two inward sides are each a wall or a doorway, so one
+    corner is four rules (`wall_xwwx_xfxx`, `wall_xdwx_xfxx`,
+    `wall_xwdx_xfxx`, `wall_xddx_xfxx`), the same tile four times, and
+    the sixteen of them still warn (R23) about cells no level has;
+  - `x` in their place is wrong: it lets a floor through, so a corner's
+    rule matches cells of a side wall, and the importer warns about every
+    pair.
+
+  With sets each corner is one rule (`wall_oppo`: outside north and west,
+  perimeter east and south) and each side wall one (`wall_opfp`), and no
+  two of the eight match one cell: at some position their sets have no
+  terrain in common, so the importer sees it and doesn't warn. Both sets
+  are needed: with `p` alone (`wall_xppx_xfxx`, `wall_xpfp`), the `x` on
+  a corner's outward sides lets a wall through, and the eight rules
+  overlap in sixteen of their 28 pairs (checked with the importer's
+  overlap test).
+
+  In the game, a rule's `want` becomes a mask of terrains, a bit each,
+  and the match `want & neighbour's bit`: the same work as now, and `x`
+  (0xFF) needs no test of its own. A rule stays 8 bytes. The cost is the
+  terrains' limit: 8, where it was 25 (R16); there are 6.
+
+  Order: specificity stays the count of letters other than `x`, so no
+  rule of today's tileset moves. A tie goes to the rule whose letters
+  allow fewer terrains in all (`x` counts none), then to the name: a rule
+  that matches only cells another also matches is still tried first
+  (`wall_owfd` before `wall_opfp`, both specificity 4).
+
+  **Rejected:** `p` and `o` built into the importer: the list already
+  holds what the art means by each letter, and other sets may follow
+  (`n`, anything a walker can stand on). **Rejected:** "not" letters (`F`, anything but
+  floor): they say the same with fewer definitions, but a code then
+  needs a second alphabet and reads worse. **Rejected:** specificity as
+  terrains excluded, summed (a terrain letter 5, `p` 4 with 6 terrains):
+  it orders a rule inside another first too, but it reorders today's
+  rules and changes whenever a terrain is added. **Rejected:** a 16-bit
+  mask, for 16 terrains: every rule twice the size, for terrains no one
+  has asked for. **Rejected:** a set inside a set: a set lists terrains
+  only.
 - **No rotated or mirrored looks.** A metatile is 2 x 2 hardware tiles:
   rotating it would mean swapping its four tiles too, not only setting
   their bits, and in the 3/4 view the pieces aren't rotations of each
@@ -853,3 +912,142 @@ As built, the differences from the design:
     letters.
 - **Memory:** page 102 holds 5,987 bytes (468 fewer: the matching is
   simpler), page 103 2,944 (the tables 406, from 154).
+
+## 9. The second revision: sets of terrains (D15)
+
+Proposed 2026-11-06 and built the same day (9.8 lists where the build
+differs). Agreed: the 8-terrain
+limit, the order's tie on terrains allowed, the sets in the names list,
+and warnings only where name order decides. What changes, by part.
+
+### 9.1 The names list (`assets/tile_names.txt`)
+
+A new line, after the terrains:
+
+```
+# Sets: a letter for any of several terrains, for codes
+set p wall doorway
+set o rock corridor
+```
+
+`set <letter> <terrain> <terrain>...`: a letter not used by a terrain or
+another set, not `x`, and two or more of the terrains listed above it
+(a set of one is that terrain's letter). Errors of the list, with the
+line number, as for terrains: a letter used twice or `x`; a name that
+isn't a terrain, or is given twice in one set; fewer than two terrains;
+a set before the terrains it names. And more than 8 terrains is an error
+(R16).
+
+`p`, a room's perimeter, and `o`, what lies outside a room (rock, or a
+corridor passing; off the map is rock, R9), are what the walls need now.
+Others are a line each.
+
+### 9.2 Names and matching (5.2, 5.6)
+
+- A code's or corners' letter is a terrain's, a set's, or `x`. A name with
+  a set is a name like any other: `wall_oppo` is `LOOK_WALL_OPPO`. A letter that is neither is the error it is now
+  (R22).
+- A letter matches a neighbour when that neighbour's terrain is in it: a
+  terrain's letter holds that terrain only, a set its terrains, `x` all.
+- **Order (D12, D15):** most letters other than `x` first; on a tie, the
+  fewest terrains allowed, summed over those letters (a terrain's letter
+  1, `p` 2); then by name; the default last. Today's tileset, with no
+  sets, sorts as now.
+
+### 9.3 The overlap warning (5.4, R23)
+
+Two rules tied in the order (the same specificity and the same sum)
+overlap when, at every position, their letters share a terrain; the cells
+they share are, at each position, the terrains both allow. The importer
+warns unless a rule before them in the order allows, at each position,
+all of those terrains.
+
+The warning gives the shared cells as a code: at each position the
+letter for exactly those terrains (a terrain's, a set's, or `x`), or the
+terrains' letters in brackets where no letter names them (`[wc]`).
+
+### 9.4 The tables and the decorator (5.4, 5.5)
+
+- **`tile_data.h`:** `want` is a mask of terrains, bit `n` for
+  `TILE_TERRAIN_` number `n`; `TILE_ANY` stays `0xFF`, every terrain.
+  The importer writes each `want` as a hexadecimal mask, with the rule's
+  name in a comment as now.
+- **`level_decorate()`:** the neighbours are read as their terrains' bits,
+  from a table `terrain_bits[TERRAIN_COUNT]` (`0x01, 0x02, ...`, a
+  constant in page 102), rock's bit off the map (R9). The match at each
+  position is `(want[i] & around[i]) != 0`: `TILE_ANY` needs no test of
+  its own. A table, not a shift: a shift of a signed constant goes wrong
+  in zsdcc (`1 << 7`), and a table is as fast.
+- A compile-time check in `level_deco.c` that `TERRAIN_COUNT` is at most
+  8.
+- **Memory:** a rule stays 10 bytes; `terrain_bits` is 6 bytes. Fewer
+  rules for walls make page 103's tables smaller.
+- **`level_deco_blocks()`** is unchanged: it walks looks, not `want`.
+
+### 9.5 The tileset (the artist's, in Aseprite)
+
+The walls of Rogue's rooms, with `o` and `p`. These replace today's
+corners and side walls (`wall_xwwx`, `wall_xwfw`...) and their variants
+for doorways (`wall_xwdx_xfxx`, `wall_dfwx`...):
+
+| Name | N E S W | Piece |
+|---|---|---|
+| `wall_oppo` | outside, perimeter, perimeter, outside | top-left corner |
+| `wall_oopp` | outside, outside, perimeter, perimeter | top-right corner |
+| `wall_ppoo` | perimeter, perimeter, outside, outside | bottom-left corner |
+| `wall_poop` | perimeter, outside, outside, perimeter | bottom-right corner |
+| `wall_opfp` | outside, perimeter, floor, perimeter | top wall |
+| `wall_fpop` | floor, perimeter, outside, perimeter | bottom wall |
+| `wall_pfpo` | perimeter, floor, perimeter, outside | left wall |
+| `wall_popf` | perimeter, outside, perimeter, floor | right wall |
+
+No two of these match one cell (checked: at some position of every pair
+the sets share no terrain), so the importer has nothing to warn about
+among them, and a doorway beside any piece changes nothing. The corners
+need no diagonal: outside on two sides and perimeter on the others is a
+corner only. A piece that should look different next to a doorway keeps
+a rule of its own (`wall_owfd`, a top wall ending at a doorway to its
+west: specificity 4 as `wall_opfp`, fewer terrains, so tried first). A
+cell none of them matches (two rooms' walls touching, which Rogue's
+rooms never do) takes the T junctions, `wall_wwww`, the pillar or the
+default, as now. The T junctions, `wall_wwww` and the
+pillar stay as they are; whether they still overlap the new rules is for
+the importer to say once the slices are renamed.
+
+### 9.6 Tests (5.10)
+
+- **`test_tile_names.py`:** `set` lines read, and each error of 9.1; a
+  set's letter in a code and corners; `want` masks, `x` as `0xFF`; the
+  order's tie on terrains allowed (`wall_owfd` before `wall_opfp`); the
+  overlap warning between sets, its code with a set's letter and with
+  brackets, and none when the sets don't intersect at some position.
+- **`test_ase2tiles.py`:** the generated tables with masks.
+- **`test_deco`:** with the real tables, a room's corners and side walls
+  with doorways beside them take their names; the checks there now (R5,
+  the default last, the floor's share, redrawing) unchanged.
+- **CSpect:** rooms with doorways next to their corners, and on each
+  side, draw the right pieces.
+
+### 9.7 Docs
+
+This file (section 9 is the record of what was built; 5.2's wall table
+and 5.3 stay as the first revision's record), and
+`docs/tileset_import.md` section 9 (naming a new look: sets).
+
+### 9.8 As built
+
+- **The tileset was renamed by the artist with the build:** the eight
+  walls of 9.5, with the T junctions, `wall_wwww`, the pillar and the
+  walls one cell thick kept. The doorway ends (`wall_xdfw`...) went: the
+  side walls' `p` covers them. The importer gives no overlap warnings on
+  it, where the first revision's gave eight (section 8).
+- **`terrain_bits` has 8 entries, one for every terrain there can be**,
+  not `TERRAIN_COUNT`: a terrain added later can't be left with no bit.
+  The decorator reads it by pointer, as the tables (section 7).
+- **Tests:** `test_tile_names.py` has the tests of 9.6, with a names
+  list of five terrains and four sets, two of them (`e`, `n`) sharing two
+  terrains no letter names, for the bracketed code. `test_deco`'s room has
+  doorways beside two corners and a corridor passing outside a corner and
+  a wall, and checks all eight pieces.
+- **Memory:** common memory unchanged (4,203 bytes free in the debug
+  build).

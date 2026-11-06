@@ -195,7 +195,7 @@ def looks_lines(looks, names, bases, rules, entries, banks_of):
         _define('TILE_TERRAINS', len(bases)),
         _define('TILE_RULES', len(rules)),
         _define('TILE_LOOKS', len(entries)),
-        _define('TILE_ANY', f'0x{tile_names.ANY_VALUE:02X}', "A rule's neighbour of any terrain."),
+        _define('TILE_ANY', f'0x{tile_names.ANY_VALUE:02X}', "A rule's neighbour of any terrain: every bit."),
         '',
         '/** A look a rule can choose: a variant, with its share of the picks. */',
         'typedef struct tile_look {',
@@ -204,9 +204,9 @@ def looks_lines(looks, names, bases, rules, entries, banks_of):
         '    uint8_t weight;    /**< Its share among its name\'s variants, 1-255. */',
         '} tile_look_t;',
         '',
-        "/** A rule: a look with a code, on the 8 neighbours' terrains. */",
+        "/** A rule: a look with a code, on the 8 neighbours' terrains (bit n for TILE_TERRAIN_ n). */",
         'typedef struct tile_rule {',
-        '    uint8_t want[8];   /**< N, NE, E, SE, S, SW, W, NW: a terrain, or TILE_ANY. */',
+        '    uint8_t want[8];   /**< N, NE, E, SE, S, SW, W, NW: the terrains allowed, a bit each. */',
         '    uint8_t first;     /**< Its variants: tile_looks[first] on. */',
         '    uint8_t count;',
         '} tile_rule_t;',
@@ -230,7 +230,7 @@ def rules_c(source, bases, rules, entries):
         return items if items else ['    { 0 },   /* none: C has no empty arrays */']
 
     def want_text(want):
-        return ', '.join('TILE_ANY' if w == tile_names.ANY_VALUE else str(w) for w in want)
+        return ', '.join('TILE_ANY' if w == tile_names.ANY_VALUE else f'0x{w:02X}' for w in want)
 
     lines = [
         '/*',

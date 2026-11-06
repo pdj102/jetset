@@ -379,11 +379,15 @@ CSpect and hardware checks (step 2):
    in Next colours (the 512-colour palette), at most 15 colours a tile.
 2. A new metatile: place it on the canvas and name it with a slice
    (docs/dungeon_decoration.md 5.2 and 5.8): the name says what it is and
-   where it goes (`wall_xwfw`, `floor_3`), and the decorator uses it. Tiles
-   may be added, removed or reordered: the names follow the tiles.
+   where it goes (`wall_opfp`, `floor_3`), and the decorator uses it. Tiles
+   may be added, removed or reordered: the names follow the tiles. A
+   code's letter is a terrain, `x` for any, or a set from the names file:
+   `p` a wall or a doorway, `o` rock or a corridor (`wall_oppo`, a
+   top-left corner whatever doorways are beside it).
 3. A name the game uses for something new (a new terrain, with its
    letter, or a feature's look) is a line in `assets/tile_names.txt` and
-   its use in the code.
+   its use in the code. So is a new set (`set <letter> <terrain>
+   <terrain>...`), which needs nothing in the code.
 4. `make`. The script prints the metatiles, their banks and the names, or
    every problem it found, errors first: a colour that isn't a Next
    colour, too many colours, more than 64 tiles; a slice the wrong size or

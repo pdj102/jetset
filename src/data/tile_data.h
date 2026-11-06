@@ -118,54 +118,38 @@
 #define LOOK_TRAPDOOR_BANK               0
 #define LOOK_WALL                        24
 #define LOOK_WALL_BANK                   0
-#define LOOK_WALL_DFWX                   14
-#define LOOK_WALL_DFWX_BANK              0
-#define LOOK_WALL_DXWF                   15
-#define LOOK_WALL_DXWF_BANK              0
-#define LOOK_WALL_FDXW                   16
-#define LOOK_WALL_FDXW_BANK              0
 #define LOOK_WALL_FFFF                   19
 #define LOOK_WALL_FFFF_BANK              0
+#define LOOK_WALL_FPOP                   16
+#define LOOK_WALL_FPOP_BANK              0
 #define LOOK_WALL_FWFW                   5
 #define LOOK_WALL_FWFW_BANK              0
-#define LOOK_WALL_FWXD                   16
-#define LOOK_WALL_FWXD_BANK              0
-#define LOOK_WALL_FWXW                   16
-#define LOOK_WALL_FWXW_BANK              0
-#define LOOK_WALL_WFDX                   14
-#define LOOK_WALL_WFDX_BANK              0
+#define LOOK_WALL_OOPP                   7
+#define LOOK_WALL_OOPP_BANK              0
+#define LOOK_WALL_OPFP                   5
+#define LOOK_WALL_OPFP_BANK              0
+#define LOOK_WALL_OPPO                   4
+#define LOOK_WALL_OPPO_BANK              0
+#define LOOK_WALL_PFPO                   14
+#define LOOK_WALL_PFPO_BANK              0
+#define LOOK_WALL_POOP                   10
+#define LOOK_WALL_POOP_BANK              0
+#define LOOK_WALL_POPF                   15
+#define LOOK_WALL_POPF_BANK              0
+#define LOOK_WALL_PPOO                   9
+#define LOOK_WALL_PPOO_BANK              0
 #define LOOK_WALL_WFWF                   17
 #define LOOK_WALL_WFWF_BANK              0
-#define LOOK_WALL_WFWX                   14
-#define LOOK_WALL_WFWX_BANK              0
 #define LOOK_WALL_WWWW                   11
 #define LOOK_WALL_WWWW_BANK              0
 #define LOOK_WALL_WWWX                   12
 #define LOOK_WALL_WWWX_BANK              0
 #define LOOK_WALL_WWXW                   18
 #define LOOK_WALL_WWXW_BANK              0
-#define LOOK_WALL_WWXX                   9
-#define LOOK_WALL_WWXX_BANK              0
-#define LOOK_WALL_WXDF                   15
-#define LOOK_WALL_WXDF_BANK              0
-#define LOOK_WALL_WXWF                   15
-#define LOOK_WALL_WXWF_BANK              0
 #define LOOK_WALL_WXWW                   13
 #define LOOK_WALL_WXWW_BANK              0
-#define LOOK_WALL_WXXW                   10
-#define LOOK_WALL_WXXW_BANK              0
-#define LOOK_WALL_XDFW                   5
-#define LOOK_WALL_XDFW_BANK              0
-#define LOOK_WALL_XWFD                   5
-#define LOOK_WALL_XWFD_BANK              0
-#define LOOK_WALL_XWFW                   5
-#define LOOK_WALL_XWFW_BANK              0
 #define LOOK_WALL_XWWW                   6
 #define LOOK_WALL_XWWW_BANK              0
-#define LOOK_WALL_XWWX                   4
-#define LOOK_WALL_XWWX_BANK              0
-#define LOOK_WALL_XXWW                   7
-#define LOOK_WALL_XXWW_BANK              0
 #define LOOK_WEB                         39
 #define LOOK_WEB_BANK                    0
 
@@ -177,9 +161,9 @@
 #define TILE_TERRAIN_DOORWAY             4
 #define TILE_TERRAIN_HOLE                5
 #define TILE_TERRAINS                    6
-#define TILE_RULES                       31
-#define TILE_LOOKS                       33
-#define TILE_ANY                         0xFF /**< A rule's neighbour of any terrain. */
+#define TILE_RULES                       23
+#define TILE_LOOKS                       25
+#define TILE_ANY                         0xFF /**< A rule's neighbour of any terrain: every bit. */
 
 /** A look a rule can choose: a variant, with its share of the picks. */
 typedef struct tile_look {
@@ -188,9 +172,9 @@ typedef struct tile_look {
     uint8_t weight;    /**< Its share among its name's variants, 1-255. */
 } tile_look_t;
 
-/** A rule: a look with a code, on the 8 neighbours' terrains. */
+/** A rule: a look with a code, on the 8 neighbours' terrains (bit n for TILE_TERRAIN_ n). */
 typedef struct tile_rule {
-    uint8_t want[8];   /**< N, NE, E, SE, S, SW, W, NW: a terrain, or TILE_ANY. */
+    uint8_t want[8];   /**< N, NE, E, SE, S, SW, W, NW: the terrains allowed, a bit each. */
     uint8_t first;     /**< Its variants: tile_looks[first] on. */
     uint8_t count;
 } tile_rule_t;
