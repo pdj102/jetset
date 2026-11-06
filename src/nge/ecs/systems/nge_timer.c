@@ -1,8 +1,7 @@
 /*
  * Timer system: banked in page 54. Its tables and the clock are in slot 0
- * (nge_timer_cdata.c); it calls the game's dispatch function and the
- * reserved kinds' handlers, in common memory, which may call banked
- * handlers in other pages.
+ * (nge_timer_cdata.c); it calls the game's dispatch function, in common
+ * memory, which may call banked handlers in other pages.
  */
 #ifdef __SDCC
 #pragma codeseg PAGE_54
@@ -13,7 +12,6 @@
 
 #include "core/nge_util.h"
 
-typedef char nge_timer_kinds_check[(NGE_TIMER_EFFECT < NGE_TIMER_KIND_USER) ? 1 : -1];
 typedef char nge_timer_ticks_check[(NGE_TIMER_TICKS_PER_TURN >= 1 && NGE_TIMER_TICKS_PER_TURN <= 255) ? 1 : -1];
 
 /* Alive, with a timer: the entities the clock drives */
@@ -37,22 +35,9 @@ static void remove_timer(nge_entity_id_t id)
 
 void nge_timer_init(void) NGE_BANKED
 {
-    uint8_t k;
-
-    for (k = 0; k < NGE_TIMER_KIND_USER; k++) {
-        nge_timer_handler[k] = 0;
-    }
     nge_timer_turns = 0;
     nge_timer_tick = 0;
     nge_timer_halted = 0;
-}
-
-void nge_timer_set_handler(uint8_t kind, nge_timer_handler_fn handler) NGE_BANKED
-{
-    nge_util_assert(kind < NGE_TIMER_KIND_USER);
-    nge_util_assert(handler != 0);
-
-    nge_timer_handler[kind] = handler;
 }
 
 void nge_timer_add(nge_entity_id_t id, uint8_t kind, uint8_t period, uint8_t cycles) NGE_BANKED
@@ -110,8 +95,6 @@ static void next_period(nge_entity_id_t id)
 uint8_t nge_timer_advance(nge_timer_dispatch_fn dispatch) NGE_BANKED
 {
     nge_entity_id_t id;
-    nge_timer_handler_fn handler;
-    uint8_t kind;
     uint8_t step = 0xFF;
     uint8_t found = 0;
     uint16_t tick;
@@ -164,8 +147,7 @@ uint8_t nge_timer_advance(nge_timer_dispatch_fn dispatch) NGE_BANKED
 
     /*
      * Fire the timers due now, those whose count has reached 0, in entity
-     * ID order: call the handler for each, a reserved kind's registered
- * handler or the game's through dispatch, then
+     * ID order: call the game's handler for each through dispatch, then
      * start its next period (next_period(): with the period as the handler
      * left it, counting a cycle). A handler may change other timers, so
      * each timer is checked just before it fires, not from a list made
@@ -178,14 +160,7 @@ uint8_t nge_timer_advance(nge_timer_dispatch_fn dispatch) NGE_BANKED
         if (!HAS_TIMER(id) || nge_timer_count[id] != 0) {
             continue;
         }
-        kind = nge_timer_kind[id];
-        if (kind < NGE_TIMER_KIND_USER) {
-            handler = nge_timer_handler[kind];   /* an nge module's: the game never sees it */
-            nge_util_assert(handler != 0);
-            handler(id, nge_timer_cycles[id]);
-        } else {
-            dispatch(id, kind, nge_timer_cycles[id]);
-        }
+        dispatch(id, nge_timer_kind[id], nge_timer_cycles[id]);
         /*
          * Unless the handler destroyed its entity or removed its timer, or
          * added a new one (its count is a whole period already)

@@ -2,8 +2,8 @@
 /*
  * Timer tables and the clock in slot 0 (the ECS data page, see
  * ecs/nge_ecs.h): saved with the other ECS data. Uninitialised: set by
- * nge_timer_init(), nge_timer_set_handler()
- * and nge_timer_add(). See "ECS data in slot 0" in
+ * nge_timer_init() and nge_timer_add(); the payload by whoever adds a
+ * timer. See "ECS data in slot 0" in
  * docs/memory_map.md.
  */
 #include "ecs/systems/nge_timer.h"
@@ -12,8 +12,7 @@ uint8_t nge_timer_count[NGE_ENTITY_MAX];
 uint8_t nge_timer_period[NGE_ENTITY_MAX];
 uint8_t nge_timer_cycles[NGE_ENTITY_MAX];
 uint8_t nge_timer_kind[NGE_ENTITY_MAX];
-
-nge_timer_handler_fn nge_timer_handler[NGE_TIMER_KIND_USER];
+uint8_t nge_timer_payload[NGE_TIMER_PAYLOAD][NGE_ENTITY_MAX];
 
 uint16_t nge_timer_turns;
 uint8_t  nge_timer_tick;

@@ -15,8 +15,9 @@ systems use them. What the timer, render and effect systems do beyond that is in
 their headers, [nge_timer.h](../src/nge/ecs/systems/nge_timer.h),
 [nge_render.h](../src/nge/ecs/systems/nge_render.h) and
 [nge_effect.h](../src/nge/ecs/systems/nge_effect.h) (designed in
-[effects_nge.md](effects_nge.md)). Timer kinds below `NGE_TIMER_KIND_USER` are
-nge's, as component numbers below `NGE_COMPONENT_USER` are.
+[effects_nge.md](effects_nge.md)). An active effect is an entity owned by its
+target, tagged with `NGE_COMPONENT_EFFECT`, whose timer's payload holds what the
+game needs to know about it.
 
 ## 1. Overview
 

@@ -71,7 +71,6 @@ static nge_entity_id_t new_player(void)
     nge_entity_init();
     nge_render_init();
     nge_timer_init();
-    nge_effect_init(effects_hook);
     nge_event_init();
     id = gen_creature(CR_PLAYER, NGE_OWNER_WORLD);
     nge_event_flush();   /* its innate effect started */

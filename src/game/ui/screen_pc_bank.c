@@ -359,7 +359,7 @@ static void draw_effects(NGE_FILE *s)
 
     memset(count, 0, sizeof(count));
     NGE_EFFECT_FOR_EACH(i, id, actor_player) {
-        ef = nge_effect_kind(id);
+        ef = EFFECT_KIND_OF(id);
         nge_util_assert(ef < EF_TIMED_COUNT);
         t = turns_left(id);
         if (count[ef]++ == 0) {

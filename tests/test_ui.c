@@ -328,7 +328,6 @@ int main(void)
     nge_entity_init();
     nge_render_init();
     nge_timer_init();
-    nge_effect_init(effects_hook);
     nge_event_init();
     screen_init();
     nge_map_init(LEVEL_WIDTH, LEVEL_HEIGHT, &screen_map_view);    /* floor everywhere */
@@ -1416,7 +1415,7 @@ int main(void)
         uint8_t i;
 
         NGE_OWNER_FOR_EACH_OWNED(i, id, actor_player) {
-            if (NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_EFFECT) && nge_effect_kind(id) == EF_REGEN) {
+            if (NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_EFFECT) && EFFECT_KIND_OF(id) == EF_REGEN) {
                 last = id;
             }
         }

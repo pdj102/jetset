@@ -10,7 +10,6 @@
 #include "game/components/inventory.h"
 #include "game/components/item.h"
 #include "game/gen/gen.h"
-#include "game/effects/effects.h"
 
 #define AREA   NGE_OWNER_AREA(0)
 #define AREA1  NGE_OWNER_AREA(1)
@@ -20,7 +19,6 @@ static void reset(void)
     nge_entity_init();
     nge_render_init();
     nge_timer_init();
-    nge_effect_init(effects_hook);
 }
 
 /* An item of kind on the floor at (x, y) */

@@ -33,8 +33,8 @@
 //             54/55  timer system: code / (unused); its data is in page 50
 //             56/57  block component: the line test and walk / (unused); its data
 //                    is in page 50
-//             58/59  effect system: active effects' lifecycle / the effect
-//                    component and the game's hook
+//             58/59  effect system: creating and destroying active effects /
+//                    (unused); their data is in page 50
 //   88-99   further nge modules (6 pairs)
 //             88/89  input: setup, ASCII tables and waiting / (unused)
 //             90/91  layer2: Layer 2 drawing / (unused); the layer itself is
@@ -57,8 +57,8 @@
 //                                 screen's set-up and stats, the inventory, the
 //                                 title) / the inventory's list
 //                        118/119  messages: what the player is told / (unused)
-//                        120/121  effects: applying and curing effects, nge_effect's
-//                                 hooks / the effect definitions
+//                        120/121  effects: applying, firing and ending effects /
+//                                 the effect definitions
 //                        122/123  gen feature: feature generator / feature kinds
 //                        124/125  target: targeting and its cursor / (unused)
 //                        126/127  anim: starting the action animations / the
@@ -102,7 +102,7 @@
 // nge ecs block component: the line test and walk
 #pragma define CRT_ORG_PAGE_56 = 0x38C000
 
-// nge ecs effect system: active effects' lifecycle
+// nge ecs effect system: creating and destroying active effects
 #pragma define CRT_ORG_PAGE_58 = 0x3AC000
 
 // nge input: setup, ASCII tables and waiting
@@ -138,7 +138,7 @@
 // game messages: what the player is told (game/messages)
 #pragma define CRT_ORG_PAGE_118 = 0x76C000
 
-// game effects: applying and curing effects, nge_effect's hooks (game/effects)
+// game effects: applying, firing and ending effects (game/effects)
 #pragma define CRT_ORG_PAGE_120 = 0x78C000
 
 // game gen: the feature generator

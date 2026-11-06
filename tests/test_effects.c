@@ -6,7 +6,6 @@
 
 #include "ecs/nge_entity.h"
 #include "ecs/nge_owner.h"
-#include "ecs/systems/nge_effect.h"
 #include "ecs/systems/nge_timer.h"
 #include "event/nge_event.h"
 
@@ -62,23 +61,15 @@ static int find_event(int from, uint8_t id)
     return -1;
 }
 
-/* The timers: effects fire through nge_effect and the effects' hook; each effect firing is counted */
+/* The timers: effects fire through effects_on_timer(); each effect firing is counted */
 static int fired;
 
-static void hook(const nge_effect_hook_t *h)
-{
-    if (h->what == NGE_EFFECT_TICK) {
-        fired++;
-    }
-    effects_hook(h);
-}
-
-/* The game's timers: none of an effect's comes here */
 static void dispatch(nge_entity_id_t id, uint8_t kind, uint8_t cycles)
 {
-    (void)id;
-    (void)cycles;
-    CHECK(kind >= NGE_TIMER_KIND_USER);
+    if (kind == TIMER_EFFECT) {
+        fired++;
+        effects_on_timer(id, cycles);
+    }
 }
 
 /* Move time on until n more effect firings, or 1000 steps */
@@ -100,7 +91,7 @@ static int count_effects(nge_entity_id_t target, uint8_t ef)
     int n = 0;
 
     NGE_OWNER_FOR_EACH_OWNED(i, id, target) {
-        if (NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_EFFECT) && nge_effect_kind(id) == ef) {
+        if (NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_EFFECT) && EFFECT_KIND_OF(id) == ef) {
             n++;
         }
     }
@@ -114,7 +105,7 @@ static nge_entity_id_t effect_on(nge_entity_id_t target, uint8_t ef)
     uint8_t i;
 
     NGE_OWNER_FOR_EACH_OWNED(i, id, target) {
-        if (NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_EFFECT) && nge_effect_kind(id) == ef) {
+        if (NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_EFFECT) && EFFECT_KIND_OF(id) == ef) {
             return id;
         }
     }
@@ -157,7 +148,6 @@ static void reset(void)
 {
     nge_entity_init();
     nge_timer_init();
-    nge_effect_init(hook);
     nge_event_init();
     fired = 0;
 }
@@ -250,8 +240,8 @@ int main(void)
     g = goblin();
     CHECK(effect_apply(EF_POISON, 1, g, NGE_ENTITY_INVALID) == 1);
     e = effect_on(g, EF_POISON);
-    CHECK(e != NGE_ENTITY_INVALID && NGE_OWNER_OF(e) == g && nge_effect_kind(e) == EF_POISON && nge_effect_power(e) == 1);
-    CHECK(NGE_ENTITY_HAS_COMPONENT(e, NGE_COMPONENT_TIMER) && nge_timer_kind[e] == NGE_TIMER_EFFECT &&
+    CHECK(e != NGE_ENTITY_INVALID && NGE_OWNER_OF(e) == g && EFFECT_KIND_OF(e) == EF_POISON && EFFECT_POWER_OF(e) == 1);
+    CHECK(NGE_ENTITY_HAS_COMPONENT(e, NGE_COMPONENT_TIMER) && nge_timer_kind[e] == TIMER_EFFECT &&
           nge_timer_period[e] == 30 && nge_timer_cycles[e] == 4 && nge_timer_count[e] == 30);
     CHECK(STATUS_HAS(g, STATUS_POISONED) && effects_check(g));
     CHECK(events() == 2 && is(0, g, EV_ATTRS_CHANGED, NGE_EVENT_NONE, 0) &&
@@ -725,20 +715,20 @@ int main(void)
     g = goblin();
     effect_apply(EF_POISON, 2, g, NGE_ENTITY_INVALID);
     e = effect_on(g, EF_POISON);
-    CHECK(nge_effect_power(e) == 2);
+    CHECK(EFFECT_POWER_OF(e) == 2);
     srand(seed_for_rolls(1, 1, 1));
     fire(1);
     CHECK(health_hp[g] == 4);
     /* Refreshed: the stronger power stays, the weaker can't dilute it */
-    CHECK(effect_apply(EF_POISON, 1, g, NGE_ENTITY_INVALID) == 1 && nge_effect_power(e) == 2);
-    CHECK(effect_apply(EF_POISON, 3, g, NGE_ENTITY_INVALID) == 1 && nge_effect_power(e) == 3 && count_effects(g, EF_POISON) == 1);
+    CHECK(effect_apply(EF_POISON, 1, g, NGE_ENTITY_INVALID) == 1 && EFFECT_POWER_OF(e) == 2);
+    CHECK(effect_apply(EF_POISON, 3, g, NGE_ENTITY_INVALID) == 1 && EFFECT_POWER_OF(e) == 3 && count_effects(g, EF_POISON) == 1);
     /* Stacked: each instance keeps its own */
     reset();
     g = goblin();
     effect_apply(EF_REGEN, 1, g, NGE_ENTITY_INVALID);
     e = effect_on(g, EF_REGEN);
     effect_apply(EF_REGEN, 2, g, NGE_ENTITY_INVALID);
-    CHECK(count_effects(g, EF_REGEN) == 2 && nge_effect_power(e) == 1);
+    CHECK(count_effects(g, EF_REGEN) == 2 && EFFECT_POWER_OF(e) == 1);
 
     /* ---- asserts ---- */
     reset();

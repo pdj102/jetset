@@ -323,7 +323,7 @@ row 0  |          Rogue the Fighter             |   title, centred
 | Defences | `health_immune`/`_resist`/`_vuln` and their `_base` |
 | Attack | the wielded weapon's `attack_*[ATTACK_MELEE]` if it has one, else the player's |
 | Statuses | `stats_status`, `STATUS_CONDITIONS` |
-| Effects | the player's active effects (`NGE_EFFECT_FOR_EACH`): `nge_effect_kind()`, `effect_text(EFFECT_TEXT_NAME)`, `effect_save_of()`, `nge_timer_count`/`_period`/`_cycles` |
+| Effects | the player's active effects (`NGE_EFFECT_FOR_EACH`): `EFFECT_KIND_OF()`, `effect_text(EFFECT_TEXT_NAME)`, `effect_save_of()`, `nge_timer_count`/`_period`/`_cycles` |
 
 The attack's choice of weapon must match `act_melee.c`'s; if that choice
 isn't a function today, it becomes one both call (`attack_of(id)`,

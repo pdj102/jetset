@@ -61,10 +61,11 @@ Check: `grep -rn "NGE_COMPONENT(" src` finds masks only in the two lists
 ### P-EFFECT-1 · must · Effects follow game/effects/effects.h and effects_defs.h
 - A new effect is a row in `effects_pdata.c` named from a kind's hook. Only
   a new kind of op needs code, in `effects_bank.c`.
-- Active effects' lifecycle is nge's (`ecs/systems/nge_effect.h`): the game
-  starts and ends them through it, reads kind and power through it, and
-  walks them with `NGE_EFFECT_FOR_EACH`. What they do is decided in the
-  hooks (`effects_on_hook()`), not in nge.
+- nge only creates, destroys and finds active effects
+  (`ecs/systems/nge_effect.h`); refreshing, stacking, firings
+  (`effects_on_timer()`), expiry and endings are the effects module's. An
+  active effect's kind and power are its timer's payload, read with
+  `EFFECT_KIND_OF()` and `EFFECT_POWER_OF()`.
 - Derived values are the attributes module's (`game/attrs/attrs.h`): it
   reads a definition's statuses and modifiers by mapping page 121, never
   across a banked call.

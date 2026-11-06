@@ -20,11 +20,19 @@
  * firing: 1 is the last (time to say "the poison wears off"), 0 means no
  * limit.
  *
+ * Payload: each timer carries NGE_TIMER_PAYLOAD bytes,
+ * nge_timer_payload[n][id], for its handler: what they mean is the kind's
+ * (an active effect's kind and power). nge_timer never reads, sets or clears
+ * them: whoever adds the timer writes them directly, and nge_timer_add()
+ * (a restart too), nge_timer_remove() and a firing leave them as they are.
+ * They mean something from when they are written until the entity is
+ * released.
+ *
  * Actors: an actor's period is its speed, so every action takes one
  * period; change it with nge_timer_set_period() when the speed changes.
- * Effects (poison, regeneration, sleep) are entities with a timer owned by
- * their target (ecs/nge_owner.h): destroying the target destroys or moves
- * what it owns, so its effects go with it.
+ * Active effects (poison, regeneration, sleep) are entities with a timer
+ * owned by their target (ecs/systems/nge_effect.h): destroying the target
+ * destroys or moves what it owns, so its effects go with it.
  *
  * Each nge_timer_advance() fires every timer due at the next tick, so a
  * turn-based game waits for the player between calls: the player's
@@ -60,16 +68,6 @@
  * remove timers (their own too), create and destroy entities (their own
  * too) and post events.
  *
- * Reserved kinds: kinds 0 to NGE_TIMER_KIND_USER-1 are nge's, as component
- * and event numbers are; the game's are numbered from NGE_TIMER_KIND_USER.
- * An nge module that uses timers registers one handler for each reserved
- * kind it uses (nge_timer_set_handler(), after nge_timer_init()), and
- * nge_timer_advance() fires those kinds through it: the game's dispatch
- * never sees them. A handler is in common memory too: a small trampoline
- * that makes the banked call to the module (ecs/systems/nge_effect.h). The
- * timer system knows no other system: a program that doesn't use one
- * doesn't link it.
- *
  * The tables and the clock are in slot 0 (the ECS data page, ecs/nge_ecs.h),
  * so saving that page saves every timer. Banking: the functions are banked
  * (NGE_BANKED, page 54): don't call them while game code has its own page
@@ -87,18 +85,6 @@
 #define NGE_TIMER_TICKS_PER_TURN  10
 #endif
 
-/** The game's first timer kind: those below are nge's (reserved kinds). */
-#define NGE_TIMER_KIND_USER  2
-
-/* nge's timer kinds: 0 to NGE_TIMER_KIND_USER-1 */
-#define NGE_TIMER_EFFECT  0   /**< Active effects (ecs/systems/nge_effect.h). */
-
-/**
- * A reserved kind's handler: in common memory, like the game's dispatch.
- * @param cycles Firings left counting this one: 1 for the last, 0 for no limit.
- */
-typedef void (*nge_timer_handler_fn)(nge_entity_id_t id, uint8_t cycles);
-
 /**
  * The game's dispatch function: in common memory; calls the handler for kind.
  * @param cycles Firings left counting this one: 1 for the last, 0 for no limit.
@@ -109,10 +95,16 @@ typedef void (*nge_timer_dispatch_fn)(nge_entity_id_t id, uint8_t kind, uint8_t 
 extern uint8_t nge_timer_count[NGE_ENTITY_MAX];    /**< Ticks until it fires. */
 extern uint8_t nge_timer_period[NGE_ENTITY_MAX];   /**< Ticks between firings, 1 to 255. */
 extern uint8_t nge_timer_cycles[NGE_ENTITY_MAX];   /**< Firings left; 0: no limit. */
-extern uint8_t nge_timer_kind[NGE_ENTITY_MAX];     /**< The handler number: reserved, or the game's. */
+extern uint8_t nge_timer_kind[NGE_ENTITY_MAX];     /**< The game's handler number. */
 
-/** Each reserved kind's handler, or 0 (slot 0, nge_timer_cdata.c): set with nge_timer_set_handler(). */
-extern nge_timer_handler_fn nge_timer_handler[NGE_TIMER_KIND_USER];
+/** Bytes of payload per timer. */
+#define NGE_TIMER_PAYLOAD  2
+
+/**
+ * The payload, one row per byte (slot 0, nge_timer_cdata.c): the kind's
+ * data, written by whoever adds the timer, never touched by nge_timer.
+ */
+extern uint8_t nge_timer_payload[NGE_TIMER_PAYLOAD][NGE_ENTITY_MAX];
 
 /* The clock, in slot 0: read-only for game code */
 extern uint16_t nge_timer_turns;     /**< Turns since nge_timer_init() (wraps after 65535). */
@@ -122,24 +114,13 @@ extern uint8_t  nge_timer_halted;    /**< 1 while the clock is stopped. */
 /** 1 while the clock is stopped (nge_timer_stop()), 0 while it runs. */
 #define nge_timer_stopped()  (nge_timer_halted)
 
-/**
- * @brief Set the clock to turn 0, tick 0, running, with no reserved kind's
- *        handler. Call after nge_ecs_init(), then the modules that register
- *        handlers (nge_effect_init()).
- */
+/** @brief Set the clock to turn 0, tick 0, running. Call after nge_ecs_init(). */
 void nge_timer_init(void) NGE_BANKED;
-
-/**
- * @brief Fire reserved kind kind (below NGE_TIMER_KIND_USER, asserted)
- *        through handler from now on, not through the game's dispatch.
- */
-void nge_timer_set_handler(uint8_t kind, nge_timer_handler_fn handler) NGE_BANKED;
 
 /**
  * @brief Give an entity in use a timer, or replace the one it has: it
  *        fires every period ticks, the first time one period from now.
- * @param kind The handler number: a reserved kind (its registered handler)
- *        or the game's (passed to dispatch).
+ * @param kind The game's handler number, passed to dispatch.
  * @param period Ticks between firings, 1 to 255 (an actor: its speed).
  * @param cycles Firings before the timer is removed, or 0 for no limit.
  */
@@ -165,8 +146,7 @@ void nge_timer_start(void) NGE_BANKED;
  * @brief Move the clock on to the next tick at which a timer is due, and
  *        fire the timers due then.
  *
- * Fires them in entity ID order, each through its reserved kind's handler
- * (asserted to be registered) or the game's dispatch, then starts its
+ * Fires them in entity ID order, each through dispatch, then starts its
  * next period (with the period as it is after the handler) and counts its
  * cycle. A timer removed, or an entity destroyed, by an earlier handler in
  * the same tick is not fired.

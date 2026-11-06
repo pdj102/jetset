@@ -47,7 +47,6 @@ static void reset(void)
     nge_entity_init();
     nge_render_init();
     nge_timer_init();
-    nge_effect_init(effects_hook);
     nge_event_init();
 }
 

@@ -22,9 +22,10 @@
  *   instant  its on_start op runs once; nothing is left behind (a healing
  *            potion; raising a base is how an effect is permanent);
  *   timed    an active effect (ecs/systems/nge_effect.h): an entity owned
- *            by the target, with NGE_COMPONENT_EFFECT and a timer that
- *            nge fires, which runs its on_tick op every period for its
- *            cycles (0: for ever), then ends it. It keeps its power, as what
+ *            by the target, with NGE_COMPONENT_EFFECT and a TIMER_EFFECT
+ *            timer (game/timers.h), which runs its on_tick op every
+ *            period for its cycles (0: for ever), then ends it, its kind
+ *            and power in the timer's payload. It keeps its power, as what
  *            started it may be gone. Its definition may name a saving throw
  *            the target tries at each firing, after the tick op: passed,
  *            it ends early. It goes when its target goes. Applied again,
@@ -42,13 +43,12 @@
  * effect starting or ending, a base raised). A pool's current amount (hit
  * points) is kept within its value; a higher maximum doesn't heal.
  *
- * Lifecycle: nge holds which effects an entity has, at what power and for
- * how long, and calls effects_hook() when one starts, is refreshed, fires
- * or ends; the game does the rest there (ops, saving throws, recomputing,
- * events). Effects off the level don't act at their firings (game.c). nge ends an
- * effect only when its time runs out; cures and saving throws are decided
- * here. An active effect's kind and power: nge_effect_kind(),
- * nge_effect_power(); a target's active effects: NGE_EFFECT_FOR_EACH.
+ * Lifecycle: nge creates an active effect, with its kind and power in its
+ * timer's payload, destroys it, and finds a target's (NGE_EFFECT_FOR_EACH);
+ * everything else is here: refreshing and stacking, firings
+ * (effects_on_timer(), from the game's dispatch, which skips effects off
+ * the level), expiry, saving throws, cures, recomputing, events. An active
+ * effect's kind and power: EFFECT_KIND_OF(), EFFECT_POWER_OF().
  *
  * Effects are applied by direct calls, not by events: by actions (using an
  * item, a hit's hook), by generators (a creature's innate hook) and by ops
@@ -59,8 +59,9 @@
  * ID that is later reused; its ops name the effect as the cause.
  *
  * Banking: everything here is banked (NGE_BANKED, page 120, with the
- * definitions in page 121), except effects_hook(), in common memory. Don't
- * call these while game code has its own page mapped in slot 6 or 7.
+ * definitions in page 121). Don't call these while game code has its own
+ * page mapped in slot 6 or 7. EFFECT_KIND_OF() and EFFECT_POWER_OF() read
+ * slot 0 directly.
  */
 
 #include <stdint.h>
@@ -68,6 +69,7 @@
 #include "core/nge_bank.h"
 #include "ecs/nge_entity.h"
 #include "ecs/systems/nge_effect.h"
+#include "ecs/systems/nge_timer.h"
 #include "game/components/components.h"
 
 /*
@@ -134,10 +136,14 @@
 #define EF_COUNT             54
 
 /* Why an effect ended: EV_EFFECT_ENDED's p2 */
-#define EFFECT_END_EXPIRED  0   /**< Its time ran out, or effect_end(): NGE_EFFECT_END_EXPIRED. */
+#define EFFECT_END_EXPIRED  0   /**< Its time ran out, or effect_end(). */
 #define EFFECT_END_CURED    1   /**< effect_cure() (or a cure op). */
 #define EFFECT_END_SAVED    2   /**< Its target passed its saving throw. */
 #define EFFECT_END_COUNT    3
+
+/* An active effect's kind (EF_*, timed) and power: its timer's payload (slot 0), while it is in use */
+#define EFFECT_KIND_OF(e)   (nge_timer_payload[0][(e)])
+#define EFFECT_POWER_OF(e)  ((int8_t)nge_timer_payload[1][(e)])
 
 /* effect_text(): which text */
 #define EFFECT_TEXT_START  0   /**< When it starts: "You feel sick." */
@@ -169,16 +175,14 @@ uint8_t effect_apply(uint8_t ef, int8_t power, nge_entity_id_t target, nge_entit
 void effect_end(nge_entity_id_t effect) NGE_BANKED;
 
 /**
- * @brief The game's side of nge_effect's hooks: in common memory, for the
- *        game's dispatch function (game.c, which skips firings off the
- *        level) or nge_effect_init() directly. STARTED: the on_start op,
- *        recompute the target, EV_EFFECT_STARTED; REFRESHED: recompute if
- *        the power rose, EV_EFFECT_STARTED; TICK: the on_tick op, then the
- *        saving throw (passed, it ends: EFFECT_END_SAVED); ENDED (unless
- *        the target is dead): the on_end op, recompute, EV_EFFECT_ENDED
- *        with the reason.
+ * @brief An active effect's timer fired (TIMER_EFFECT, from the game's
+ *        dispatch): its on_tick op, then its saving throw (passed, it ends:
+ *        EFFECT_END_SAVED), then, on its last cycle (cycles 1), its end
+ *        (EFFECT_END_EXPIRED). An ending: the on_end op, recompute,
+ *        EV_EFFECT_ENDED with the reason, unless the target is dead.
+ * @param cycles Firings left counting this one, as the dispatch got it.
  */
-void effects_hook(const nge_effect_hook_t *h);
+void effects_on_timer(nge_entity_id_t effect, uint8_t cycles) NGE_BANKED;
 
 /**
  * @brief End target's active effects that grant any of statuses

@@ -7,13 +7,10 @@
  * module (game/attrs), which maps page 121 to copy a kind's statuses and
  * modifiers; not for use elsewhere (except the tests).
  *
- * The lifecycle of active effects (an entity owned by its target, with a
- * timer; refreshed or stacked; ended) is nge's (ecs/systems/nge_effect.h):
- * a row's period, cycles and stack flag are passed to it when the effect
- * starts. Everything else in a row is the game's.
+ * nge only sets up an active effect (ecs/systems/nge_effect.h): a row's
+ * period and cycles are given to its timer when it starts or is refreshed.
  */
 
-#include "ecs/systems/nge_effect.h"
 #include "game/attrs/attrs.h"
 #include "game/effects/effects.h"
 
@@ -27,7 +24,7 @@
 #define EFFECT_DURATIONS  3
 
 /* Definition flags */
-#define EFFECT_STACK   NGE_EFFECT_STACK   /* timed, applied again: another instance; else the one there is refreshed */
+#define EFFECT_STACK   0x01  /* timed, applied again: another instance; else the one there is refreshed */
 #define EFFECT_INNATE  0x02  /* timed, for ever and no saving throw: what the creature is, so no cure ends it */
 
 /* Modifiers per definition */
@@ -72,7 +69,7 @@ typedef struct effect_def {
     const char  *end_text;
     uint8_t      duration;     /* EFFECT_INSTANT, EFFECT_TIMED or EFFECT_WORN */
     uint8_t      flags;        /* EFFECT_STACK, EFFECT_INNATE */
-    uint8_t      period;       /* timed: ticks between firings, 1-255 (nge_effect_start()) */
+    uint8_t      period;       /* timed: ticks between firings, 1-255 (the timer's period) */
     uint8_t      cycles;       /* timed: firings, 0 for ever */
     uint8_t      status;       /* statuses granted while it lasts (STATUS_*) */
     effect_mod_t mod[EFFECT_MODS];

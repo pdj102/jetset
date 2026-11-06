@@ -193,7 +193,7 @@ only where a rule acts on conditions as a group: a cure-all
 `effect_def_t.save` holds an ability and a DC, with DC 0 for no saving throw. It
 works on any timed effect, so a non-condition such as slowness can have one.
 
-At each firing of a timed effect, the `TICK` hook (`effects_on_hook()`) runs the
+At each firing of a timed effect, `effects_on_timer()` runs the
 tick op and then, if the effect and its target are still there, calls
 `effects_save()`. That rolls
 1d20 + the ability's modifier against the DC, with modifier 0 for an entity without
@@ -201,12 +201,12 @@ stats. A pass ends the effect.
 
 ### 4.7 How an effect ends
 
-Every ending goes through `nge_effect_end()`, with a reason in `EV_EFFECT_ENDED`'s
-p2:
+Every ending goes through one function in `effects_bank.c`, which destroys the
+effect (`nge_effect_destroy()`) first, with a reason in `EV_EFFECT_ENDED`'s p2:
 
 | Reason | When |
 |---|---|
-| `EFFECT_END_EXPIRED` | Its last firing (nge's `NGE_EFFECT_END_EXPIRED`), or `effect_end()` |
+| `EFFECT_END_EXPIRED` | Its last firing, or `effect_end()` |
 | `EFFECT_END_CURED` | `effect_cure()` or `OP_CURE`, which end effects by the statuses they grant, except innate ones |
 | `EFFECT_END_SAVED` | Its saving throw was passed |
 
@@ -263,7 +263,7 @@ p2:
 
 ## 8. Known risks
 
-- **zsdcc.** `derive()` and `effects_on_hook()` read struct fields in code that
+- **zsdcc.** `derive()` and `effects_on_timer()` read struct fields in code that
   branches, so they copy the fields into locals first (T-ZSDCC-1). A row of a 2D
   array isn't a constant initialiser, so `attrs_table[]` writes
   `&stats_ability_base[a][0]`.

@@ -11,7 +11,6 @@
 #include "game/components/inventory.h"
 #include "game/components/item.h"
 #include "game/gen/gen.h"
-#include "game/effects/effects.h"
 
 #define AREA  NGE_OWNER_AREA(0)
 
@@ -48,8 +47,6 @@ int main(void)
     uint8_t d;
 
     test_init();
-
-    nge_effect_init(effects_hook);   /* the creatures' innate effects */
     nge_entity_init();
 
     /* ---- add and remove ---- */

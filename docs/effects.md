@@ -34,34 +34,41 @@ regeneration), and ends only with the creature.
 hook that names the effect gives the power, so one row serves every strength of
 an item, and an active effect keeps its power after what started it has gone.
 
-**Three parts share the work** ([effects_nge.md](effects_nge.md)). nge's effect
-system (`ecs/systems/nge_effect.h`) holds the lifecycle of active effects: which
-an entity has, at what power and for how long. It tells the game through one
-hook when one starts, is refreshed, fires or ends. The game's effects module
-decides everything an effect does: its ops, its saving throw, what cures it,
-and its events. The game's attributes module (`game/attrs`) derives values
-from bases, equipment and active effects.
+**Three parts share the work** ([effects_nge.md](effects_nge.md), second
+version). nge's effect system
+(`ecs/systems/nge_effect.h`) sets up an active effect, an entity owned by
+its target with a timer whose payload holds the effect's kind and power, and
+finds a target's active effects; it decides
+nothing. The game's effects module decides everything else: when an effect
+starts, is refreshed or stacks, what it does at each firing, when it ends,
+what cures it, and its events. The game's attributes module (`game/attrs`)
+derives values from bases, equipment and active effects.
 
 ```text
- callers                  effects module (120/121)          nge_effect (58/59)
- -------                  ------------------------          ------------------
+ callers                  effects module (120/121)               nge
+ -------                  ------------------------               ---
  use, hit, aim hooks,
  a spell, innate hook --> effect_apply()
                             instant: on_start op, event
-                            timed: the row's lifecycle ----> nge_effect_start()
-                          effects_on_hook() <-- STARTED ---- create or refresh
-                            on_start op, recompute, event
- nge_timer, NGE_TIMER_EFFECT --------------------------------> a firing
-                          effects_on_hook() <-- TICK -------
-                            tick op, saving throw            last cycle: end
+                            timed, one there, not stacking:
+                              restart its timer -------------> nge_timer_add()
+                              raise its power (payload)
+                            timed, otherwise: ---------------> nge_effect_create()
+                              on_start op, recompute, event      entity, owner, tag,
+                                                                 timer, payload
+ nge_timer_advance() ---> game_on_timer(), TIMER_EFFECT,
+                          on the level:
+                          effects_on_timer()
+                            tick op, saving throw,
+                            last cycle: ending
  effect_cure(), OP_CURE,
- leaving a level -------> walks NGE_EFFECT_FOR_EACH ------> nge_effect_end()
-                          effects_on_hook() <-- ENDED ------ destroyed first
+ leaving a level -------> walks NGE_EFFECT_FOR_EACH
+ an ending:               copies target, kind, power ------> nge_effect_destroy()
                             on_end op, recompute, event
 
                           attributes module (138)
  equip, take off,         -----------------------
- the hooks above -------> effects_recompute()
+ the steps above -------> effects_recompute()
                             bases + worn items + active effects,
                             modifiers copied from page 121; clamp and store
 ```
@@ -76,7 +83,8 @@ are never recomputed by a handler (R17).
 |---|---|
 | Effect | A row of `effect_defs[]`, `EF_*`. `EF_NONE` is an empty hook |
 | Duration | Instant, timed or worn (`EFFECT_*`) |
-| Active effect | A timed effect in progress: an entity with `NGE_COMPONENT_EFFECT`, owned by its target |
+| Active effect | A timed effect in progress: an entity with `NGE_COMPONENT_EFFECT` (a tag) and a `TIMER_EFFECT` timer, owned by its target |
+| Payload | The two bytes an nge timer carries: an active effect's kind (`EFFECT_KIND_OF()`) and power (`EFFECT_POWER_OF()`) |
 | Modifier | An amount per power added to a number attribute, or bits ORed into a mask |
 | Op | An action in a definition: what, an argument, and an amount per power |
 | Power | What a use of the effect multiplies its amounts by, from the hook. Not 0, and may be negative |
@@ -86,7 +94,6 @@ are never recomputed by a handler (R17).
 | Innate | A timed effect with 0 cycles marked `EFFECT_INNATE`: nothing ends it but its target going |
 | Refresh | Applying a timed effect that is already there, restarting its timer |
 | Stack | Applying a timed effect marked `EFFECT_STACK`, which adds another instance |
-| Hook | nge_effect's call into the game when an active effect starts, is refreshed, fires or ends |
 | Pending effect | A row whose mechanic isn't built, so it does nothing |
 
 ## 3. Requirements
@@ -138,9 +145,11 @@ are never recomputed by a handler (R17).
 
 ### The split
 
-- **R18** Active effects' lifecycle is nge's and knows nothing of the game
-  ([effects_nge.md](effects_nge.md), R1 to R10). What effects do is the effects
-  module's, and derived values are the attributes module's.
+- **R18** nge sets up an active effect (entity, owner, tag, timer and payload),
+  destroys it, and finds a target's active effects, knowing nothing of the game
+  ([effects_nge.md](effects_nge.md), R5 to R11). Everything else about an active
+  effect, its lifecycle included, is the effects module's, and derived values
+  are the attributes module's.
 
 ### Constraints
 
@@ -161,7 +170,7 @@ are never recomputed by a handler (R17).
 | `start_text`, `end_text` | What the player is told, or none | Instant, timed |
 | `duration` | `EFFECT_INSTANT`, `EFFECT_TIMED` or `EFFECT_WORN` | All |
 | `flags` | `EFFECT_STACK`, `EFFECT_INNATE` | Timed |
-| `period`, `cycles` | Firings: ticks between them, how many; passed to `nge_effect_start()` with the stack flag | Timed |
+| `period`, `cycles` | Firings: ticks between them, how many; given to the timer when it is created or restarted | Timed |
 | `status` | Status bits granted while it lasts | Timed, worn |
 | `mod[]` | Two modifiers; an amount of 0 changes nothing | Timed, worn |
 | `on_start` | Op run once, when applied | Instant, timed |
@@ -198,13 +207,16 @@ target that can't be affected (R6).
 
 - **Instant:** runs `on_start`, with `source` as its cause, and posts
   `EV_EFFECT_STARTED`.
-- **Timed:** calls `nge_effect_start()` with the row's period, cycles and stack
-  flag. Already there and not stacking, nge restarts the timer and keeps the
-  higher power (compared as plain numbers); the `REFRESHED` hook recomputes if the
-  power rose, and posts the event. Otherwise nge creates the entity, owned by the
-  target, with its kind, power and timer; the `STARTED` hook runs `on_start`,
-  recomputes the target and posts the event. Its first `on_tick` comes a period
-  later. nge returning `NGE_ENTITY_INVALID` (no entity free) means refused.
+- **Timed, already there, not stacking:** the first of the kind found by
+  `NGE_EFFECT_FOR_EACH` is refreshed. Its timer restarts with the row's period
+  and cycles (`nge_timer_add()`, which keeps the payload), it keeps the higher
+  power (compared as plain numbers, written to the payload), the target is
+  recomputed if the power rose, and the event is posted.
+- **Timed, otherwise:** `nge_effect_create()` makes the entity, owned by the
+  target, with a `TIMER_EFFECT` timer of the row's period and cycles, and the
+  kind and power as its payload. `NGE_ENTITY_INVALID` (no entity free) means
+  refused. Then `on_start` runs with the effect as its cause, the target is
+  recomputed and the event is posted. Its first `on_tick` comes a period later.
 
 The callers are `act_use()` (the use hook, before destroying the item),
 `act_melee()` (the hit hook, refused if the hit killed the target) and the creature
@@ -212,29 +224,29 @@ generator (the innate hook, which names only innate effects).
 
 ### 4.4 Active effects
 
-An active effect's data is its entity: its owner is the target, nge's effect
-component holds what it is (`nge_effect_kind()`, `nge_effect_power()`), and its timer
-holds how long is left. nge fires the timer itself (the reserved kind
-`NGE_TIMER_EFFECT`) and calls the game's hook, `game_effect_hook()` in `game.c`,
-which skips firings off the level and calls `effects_hook()`, then the banked
-`effects_on_hook()`. The events a firing posts are handled before the next game
-firing and after each advance of the clock (`game.c`).
+An active effect's data is its entity: its owner is the target, the tag
+`NGE_COMPONENT_EFFECT` marks it, and its timer holds how long is left and,
+in its payload, what it is (`EFFECT_KIND_OF()`, `EFFECT_POWER_OF()`, slot 0
+reads). The timer is one of the game's kinds, `TIMER_EFFECT`: `game_on_timer()`
+calls the banked `effects_on_timer()` unless the effect is off the level, and
+handles the events the firing posted before the next, as for any timer.
 
-At each firing (the `TICK` hook):
+At each firing (`effects_on_timer()`):
 
 1. If the target can be affected, `on_tick` runs at the stored power, with the
    effect as its cause.
 2. If the effect has a saving throw and it and its target are still there, the
    target rolls. A pass ends the effect.
-3. On the last cycle, if it hasn't ended, nge ends it as expired.
+3. On the last cycle (`cycles` 1), if it hasn't ended, it ends as expired.
 
 `effect_cure()` walks the target's effects (`NGE_EFFECT_FOR_EACH`) and ends those granting any of the
 given statuses, unless they are innate. See [attributes.md](attributes.md), sections 4.5 to 4.7, for
 statuses, saving throws and end reasons.
 
-**Ending** (`nge_effect_end()`) destroys the effect first, so a recompute no longer
-counts it. Then the `ENDED` hook, if the target can still be affected, runs `on_end`,
-recomputes and posts the event.
+**Ending** is one function in `effects_bank.c`, whatever the reason: it copies
+the target, kind and power, destroys the effect first (`nge_effect_destroy()`),
+so a recompute no longer counts it, then, if the target can still be affected,
+runs `on_end`, recomputes and posts the event.
 
 **Leaving a level:** when a creature is parked off the level, effects with cycles
 left end at once, because skipping their firings would still count their cycles.
@@ -258,10 +270,11 @@ the results. [attributes.md](attributes.md), section 4.3, has the detail.
 
 | Part | Files | What it holds |
 |---|---|---|
-| nge_effect | `ecs/systems/nge_effect.*` (58/59), `nge_effect_timer.c` (common) | Active effects' entities, kinds, powers and timers; the hooks |
-| The effects module | `effects_bank.c` (120), `effects_pdata.c` (121), `effects.c` (common), `effects_defs.h`, `effects_internal.h` | The definitions, applying, the ops, saving throws, cures, the hooks' game side, events, texts |
+| nge_effect | `ecs/systems/nge_effect.*` (58) | Creating an active effect (entity, owner, tag, timer, payload), destroying it, the iterator |
+| nge_timer | `ecs/systems/nge_timer.*` (54, tables in slot 0) | Firings, and the payload that holds each active effect's kind and power |
+| The effects module | `effects_bank.c` (120), `effects_pdata.c` (121), `effects_defs.h`, `effects_internal.h` | The definitions, applying, refreshing and stacking, firings, expiry, the ops, saving throws, cures, ending, events, texts |
 | The attributes module | `game/attrs/attrs_bank.c` (138), `attrs.h`, `attrs_internal.h` | The attribute table, deriving, clamping and storing, setting bases |
-| `game.c` | Common | `game_effect_hook()`: firings off the level skipped; events handled between firings |
+| `game.c` | Common | `game_on_timer()`'s `TIMER_EFFECT` case: firings off the level skipped |
 
 ### 4.8 Pending effects
 
@@ -284,17 +297,17 @@ PC screen use these, so they never read the table.
 ### 4.10 Banking
 
 Everything public is banked in page 120, with the definitions in page 121, in slot
-7 while page 120's code runs, except `effects_hook()`, in common memory. Tables are
+7 while page 120's code runs. Tables are
 in the odd page because addresses in page 120 carry the page in their high bits.
 Code that calls further banked functions copies what it needs first:
-`effect_apply()` copies the definition, and the hooks copy an op or a field into
-locals. The attributes module maps page 121 by hand only to copy a row's statuses
-and modifiers.
+`effect_apply()` copies the definition, and the firing and the ending copy an op
+or a field into locals. The attributes module maps page 121 by hand only to copy
+a row's statuses and modifiers.
 
 The deepest chain of banked calls is an AI's hit that starts a timed effect:
-`nge_timer_advance()`, `ai_on_turn()`, `act_melee()`, `effect_apply()`,
-`nge_effect_start()`, `effects_on_hook()`, `effects_recompute()`, `gen_hook_of()`.
-That is 8, the most allowed (T-STACK-2), so nothing on that path may add a level.
+`nge_timer_advance()`, `ai_on_turn()`, `act_melee()`, `effect_apply()`, then
+`nge_effect_create()` and its calls into nge, or `effects_recompute()` and
+`gen_hook_of()`. That is 6 of the 8 allowed (T-STACK-2).
 
 ## 5. Decisions
 
@@ -308,13 +321,16 @@ That is 8, the most allowed (T-STACK-2), so nothing on that path may add a level
   recording the source and checking it, which needs every effect cleared when its
   source goes.
 - **D4 Power is kept with the active effect** (items.md, D2 and D4).
-- **D5 The lifecycle is nge's, the rest the game's** ([effects_nge.md](effects_nge.md)).
-  The lifecycle has no reason to know about hit points. nge's folder chain enforces
-  it. *Replaced:* one game module split by a seam into a core and the game's side.
+- **D5 nge sets up and finds active effects; the game runs them**
+  ([effects_nge.md](effects_nge.md), D1). What nge offers is an owned entity with
+  a timer that carries the effect's data. Refreshing, stacking, firing, expiring
+  and ending are the game's rules. *Replaced:* one game module split by a seam
+  into a core and the game's side; then the lifecycle in nge, calling the game
+  through hooks (effects_nge.md, section 12).
 - **D6 Ops are numbers.** Data can't hold pointers to banked functions, and a `switch`
   keeps each op with the rules it calls (G-ARCH-7).
-- **D7 One ending path.** Time, cure and save all go through `nge_effect_end()`, with
-  only the reason differing.
+- **D7 One ending path.** Time, cure, save and leaving a level all go through one
+  function in `effects_bank.c`, with only the reason differing.
 - **D8 Destroy the effect before running its end op.** The recompute then no longer
   counts it.
 - **D9 Effects with a limited time end when their target leaves the level.** The
@@ -353,8 +369,9 @@ That is 8, the most allowed (T-STACK-2), so nothing on that path may add a level
 - a target that dies, an entity without stats, and no free entity;
 - pending effects applying safely, the texts, and the asserts.
 
-`test_nge_effect` covers nge's side: starting, refreshing, stacking, firing through
-`nge_timer`, ending in a hook, expiry, no free entity and the target going.
+`test_nge_effect` covers nge's side: creating (owner, tag, timer, payload),
+destroying, the iterator, no free entity and the target going. `test_nge_timer`
+covers the payload.
 
 ## 8. Known risks
 
@@ -372,6 +389,10 @@ That is 8, the most allowed (T-STACK-2), so nothing on that path may add a level
   effect that shows: the generator ignores the result, so a lichen made with no entity
   free would walk. Regeneration lost that way never mattered. Levels stay far below
   100 entities, so this is accepted.
-- **zsdcc.** `run_op()` and `effects_on_hook()` read struct fields in code that
+- **zsdcc.** `run_op()` and `effects_on_timer()` read struct fields in code that
   branches, so they copy them into locals first (T-ZSDCC-1). Scaling depends on
-  promotion and sign, and the PC tests can't catch a miscompile there.
+  promotion and sign, and the power is a payload byte cast to `int8_t`; the PC
+  tests can't catch a miscompile there.
+- **Expiry is the game's.** If `effects_on_timer()` didn't end an effect on its
+  last cycle, nge_timer would remove the timer and the effect would stay,
+  counted by every recompute ([effects_nge.md](effects_nge.md), section 11).

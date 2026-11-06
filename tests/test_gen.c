@@ -253,7 +253,6 @@ static void reset(void)
     nge_entity_init();
     nge_render_init();
     nge_timer_init();
-    nge_effect_init(effects_hook);
 }
 
 int main(void)
@@ -448,7 +447,7 @@ int main(void)
         nge_event_init();
         id = gen_creature(kind, AREA);
         NGE_OWNER_FOR_EACH_OWNED(i, owned, id) {
-            n += NGE_ENTITY_HAS_COMPONENT(owned, NGE_COMPONENT_EFFECT) && nge_effect_kind(owned) == EF_MANA_REGEN;
+            n += NGE_ENTITY_HAS_COMPONENT(owned, NGE_COMPONENT_EFFECT) && EFFECT_KIND_OF(owned) == EF_MANA_REGEN;
         }
         ok = ok && n == (MANA_KIND_HAS(&gen_creatures[kind].mana) ? 1 : 0);
     }

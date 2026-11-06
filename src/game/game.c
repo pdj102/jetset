@@ -80,17 +80,20 @@ static void game_on_event(const nge_event_t *e)
 
 /*
  * The dispatch function: nge_timer_advance() calls it for each entity
- * timer of the game's kinds that fires, with the timer's kind, and it calls
- * that kind's handler (game/timers.h); nge fires its own kinds (active
- * effects) itself. In common memory, as nge calls it through a pointer
+ * timer that fires, with the timer's kind, and it calls that kind's
+ * handler (game/timers.h). In common memory, as nge calls it through a
+ * pointer
  */
 static void game_on_timer(nge_entity_id_t id, uint8_t kind, uint8_t cycles)
 {
-    (void)cycles;   /* the game's kinds fire for ever */
-    nge_event_process(game_on_event);   /* an effect's firing before this one: nge fires those, not this */
     switch (kind) {
     case TIMER_PLAYER:
         player_on_turn(id);
+        break;
+    case TIMER_EFFECT:
+        if (level_holds(id)) {   /* off the level, frozen: only effects that last for ever are left there */
+            effects_on_timer(id, cycles);
+        }
         break;
     case TIMER_AI:
         if (level_holds(id) && AI_IS(id)) {   /* off the level, frozen; without AI (removed), it waits */
@@ -102,21 +105,6 @@ static void game_on_timer(nge_entity_id_t id, uint8_t kind, uint8_t cycles)
         break;
     }
     nge_event_process(game_on_event);   /* this firing's consequences: the next timer fires settled */
-}
-
-/*
- * nge_effect's dispatch function (ecs/systems/nge_effect.h): the effects
- * module's (effects_hook()), except for firings off the level, which are
- * frozen as the AI's turns are. Only effects that last for ever are left
- * off the level (level_park()), so none of them expires. In common memory,
- * as nge calls it through a pointer
- */
-static void game_effect_hook(const nge_effect_hook_t *h)
-{
-    if (h->what == NGE_EFFECT_TICK && !level_holds(h->effect)) {
-        return;
-    }
-    effects_hook(h);
 }
 
 /* ---- Frames ---- */
@@ -202,17 +190,13 @@ static uint8_t world_can_act(void)
  * 2. fires every timer due at that tick, in entity ID order: there may be
  *    several (the player and two monsters at speed 10);
  * 3. for each, calls game_on_timer() with the entity and its timer's kind,
- *    which calls the kind's handler (a monster's turn, player_on_turn()
- *    setting player_turn), or nge's handler for an effect's tick. The rest of the tick still
+ *    which calls the kind's handler (a monster's turn, an effect's tick,
+ *    player_on_turn() setting player_turn). The rest of the tick still
  *    fires after the player's timer, so everything due at the same time
  *    acts before the player's turn.
  *
- * The events of each firing are handled before the next game firing
- * (game_on_timer(), before and after its handler) and after each advance,
- * so every actor sees the last one's reactions. Active effects fire through
- * nge (ecs/systems/nge_effect.h), not game_on_timer(): their events wait
- * for the next of these, so effects due at the same tick are handled
- * together. Once the player dies, game
+ * The events of each firing are handled before the next (game_on_timer()),
+ * so every actor sees the last one's reactions. Once the player dies, game
  * over stops the clock after that tick. The animations those events start
  * in view stop the next advance (world_can_act()), so everything that acted
  * at the same tick animates together, and the world goes on when they end
@@ -225,7 +209,6 @@ static void pass_time(void)
         if (!nge_timer_advance(game_on_timer)) {
             break;   /* the clock is stopped (game over), or no entity has a timer */
         }
-        nge_event_process(game_on_event);   /* the last firings' if they were effects' */
     }
 }
 
@@ -334,7 +317,6 @@ static void play_start(void)
     nge_entity_init();       /* every entity free: the last game's are gone */
     nge_render_init();       /* their sprites hidden at the next upload */
     nge_timer_init();        /* turn 0, the clock running */
-    nge_effect_init(game_effect_hook);   /* after the timer's init, which clears its handler */
     nge_event_init();
     player_init();           /* not the player's turn until their timer fires */
     level_clear_request();

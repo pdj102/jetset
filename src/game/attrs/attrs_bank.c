@@ -143,7 +143,7 @@ static void derive(nge_entity_id_t id, derived_t *d)
             hook = gen_hook_of(owned, GEN_HOOK_WORN);
             add(d, GEN_HOOK_EF(hook), GEN_HOOK_POWER(hook));
         } else if (NGE_ENTITY_HAS_COMPONENT(owned, NGE_COMPONENT_EFFECT)) {
-            add(d, nge_effect_kind(owned), nge_effect_power(owned));
+            add(d, EFFECT_KIND_OF(owned), EFFECT_POWER_OF(owned));
         }
     }
 }

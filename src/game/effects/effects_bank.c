@@ -3,14 +3,16 @@
  * (effects_pdata.c), mapped into slot 7 while this code runs (a banked game
  * module, see "Banked game modules" in docs/memory_map.md). See effects.h.
  *
- * Active effects' lifecycle is nge's (ecs/systems/nge_effect.h): this
- * starts and ends them, and does the game's side of each hook. Derived
- * values are the attributes module's (game/attrs/attrs.h).
+ * nge sets up an active effect (ecs/systems/nge_effect.h: an entity owned
+ * by its target, with a timer whose payload holds its kind and power) and
+ * finds them; this does the rest: refreshing and stacking, firings,
+ * expiry, endings. Derived values are the attributes module's
+ * (game/attrs/attrs.h).
  *
  * Banked calls nest deepest from an AI's hit that starts a timed effect:
- * nge_timer_advance(), ai_on_turn(), act_melee(), effect_apply(),
- * nge_effect_start(), effects_on_hook(), effects_recompute(), gen_hook_of():
- * 8, the most allowed (T-STACK-2). Nothing here may add a level to it.
+ * nge_timer_advance(), ai_on_turn(), act_melee(), effect_apply(), then
+ * nge_effect_create() and its calls, or effects_recompute() and
+ * gen_hook_of(): 6 of the 8 allowed (T-STACK-2).
  */
 #ifdef __SDCC
 #pragma codeseg PAGE_120
@@ -30,9 +32,9 @@
 #include "game/components/mana.h"
 #include "game/components/stats.h"
 #include "game/events.h"
+#include "game/timers.h"
 
-typedef char effects_stack_check[(EFFECT_STACK == NGE_EFFECT_STACK && !(EFFECT_INNATE & NGE_EFFECT_STACK)) ? 1 : -1];
-typedef char effects_end_check[(EFFECT_END_EXPIRED == NGE_EFFECT_END_EXPIRED) ? 1 : -1];
+typedef char effects_flags_check[!(EFFECT_STACK & EFFECT_INNATE) ? 1 : -1];
 
 /* amount x power, by adding: a multiply would link the library's routine into common memory, which has no room */
 static int16_t times(int8_t amount, int8_t power)
@@ -89,6 +91,8 @@ static void uncurse(nge_entity_id_t id)
     }
 }
 
+static void end(nge_entity_id_t effect, uint8_t reason);
+
 /* See effect_cure(): a plain call for this page's ops */
 static uint8_t cure(nge_entity_id_t target, uint8_t statuses)
 {
@@ -100,9 +104,9 @@ static uint8_t cure(nge_entity_id_t target, uint8_t statuses)
     nge_util_assert(target < NGE_ENTITY_MAX);
 
     NGE_EFFECT_FOR_EACH(i, e, target) {
-        ef = nge_effect_kind(e);
+        ef = EFFECT_KIND_OF(e);
         if ((effect_defs[ef].status & statuses) && !(effect_defs[ef].flags & EFFECT_INNATE)) {
-            nge_effect_end(e, EFFECT_END_CURED);
+            end(e, EFFECT_END_CURED);
             n++;
         }
     }
@@ -153,9 +157,90 @@ static void run_op(const effect_op_t *op, int8_t power, nge_entity_id_t target, 
     }
 }
 
+/* ---- Starting, refreshing, firing and ending: nge only creates, finds and destroys ---- */
+
+/* A new instance: its on_start op now (a burst; its on_tick op comes a period from now), then its modifiers count */
+static void started(nge_entity_id_t effect, nge_entity_id_t target, uint8_t ef, int8_t power)
+{
+    effect_op_t on_start = effect_defs[ef].on_start;
+
+    run_op(&on_start, power, target, effect);
+    effects_recompute(target);
+    nge_event_post(target, EV_EFFECT_STARTED, effect, ef, 0);
+}
+
+/* Applied again, not stacking: its full time again, and the stronger power kept so a weaker one can't dilute it */
+static void refresh(nge_entity_id_t effect, nge_entity_id_t target, uint8_t ef, int8_t power, uint8_t period,
+                    uint8_t cycles)
+{
+    nge_timer_add(effect, TIMER_EFFECT, period, cycles);   /* the payload is kept */
+    if (power > EFFECT_POWER_OF(effect)) {
+        nge_timer_payload[1][effect] = (uint8_t)power;
+        effects_recompute(target);
+    }
+    nge_event_post(target, EV_EFFECT_STARTED, effect, ef, 0);
+}
+
+/*
+ * The one way an effect ends, whatever the reason: destroyed first, so the
+ * recompute no longer counts it, then its on_end op, unless its target is
+ * dead
+ */
+static void end(nge_entity_id_t effect, uint8_t reason)
+{
+    /* Copied before it is destroyed: the target, kind and power */
+    nge_entity_id_t target = (nge_entity_id_t)NGE_OWNER_OF(effect);
+    uint8_t ef = EFFECT_KIND_OF(effect);
+    int8_t power = EFFECT_POWER_OF(effect);
+    effect_op_t on_end;
+
+    nge_util_assert(ef != EF_NONE && ef < EF_TIMED_COUNT);
+    on_end = effect_defs[ef].on_end;
+    nge_effect_destroy(effect);
+    if (affectable(target)) {
+        run_op(&on_end, power, target, effect);
+        effects_recompute(target);
+        nge_event_post(target, EV_EFFECT_ENDED, effect, ef, reason);
+    }
+}
+
+void effects_on_timer(nge_entity_id_t effect, uint8_t cycles) NGE_BANKED
+{
+    nge_entity_id_t target;
+    uint8_t ef;
+    int8_t power;
+    effect_op_t on_tick;
+    uint8_t save_arg;
+    uint8_t save_dc;
+
+    nge_util_assert(effect < NGE_ENTITY_MAX && NGE_ENTITY_IS_ALIVE(effect));
+    nge_util_assert(NGE_ENTITY_HAS_COMPONENT(effect, NGE_COMPONENT_EFFECT));
+    target = (nge_entity_id_t)NGE_OWNER_OF(effect);
+    ef = EFFECT_KIND_OF(effect);
+    power = EFFECT_POWER_OF(effect);
+    nge_util_assert(ef != EF_NONE && ef < EF_TIMED_COUNT);
+    on_tick = effect_defs[ef].on_tick;
+    /* The fields in locals (T-ZSDCC-1) */
+    save_arg = effect_defs[ef].save.arg;
+    save_dc = effect_defs[ef].save.dc;
+
+    if (affectable(target)) {
+        run_op(&on_tick, power, target, effect);
+    }
+    /* Its op may have ended it, or killed its target */
+    if (save_dc != 0 && NGE_ENTITY_IS_ALIVE(effect) && affectable(target) && effects_save(target, save_arg, save_dc)) {
+        end(effect, EFFECT_END_SAVED);
+    }
+    if (cycles == 1 && NGE_ENTITY_IS_ALIVE(effect)) {
+        end(effect, EFFECT_END_EXPIRED);   /* its last firing */
+    }
+}
+
 uint8_t effect_apply(uint8_t ef, int8_t power, nge_entity_id_t target, nge_entity_id_t source) NGE_BANKED
 {
     effect_def_t def;   /* a copy: the calls below map other pages */
+    nge_entity_id_t e;
+    uint8_t i;
 
     nge_util_assert(ef != EF_NONE && ef < EF_COUNT);
     nge_util_assert(power != 0);
@@ -173,91 +258,30 @@ uint8_t effect_apply(uint8_t ef, int8_t power, nge_entity_id_t target, nge_entit
         nge_event_post(target, EV_EFFECT_STARTED, NGE_EVENT_NONE, ef, 0);
         return 1;
     }
-    /* Timed: nge refreshes the one there or starts another; the hooks do the rest */
-    return nge_effect_start(ef, power, target, def.period, def.cycles, def.flags & EFFECT_STACK) !=
-           NGE_ENTITY_INVALID;
+    if (!(def.flags & EFFECT_STACK)) {
+        NGE_EFFECT_FOR_EACH(i, e, target) {
+            if (EFFECT_KIND_OF(e) == ef) {
+                refresh(e, target, ef, power, def.period, def.cycles);
+                return 1;
+            }
+        }
+    }
+    e = nge_effect_create(target, TIMER_EFFECT, def.period, def.cycles, ef, (uint8_t)power);
+    if (e == NGE_ENTITY_INVALID) {
+        return 0;
+    }
+    started(e, target, ef, power);
+    return 1;
 }
 
 void effect_end(nge_entity_id_t effect) NGE_BANKED
 {
-    nge_effect_end(effect, EFFECT_END_EXPIRED);
+    end(effect, EFFECT_END_EXPIRED);
 }
 
 uint8_t effect_cure(nge_entity_id_t target, uint8_t statuses) NGE_BANKED
 {
     return cure(target, statuses);
-}
-
-/* ---- The hooks: what effect_apply(), a firing and an end did in one module before ---- */
-
-/* A new instance: its on_start op now (a burst; its on_tick op comes a period from now), then its modifiers count */
-static void started(nge_entity_id_t effect, nge_entity_id_t target, uint8_t ef, int8_t power)
-{
-    effect_op_t on_start = effect_defs[ef].on_start;
-
-    run_op(&on_start, power, target, effect);
-    effects_recompute(target);
-    nge_event_post(target, EV_EFFECT_STARTED, effect, ef, 0);
-}
-
-/* A firing: its on_tick op, then its saving throw (nge ends it on its last cycle) */
-static void ticked(nge_entity_id_t effect, nge_entity_id_t target, uint8_t ef, int8_t power)
-{
-    effect_op_t on_tick = effect_defs[ef].on_tick;
-    /* The fields in locals (T-ZSDCC-1) */
-    uint8_t save_arg = effect_defs[ef].save.arg;
-    uint8_t save_dc = effect_defs[ef].save.dc;
-
-    if (affectable(target)) {
-        run_op(&on_tick, power, target, effect);
-    }
-    /* Its op may have ended it, or killed its target */
-    if (save_dc != 0 && NGE_ENTITY_IS_ALIVE(effect) && affectable(target) && effects_save(target, save_arg, save_dc)) {
-        nge_effect_end(effect, EFFECT_END_SAVED);
-    }
-}
-
-/* Destroyed already, so no longer counted by the recompute: its on_end op, unless its target is dead */
-static void ended(nge_entity_id_t effect, nge_entity_id_t target, uint8_t ef, int8_t power, uint8_t reason)
-{
-    effect_op_t on_end = effect_defs[ef].on_end;
-
-    if (affectable(target)) {
-        run_op(&on_end, power, target, effect);
-        effects_recompute(target);
-        nge_event_post(target, EV_EFFECT_ENDED, effect, ef, reason);
-    }
-}
-
-void effects_on_hook(const nge_effect_hook_t *h) NGE_BANKED
-{
-    /* The fields in locals (T-ZSDCC-1) */
-    uint8_t what = h->what;
-    nge_entity_id_t effect = h->effect;
-    nge_entity_id_t target = h->target;
-    uint8_t ef = h->kind;
-    int8_t power = h->power;
-    uint8_t arg = h->arg;
-
-    nge_util_assert(ef != EF_NONE && ef < EF_TIMED_COUNT);
-    switch (what) {
-    case NGE_EFFECT_STARTED:
-        started(effect, target, ef, power);
-        break;
-    case NGE_EFFECT_REFRESHED:
-        if (arg) {
-            effects_recompute(target);   /* a stronger power */
-        }
-        nge_event_post(target, EV_EFFECT_STARTED, effect, ef, 0);
-        break;
-    case NGE_EFFECT_TICK:
-        ticked(effect, target, ef, power);
-        break;
-    default:
-        nge_util_assert(what == NGE_EFFECT_ENDED);
-        ended(effect, target, ef, power, arg);
-        break;
-    }
 }
 
 /* ---- Texts and saving throws ---- */

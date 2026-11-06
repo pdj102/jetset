@@ -118,7 +118,6 @@ static void scene(uint8_t px, uint8_t py)
     nge_entity_init();
     nge_render_init();
     nge_timer_init();
-    nge_effect_init(effects_hook);
     nge_event_init();
     actor_player = creature(CR_PLAYER, px, py);
     events();                                               /* its innate effect started */
@@ -217,7 +216,6 @@ int main(void)
     nge_entity_init();
     nge_render_init();
     nge_timer_init();
-    nge_effect_init(effects_hook);
     nge_event_init();
 
     /* ---- the component: add and remove, its brain and state ---- */

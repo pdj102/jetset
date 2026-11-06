@@ -1,4 +1,4 @@
-/* nge_timer.c: the timer system, the clock, firing order, stopping and starting, reserved kinds. */
+/* nge_timer.c: the timer system, the clock, firing order, stopping and starting, the payload. */
 #include "test.h"
 
 #include <stdlib.h>
@@ -6,18 +6,17 @@
 #include "ecs/nge_entity.h"
 #include "ecs/systems/nge_timer.h"
 
-/* Handler kinds: the game's, from NGE_TIMER_KIND_USER */
-#define K_PLAIN    (NGE_TIMER_KIND_USER + 1)    /* does nothing */
-#define K_STOP     (NGE_TIMER_KIND_USER + 2)    /* stops the clock (the player) */
-#define K_KILL     (NGE_TIMER_KIND_USER + 3)    /* destroys victim */
-#define K_UNTIME   (NGE_TIMER_KIND_USER + 4)    /* removes victim's timer */
-#define K_SUICIDE  (NGE_TIMER_KIND_USER + 5)    /* destroys itself */
-#define K_SPAWN    (NGE_TIMER_KIND_USER + 6)    /* gives victim a timer of period 1 */
-#define K_UNSELF   (NGE_TIMER_KIND_USER + 7)    /* removes its own timer */
-#define K_SPEED    (NGE_TIMER_KIND_USER + 8)    /* sets its own period to new_period */
-#define K_READD    (NGE_TIMER_KIND_USER + 9)    /* adds itself a new timer: period 7, 2 cycles */
-#define K_RANDOM   (NGE_TIMER_KIND_USER + 10)   /* changes its period or removes its timer, from its state (randomised test) */
-#define K_RESERVED  1                           /* nge's second reserved kind: fired through handler_b */
+/* Handler kinds */
+#define K_PLAIN    1   /* does nothing */
+#define K_STOP     2   /* stops the clock (the player) */
+#define K_KILL     3   /* destroys victim */
+#define K_UNTIME   4   /* removes victim's timer */
+#define K_SUICIDE  5   /* destroys itself */
+#define K_SPAWN    6   /* gives victim a timer of period 1 */
+#define K_UNSELF   7   /* removes its own timer */
+#define K_SPEED    8   /* sets its own period to new_period */
+#define K_READD    9   /* adds itself a new timer: period 7, 2 cycles */
+#define K_RANDOM  10   /* changes its period or removes its timer, from its state (randomised test) */
 
 /* What dispatch saw */
 typedef struct fired {
@@ -97,31 +96,6 @@ static void dispatch(nge_entity_id_t id, uint8_t kind, uint8_t cycles)
     default:
         break;
     }
-}
-
-/* The reserved kinds' handlers: recorded as dispatch's firings are, with their kind and a mark */
-static int handled;
-
-static void record(nge_entity_id_t id, uint8_t kind, uint8_t cycles)
-{
-    fired_t *f = &seen[seen_count++];
-
-    f->id = id;
-    f->kind = kind;
-    f->cycles = cycles;
-    f->time = now();
-    handled++;
-}
-
-static void handler_a(nge_entity_id_t id, uint8_t cycles)
-{
-    record(id, NGE_TIMER_EFFECT, cycles);
-}
-
-static void handler_b(nge_entity_id_t id, uint8_t cycles)
-{
-    record(id, K_RESERVED, cycles);
-    nge_timer_remove(id);   /* a handler may change its own timer, as the game's do */
 }
 
 static int fired(int i, nge_entity_id_t id, uint8_t cycles, uint32_t time)
@@ -353,34 +327,23 @@ int main(void)
     CHECK(nge_timer_advance(dispatch) == 4 && seen_count == 1 && fired(0, b, 0, 4));
     CHECK(nge_timer_count[a] == 1);   /* not moved on */
 
-    /* ---- reserved kinds: through their handlers, never the game's dispatch ---- */
-    reset();
-    handled = 0;
-    a = nge_entity_create();
-    b = nge_entity_create();
-    c = nge_entity_create();
-    nge_timer_set_handler(NGE_TIMER_EFFECT, handler_a);
-    nge_timer_set_handler(K_RESERVED, handler_b);
-    CHECK(nge_timer_handler[NGE_TIMER_EFFECT] == handler_a && nge_timer_handler[K_RESERVED] == handler_b);
-    nge_timer_add(a, NGE_TIMER_EFFECT, 2, 2);
-    nge_timer_add(b, K_PLAIN, 2, 0);
-    nge_timer_add(c, K_RESERVED, 3, 0);
-    /* Due together: ID order, each through its own path; cycles counted as for the game's */
-    CHECK(nge_timer_advance(dispatch) == 2 && seen_count == 2 && handled == 1);
-    CHECK(fired(0, a, 2, 2) && seen[0].kind == NGE_TIMER_EFFECT && fired(1, b, 0, 2) && seen[1].kind == K_PLAIN);
-    CHECK(nge_timer_advance(dispatch) == 1 && fired(2, c, 0, 3) && seen[2].kind == K_RESERVED && handled == 2);
-    CHECK(!has_timer(c));                                         /* its handler removed it */
-    CHECK(nge_timer_advance(dispatch) == 1 && fired(3, a, 1, 4) && fired(4, b, 0, 4) && handled == 3);
-    CHECK(!has_timer(a) && has_timer(b));                         /* its last cycle */
-    /* init: no handler again */
-    nge_timer_init();
-    CHECK(nge_timer_handler[NGE_TIMER_EFFECT] == NULL && nge_timer_handler[K_RESERVED] == NULL);
-    /* Firing an unregistered reserved kind asserts */
+    /* ---- the payload: written directly, never touched by nge_timer ---- */
     reset();
     a = nge_entity_create();
-    nge_timer_add(a, NGE_TIMER_EFFECT, 1, 0);
-    TEST_EXPECT_HALT(nge_timer_advance(dispatch));
-    CHECK(test_halt_count == 1);
+    nge_timer_payload[0][a] = 0x12;
+    nge_timer_payload[1][a] = 0xFE;
+    nge_timer_add(a, K_PLAIN, 2, 2);
+    CHECK(nge_timer_advance(dispatch) == 2 && fired(0, a, 2, 2));
+    CHECK(nge_timer_payload[0][a] == 0x12 && nge_timer_payload[1][a] == 0xFE);   /* a firing */
+    nge_timer_add(a, K_PLAIN, 3, 1);
+    CHECK(nge_timer_payload[0][a] == 0x12 && nge_timer_payload[1][a] == 0xFE);   /* a restart */
+    CHECK(nge_timer_advance(dispatch) == 3 && fired(1, a, 1, 5) && !has_timer(a));
+    CHECK(nge_timer_payload[0][a] == 0x12 && nge_timer_payload[1][a] == 0xFE);   /* the last cycle */
+    nge_timer_add(a, K_PLAIN, 3, 0);
+    nge_timer_remove(a);
+    CHECK(nge_timer_payload[0][a] == 0x12 && nge_timer_payload[1][a] == 0xFE);   /* removed */
+    nge_entity_destroy(a);
+    CHECK(nge_timer_payload[0][a] == 0x12 && nge_timer_payload[1][a] == 0xFE);   /* dying */
 
     /* ---- randomised: the same firings as a plain tick-by-tick clock ---- */
     srand(7);
@@ -442,10 +405,6 @@ int main(void)
     TEST_EXPECT_HALT(nge_timer_remove(NGE_ENTITY_MAX));
     CHECK(test_halt_count == 1);
     TEST_EXPECT_HALT(nge_timer_advance(NULL));
-    CHECK(test_halt_count == 1);
-    TEST_EXPECT_HALT(nge_timer_set_handler(NGE_TIMER_KIND_USER, handler_a));   /* the game's kind */
-    CHECK(test_halt_count == 1);
-    TEST_EXPECT_HALT(nge_timer_set_handler(NGE_TIMER_EFFECT, NULL));
     CHECK(test_halt_count == 1);
 
     return test_summary("timer");

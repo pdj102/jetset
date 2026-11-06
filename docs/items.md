@@ -201,8 +201,8 @@ A definition's amounts are per power.
 - **Ops** get a copy with the amount scaled, clamped to -127 to 127.
 - **Worn effects** are summed from each equipped item's hook whenever the
   derived attributes are recomputed.
-- **Timed effects** are entities. nge's effect component holds each one's kind
-  and power (`nge_effect_power()`) for its ticks, recomputes and ending.
+- **Timed effects** are entities. Each one's kind and power are its timer's
+  payload (`EFFECT_POWER_OF()`), for its ticks, recomputes and ending.
 
 Effects come in three families, and timed effects are numbered first:
 
