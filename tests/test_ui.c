@@ -79,9 +79,118 @@ void game_pause_events(void)
     nge_event_process(pause_on_event);
 }
 
-/* Frames: only the development V key (player_bank.c) runs them, and no test presses it */
+/*
+ * The fake keyboard of the chord tests (docs/diagonals.md, 7): keys held
+ * over frames. Each frame game_frame_start() reads it with the real
+ * nge_input_update(), which queues the presses and the repeats. The other
+ * tests give their keys through game_wait_key() and game_pause_frame()
+ */
+#define HOLDS_MAX  6
+#define HELD       0x7FFF   /* a hold's `to`: not released */
+
+typedef struct hold {
+    uint8_t key;
+    int from;   /* the first frame it is down */
+    int to;     /* the first frame it is up again, or HELD */
+} hold_t;
+
+static hold_t holds[HOLDS_MAX];
+static int holds_n;
+static int kb_frame;   /* frames run by game_frame_start() */
+
+/* The keys from `first` to first + 7 held this frame, as a row's bits */
+static uint8_t kb_bits(uint8_t first)
+{
+    uint8_t bits = 0;
+    int i;
+
+    for (i = 0; i < holds_n; i++) {
+        if (holds[i].key >= first && holds[i].key < first + 8 && holds[i].from <= kb_frame && kb_frame < holds[i].to) {
+            bits = (uint8_t)(bits | (1 << (holds[i].key - first)));
+        }
+    }
+    return bits;
+}
+
+static uint8_t kb_port(uint16_t port)
+{
+    uint8_t half_row = (uint8_t)(port >> 8);
+    uint8_t r;
+
+    for (r = 0; r < 8; r++) {
+        if (half_row == (uint8_t)~(1 << r)) {
+            return (uint8_t)~kb_bits((uint8_t)(r * 8));   /* active low */
+        }
+    }
+    return 0xFF;
+}
+
+static uint8_t kb_reg(uint8_t reg)
+{
+    switch (reg) {
+    case 0xB0:
+        return kb_bits(64);
+    case 0xB1:
+        return kb_bits(72);
+    default:
+        return test_regs[reg];
+    }
+}
+
+/* Hold key k from frame `from` until frame `to` (HELD: not released) */
+static void hold(uint8_t k, int from, int to)
+{
+    CHECK(holds_n < HOLDS_MAX);
+    holds[holds_n].key = k;
+    holds[holds_n].from = from;
+    holds[holds_n].to = to;
+    holds_n++;
+}
+
+/* Release key k from the next frame */
+static void let_go(uint8_t k)
+{
+    int i;
+
+    for (i = 0; i < holds_n; i++) {
+        if (holds[i].key == k && holds[i].to > kb_frame) {
+            holds[i].to = kb_frame + 1;
+        }
+    }
+}
+
 void game_frame_start(void)
 {
+    kb_frame++;
+    nge_input_update();
+}
+
+/* Start a chord test: no key held, no event or repeat waiting, at frame 0 */
+static void keys_clear(void)
+{
+    holds_n = 0;
+    game_frame_start();
+    nge_key_flush();
+    kb_frame = 0;
+}
+
+/*
+ * The play loop on the player's turn: frames until a key event arrives,
+ * then the command for it. Returns the frames the command ran
+ */
+static int play_key(void)
+{
+    nge_key_event_t ev;
+    int start;
+
+    while ((ev = nge_key_get()) == NGE_KEY_NONE && kb_frame < 100) {
+        game_frame_start();
+    }
+    CHECK(ev != NGE_KEY_NONE);
+    start = kb_frame;
+    player_turn = 1;
+    player_command(ev);
+    return kb_frame - start;
 }
 
 void game_frame_end(void)
@@ -324,6 +433,8 @@ int main(void)
     uint8_t y;
 
     test_init();
+    test_port_read_hook = kb_port;   /* the fake keyboard: no key held until a chord test holds one */
+    test_reg_read_hook = kb_reg;
 
     nge_entity_init();
     nge_render_init();
@@ -1302,6 +1413,222 @@ int main(void)
         NGE_ENTITY_ADD_COMPONENT(actor_player, COMPONENT_SPELLS);
         nge_entity_destroy(rat);
         mana_restore(actor_player, 255);
+        nge_event_flush();
+    }
+
+    /* ---- diagonals: two direction keys held together (docs/diagonals.md) ---- */
+    {
+        uint8_t ox = NGE_LOCATION_X(actor_player);
+        uint8_t oy = NGE_LOCATION_Y(actor_player);
+        uint8_t px = 30;
+        uint8_t py = 20;
+        int8_t dx;
+        int8_t dy;
+        nge_entity_id_t d2;
+        nge_entity_id_t key;
+        nge_entity_id_t shrine;
+        nge_entity_id_t dart;
+
+        nge_location_set(actor_player, px, py);                    /* open floor, nothing near */
+        nge_event_flush();
+        fresh();
+        /* UP and RIGHT in the same frame: one step up-right, one turn, at once; the second press taken */
+        keys_clear();
+        hold(NGE_KEY_UP, 1, HELD);
+        hold(NGE_KEY_RIGHT, 1, HELD);
+        CHECK(play_key() == 0);
+        CHECK(NGE_LOCATION_X(actor_player) == px + 1 && NGE_LOCATION_Y(actor_player) == py - 1 && !player_turn);
+        CHECK(nge_key_waiting() == 0);
+        px++;
+        py--;
+        /* UP, then RIGHT two frames later: one step up-right after 2 frames; RIGHT's press taken, a key after it kept */
+        keys_clear();
+        hold(NGE_KEY_UP, 1, HELD);
+        hold(NGE_KEY_RIGHT, 3, HELD);
+        hold(NGE_KEY_S, 4, 5);
+        CHECK(play_key() == 2);
+        CHECK(NGE_LOCATION_X(actor_player) == px + 1 && NGE_LOCATION_Y(actor_player) == py - 1 && !player_turn);
+        CHECK(nge_key_waiting() == 0);
+        game_frame_start();
+        CHECK(nge_key_peek() == EV(NGE_KEY_S));
+        px++;
+        py--;
+        /* UP alone, held past the window: straight up, after the window */
+        keys_clear();
+        hold(NGE_KEY_UP, 1, HELD);
+        CHECK(play_key() == 4);
+        CHECK(NGE_LOCATION_X(actor_player) == px && NGE_LOCATION_Y(actor_player) == py - 1 && !player_turn);
+        py--;
+        /* DOWN tapped, up after 2 frames: straight down in 2 frames */
+        keys_clear();
+        hold(NGE_KEY_DOWN, 1, 3);
+        CHECK(play_key() == 2);
+        CHECK(NGE_LOCATION_X(actor_player) == px && NGE_LOCATION_Y(actor_player) == py + 1 && !player_turn);
+        py++;
+        /* The key sets mixed: k with RIGHT; CAPS+7 with l (l comes as L, CAPS held) */
+        keys_clear();
+        hold(NGE_KEY_K, 1, HELD);
+        hold(NGE_KEY_RIGHT, 2, HELD);
+        CHECK(play_key() == 1);
+        CHECK(NGE_LOCATION_X(actor_player) == px + 1 && NGE_LOCATION_Y(actor_player) == py - 1 && nge_key_waiting() == 0);
+        px++;
+        py--;
+        keys_clear();
+        hold(NGE_KEY_CAPS, 1, HELD);
+        hold(NGE_KEY_7, 1, HELD);
+        hold(NGE_KEY_L, 2, HELD);
+        CHECK(play_key() == 1);
+        CHECK(NGE_LOCATION_X(actor_player) == px + 1 && NGE_LOCATION_Y(actor_player) == py - 1 && nge_key_waiting() == 0);
+        px++;
+        py--;
+        /* LEFT, RIGHT and UP held: the event's key decides its own axis; both ways held on the other give 0 */
+        keys_clear();
+        hold(NGE_KEY_LEFT, 1, HELD);
+        hold(NGE_KEY_RIGHT, 1, HELD);
+        hold(NGE_KEY_UP, 1, HELD);
+        game_frame_start();
+        CHECK(player_key_direction(EV(NGE_KEY_LEFT), &dx, &dy) && dx == -1 && dy == -1);
+        CHECK(player_key_direction(EV(NGE_KEY_RIGHT), &dx, &dy) && dx == 1 && dy == -1);
+        CHECK(player_key_direction(EV(NGE_KEY_UP), &dx, &dy) && dx == 0 && dy == -1);
+        /* The cursor's reading: both keys down, a diagonal, with no frames run; one key, straight */
+        keys_clear();
+        hold(NGE_KEY_UP, 1, HELD);
+        hold(NGE_KEY_RIGHT, 1, HELD);
+        game_frame_start();
+        CHECK(player_key_direction(EV(NGE_KEY_UP), &dx, &dy) && dx == 1 && dy == -1 && kb_frame == 1);
+        keys_clear();
+        hold(NGE_KEY_UP, 1, HELD);
+        game_frame_start();
+        CHECK(player_key_direction(EV(NGE_KEY_UP), &dx, &dy) && dx == 0 && dy == -1 && kb_frame == 1);
+
+        /* Into a monster: an attack, not a step */
+        rat = gen_creature(CR_RAT, AREA);
+        nge_location_set(rat, (uint8_t)(px + 1), (uint8_t)(py - 1));
+        nge_event_flush();
+        keys_clear();
+        hold(NGE_KEY_UP, 1, HELD);
+        hold(NGE_KEY_RIGHT, 1, HELD);
+        play_key();
+        CHECK(NGE_LOCATION_X(actor_player) == px && NGE_LOCATION_Y(actor_player) == py && !player_turn);
+        nge_event_process(messages_on_event);
+        CHECK(shown("You hit the rat") || shown("You miss the rat") || shown("You kill the rat"));
+        if (NGE_ENTITY_IS_ALIVE(rat)) {
+            nge_location_remove(rat);
+            nge_entity_destroy(rat);
+        }
+        level_release_dying();
+        nge_event_flush();
+        /* Into a closed door: it opens */
+        d2 = gen_feature(FT_DOOR, AREA);
+        feature_place(d2, (uint8_t)(px - 1), (uint8_t)(py + 1));
+        nge_event_flush();
+        keys_clear();
+        hold(NGE_KEY_DOWN, 1, HELD);
+        hold(NGE_KEY_LEFT, 1, HELD);
+        play_key();
+        CHECK(FEATURE_IS_OPEN(d2) && NGE_LOCATION_X(actor_player) == px && !player_turn);
+        nge_event_flush();
+
+        /* The prompts answer a chord: close, unlock, operate, disarm, each down-left or up-left */
+        keys_clear();
+        hold(NGE_KEY_DOWN, 1, HELD);
+        hold(NGE_KEY_LEFT, 1, HELD);
+        game_frame_start();
+        fresh();
+        player_turn = 1;
+        press(EV(NGE_KEY_DOWN));
+        player_command(EV(NGE_KEY_C));
+        CHECK(!FEATURE_IS_OPEN(d2) && !player_turn && KEYS_USED());
+        nge_event_flush();
+        feature_lock(d2, KEY_IRON);
+        key = gen_item(IT_KEY_IRON, actor_player);
+        fresh();
+        player_turn = 1;
+        press(EV(NGE_KEY_A));
+        press(EV(NGE_KEY_SPACE));                                  /* taken by the screen's closing frame */
+        press(EV(NGE_KEY_LEFT));
+        player_command(EV(NGE_KEY_P));
+        CHECK(!FEATURE_IS_LOCKED(d2) && !player_turn);
+        nge_entity_destroy(key);
+        level_release_dying();
+        nge_location_remove(d2);
+        nge_entity_destroy(d2);
+        nge_event_flush();
+        shrine = gen_feature(FT_SHRINE_HEALING, AREA);
+        feature_place(shrine, (uint8_t)(px - 1), (uint8_t)(py + 1));
+        nge_event_flush();
+        fresh();
+        player_turn = 1;
+        press(EV(NGE_KEY_LEFT));
+        player_command(EV(NGE_KEY_O));
+        CHECK(FEATURE_IS_SPENT(shrine) && !player_turn);
+        nge_location_remove(shrine);
+        nge_entity_destroy(shrine);
+        nge_event_flush();
+        keys_clear();
+        hold(NGE_KEY_UP, 1, HELD);
+        hold(NGE_KEY_LEFT, 1, HELD);
+        game_frame_start();
+        dart = gen_feature(FT_DART_TRAP, AREA);
+        feature_place(dart, (uint8_t)(px - 1), (uint8_t)(py - 1));
+        feature_find(dart);
+        nge_event_flush();
+        fresh();
+        player_turn = 1;
+        press(EV(NGE_KEY_UP));
+        player_command(NGE_KEY_D | (NGE_MOD_CAPS << 8));
+        CHECK(!player_turn && KEYS_USED());
+        nge_event_process(messages_on_event);
+        CHECK(shown("You disarm the dart trap.") || shown("You fail to disarm the dart trap.") ||
+              shown("You set off a dart trap!"));
+        nge_location_remove(dart);
+        if (NGE_ENTITY_IS_ALIVE(dart)) {
+            nge_entity_destroy(dart);
+        }
+        level_release_dying();
+        nge_event_flush();
+        /* A key held from play repeating into a prompt doesn't answer it; a press does */
+        keys_clear();
+        fresh();
+        press(NGE_KEY_RIGHT | (NGE_MOD_REPEAT << 8));
+        press(EV(NGE_KEY_UP));
+        CHECK(player_ask_direction(PLAYER_PROMPT_CLOSE, &dx, &dy) && dx == 0 && dy == -1 && KEYS_USED());
+
+        /* Holding a chord repeats the diagonal; releasing a key, the next repeat is refused: no step, no turn */
+        keys_clear();
+        hold(NGE_KEY_RIGHT, 1, HELD);
+        hold(NGE_KEY_UP, 2, HELD);                                 /* UP last down: UP repeats */
+        CHECK(play_key() == 1);
+        CHECK(NGE_LOCATION_X(actor_player) == px + 1 && NGE_LOCATION_Y(actor_player) == py - 1);
+        px++;
+        py--;
+        CHECK(play_key() == 0);                                    /* the repeat, up-right */
+        CHECK(NGE_LOCATION_X(actor_player) == px + 1 && NGE_LOCATION_Y(actor_player) == py - 1 && !player_turn);
+        px++;
+        py--;
+        let_go(NGE_KEY_RIGHT);
+        play_key();                                                /* UP's repeat, now straight: refused */
+        CHECK(NGE_LOCATION_X(actor_player) == px && NGE_LOCATION_Y(actor_player) == py && player_turn);
+        let_go(NGE_KEY_UP);
+        game_frame_start();
+        hold(NGE_KEY_UP, kb_frame + 1, kb_frame + 2);              /* a new press: straight up */
+        play_key();
+        CHECK(NGE_LOCATION_X(actor_player) == px && NGE_LOCATION_Y(actor_player) == py - 1 && !player_turn);
+        py--;
+        /* Walking right, then pressing UP: the next step is up-right at once (R11) */
+        keys_clear();
+        hold(NGE_KEY_RIGHT, 1, HELD);
+        CHECK(play_key() == 4);                                    /* the press, straight after the window */
+        CHECK(play_key() == 0);                                    /* a repeat */
+        CHECK(NGE_LOCATION_X(actor_player) == px + 2 && NGE_LOCATION_Y(actor_player) == py);
+        px = (uint8_t)(px + 2);
+        hold(NGE_KEY_UP, kb_frame + 1, HELD);
+        CHECK(play_key() == 0);
+        CHECK(NGE_LOCATION_X(actor_player) == px + 1 && NGE_LOCATION_Y(actor_player) == py - 1);
+
+        keys_clear();
+        fresh();
+        nge_location_set(actor_player, ox, oy);
         nge_event_flush();
     }
 

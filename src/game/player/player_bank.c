@@ -48,30 +48,147 @@
 #define CHAR_DOWN   10
 #define CHAR_UP     11
 
-uint8_t player_key_direction(nge_key_event_t ev, int8_t *dx, int8_t *dy) NGE_BANKED
+/* The axis of a direction key (docs/diagonals.md) */
+#define KEY_AXIS_NONE  0   /* not a direction key */
+#define KEY_AXIS_X     1
+#define KEY_AXIS_Y     2
+
+/*
+ * Frames after a straight direction key's press in which a key on the
+ * other axis still makes a diagonal (docs/diagonals.md, D3)
+ */
+#define PLAYER_CHORD_FRAMES  4
+
+/*
+ * The direction of the last press read in play or a prompt: a repeat that
+ * doesn't continue it is refused (docs/diagonals.md, D6). In common BSS,
+ * as page 114 has no data of its own
+ */
+static int8_t last_dx;
+static int8_t last_dy;
+
+/* The axis of an event's key, and its way along it (-1 or 1) in *d */
+static uint8_t key_axis(nge_key_event_t ev, int8_t *d)
 {
-    *dx = 0;
-    *dy = 0;
     switch (nge_key_ascii(ev)) {
     case CHAR_LEFT:
     case 'h':
-        *dx = -1;
-        return 1;
+        *d = -1;
+        return KEY_AXIS_X;
     case CHAR_RIGHT:
     case 'l':
-        *dx = 1;
-        return 1;
+        *d = 1;
+        return KEY_AXIS_X;
     case CHAR_UP:
     case 'k':
-        *dy = -1;
-        return 1;
+        *d = -1;
+        return KEY_AXIS_Y;
     case CHAR_DOWN:
     case 'j':
-        *dy = 1;
+        *d = 1;
+        return KEY_AXIS_Y;
+    default:
+        return KEY_AXIS_NONE;
+    }
+}
+
+/*
+ * -1, 0 or 1: the direction keys held for one axis (the cursor keys,
+ * CAPS+5-8, or h j k l). Keys held both ways give 0 (docs/diagonals.md, D7)
+ */
+static int8_t held_axis(uint8_t less, uint8_t less_caps, uint8_t less_key, uint8_t more, uint8_t more_caps,
+                        uint8_t more_key)
+{
+    uint8_t caps = nge_key_down(NGE_KEY_CAPS);
+    int8_t d = 0;
+
+    if (nge_key_down(less) || nge_key_down(less_key) || (caps && nge_key_down(less_caps))) {
+        d = -1;
+    }
+    if (nge_key_down(more) || nge_key_down(more_key) || (caps && nge_key_down(more_caps))) {
+        d = (int8_t)(d + 1);
+    }
+    return d;
+}
+
+static int8_t held_x(void)
+{
+    return held_axis(NGE_KEY_LEFT, NGE_KEY_5, NGE_KEY_H, NGE_KEY_RIGHT, NGE_KEY_8, NGE_KEY_L);
+}
+
+static int8_t held_y(void)
+{
+    return held_axis(NGE_KEY_UP, NGE_KEY_7, NGE_KEY_K, NGE_KEY_DOWN, NGE_KEY_6, NGE_KEY_J);
+}
+
+/* player_key_direction(), called in this page without a banked call: the chord's callers are deep (T-STACK-2) */
+static uint8_t direction(nge_key_event_t ev, int8_t *dx, int8_t *dy)
+{
+    int8_t d;
+
+    *dx = 0;
+    *dy = 0;
+    switch (key_axis(ev, &d)) {
+    case KEY_AXIS_X:
+        *dx = d;
+        *dy = held_y();   /* the other axis from the keys held now (docs/diagonals.md, D2) */
+        return 1;
+    case KEY_AXIS_Y:
+        *dy = d;
+        *dx = held_x();
         return 1;
     default:
         return 0;
     }
+}
+
+uint8_t player_key_direction(nge_key_event_t ev, int8_t *dx, int8_t *dy) NGE_BANKED
+{
+    return direction(ev, dx, dy);
+}
+
+uint8_t player_read_direction(nge_key_event_t ev, int8_t *dx, int8_t *dy) NGE_BANKED
+{
+    nge_key_event_t next;
+    int8_t d;
+    int8_t other;
+    uint8_t axis;
+    uint8_t n;
+
+    if (!direction(ev, dx, dy)) {
+        return 0;
+    }
+    if (NGE_KEY_MODS(ev) & NGE_MOD_REPEAT) {
+        return *dx == last_dx && *dy == last_dy;   /* a repeat never changes direction (R10) */
+    }
+    /*
+     * A straight press: the other axis's key may land a frame or two later
+     * (R6). Wait for it while this key is held, so a tap doesn't wait the
+     * whole window (R7). The frames only draw, as game_wait_key()'s do: no
+     * time passes
+     */
+    for (n = 0; n < PLAYER_CHORD_FRAMES && (*dx == 0 || *dy == 0) && nge_key_down(NGE_KEY_CODE(ev)); n++) {
+        game_frame_start();   /* ends the last frame first */
+        direction(ev, dx, dy);
+    }
+    /*
+     * A diagonal: the other key's press, if it is next, is part of it, not
+     * a step of its own (R8, D5). Read without CAPS as well, as held_x()
+     * reads h j k l: with CAPS held for CAPS+7, l comes as L
+     */
+    if (*dx != 0 && *dy != 0) {
+        axis = (uint8_t)(KEY_AXIS_X + KEY_AXIS_Y - key_axis(ev, &d));   /* the other axis */
+        other = (axis == KEY_AXIS_Y) ? *dy : *dx;
+        next = nge_key_peek();
+        if (next != NGE_KEY_NONE && !(NGE_KEY_MODS(next) & NGE_MOD_REPEAT) &&
+            ((key_axis(next, &d) == axis && d == other) ||
+             (key_axis((nge_key_event_t)(next & (uint16_t)~(NGE_MOD_CAPS << 8)), &d) == axis && d == other))) {
+            nge_key_get();
+        }
+    }
+    last_dx = *dx;
+    last_dy = *dy;
+    return 1;
 }
 
 
@@ -342,21 +459,6 @@ static void cast_command(void)
 #if GAME_DEV_KIT
 #define DEV_GOLD  10   /* the gold the E key gives */
 
-/* -1, 0 or 1: the movement keys held for one axis (the cursor keys, CAPS+5-8, or h j k l) */
-static int8_t held_axis(uint8_t less, uint8_t less_caps, uint8_t less_key, uint8_t more, uint8_t more_caps,
-                        uint8_t more_key)
-{
-    uint8_t caps = nge_key_down(NGE_KEY_CAPS);
-
-    if (nge_key_down(less) || nge_key_down(less_key) || (caps && nge_key_down(less_caps))) {
-        return -1;
-    }
-    if (nge_key_down(more) || nge_key_down(more_key) || (caps && nge_key_down(more_caps))) {
-        return 1;
-    }
-    return 0;
-}
-
 /* Development: lock the nearest closed door on the level, for the keys and picks to try, as no level locks any */
 static void lock_nearest(void)
 {
@@ -407,11 +509,11 @@ static void pan_view(void)
     for (;;) {
         game_frame_start();
         ev = nge_key_get();
-        if (ev != NGE_KEY_NONE && !player_key_direction(ev, &dx, &dy)) {
+        if (ev != NGE_KEY_NONE && !direction(ev, &dx, &dy)) {
             break;
         }
-        x += held_axis(NGE_KEY_LEFT, NGE_KEY_5, NGE_KEY_H, NGE_KEY_RIGHT, NGE_KEY_8, NGE_KEY_L);
-        y += held_axis(NGE_KEY_UP, NGE_KEY_7, NGE_KEY_K, NGE_KEY_DOWN, NGE_KEY_6, NGE_KEY_J);
+        x += held_x();
+        y += held_y();
         if (x < 0) {
             x = 0;
         }
@@ -441,9 +543,12 @@ void player_command(nge_key_event_t ev) NGE_BANKED
     int8_t dx;
     int8_t dy;
 
-    if (player_key_direction(ev, &dx, &dy)) {
+    if (player_read_direction(ev, &dx, &dy)) {
         move(dx, dy);
         return;
+    }
+    if (key_axis(ev, &dx) != KEY_AXIS_NONE) {
+        return;   /* a repeat that would change direction: no command, no turn (docs/diagonals.md, R10) */
     }
     switch (nge_key_ascii(ev)) {
     case 'g':
@@ -642,7 +747,7 @@ static const player_prompt_t prompts[PLAYER_PROMPT_COUNT] = {
 
 uint8_t player_direction_key(nge_key_event_t ev, int8_t *dx, int8_t *dy) NGE_BANKED
 {
-    if (!player_key_direction(ev, dx, dy)) {
+    if (!player_read_direction(ev, dx, dy)) {
         screen_message("Never mind.");
         return 0;
     }
@@ -651,6 +756,7 @@ uint8_t player_direction_key(nge_key_event_t ev, int8_t *dx, int8_t *dy) NGE_BAN
 
 uint8_t player_ask_direction(uint8_t prompt, int8_t *dx, int8_t *dy) NGE_BANKED
 {
+    nge_key_event_t ev;
     uint8_t answered;
 
     nge_util_assert(prompt < PLAYER_PROMPT_COUNT);
@@ -658,7 +764,11 @@ uint8_t player_ask_direction(uint8_t prompt, int8_t *dx, int8_t *dy) NGE_BANKED
     nge_key_flush();   /* keys typed for play don't answer */
     screen_message(prompts[prompt].question);
     screen_help(prompts[prompt].help);
-    answered = player_direction_key(game_wait_key(0), dx, dy);
+    /* A press answers: the flush doesn't stop a key held from play repeating (docs/diagonals.md, 5.2) */
+    do {
+        ev = game_wait_key(0);
+    } while (NGE_KEY_MODS(ev) & NGE_MOD_REPEAT);
+    answered = player_direction_key(ev, dx, dy);
     game_play_help();
     nge_key_flush();   /* a key held down doesn't leak into play */
     return answered;

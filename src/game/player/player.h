@@ -69,7 +69,7 @@ void player_show_stats(void) NGE_BANKED;
 
 /**
  * @brief Carry out the command for a key event, during the player's turn:
- *        movement keys (cursor keys or h j k l) move (into a creature:
+ *        movement keys (cursor keys or h j k l, two held together for a diagonal) move (into a creature:
  *        attack; into a closed door: open it), g (or ,) picks up the item
  *        here, i shows the inventory, d w r u e choose an item to drop,
  *        equip, take off, use or exchange, f and c ask a direction to fire or close
@@ -82,10 +82,27 @@ void player_command(nge_key_event_t ev) NGE_BANKED;
 /**
  * @brief The direction of a movement key: the cursor keys (also CAPS+5-8)
  *        or h j k l. The one key map for moving, in play, the direction
- *        prompt and targeting.
+ *        prompt and targeting. The event's key gives its own axis; the
+ *        other comes from the direction keys held now (nge_key_down()), so
+ *        two keys held together give a diagonal (docs/diagonals.md, D2).
+ *        Both ways held on the other axis give 0 there. Runs no frames:
+ *        the targeting cursor uses it as it is (D4).
  * @return 1 and the direction in (dx, dy), or 0 (and (0, 0)) for any other key.
  */
 uint8_t player_key_direction(nge_key_event_t ev, int8_t *dx, int8_t *dy) NGE_BANKED;
+
+/**
+ * @brief player_key_direction() with the chord rules, for play and the
+ *        direction prompt (docs/diagonals.md, 5.2). A press of one key
+ *        waits up to PLAYER_CHORD_FRAMES draw-only frames (no time
+ *        passes) while the key is held, for a key on the other axis; a
+ *        diagonal takes the other key's press from the queue if it is
+ *        next. A repeat (NGE_MOD_REPEAT) is refused unless it continues
+ *        the last press's direction.
+ * @return 1 and the direction in (dx, dy); 0 for any other key, or a
+ *         refused repeat.
+ */
+uint8_t player_read_direction(nge_key_event_t ev, int8_t *dx, int8_t *dy) NGE_BANKED;
 
 /**
  * @brief Do an action (ACT_*, game/actions/act.h) for the player: on a
@@ -103,16 +120,18 @@ void player_act(uint8_t action, act_t *a) NGE_BANKED;
 #define PLAYER_PROMPT_COUNT  4
 
 /**
- * @brief The direction prompt, a chooser: ask the question, wait for a key
- *        and put play's help back.
+ * @brief The direction prompt, a chooser: ask the question, wait for a
+ *        key press (repeats of a key held from play are skipped) and put
+ *        play's help back. A chord answers with a diagonal.
  * @return 1 and a direction in (dx, dy) for a movement key; 0 for any other
  *         key ("Never mind.").
  */
 uint8_t player_ask_direction(uint8_t prompt, int8_t *dx, int8_t *dy) NGE_BANKED;
 
 /**
- * @brief The direction prompt's answer to one key event: 1 and the
- *        direction, or 0 and "Never mind.".
+ * @brief The direction prompt's answer to one key event, through
+ *        player_read_direction(): 1 and the direction, or 0 and "Never
+ *        mind.".
  */
 uint8_t player_direction_key(nge_key_event_t ev, int8_t *dx, int8_t *dy) NGE_BANKED;
 
