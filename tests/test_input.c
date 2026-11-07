@@ -175,18 +175,30 @@ int main(void)
     release_all();
     nge_input_update();
 
-    /* ---- repeat: after delay frames, then every rate frames ---- */
+    /* ---- peek: the next event, not taken ---- */
+    CHECK(nge_key_peek() == NGE_KEY_NONE && nge_key_waiting() == 0);
+    set_key(NGE_KEY_A, 1);
+    nge_input_update();
+    set_key(NGE_KEY_B, 1);
+    nge_input_update();
+    CHECK(nge_key_peek() == EV(NGE_KEY_A, 0) && nge_key_peek() == EV(NGE_KEY_A, 0) && nge_key_waiting() == 2);
+    CHECK(nge_key_get() == EV(NGE_KEY_A, 0) && nge_key_peek() == EV(NGE_KEY_B, 0) && nge_key_waiting() == 1);
+    CHECK(nge_key_get() == EV(NGE_KEY_B, 0) && nge_key_peek() == NGE_KEY_NONE);
+    release_all();
+    nge_input_update();
+
+    /* ---- repeat: after delay frames, then every rate frames; a repeat carries NGE_MOD_REPEAT, a press doesn't ---- */
     nge_input_set_repeat(3, 2);
     set_key(NGE_KEY_X, 1);
     {
-        /* Frames 1-8 holding X: events on 1 (press), 4, 6, 8 */
+        /* Frames 1-8 holding X: events on 1 (press), 4, 6, 8 (repeats) */
         static const uint8_t expect[] = { 1, 0, 0, 1, 0, 1, 0, 1 };
 
         ok = 1;
         for (i = 0; i < (int)sizeof(expect); i++) {
             nge_input_update();
             n = take(ev, 16);
-            ok = ok && n == expect[i] && (n == 0 || ev[0] == EV(NGE_KEY_X, 0));
+            ok = ok && n == expect[i] && (n == 0 || ev[0] == EV(NGE_KEY_X, i == 0 ? 0 : NGE_MOD_REPEAT));
         }
         CHECK(ok);
     }
@@ -204,7 +216,8 @@ int main(void)
     nge_input_update();
     nge_input_update();
     nge_input_update();
-    CHECK(take(ev, 16) == 1 && ev[0] == EV(NGE_KEY_C, NGE_MOD_CAPS));
+    CHECK(take(ev, 16) == 1 && ev[0] == EV(NGE_KEY_C, NGE_MOD_CAPS | NGE_MOD_REPEAT));
+    CHECK(nge_key_ascii(ev[0]) == nge_key_ascii(EV(NGE_KEY_C, NGE_MOD_CAPS)));   /* the press's character */
     /* Holding a key, then pressing a shift key: the repeats keep no shift (5 does not become LEFT) */
     release_all();
     nge_input_update();
@@ -216,7 +229,7 @@ int main(void)
         nge_input_update();
     }
     n = take(ev, 16);
-    CHECK(n >= 1 && ev[0] == EV(NGE_KEY_5, 0) && nge_key_ascii(ev[0]) == '5');
+    CHECK(n >= 1 && ev[0] == EV(NGE_KEY_5, NGE_MOD_REPEAT) && nge_key_ascii(ev[0]) == '5');
     /* Released: no more repeats */
     release_all();
     for (i = 0; i < 10; i++) {

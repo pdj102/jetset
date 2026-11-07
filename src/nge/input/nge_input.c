@@ -90,14 +90,15 @@ void nge_input_update(void)
     /*
      * Repeat a held key; only into an empty queue, so repeats never pile up.
      * A repeat has the shift keys of the press, not the ones held now, so
-     * holding 5 and then pressing CAPS SHIFT keeps repeating 5, not LEFT.
+     * holding 5 and then pressing CAPS SHIFT keeps repeating 5, not LEFT,
+     * and NGE_MOD_REPEAT, so it can be told from a press.
      */
     if (nge_input_repeat_key != NO_KEY && !new_key) {
         if (!held(nge_input_repeat_key)) {
             nge_input_repeat_key = NO_KEY;
         } else if (nge_input_repeat_delay != 0 && --nge_input_repeat_timer == 0) {
             if (nge_input_count == 0) {
-                push(((nge_key_event_t)nge_input_repeat_mods << 8) | nge_input_repeat_key);
+                push(((nge_key_event_t)(nge_input_repeat_mods | NGE_MOD_REPEAT) << 8) | nge_input_repeat_key);
             }
             nge_input_repeat_timer = nge_input_repeat_rate;
         }
@@ -136,6 +137,11 @@ nge_key_event_t nge_key_get(void)
     nge_input_head = (nge_input_head + 1) & (NGE_KEY_QUEUE - 1);
     nge_input_count--;
     return ev;
+}
+
+nge_key_event_t nge_key_peek(void)
+{
+    return nge_input_count == 0 ? NGE_KEY_NONE : nge_input_queue[nge_input_head];
 }
 
 uint8_t nge_key_waiting(void)

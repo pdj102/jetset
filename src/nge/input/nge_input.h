@@ -20,7 +20,8 @@
  *   or NGE_KEY_NONE. Events keep their order, each is taken once, and a
  *   held key repeats after a delay. A repeat is queued only while the queue
  *   is empty, so repeats never pile up while the game is busy. Up to
- *   NGE_KEY_QUEUE events wait; later ones are dropped.
+ *   NGE_KEY_QUEUE events wait; later ones are dropped. nge_key_peek()
+ *   looks at the next event without taking it.
  *
  * Blocking or not: every function returns at once except nge_key_wait(),
  * which doesn't return until an event arrives (or its timeout). While it
@@ -117,12 +118,15 @@
 /*
  * Events: the key code in the low byte, the shift keys held when it went
  * down in the high byte. CAPS SHIFT and SYMBOL SHIFT on their own are not
- * events.
+ * events. A repeat has the shift keys of its press and NGE_MOD_REPEAT as
+ * well, so a game can tell a key held from a key pressed again;
+ * nge_key_ascii() ignores the bit.
  */
 typedef uint16_t nge_key_event_t;
 
 #define NGE_MOD_CAPS  0x01   /**< CAPS SHIFT was held. */
 #define NGE_MOD_SYM   0x02   /**< SYMBOL SHIFT was held. */
+#define NGE_MOD_REPEAT  0x04   /**< A repeat of a held key, not a press. */
 
 #define NGE_KEY_NONE  0xFFFF   /**< No event. */
 
@@ -149,6 +153,12 @@ uint8_t nge_key_released(uint8_t k);
  *         the blocking version.
  */
 nge_key_event_t nge_key_get(void);
+
+/**
+ * @brief Non-blocking: the next event, without taking it.
+ * @return The event nge_key_get() would return, or NGE_KEY_NONE.
+ */
+nge_key_event_t nge_key_peek(void);
 
 /** @brief The number of events waiting, without taking any (0 to NGE_KEY_QUEUE). */
 uint8_t nge_key_waiting(void);
