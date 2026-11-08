@@ -476,5 +476,30 @@ int main(void)
     nge_render_set_anim(b, 120, 8, 1);
     CHECK(NGE_ENTITY_HAS_COMPONENT(b, NGE_COMPONENT_SPRITE));
 
+    /* ---- get: what the sprite shows now, also while dying (a stand-in's copy) ---- */
+    reset();
+    {
+        nge_render_look_t look;
+
+        a = make(AREA0, 2, 21, 6, 0);
+        nge_render_set_flags(a, NGE_SPRITE_MIRROR_X | NGE_SPRITE_PALETTE(5));
+        nge_render_set_offset(a, 0, -8);
+        nge_render_get(a, &look);
+        CHECK(look.pattern == 6 && look.flags == (NGE_SPRITE_MIRROR_X | NGE_SPRITE_PALETTE(5)) &&
+              look.mode == 0 && look.ox == 0 && look.oy == -8);
+        nge_render_set_anim(a, 6, 2, 1);
+        frame();                                              /* the rest animation's second pattern */
+        nge_render_get(a, &look);
+        CHECK(look.pattern == 7);
+        nge_render_play(a, 20, 3, 4);
+        frame();
+        nge_render_get(a, &look);
+        CHECK(look.pattern == 20);                            /* a one-shot's */
+        nge_entity_destroy(a);
+        nge_render_get(a, &look);                             /* dying: still readable */
+        CHECK(look.pattern == 20 && look.oy == -8);
+        CHECK(frame() >= 0 && !visible(0));                   /* but no longer drawn */
+    }
+
     return test_summary("render");
 }

@@ -142,6 +142,22 @@ uint8_t nge_render_busy(void) NGE_BANKED;
  */
 void nge_render_follow(nge_entity_id_t id) NGE_BANKED;
 
+/** What an entity's sprite shows now: for drawing a copy of it elsewhere (a stand-in, a flash). */
+typedef struct nge_render_look {
+    uint8_t pattern;   /**< The pattern shown: the rest animation's or a one-shot's. */
+    uint8_t flags;     /**< Mirror, rotate, palette. */
+    uint8_t mode;      /**< Scale, NGE_SPRITE_PATTERN4. */
+    int8_t  ox;        /**< Draw offset, pixels. */
+    int8_t  oy;
+} nge_render_look_t;
+
+/**
+ * @brief What the entity's sprite shows now. It may be dying (destroyed,
+ *        not yet released): it is no longer drawn, but its sprite is still
+ *        readable, so a stand-in can take its place.
+ */
+void nge_render_get(nge_entity_id_t id, nge_render_look_t *look) NGE_BANKED;
+
 /** @brief Replace the mirror, rotate and palette flags (for example mirror when turning). */
 void nge_render_set_flags(nge_entity_id_t id, uint8_t flags) NGE_BANKED;
 

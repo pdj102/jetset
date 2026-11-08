@@ -39,6 +39,7 @@
 //             88/89  input: setup, ASCII tables and waiting / (unused)
 //             90/91  layer2: Layer 2 drawing / (unused); the layer itself is
 //                    in pages 16-35
+//             92/93  vfx: bolts and bursts / their slots and sprite records
 //   100-223 game
 //             100-101  free (game assets)
 //             102-151  game code pairs (25), from 102 up:
@@ -112,6 +113,9 @@
 
 // nge layer2: Layer 2 drawing
 #pragma define CRT_ORG_PAGE_90 = 0x5AC000
+
+// nge vfx: bolts and bursts
+#pragma define CRT_ORG_PAGE_92 = 0x5CC000
 
 // game level: setting up and building a level
 #pragma define CRT_ORG_PAGE_102 = 0x66C000

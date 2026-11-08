@@ -249,6 +249,17 @@ void nge_render_follow(nge_entity_id_t id) NGE_BANKED
     nge_render_follow_x = 0xFFFF;   /* not a drawn position: the next update centres on it */
 }
 
+void nge_render_get(nge_entity_id_t id, nge_render_look_t *look) NGE_BANKED
+{
+    check_entity(id, 1);
+
+    look->pattern = (uint8_t)(nge_render_sprite_first[id] + nge_render_sprite_anim_frame[id]);
+    look->flags = nge_render_sprite_flags[id];
+    look->mode = nge_render_sprite_mode[id];
+    look->ox = nge_render_sprite_ox[id];
+    look->oy = nge_render_sprite_oy[id];
+}
+
 void nge_render_set_flags(nge_entity_id_t id, uint8_t flags) NGE_BANKED
 {
     check_entity(id, 1);

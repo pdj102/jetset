@@ -42,10 +42,11 @@ Includes are written from `src/nge`, with the folder:
 | `devices/` | Raw device drivers (CSpect DebugOut, UART), no streams |
 | `io/` | Streams (output and input), print and printf, the text control codes (PAPER among them) and colours for any text stream (`nge_text`), the stream devices for the tilemap, Layer 2 cells (`nge_l2_stream`), CSpect, UART and keyboard, and the line editor (`nge_line`) |
 | `ui/` | Building blocks for screens on Layer 2: panels, rectangles of cells opened as Layer 2 streams from a table, or holes onto the layers under Layer 2 (`nge_panel`), and a list with a cursor, shown a window of rows at a time (`nge_list`, numbers only: the caller draws). Common memory, so banked callers can pass their tables |
+| `vfx/` | Visual effects (`nge_vfx`): short-lived sprites that aren't entities, in a pool of 12 with their own hardware sprites. A bolt flies from one map pixel to another; a burst plays a run of patterns once at one, after a delay, or after the bolt flying to its point lands. Placed through the camera each frame; nothing out of view is started. Banked in pages 92/93 |
 | `event/` | Events: a queue in common memory of things that have happened (target, event, source, two payloads), handled in order through the game's dispatch function (`nge_event`) |
 | `ecs/` | Entity component system core, data every entity has: `nge_entity` (IDs, lifecycle, flags, component masks; lifecycle banked in pages 48/49), `nge_owner` (the owner of every entity: an entity, the world or an area; changes banked in page 48), `nge_ecs` (ECS start-up: the ECS data page in slot 0 and its guard area) |
 | `ecs/components/` | What a component is, and every component number, nge's and the game's range (`nge_components.h`); components shared by several systems, with their data in slot 0: `nge_location` (tile and pixel position; entities at a tile), `nge_block` (what an entity blocks and can enter; whether a tile can be entered, map and entities together; whether a line is clear and a walk along it, banked in page 56) |
-| `ecs/systems/` | Systems, each with its private components as page data: `nge_render` (draws the sprite component as hardware sprites, with a rest animation, one-shots that fall back to it, and motions (slides and lunges); says when any in view is busy, and moves the camera with a followed entity; pages 52/53), `nge_timer` (the game clock: timers on entities fire every period, for actors' turns and effects, and the clock can be stopped for the player; each timer carries two bytes of payload for its kind's handler; page 54, data in slot 0), `nge_effect` (active effects: creates an entity owned by its target, tagged with the effect component, with a timer of the game's kind and its payload; destroys it; finds a target's; decides nothing; page 58) |
+| `ecs/systems/` | Systems, each with its private components as page data: `nge_render` (draws the sprite component as hardware sprites, with a rest animation, one-shots that fall back to it, and motions (slides and lunges); says when any in view is busy, and moves the camera with a followed entity; tells what a sprite shows, for a copy of it; pages 52/53), `nge_timer` (the game clock: timers on entities fire every period, for actors' turns and effects, and the clock can be stopped for the player; each timer carries two bytes of payload for its kind's handler; page 54, data in slot 0), `nge_effect` (active effects: creates an entity owned by its target, tagged with the effect component, with a timer of the game's kind and its payload; destroys it; finds a target's; decides nothing; page 58) |
 
 Planned: more of `input/` (joysticks, actions), `sound/` (AY), more of
 `ecs/` (components, systems, deferred clean-up).
@@ -59,7 +60,7 @@ core, and the core neither.
 A folder may include only the folders before it in this chain:
 
 ```
-core  <-  hw  <-  tilemap, layer2, sprite, devices, input, sound  <-  io  <-  map, event, ui  <-  ecs  <-  game
+core  <-  hw  <-  tilemap, layer2, sprite, devices, input, sound  <-  io  <-  map, event, ui  <-  ecs, vfx  <-  game
 ```
 
 - Stream devices live in `io/`, not with the hardware they drive, so
