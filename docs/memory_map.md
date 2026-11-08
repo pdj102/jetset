@@ -81,7 +81,7 @@ The current CSpect build (`bin/main.map`) uses:
 | `$6A00`-`$A996` | Code and constant data (`CODE`) |
 | `$A997`-`$A9B6` | Initialised data (`DATA`) |
 | `$A9B7`-`$AB6D` | Uninitialised data (`BSS`) |
-| `$AB6E`-`$BDFF` | Free, 4,754 bytes (about 7K in the hardware build, without asserts). The build's own figure ("bytes free below the stack") was 4,338 on 2026-11-08, after character creation step 1 |
+| `$AB6E`-`$BDFF` | Free, 4,754 bytes (about 7K in the hardware build, without asserts). The build's own figure ("bytes free below the stack") was 4,277 on 2026-11-08, after the visual effects (docs/vfx.md) |
 | `$BE00`-`$BFFF` | Stack, 512 bytes |
 
 The link step checks `__BSS_END_tail` in the map file and fails the build if
@@ -151,7 +151,7 @@ code pages.
 | 44/45 | nge `map`: set-up code (init, block table, sprite clip) / unused. Its per-frame code is in common memory, its data in page 51 |
 | 46/47 | nge `event` (reserved; the event queue and its processing run every turn and are in common memory) |
 | 48-87 | nge `ecs` (20 pairs): 48/49 `entity` and `owner` (lifecycle and ownership code / lifecycle bookkeeping); 50 ECS data, mapped permanently into slot 0 (see [ECS data in slot 0](#ecs-data-in-slot-0)); 51 map data, mapped permanently into slot 1 (see [Always-mapped data pages](#always-mapped-data-pages)); 52/53 `render` system; 54/55 `timer` system; 56/57 `block` component (the line test and walk / unused); 58/59 `effect` system (creating and destroying active effects / unused) |
-| 88-99 | Further nge modules (6 pairs): 88/89 `input` (setup, ASCII tables and waiting / unused); 90/91 `layer2` (Layer 2 drawing / unused) |
+| 88-99 | Further nge modules (6 pairs): 88/89 `input` (setup, ASCII tables and waiting / unused); 90/91 `layer2` (Layer 2 drawing / unused); 92/93 `vfx` (bolts and bursts / their slots and sprite records) |
 | 100-101 | 100: game, free (assets). 101: the assert messages of common files (see [Assert messages](#assert-messages)) |
 | 102-151 | Game code pairs (25), allocated from 102 up: 102/103 `level` (setting up the map, generating and decorating levels / the room list, the terrain and the decorator's tables); 104/105 `ui` (the player character screen / unused); 106/107 `gen` creatures (generator / creature kinds); 108/109 `gen` items (generator / item kinds); 110/111 `gen` shared (helpers and the game components' add functions / unused); 112/113 `actions` (the actions, in the 16K section `BANK_56`); 114/115 `player` (commands and the firing screen / unused); 116/117 `ui` (the screens / the inventory's list); 118/119 `messages` (what the player is told / unused); 120/121 `effects` (applying, firing, curing and ending effects / the effect definitions); 122/123 `gen` features (generator / feature kinds); 124/125 `target` (targeting / unused); 126/127 `anim` (starting the action animations / the kinds' sequences); 128/129 `quest` (the quest item's checks / unused); 130/131 `ai` (the AI's component, senses, states and brains / each AI entity's state, brain, target and goal); 132/133 `feature` (the feature component and its reactions / unused); 134/135 `spells` (the spells / their definitions and each caster's known spells); 136/137 `level` travel (leaving a level / unused); 138/139 `attrs` (deriving attribute values / unused: page 121 is mapped into slot 7 by hand); 140/141 `chargen` (the classes and making the player / unused). 142-151 are free |
 | 152-223 | Game assets: maps, graphics, level data. 153: the map tiles' palette (slot 7, through `nge_palette_load9()`), generated from the tileset. 155: the sprite palette, 157 and 159: the sprite patterns (slot 7, through the loaders), generated from the sprite file ([sprite_import.md](sprite_import.md)) |
@@ -198,6 +198,7 @@ Banked so far:
 | 58/59 | `ecs` effect system | creating and destroying active effects (`ecs/systems/nge_effect.c`, about 0.6K with asserts) | none: an active effect's kind and power are its timer's payload, in slot 0 |
 | 88/89 | `input` | setup, the key-to-ASCII tables and waiting (`input/nge_input_setup.c`, about 0.5K) | none |
 | 90/91 | `layer2` | Layer 2 drawing: set-up, fills, text, scrolling (`layer2/nge_layer2_draw.c`), and the font as constants (`layer2/nge_layer2_font.c`), in the code page so it stays readable while the drawing maps the layer's pages (16-25) into slot 7 | none |
+| 92/93 | `vfx` | visual effects: bolts and bursts, their timing and drawing (`vfx/nge_vfx.c`, about 3.1K with asserts, [vfx.md](vfx.md)) | the 12 slots and their sprite records (`nge_vfx_pdata.c`, about 0.3K) |
 | 102/103 | game `level` | setting up the map, the level generator with its features, locks and keys, and its decorator (`game/level/level_bank.c`, `level_gen.c`, `level_deco.c`, about 7.9K with asserts and the development aids: 266 bytes free in debug builds, so new level code may need a page of its own, as `level_travel.c` got) | the room list, corridor links, stairs and each cell's terrain (`level_pdata.c`, 2.5K), and the decorator's tables, constants generated from the tileset's names (`src/data/tile_rules_data.c`, about 0.4K) |
 | 104/105 | game `ui` | the player character screen (`game/ui/screen_pc_bank.c`, `docs/pc_screen.md`) and the spell list (`screen_spell_bank.c`, `docs/spells.md`), with their literals, about 5.9K with asserts: they didn't fit in page 116 beside the other screens | none |
 | 106/107 | game `gen` creatures | the creature generator (`game/gen/gen_creature_bank.c`, about 0.6K) | the creature kinds: a `const` table and its names (`gen_creature_pdata.c`, with `constseg PAGE_107`) |
@@ -209,7 +210,7 @@ Banked so far:
 | 120/121 | game `effects` | applying effects (refreshing and stacking), firings (`effects_on_timer()`, from the game's dispatch), cures and endings, the ops, saving throws, events and texts (`game/effects/effects_bank.c`) | the effect definitions with their texts (`game/effects/effects_pdata.c`, about 2.3K), which the attributes module also reads, mapping this page into slot 7 by hand |
 | 122/123 | game `gen` features | the feature generator, `gen_feature_random()`, and its name, hook and kind-data copies (`game/gen/gen_feature_bank.c`, about 1.3K) | the 22 feature kinds and their names (`game/gen/gen_feature_pdata.c`, about 1K; docs/features.md) |
 | 124/125 | game `target` | targeting: the cursor, its keys and the purposes' prompts (`game/target/target_bank.c`); the cursor is an overlay sprite (`game/ui/screen_main.h`) | none |
-| 126/127 | game `anim` | starting the action animations from events, and copying the kinds' sequences (`game/anim/anim_bank.c`, about 0.6K); `anim_holding()` is common (`anim.c`) | the creature kinds' sequences (`game/anim/anim_pdata.c`, 6 bytes a kind) |
+| 126/127 | game `anim` | starting the action animations and the visual effects from events, and copying the kinds' sequences (`game/anim/anim_bank.c`, `anim_vfx.c` with its colour tables, about 2.5K with asserts); `anim_holding()` is common (`anim.c`) | the creature kinds' sequences (`game/anim/anim_pdata.c`, 6 bytes a kind) |
 | 128/129 | game `quest` | the quest item (`docs/winning.md`): whether an actor carries it, noting the first pick-up, and the debug check of where it is (`game/quest/quest_bank.c`); `quest_item` is common (`quest.c`) | none |
 | 130/131 | game `ai` | the AI (`docs/ai.md`, `docs/ai_default_brain.md`): the AI component's functions, the stimuli, `ai_can()` (`game/ai/ai_bank.c`), the senses (`ai_sense.c`), the turn, its states and their options (`ai_think.c`), `ai_try()` and the moves (`ai_act.c`) and the brains (`ai_brains.c`, `const`), about 5.2K in debug builds; the event filter `ai_on_event()` is common (`ai.c`) | each AI entity's state, brain, target, goal and tracking (`ai_pdata.c`, 600 bytes) |
 | 132/133 | game `feature` | the feature component's functions: states, locks, the search and disarm rolls (`game/components/feature.c`), and the features' reactions to events (`feature_event.c`, apart as it calls the actions); about 1.9K with asserts. Its tables are in slot 0 | none |
@@ -485,9 +486,11 @@ caller can see them:
 - a game's own records for the other sprites (a HUD, for example) are an
   array in common memory, or in its own page if its code is banked. The
   game keeps the ranges apart, in `game/ui/screen_main.h`: the overlay
-  sprites (the targeting cursor, later projectiles and effects) are
-  hardware sprites `NGE_RENDER_SPRITES` (64) onwards, their records in
-  common memory (`screen_main.c`), uploaded by `game_frame_start()`.
+  sprites (the targeting cursor) are hardware sprites
+  `NGE_RENDER_SPRITES` (64) to 67, their records in common memory
+  (`screen_main.c`), and the visual effects are `SCREEN_SPRITE_VFX` (68)
+  to 79, their records in page 93 (`vfx/nge_vfx.h`); `game_frame_start()`
+  uploads both.
 
 Keep in non-banked memory anything used after the upload:
 

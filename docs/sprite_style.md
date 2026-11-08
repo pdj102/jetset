@@ -257,7 +257,7 @@ The slot roles are sprite_import.md 5.2. In short:
 | Monsters | 50 (10 families of up to 5; a family's recolours are free) |
 | Items | 40 (one each, recolours free) |
 | Features | 12 (chest open and shut, torch 2, fountain 2...) |
-| Effects | 14 (sparks, fire, frost, poison, magic) |
+| Effects | 14: 12 used by the VFX (docs/vfx.md 5.4: `fx.arrow` 2, `fx.thrown` 1, `fx.orb` 1, `fx.glow` 3, `fx.splash` 3, `fx.puff` 2) |
 | UI | 6 (cursor, markers) |
 
 ### 6.9 Masters
@@ -304,3 +304,12 @@ art is compared with them:
   reach into its target's cell, so touching the neighbour there is
   intended. Column 0 and row 15 stay empty. First used by
   `player.attack` frame 1.
+
+- **Effects (`fx.*`) aren't items** (2026-11-08, docs/vfx.md 5.4). The
+  checker's item rules don't fit them: a shot spans its cell
+  (`fx.arrow`), a splash bursts to its edges, sparkles and droplets are
+  separate pixels, and glows, splashes, the orb and the smoke's second
+  frame have no outline (`glow`), so they read as light rather than
+  things. They are drawn in the primary ramp (9-12) where they recolour
+  by bank, and in fixed slots where they don't (the arrow's wood and
+  steel, the stone's and smoke's greys).

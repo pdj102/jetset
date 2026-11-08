@@ -1,4 +1,4 @@
-/* game/anim: the animations events start (slides, lunges, sequences), and holding the world. */
+/* game/anim: the animations and visual effects events start (slides, lunges, sequences; bolts, glows, splashes, flashes, stand-ins), and holding the world. */
 #include "test.h"
 
 #include <string.h>
@@ -12,12 +12,19 @@
 #include "ecs/systems/nge_timer.h"
 #include "event/nge_event.h"
 #include "map/nge_map.h"
+#include "vfx/nge_vfx.h"
+#include "vfx/nge_vfx_internal.h"
 
 #include "game/anim/anim.h"
 #include "game/anim/anim_internal.h"
+#include "game/actors.h"
+#include "game/components/health.h"
+#include "game/effects/effects.h"
 #include "game/events.h"
 #include "game/gen/gen.h"
+#include "game/gen/gen_kinds.h"
 #include "game/level/level.h"
+#include "game/spells/spells.h"
 
 #define AREA  NGE_OWNER_AREA(0)
 
@@ -49,6 +56,48 @@ static int settle(void)
     return n;
 }
 
+/* VFX updates until none is left: how many it took (at most 100) */
+static int settle_vfx(void)
+{
+    int n;
+
+    for (n = 0; n < 100 && nge_vfx_busy(); n++) {
+        nge_render_update();
+        nge_vfx_update();
+    }
+    return n;
+}
+
+/* VFX slots in use of a kind (NGE_VFX_BOLT, NGE_VFX_BURST) */
+static int vfx_count(uint8_t kind)
+{
+    int i;
+    int n = 0;
+
+    for (i = 0; i < NGE_VFX_SLOTS; i++) {
+        n += nge_vfx_kind[i] == kind;
+    }
+    return n;
+}
+
+/* The slot in use of a kind showing pattern first, or -1 */
+static int vfx_find(uint8_t kind, uint8_t first)
+{
+    int i;
+
+    for (i = 0; i < NGE_VFX_SLOTS; i++) {
+        if (nge_vfx_kind[i] == kind && nge_vfx_first[i] == first) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+static int vfx_bank(int slot)
+{
+    return nge_vfx_flags[slot] >> 4;
+}
+
 static nge_entity_id_t creature(uint8_t kind, uint8_t x, uint8_t y)
 {
     nge_entity_id_t id = gen_creature(kind, AREA);
@@ -71,6 +120,7 @@ int main(void)
     nge_map_init(30, 30, &window);                       /* view: tiles 0-9 */
     nge_entity_init();
     nge_render_init();
+    nge_vfx_init(68);
     nge_timer_init();
     nge_event_init();
     level_depth = 0;                                     /* LEVEL_AREA is AREA */
@@ -162,6 +212,127 @@ int main(void)
     nge_location_set(player, 25, 25);
     post(player, EV_MOVED, NGE_EVENT_NONE, 1, 0);
     CHECK(!anim_holding() && nge_render_sprite_mox[player] == 0);
+
+    /* ======== visual effects (docs/vfx.md) ======== */
+    {
+        nge_entity_id_t bow;
+        nge_entity_id_t dying;
+        nge_render_look_t look;
+        int s;
+        int t;
+
+        nge_location_set(player, 2, 5);
+        rat = creature(CR_RAT, 6, 5);                       /* 4 tiles to the right: 64 pixels */
+        nge_event_flush();
+        nge_render_get(rat, &look);
+
+        /* ---- a shot flies from the shooter to the target: an arrow from a bow, pointing its way ---- */
+        bow = gen_item(IT_SHORT_BOW, NGE_OWNER_WORLD);
+        post(rat, EV_FIRED, player, (int8_t)bow, 0);
+        s = vfx_find(NGE_VFX_BOLT, SPRITE_FX_ARROW);
+        CHECK(s >= 0 && vfx_count(NGE_VFX_BOLT) == 1);
+        CHECK(nge_vfx_x[s] == 2 * 16 && nge_vfx_ex[s] == 6 * 16 && nge_vfx_ey[s] == 5 * 16);
+        CHECK(nge_vfx_speed[s] == ANIM_SHOT_SPEED && (nge_vfx_mode[s] & NGE_VFX_DIRECTED));
+        CHECK(anim_holding() && !nge_render_busy());       /* the VFX alone holds the world */
+        CHECK(settle_vfx() == 64 / ANIM_SHOT_SPEED && !anim_holding());
+        /* No launcher (a thrown item, a creature's own): the thrown look */
+        post(rat, EV_FIRED, player, (int8_t)NGE_EVENT_NONE, 0);
+        CHECK(vfx_find(NGE_VFX_BOLT, SPRITE_FX_THROWN) >= 0);
+        nge_vfx_clear();
+
+        /* ---- a spell at another creature: an orb in its effect's colour; at the caster, none ---- */
+        post(rat, EV_CAST, player, SP_FIRE_BOLT, 0);
+        s = vfx_find(NGE_VFX_BOLT, SPRITE_FX_ORB);
+        CHECK(s >= 0 && vfx_bank(s) == BANK_ORANGE && nge_vfx_speed[s] == ANIM_MAGIC_SPEED);
+        nge_vfx_clear();
+        post(player, EV_CAST, player, SP_CURE_WOUNDS, 0);
+        CHECK(vfx_count(NGE_VFX_BOLT) == 0);
+
+        /* ---- an effect taking hold glows in its colour; innate ones and damaging bolts don't ---- */
+        post(rat, EV_EFFECT_STARTED, NGE_EVENT_NONE, EF_HOLD, 0);
+        s = vfx_find(NGE_VFX_BURST, SPRITE_FX_GLOW);
+        CHECK(s >= 0 && vfx_bank(s) == BANK_DARK && nge_vfx_delay[s] == 0);
+        nge_vfx_clear();
+        post(player, EV_EFFECT_STARTED, NGE_EVENT_NONE, EF_REGEN, 0);
+        post(rat, EV_EFFECT_STARTED, NGE_EVENT_NONE, EF_BOLT_FIRE, 0);
+        CHECK(!nge_vfx_busy());
+
+        /* ---- damage: the white flash and the splash in the type's colour, at the lunge's peak ---- */
+        nge_render_get(rat, &look);
+        post(rat, EV_DAMAGED, player, 3, (int8_t)EV_DMG_PACK(DMG_NORMAL, DMG_COLD));
+        s = vfx_find(NGE_VFX_BURST, look.pattern);
+        t = vfx_find(NGE_VFX_BURST, SPRITE_FX_SPLASH);
+        CHECK(s >= 0 && vfx_bank(s) == BANK_FLASH && nge_vfx_delay[s] == ANIM_IMPACT_DELAY &&
+              nge_vfx_rate[s] == ANIM_FLASH_FRAMES);
+        CHECK(t >= 0 && vfx_bank(t) == BANK_ICE && nge_vfx_delay[t] == ANIM_IMPACT_DELAY);
+        CHECK(s < t);                                         /* the splash draws over the flash */
+        nge_vfx_clear();
+        post(rat, EV_DAMAGED, player, 0, (int8_t)EV_DMG_PACK(DMG_IMMUNE, DMG_FIRE));
+        CHECK(!nge_vfx_busy());                               /* 0 taken: nothing */
+
+        /* ---- a shot and its damage together: the splash waits for the shot to land ---- */
+        post(rat, EV_FIRED, player, (int8_t)bow, 0);
+        nge_event_post(rat, EV_HIT, player, 15, bow);
+        post(rat, EV_DAMAGED, player, 2, (int8_t)EV_DMG_PACK(DMG_NORMAL, DMG_PIERCE));
+        t = vfx_find(NGE_VFX_BURST, SPRITE_FX_SPLASH);
+        CHECK(t >= 0 && nge_vfx_delay[t] == 64 / ANIM_SHOT_SPEED - 1);
+        CHECK(vfx_bank(t) == BANK_RED);
+        settle_vfx();
+        settle();
+
+        /* ---- a kill: a stand-in until the bolt lands, then its flash, then the puff ---- */
+        dying = rat;
+        post(dying, EV_CAST, player, SP_MAGIC_BOLT, 0);       /* 64 pixels at 4: lands after 15 updates */
+        nge_render_get(dying, &look);                         /* what it shows now: its rest animation moves on */
+        nge_entity_destroy(dying);                            /* health_damage() destroys before the events */
+        nge_event_post(dying, EV_DAMAGED, player, 9, EV_DMG_PACK(DMG_NORMAL, DMG_MAGIC));
+        post(dying, EV_DIED, player, 0, 0);
+        CHECK(vfx_count(NGE_VFX_BURST) == 4);                 /* splash, stand-in, flash, puff: no hit flash */
+        s = -1;
+        t = -1;
+        {
+            int i;
+            int hold = -1;
+
+            for (i = 0; i < NGE_VFX_SLOTS; i++) {
+                if (nge_vfx_kind[i] == NGE_VFX_BURST && nge_vfx_first[i] == look.pattern) {
+                    if (nge_vfx_mode[i] & NGE_VFX_HOLD) {
+                        hold = i;
+                    } else {
+                        s = i;
+                    }
+                }
+            }
+            t = vfx_find(NGE_VFX_BURST, SPRITE_FX_PUFF);
+            CHECK(hold >= 0 && nge_vfx_delay[hold] == 64 / ANIM_MAGIC_SPEED - 1 && vfx_bank(hold) == (look.flags >> 4));
+            CHECK(s >= 0 && vfx_bank(s) == BANK_FLASH && nge_vfx_delay[s] == 64 / ANIM_MAGIC_SPEED - 1);
+            CHECK(t >= 0 && nge_vfx_delay[t] == 64 / ANIM_MAGIC_SPEED - 1 + ANIM_FLASH_FRAMES && vfx_bank(t) == BANK_BONE);
+        }
+        CHECK(anim_holding());
+        settle_vfx();
+        CHECK(!anim_holding());
+        /* Killed in melee: the stand-in for the lunge's peak */
+        rat = creature(CR_RAT, 3, 5);
+        nge_event_flush();
+        nge_render_get(rat, &look);
+        nge_entity_destroy(rat);
+        post(rat, EV_DIED, player, 0, 0);
+        s = vfx_find(NGE_VFX_BURST, look.pattern);
+        CHECK(s >= 0 && nge_vfx_delay[s] == ANIM_IMPACT_DELAY);
+        settle_vfx();
+        /* The player isn't destroyed (persistent): no stand-in */
+        post(player, EV_DIED, rat, 0, 0);
+        CHECK(!nge_vfx_busy());
+
+        /* ---- off the current level, or out of view: nothing ---- */
+        post(other, EV_DAMAGED, player, 3, (int8_t)EV_DMG_PACK(DMG_NORMAL, DMG_SLASH));
+        post(other, EV_FIRED, player, (int8_t)bow, 0);
+        CHECK(!nge_vfx_busy());
+        rat = creature(CR_RAT, 25, 25);
+        nge_event_flush();
+        post(rat, EV_DAMAGED, player, 3, (int8_t)EV_DMG_PACK(DMG_NORMAL, DMG_SLASH));
+        CHECK(!nge_vfx_busy() && !anim_holding());
+    }
 
     return test_summary("anim");
 }

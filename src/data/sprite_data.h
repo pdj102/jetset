@@ -21,13 +21,13 @@
 
 #define SPRITE_PALETTE_PAGE          155 /**< SECTION PAGE_155 in sprite_palette_data.asm. */
 #define SPRITE_PALETTE_ENTRIES       256 /**< Entries in sprite_palette: load them from entry 0. */
-#define SPRITE_PATTERNS              72  /**< 4-bit patterns, from pattern 0. */
+#define SPRITE_PATTERNS              84  /**< 4-bit patterns, from pattern 0. */
 #define SPRITE_PATTERN_PAGES         2   /**< Pages of patterns: SPRITE_PATTERNS_PAGE_0 on. */
 
 #define SPRITE_PATTERNS_PAGE_0       157 /**< Patterns 0-63: sprite_patterns_0. */
 #define SPRITE_PATTERNS_COUNT_0      64
-#define SPRITE_PATTERNS_PAGE_1       159 /**< Patterns 64-71: sprite_patterns_1. */
-#define SPRITE_PATTERNS_COUNT_1      8
+#define SPRITE_PATTERNS_PAGE_1       159 /**< Patterns 64-83: sprite_patterns_1. */
+#define SPRITE_PATTERNS_COUNT_1      20
 
 #define SPRITE_PLAYER_IDLE           0   /**< Tag player.idle: frames 0-1. */
 #define SPRITE_PLAYER_IDLE_COUNT     2
@@ -313,6 +313,36 @@
 #define SPRITE_DRAGON_IDLE_COUNT     2
 #define SPRITE_DRAGON_IDLE_RATE      25
 #define SPRITE_DRAGON_IDLE_BANK      3
+
+#define SPRITE_FX_ARROW              72  /**< Tag fx.arrow: frames 72-73. */
+#define SPRITE_FX_ARROW_COUNT        2
+#define SPRITE_FX_ARROW_RATE         5
+#define SPRITE_FX_ARROW_BANK         3
+
+#define SPRITE_FX_THROWN             74  /**< Tag fx.thrown: frame 74. */
+#define SPRITE_FX_THROWN_COUNT       1
+#define SPRITE_FX_THROWN_RATE        5
+#define SPRITE_FX_THROWN_BANK        13
+
+#define SPRITE_FX_ORB                75  /**< Tag fx.orb: frame 75. */
+#define SPRITE_FX_ORB_COUNT          1
+#define SPRITE_FX_ORB_RATE           5
+#define SPRITE_FX_ORB_BANK           10
+
+#define SPRITE_FX_GLOW               76  /**< Tag fx.glow: frames 76-78. */
+#define SPRITE_FX_GLOW_COUNT         3
+#define SPRITE_FX_GLOW_RATE          5
+#define SPRITE_FX_GLOW_BANK          6
+
+#define SPRITE_FX_SPLASH             79  /**< Tag fx.splash: frames 79-81. */
+#define SPRITE_FX_SPLASH_COUNT       3
+#define SPRITE_FX_SPLASH_RATE        5
+#define SPRITE_FX_SPLASH_BANK        3
+
+#define SPRITE_FX_PUFF               82  /**< Tag fx.puff: frames 82-83. */
+#define SPRITE_FX_PUFF_COUNT         2
+#define SPRITE_FX_PUFF_RATE          5
+#define SPRITE_FX_PUFF_BANK          14
 
 extern const uint8_t sprite_patterns_0[];
 extern const uint8_t sprite_patterns_1[];

@@ -18,6 +18,7 @@
 #include "hw/nge_frame.h"
 #include "input/nge_input.h"
 #include "map/nge_map.h"
+#include "vfx/nge_vfx.h"
 
 #include "game/actors.h"
 #include "game/ai/ai.h"
@@ -122,6 +123,7 @@ void game_frame_start(void)
     /* First thing in the blanking period, so nothing changes mid-frame */
     nge_render_upload();
     screen_overlay_upload();
+    nge_vfx_upload();
     nge_map_update();
     nge_input_update();
 }
@@ -129,6 +131,7 @@ void game_frame_start(void)
 void game_frame_end(void)
 {
     nge_render_update();    /* build the sprites for the next frame */
+    nge_vfx_update();       /* after the camera has followed the player */
     frame_open = 0;
 }
 
@@ -286,6 +289,7 @@ static void change_level(void)
         game_over(GAME_OVER_WON);
         return;
     }
+    nge_vfx_clear();   /* nothing of the old level's shows on the new (R14) */
     level_generate(depth, actor_player, arrival);
 #if GAME_DEV_KIT
     quest_check();   /* still on one depth, and on the map if it is this one (docs/winning.md R14) */
@@ -324,6 +328,7 @@ static void play_start(void)
     level_clear_request();
     ended = 0;
     nge_render_follow(actor_player);   /* the camera slides with them (after nge_render_init()) */
+    nge_vfx_clear();         /* the last game's */
     level_generate(1, actor_player, LEVEL_ARRIVE_ANY);   /* the first level; the camera on the player */
 #if GAME_DEV_KIT
     level_dev_bandit(actor_player);

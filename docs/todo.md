@@ -46,7 +46,7 @@ Topic codes: `C` Character creation, `U` UI, `V` Visual effects.
 
 ## V — Visual effects
 
-### V1 Combat and magic VFX `[spec]` [spec](vfx.md)
+### V1 Combat and magic VFX `[done]` (2026-11-08) [spec](vfx.md)
 
 - V1.1 Shots fly from shooter to target (arrows, thrown items)
 - V1.2 Spell and wand bolts fly, coloured by effect

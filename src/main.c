@@ -12,6 +12,7 @@
 #include "input/nge_input.h"
 #include "io/nge_cspect_stream.h"
 #include "sprite/nge_sprite.h"
+#include "vfx/nge_vfx.h"
 
 #include "game/actors.h"
 #include "game/anim/anim.h"
@@ -35,6 +36,7 @@ int main(void)
     /* Every module the frames use in a valid state: each new game sets them up again (play_start()) */
     nge_ecs_init();     /* ECS data page into slot 0; every entity free */
     nge_render_init();
+    nge_vfx_init(SCREEN_SPRITE_VFX);
     nge_timer_init();
     actors_load_graphics();
     anim_init();        /* the creature kinds' sequences */

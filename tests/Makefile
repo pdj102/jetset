@@ -72,7 +72,7 @@ UI_GAME_SRCS := $(wildcard $(GAMEDIR)/ui/*.c) \
                 target/target_bank.c chargen/chargen_bank.c chargen/chargen_screen_bank.c)
 UI_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(UI_GAME_SRCS)) $(ACT_GAME_OBJS)
 
-ANIM_GAME_SRCS := $(addprefix $(GAMEDIR)/,anim/anim.c anim/anim_bank.c anim/anim_pdata.c)
+ANIM_GAME_SRCS := $(addprefix $(GAMEDIR)/,anim/anim.c anim/anim_bank.c anim/anim_pdata.c anim/anim_vfx.c)
 ANIM_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(ANIM_GAME_SRCS)) $(LEVEL_GAME_OBJS)
 
 TEST_SRCS := $(wildcard test_*.c)

@@ -4,6 +4,8 @@
 /*
  * Shared by the anim module's files; not for use outside it:
  * - anim_bank.c (page 126): starting the animations;
+ * - anim_vfx.c (page 126): starting the visual effects (docs/vfx.md), with
+ *   their tables;
  * - anim_pdata.c (page 127): the creature kinds' sequences, mapped into
  *   slot 7 while its code runs.
  */
@@ -13,5 +15,8 @@
 
 /* Each creature kind's sequences, by CR_* and GEN_SEQ_*, copied by anim_init() */
 extern gen_seq_t anim_seqs[CR_COUNT][GEN_SEQ_COUNT];
+
+/* Start the VFX an event shows (anim_vfx.c): called by anim_on_event(), in the same page */
+void anim_vfx_event(nge_event_id_t ev, nge_entity_id_t target, nge_entity_id_t source, uint8_t p1, uint8_t p2);
 
 #endif

@@ -69,8 +69,10 @@ void anim_on_event(const nge_event_t *e) NGE_BANKED
     nge_event_id_t ev = e->id;
     nge_entity_id_t target = e->target;
     nge_entity_id_t source = e->source;
-    int8_t dx = (int8_t)e->p1;
-    int8_t dy = (int8_t)e->p2;
+    uint8_t p1 = e->p1;
+    uint8_t p2 = e->p2;
+    int8_t dx = (int8_t)p1;
+    int8_t dy = (int8_t)p2;
 
     switch (ev) {
     case EV_MOVED:
@@ -97,4 +99,5 @@ void anim_on_event(const nge_event_t *e) NGE_BANKED
     default:
         break;
     }
+    anim_vfx_event(ev, target, source, p1, p2);
 }

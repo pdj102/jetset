@@ -89,7 +89,8 @@ Numbered for this step. game_loop.md's R18 is the source of R1 to R4.
 ### Later
 
 - **R14 (later)** Transient visuals on overlay sprites (game_loop.md D6):
-  projectiles for fire, hit flashes, deaths. They need their own patterns
+  projectiles for fire, hit flashes, deaths. **Built** (2026-11-08) as the
+  visual effects: [vfx.md](vfx.md). They need their own patterns
   and a pool manager; this step leaves room by making "holding" a
   question any visual can answer (D5).
 - **R15 (later)** Sequences for the kinds: there is art only for the rest

@@ -54,6 +54,7 @@
  */
 #define SCREEN_OVERLAY_CURSOR  0   /**< The targeting cursor (game/target/target.h). */
 #define SCREEN_OVERLAY_COUNT   4   /**< Overlay sprites: hardware sprites SCREEN_SPRITE_OVERLAY onwards. */
+#define SCREEN_SPRITE_VFX      (SCREEN_SPRITE_OVERLAY + SCREEN_OVERLAY_COUNT)   /**< The VFX's first hardware sprite (vfx/nge_vfx.h), above the overlay sprites. */
 
 /** The map view, in tilemap tiles (the window of the level's map). In common memory: nge_map reads it. */
 extern const nge_rect_t screen_map_view;
