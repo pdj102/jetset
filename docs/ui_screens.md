@@ -137,7 +137,7 @@ a requirement that differs from the request, with the reason.
 - **R25 (later)** Title screen: full screen, with an optional demo in a
   map panel (R8).
 - **R26 (later)** Character generation: choices and the name prompt, a
-  line editor on a panel stream.
+  line editor on a panel stream. *Built by docs/character_creation.md.*
 - **R27 (later)** End of game: died, quit or escaped, with a summary.
 - **R28 (later)** Mini map: the level's 60 x 40 tiles drawn on Layer 2,
   needing a pixel or half-cell fill in `layer2/` (generic, added then).

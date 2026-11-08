@@ -296,6 +296,10 @@ row of a `const` table {class, kind, depth} by its generator, owned by
 `NGE_OWNER_AREA(depth)` and flagged persistent. The release table is empty.
 Debug builds have a persistent goblin on depth 2.
 
+*Since character creation (docs/character_creation.md, D9), the player is
+made by `chargen_make()`, and this function is
+`actors_create_persistents()`.*
+
 ### 5.6 Death of persistent entities (`health.c`)
 
 Before `nge_entity_destroy()` at 0 hp: if the target isn't the player

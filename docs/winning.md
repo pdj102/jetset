@@ -155,7 +155,8 @@ A score or end-of-game summary.
 ### 5.2 Creating it (`actors.c`)
 
 The persistent table gets `{ CLASS_ITEM, IT_QUEST, LEVEL_DEPTH_BOTTOM }`,
-first, in all builds. `actors_create()` passes the ID of that row to
+first, in all builds. `actors_create()` (now `actors_create_persistents()`:
+docs/character_creation.md) passes the ID of that row to
 `quest_set()`, which keeps it in `quest_item` and clears the first-pick-up
 flag. The table stays the only place persistent entities are made.
 

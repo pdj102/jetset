@@ -18,16 +18,16 @@ detail goes in a spec when an item is picked up.
 - To pick one up, ask: *"Write a spec for U1"* (whole objective) or
   *"Write a spec and plan for U1.3"* (one feature).
 
-Topic codes: `C` Character creation, `U` UI.
+Topic codes: `C` Character creation, `U` UI, `V` Visual effects.
 
 ---
 
 ## C — Character creation
 
-### C1 Create a new character at game start `[wip]` [spec](character_creation.md), [plan](character_creation_plan.md)
+### C1 Create a new character at game start `[done]` (2026-11-08) [spec](character_creation.md), [plan](character_creation_plan.md)
 
-- C1.1 Select Fighter, Mage (or Dev) class
-- C1.2 Starter item kit per class
+- C1.1 Select Fighter, Mage (or Dev) class `[done]`
+- C1.2 Starter item kit per class `[done]`
 - C1.3 Additional classes
 - C1.4 Randomised stats
 
@@ -40,3 +40,17 @@ Topic codes: `C` Character creation, `U` UI.
 - U1.3 Attributes and what each is used for (e.g. STR: melee hit and damage;
   DEX: ranged hit, lock pick)
 - U1.4 Game objective and how to win
+
+### U2 Main stats panel
+- Stats are coloured to show delta from base - cyan for better, red for worse
+
+## V — Visual effects
+
+### V1 Combat and magic VFX `[spec]` [spec](vfx.md)
+
+- V1.1 Shots fly from shooter to target (arrows, thrown items)
+- V1.2 Spell and wand bolts fly, coloured by effect
+- V1.3 Glow on a creature an effect takes hold on (healing, curses, buffs)
+- V1.4 Damage splash, coloured by damage type, and a white hit flash
+- V1.5 A creature killed stays until the blow lands, flashes and puffs
+- V1.6 The VFX art (12 patterns)

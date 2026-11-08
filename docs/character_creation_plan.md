@@ -7,8 +7,8 @@ what changes, and how each step is checked.
 
 Status: step 1 done (2026-11-08): its PC tests and CSpect checks passed.
 Step 2 done (2026-11-08): its PC tests and CSpect checks 1-6 passed.
-Hardware check 7 is still to do.
-Step 3 is still to do.
+Step 3 done (2026-11-08): the docs closed. Hardware check 7 is still to
+do.
 
 ## 1. How the steps work
 

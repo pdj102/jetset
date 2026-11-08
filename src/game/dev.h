@@ -6,16 +6,17 @@
  * @brief Development aids, on in debug builds (CSpect), off with NDEBUG
  *        (hardware). -DGAME_DEV_KIT=0 or 1 overrides it.
  *
- * With GAME_DEV_KIT: the Dev class (game/chargen) is offered, and a new
- * game starts as it until the creation screen chooses: a sword, plate
- * armour +2, a short bow and arrows equipped, and in the pack a healing
- * draught, a staff of healing, a ring of health, haste, a wand of sleep
- * and one of fire to aim, darts, oil and more arrows to fire, a lantern,
- * bread, a lock pick (no keys: one in the pack would open a locked door
- * when bumped), a ring of frailty for curses, and the player resistant to
- * fire, immune to acid and vulnerable to cold (game/chargen/chargen_bank.c); X hurts the player,
- * cycling through the damage types (game/player); L locks the nearest
- * closed door, with an iron lock (game/player); T puts features to check
+ * With GAME_DEV_KIT: the Dev class is offered on the creation screen
+ * (game/chargen), with 12 in each ability and the development kit: a
+ * sword, plate armour +2, a short bow and arrows equipped, and in the
+ * pack a healing draught, a staff of healing, a ring of health, haste,
+ * a wand of sleep and one of fire to aim, darts, oil and more arrows to
+ * fire, a lantern, bread, a lock pick (no keys: one in the pack would
+ * open a locked door when bumped), a ring of frailty for curses, and the
+ * player resistant to fire, immune to acid and vulnerable to cold
+ * (game/chargen/chargen_bank.c); X hurts the player, cycling through
+ * the damage types (game/player); L locks the nearest closed door,
+ * with an iron lock (game/player); T puts features to check
  * near the player: a locked chest holding two items with its key at the
  * player's feet, and a cracked statue holding one, and traps on the free
  * tiles around the player, all found but one (level_dev_features(), game/player);

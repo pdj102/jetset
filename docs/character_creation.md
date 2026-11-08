@@ -1,12 +1,12 @@
 # Character creation: requirements and design
 
-Status: agreed (2026-11-08). Q1 to Q6 were answered on 2026-11-08
+Status: implemented (2026-11-08). Q1 to Q6 were answered on 2026-11-08
 (section 9). The answers changed R1, R2, D3, D8 and D11. Step 1 of the
 plan (the classes and kits, without the screen) is built: its PC tests and
 CSpect checks passed (2026-11-08). Step 2 (the creation screen) is built:
 its PC tests and CSpect checks 1-6 passed (2026-11-08). The fix for the
-gap between panels, made afterwards, is checked by the PC tests.
-Hardware check 7 is still to do. Section 10 lists where the build
+gap between panels, made afterwards, is checked by the PC tests. Step 3
+closed the docs. Hardware check 7 is still to do. Section 10 lists where the build
 differs from the design. The build steps are in
 [character_creation_plan.md](character_creation_plan.md). To-do item C1
 ([todo.md](todo.md)).
