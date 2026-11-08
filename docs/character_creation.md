@@ -3,7 +3,10 @@
 Status: agreed (2026-11-08). Q1 to Q6 were answered on 2026-11-08
 (section 9). The answers changed R1, R2, D3, D8 and D11. Step 1 of the
 plan (the classes and kits, without the screen) is built: its PC tests and
-CSpect checks passed (2026-11-08). Section 10 lists where the build
+CSpect checks passed (2026-11-08). Step 2 (the creation screen) is built:
+its PC tests and CSpect checks 1-6 passed (2026-11-08). The fix for the
+gap between panels, made afterwards, is checked by the PC tests.
+Hardware check 7 is still to do. Section 10 lists where the build
 differs from the design. The build steps are in
 [character_creation_plan.md](character_creation_plan.md). To-do item C1
 ([todo.md](todo.md)).
@@ -444,3 +447,32 @@ Step 1 (2026-11-08):
 - **Memory:** in the debug build, common memory has 166 bytes more free
   (4,172 to 4,338), because the development kit left `actors.c`. Page 140
   holds 967 bytes in debug builds and 506 in hardware builds.
+
+Step 2 (2026-11-08):
+
+- **The help line is "Up/down:class N:change name ENTER:start"** (D8),
+  in the game's compact `key:action` style. The spec's version is 46
+  characters, and the row has 40.
+- **Equipped items are shown in cyan**, as on the inventory screen, with
+  "Kit (cyan: in use)" as the heading, rather than a word beside each
+  item. A kit item's name and count leave no room for a word. A count is
+  shown when it is more than 1: "pouch of stones (20)".
+- **The Dev's kit is longer than the panel** (17 items, 14 rows). The
+  equipped items come first, then the pack, and the last row reads "and 4
+  more in the pack".
+- **The screen is `chargen_screen_bank.c`,** in page 140 beside
+  `chargen_bank.c`, with the class table shared through
+  `chargen_internal.h`.
+- **The panels cover rows 0-30 with no gaps.** The head panel is rows
+  0-3 and the class list is columns 0-12. A gap between panels is never
+  cleared, so in CSpect the title's "Press any key" left an 's' in column
+  12, beside the first kit item. `test_ui` now fills the overlay with
+  junk before the screen opens, and checks that none of it is left.
+- **The title's panel now covers rows 0-30.** Its prompt panel went with
+  the name prompt.
+- **`GAME_DEV_KIT` 0 isn't covered by the PC tests.** They build with
+  debug settings, so the two-class offer is checked only by building for
+  hardware and by CSpect check 7.
+- **Memory:** page 140 holds 3,879 bytes in debug builds and 3,089 in
+  hardware builds. Common memory is 1 byte smaller: 4,337 bytes free in
+  debug builds.

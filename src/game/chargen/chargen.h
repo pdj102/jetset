@@ -17,8 +17,9 @@
  *                          the rest of the development kit (debug builds
  *                          only: GAME_DEV_KIT, game/dev.h)
  *
- * Banking: banked (NGE_BANKED, page 140, with the class table). Don't call
- * these while game code has its own page mapped in slot 6 or 7.
+ * Banking: banked (NGE_BANKED, page 140, with the class table and the
+ * creation screen). Don't call these while game code has its own page
+ * mapped in slot 6 or 7.
  */
 
 #include <stdint.h>
@@ -49,6 +50,19 @@
  * set up by the caller afterwards.
  */
 void chargen_make(uint8_t cls, const char *name) NGE_BANKED;
+
+/**
+ * @brief The creation screen, an overlay (game/ui/screen.h): the classes
+ *        offered, and the chosen one's character (the real player, made
+ *        again by chargen_make() on each move); up and down (j k) choose,
+ *        N changes the name, ENTER starts. Then the welcome messages.
+ * @param cls The class to open on, below CHARGEN_CLASSES: the last chosen.
+ * @param name In common memory, PC_NAME_MAX + 1 bytes: empty for the
+ *        class's default name; takes the name typed, kept for every class
+ *        and the next game.
+ * @return The class chosen. The player is made: entity 0, actor_player.
+ */
+uint8_t chargen_run(uint8_t cls, char *name) NGE_BANKED;
 
 /**
  * @brief Copy class cls's name ("Fighter") into buf.

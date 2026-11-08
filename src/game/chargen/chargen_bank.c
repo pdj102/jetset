@@ -22,25 +22,12 @@
 
 #include "game/actions/act.h"
 #include "game/actors.h"
+#include "game/chargen/chargen_internal.h"
 #include "game/attrs/attrs.h"
 #include "game/components/health.h"
 #include "game/components/item.h"
 #include "game/components/pc.h"
 #include "game/gen/gen.h"
-
-/* A kit item: its kind, and whether it starts equipped */
-typedef struct chargen_kit {
-    uint8_t kind;    /* IT_* */
-    uint8_t equip;   /* 1: equipped (in the first free slot it fits), 0: carried */
-} chargen_kit_t;
-
-typedef struct chargen_class {
-    const char *name;               /* "Fighter": CHARGEN_NAME_MAX characters at most */
-    const char *default_name;       /* until the player types one: PC_NAME_MAX at most */
-    uint8_t creature;               /* CR_*: abilities, HP, mana and spells */
-    const chargen_kit_t *kit;
-    uint8_t kit_count;
-} chargen_class_t;
 
 static const chargen_kit_t kit_fighter[] = {
     { IT_SHORT_SWORD, 1 }, { IT_LEATHER_ARMOUR, 1 }, { IT_SHIELD, 1 },
@@ -62,7 +49,7 @@ static const chargen_kit_t kit_dev[] = {
 
 #define KIT(k)  (k), (uint8_t)(sizeof(k) / sizeof((k)[0]))
 
-static const chargen_class_t classes[PC_CLASS_COUNT] = {
+const chargen_class_t chargen_classes[PC_CLASS_COUNT] = {
     [PC_CLASS_FIGHTER] = { "Fighter", "Bran",  CR_FIGHTER, KIT(kit_fighter) },
     [PC_CLASS_MAGE]    = { "Mage",    "Elwyn", CR_MAGE,    KIT(kit_mage) },
     [PC_CLASS_DEV]     = { "Dev",     "Dev",   CR_PLAYER,  KIT(kit_dev) },
@@ -90,7 +77,7 @@ void chargen_make(uint8_t cls, const char *name) NGE_BANKED
 
     nge_util_assert(cls < CHARGEN_CLASSES);
     nge_util_assert(name != NULL);
-    c = &classes[cls];
+    c = &chargen_classes[cls];
 
     /* An empty world: the last game's (or the last preview's) entities are gone */
     nge_entity_init();
@@ -140,5 +127,5 @@ void chargen_class_name(uint8_t cls, char *buf) NGE_BANKED
     nge_util_assert(cls < PC_CLASS_COUNT);
     nge_util_assert(buf != NULL);
 
-    copy_name(buf, classes[cls].name, CHARGEN_NAME_MAX);
+    copy_name(buf, chargen_classes[cls].name, CHARGEN_NAME_MAX);
 }

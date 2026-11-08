@@ -6,7 +6,9 @@ what the feature is and why. This file says in what order it is built,
 what changes, and how each step is checked.
 
 Status: step 1 done (2026-11-08): its PC tests and CSpect checks passed.
-Steps 2 and 3 are still to do.
+Step 2 done (2026-11-08): its PC tests and CSpect checks 1-6 passed.
+Hardware check 7 is still to do.
+Step 3 is still to do.
 
 ## 1. How the steps work
 

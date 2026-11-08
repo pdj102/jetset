@@ -9,8 +9,9 @@
  *
  * game_run() is plain code, for ever:
  *
- *     screen_title_run(name);      the title, then the player's name (game/ui/screen_title.h)
- *     reason = play_run();         one game, from the first level to game over
+ *     screen_title_run();          the title, until a key (game/ui/screen_title.h)
+ *     reason = play_run();         one game: character creation (game/chargen/chargen.h),
+ *                                  then the first level to game over
  *     over_run(reason);            why it ended, until a key
  *
  * Frames. Every loop that runs frames does the drawing in each one:

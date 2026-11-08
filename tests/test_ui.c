@@ -44,6 +44,7 @@
 #include "game/ui/screen_main.h"
 #include "game/ui/screen_pc.h"
 #include "game/ui/screen_title.h"
+#include "game/chargen/chargen.h"
 #include "game/ui/screen_internal.h"
 
 #define AREA     NGE_OWNER_AREA(0)
@@ -427,7 +428,6 @@ int main(void)
     uint8_t used;
     nge_entity_id_t many[29];
     nge_entity_id_t rat;
-    char name[PC_NAME_MAX + 1] = "Rogue";
     static test_l2_cell_t main_before[32][40];
     uint8_t x;
     uint8_t y;
@@ -978,19 +978,14 @@ int main(void)
     }
     inv_capacity[actor_player] = 20;
 
-    /* ---- the title: any key, then the name typed, ENTER; a greeting on the main screen ---- */
+    /* ---- the title: any key, and nothing else (the name is asked at character creation) ---- */
     fresh();
     press(EV(NGE_KEY_A));
-    press(EV(NGE_KEY_B));
-    press(EV(NGE_KEY_O));
-    press(EV(NGE_KEY_ENTER));
-    screen_title_run(name);
-    CHECK(RAN_AND_CLOSED());
+    screen_title_run();
+    CHECK(RAN_AND_CLOSED() && waits == 0);
     CHECK(strcmp(OVER_ROW(11), "               NGE ROGUE                ") == 0);
-    CHECK(starts(seen_cols(1, 29, 0, 39), " What is your name? bo"));
-    CHECK(starts(HELP(), "Type a name, then ENTER"));
-    CHECK(strcmp(name, "bo") == 0);
-    CHECK(said("i inv, d drop, f fire, x look, Q quit."));
+    CHECK(strcmp(seen_cols(1, 29, 0, 39), BLANK) == 0);   /* no prompt */
+    CHECK(starts(HELP(), "Any key: start a new game"));
     /* A new experience level's message */
     nge_event_post(actor_player, EV_LEVEL_GAINED, NGE_EVENT_NONE, 2, 0);
     nge_event_process(messages_on_event);
@@ -1774,6 +1769,108 @@ int main(void)
     CHECK(test_halt_count == 1);
     TEST_EXPECT_HALT(player_ask_direction(PLAYER_PROMPT_COUNT, NULL, NULL));
     CHECK(test_halt_count == 1);
+
+    /* ---- character creation (last: each class shown empties the world) ---- */
+    {
+        char cname[PC_NAME_MAX + 1] = "";   /* empty: the class's default */
+        uint8_t cls;
+
+        /* ENTER at once: the class it opened on, its default name, the welcome. The panels clear the whole screen */
+        for (y = 0; y <= 30; y++) {
+            for (x = 0; x < 40; x++) {
+                test_layer2_buf[SCREEN_BUFFER_OVERLAY][y][x].c = '#';   /* an earlier screen's text */
+            }
+        }
+        fresh();
+        press(EV(NGE_KEY_ENTER));
+        cls = chargen_run(PC_CLASS_FIGHTER, cname);
+        CHECK(RAN_AND_CLOSED() && cls == PC_CLASS_FIGHTER && pc_class == PC_CLASS_FIGHTER && actor_player == 0);
+        CHECK(strcmp(OVER_ROW(0), "         CREATE YOUR CHARACTER          ") == 0 && INK(0, 9) == L2_YELLOW);
+        CHECK(strstr(OVER_ROW(2), " Bran the Fighter ") != NULL);
+        CHECK(strcmp(pc_name, "Bran") == 0 && cname[0] == '\0');
+        for (y = 0; y <= 30; y++) {
+            CHECK(strchr(OVER_ROW(y), '#') == NULL);
+        }
+        CHECK(strcmp(seen_cols(1, 4, 0, 11), "Class       ") == 0);
+        CHECK(strcmp(seen_cols(1, 5, 0, 11), "> Fighter   ") == 0 && INK(5, 2) == L2_YELLOW);
+        CHECK(strcmp(seen_cols(1, 6, 0, 11), "  Mage      ") == 0 && INK(6, 2) == L2_WHITE);
+        CHECK(strcmp(seen_cols(1, 4, 13, 39), "HP     12    AC     14     ") == 0);
+        CHECK(strcmp(seen_cols(1, 5, 13, 39), "MP   none    Speed normal  ") == 0);
+        CHECK(strcmp(seen_cols(1, 7, 13, 39), "Str 16  +3   Int  9  -1    ") == 0);
+        CHECK(strcmp(seen_cols(1, 9, 13, 39), "Con 14  +2   Cha 10  +0    ") == 0);
+        CHECK(strcmp(seen_cols(1, 11, 13, 39), "Spells none                ") == 0);
+        CHECK(starts(seen_cols(1, 13, 13, 39), "Kit (cyan: in use)"));
+        /* In use, in slot order: weapon, shield, body */
+        CHECK(starts(seen_cols(1, 14, 13, 39), " short sword") && INK(14, 14) == L2_CYAN);
+        CHECK(starts(seen_cols(1, 15, 13, 39), " iron shield"));
+        CHECK(starts(seen_cols(1, 16, 13, 39), " leather armour"));
+        CHECK(strcmp(seen_cols(1, 17, 13, 39), "                           ") == 0);
+        CHECK(starts(HELP(), "Up/down:class N:change name ENTER:start"));
+        CHECK(said("i inv, d drop, f fire, x look, Q quit."));
+
+        /* Down: the Mage, frail, with mana, a spell, and stones counted */
+        fresh();
+        press(EV(NGE_KEY_DOWN));
+        press(EV(NGE_KEY_ENTER));
+        cls = chargen_run(PC_CLASS_FIGHTER, cname);
+        CHECK(RAN_AND_CLOSED() && cls == PC_CLASS_MAGE && pc_class == PC_CLASS_MAGE);
+        CHECK(strstr(OVER_ROW(2), " Elwyn the Mage ") != NULL);
+        CHECK(strcmp(seen_cols(1, 5, 0, 11), "  Fighter   ") == 0 && strcmp(seen_cols(1, 6, 0, 11), "> Mage      ") == 0);
+        CHECK(starts(seen_cols(1, 4, 13, 39), "HP      8"));
+        CHECK(starts(seen_cols(1, 5, 13, 39), "MP      8"));
+        CHECK(strcmp(seen_cols(1, 11, 13, 39), "Spells Magic Bolt          ") == 0);
+        CHECK(starts(seen_cols(1, 14, 13, 39), " dagger"));
+        CHECK(starts(seen_cols(1, 15, 13, 39), " sling"));
+        CHECK(starts(seen_cols(1, 16, 13, 39), " pouch of stones ("));
+
+        /* The ends: up from the first and down from the last stay put (j and k too) */
+        fresh();
+        press(EV(NGE_KEY_UP));
+        press(EV(NGE_KEY_K));
+        press(EV(NGE_KEY_ENTER));
+        CHECK(chargen_run(PC_CLASS_FIGHTER, cname) == PC_CLASS_FIGHTER && RAN_AND_CLOSED());
+        fresh();
+        press(EV(NGE_KEY_DOWN));
+        press(EV(NGE_KEY_J));
+        press(EV(NGE_KEY_ENTER));
+        CHECK(chargen_run((uint8_t)(CHARGEN_CLASSES - 2), cname) == CHARGEN_CLASSES - 1 && RAN_AND_CLOSED());
+
+        /* N: a name typed, kept when the class changes (R2a), and in the caller's buffer */
+        fresh();
+        press(EV(NGE_KEY_N));
+        press(EV(NGE_KEY_A));
+        press(EV(NGE_KEY_N));
+        press(EV(NGE_KEY_A));
+        press(EV(NGE_KEY_ENTER));
+        press(EV(NGE_KEY_UP));
+        press(EV(NGE_KEY_ENTER));
+        cls = chargen_run(PC_CLASS_MAGE, cname);
+        CHECK(RAN_AND_CLOSED() && cls == PC_CLASS_FIGHTER);
+        CHECK(strcmp(cname, "ana") == 0 && strcmp(pc_name, "ana") == 0);
+        CHECK(strstr(OVER_ROW(2), " ana the Fighter ") != NULL);
+        CHECK(strcmp(seen_cols(1, 29, 0, 39), BLANK) == 0);   /* the prompt cleared */
+        CHECK(starts(HELP(), "Up/down:class N:change name ENTER:start"));
+
+        /* N, then ENTER alone: the name stays */
+        fresh();
+        press(EV(NGE_KEY_N));
+        press(EV(NGE_KEY_ENTER));
+        press(EV(NGE_KEY_ENTER));
+        CHECK(chargen_run(PC_CLASS_MAGE, cname) == PC_CLASS_MAGE && RAN_AND_CLOSED());
+        CHECK(strcmp(cname, "ana") == 0 && strcmp(pc_name, "ana") == 0);
+
+#if GAME_DEV_KIT
+        /* The Dev: more kit than rows, the last row says how many more */
+        fresh();
+        press(EV(NGE_KEY_ENTER));
+        CHECK(chargen_run(PC_CLASS_DEV, cname) == PC_CLASS_DEV && RAN_AND_CLOSED());
+        CHECK(strstr(OVER_ROW(2), " ana the Dev ") != NULL);
+        CHECK(strcmp(seen_cols(1, 7, 13, 39), "Str 12  +1   Int 12  +1    ") == 0);
+        CHECK(starts(seen_cols(1, 14, 13, 39), " sword"));
+        CHECK(starts(seen_cols(1, 27, 13, 39), " and 4 more in the pack"));
+#endif
+        TEST_EXPECT_HALT(chargen_run(CHARGEN_CLASSES, cname));
+    }
 
     return test_summary("ui");
 }

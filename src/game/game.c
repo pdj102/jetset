@@ -49,7 +49,8 @@ static uint16_t frames;       /* frames since the start: a release build's rando
 static uint8_t  frame_open;   /* 1 between game_frame_start() and game_frame_end() */
 static uint8_t  ended;        /* 1 once game_over() has ended the game */
 static uint8_t  end_reason;   /* GAME_OVER_*: why it ended */
-static char     name[PC_NAME_MAX + 1] = "Rogue";   /* the player's, from the title: kept for the next game */
+static char     name[PC_NAME_MAX + 1];   /* the player's, typed at character creation: kept for the next game; empty for the class's default */
+static uint8_t  last_class = PC_CLASS_FIGHTER;   /* the class chosen last: the creation screen opens on it */
 
 /* ---- Events ---- */
 
@@ -305,26 +306,19 @@ static void play_step(void)
     nge_ecs_check_guard();
 }
 
-/* The class a new game starts as, until the creation screen chooses one: the Dev in debug builds */
-#if GAME_DEV_KIT
-#define START_CLASS  PC_CLASS_DEV
-#else
-#define START_CLASS  PC_CLASS_FIGHTER
-#endif
-
 /*
  * A new game: every module the game uses back to its initial state (each
- * init can be called again), the player and the persistent entities, the
- * player in the first level. The player's name and the message window are
- * kept
+ * init can be called again), the player made at the creation screen and
+ * the persistent entities, the player in the first level. The name typed,
+ * the class chosen and the message window are kept
  */
 static void play_start(void)
 {
 #if !GAME_DEV_KIT
     srand(frames);           /* once a game: each visit to a depth is new (debug builds seed per level) */
 #endif
-    /* Every entity, sprite, timer and event gone, then the player made as entity 0 */
-    chargen_make(START_CLASS, name);
+    /* The creation screen: every entity, sprite, timer and event gone, the player made as entity 0 */
+    last_class = chargen_run(last_class, name);
     actors_create_persistents();
     player_init();           /* not the player's turn until their timer fires */
     level_clear_request();
@@ -376,7 +370,7 @@ void game_run(void)
 {
     nge_event_init();
     for (;;) {
-        screen_title_run(name);
+        screen_title_run();
         over_run(play_run());
     }
 }

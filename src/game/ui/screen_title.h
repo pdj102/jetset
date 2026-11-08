@@ -4,11 +4,11 @@
 /**
  * @file screen_title.h
  * @brief The title: an overlay screen (game/ui/screen.h) with the game's
- *        name; any key asks the player's name. The main loop (game/game.h)
- *        starts a game when it returns.
+ *        name, until a key. The main loop (game/game.h) then starts a game,
+ *        which opens with character creation (game/chargen/chargen.h):
+ *        the class and the name are chosen there.
  *
- *     rows 0-27   the title
- *     rows 28-30  the prompt: the player's name, typed
+ *     rows 0-30   the title
  *     row  31     the help line
  *
  * Banking: banked (NGE_BANKED, page 116), with the other screens. Don't
@@ -17,13 +17,7 @@
 
 #include "core/nge_bank.h"
 
-/**
- * @brief Show the title over everything, wait for a key, ask the player's
- *        name until ENTER, then close it and greet them in the message
- *        window.
- * @param name In common memory, PC_NAME_MAX + 1 bytes (game/components/
- *        pc.h): the name typed, or as it was if none was.
- */
-void screen_title_run(char *name) NGE_BANKED;
+/** @brief Show the title over everything, wait for a key, then close it. */
+void screen_title_run(void) NGE_BANKED;
 
 #endif
