@@ -88,7 +88,8 @@ int main(void)
     ok = 1;
     for (dx = CR_PLAYER + 1; dx < CR_COUNT; dx++) {
         for (dy = 0; dy < GEN_SEQ_COUNT; dy++) {
-            ok = ok && anim_seqs[dx][dy].count == 0;
+            /* the classes' kinds (game/chargen) have the player's */
+            ok = ok && anim_seqs[dx][dy].count == ((dx == CR_FIGHTER || dx == CR_MAGE) ? anim_seqs[CR_PLAYER][dy].count : 0);
         }
     }
     CHECK(ok);

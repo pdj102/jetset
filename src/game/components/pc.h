@@ -23,7 +23,7 @@
  * table's figure for the next level (pc_xp_needed()), the player goes up a
  * level: maximum hit points rise by a roll of the hit die plus the
  * Constitution modifier, at least 1, and current hit points by the same.
- * The class is a placeholder: nothing reads it until there are classes.
+ * The class is chosen at character creation (game/chargen/chargen.h); no rule reads it yet.
  *
  * Events (game/events.h), each after its change: EV_XP_GAINED, then
  * EV_LEVEL_GAINED for each level; EV_GOLD_CHANGED, before the XP that gold
@@ -47,13 +47,15 @@
 #define PC_HIT_DIE    8        /**< The die rolled for each level's hit points (later: by class). */
 #define PC_MANA_DIE   4        /**< The die rolled for each level's MP, a power of 2 (rolled with a mask). */
 
-/* Classes: values of pc_class, a placeholder until character generation */
+/* Classes: values of pc_class, chosen at character creation (game/chargen, docs/character_creation.md) */
 #define PC_CLASS_FIGHTER  0
-#define PC_CLASS_COUNT    1
+#define PC_CLASS_MAGE     1
+#define PC_CLASS_DEV      2    /**< Debug builds only (GAME_DEV_KIT): the development kit's class. */
+#define PC_CLASS_COUNT    3
 
 /* Variables in slot 0 (pc_cdata.c): read-only outside the component; meaningful once the player has it */
 extern char     pc_name[PC_NAME_MAX + 1];   /**< 1 to PC_NAME_MAX characters. */
-extern uint8_t  pc_class;                   /**< PC_CLASS_*: not read yet. */
+extern uint8_t  pc_class;                   /**< PC_CLASS_*. */
 extern uint8_t  pc_level;                   /**< PC_LEVEL_MIN to PC_LEVEL_MAX. */
 extern uint16_t pc_xp;
 extern uint16_t pc_gold;
@@ -77,6 +79,9 @@ void pc_add(nge_entity_id_t id) NGE_BANKED;
  * @param name 1 character or more; in common memory or slot 0.
  */
 void pc_set_name(nge_entity_id_t id, const char *name) NGE_BANKED;
+
+/** @brief Set the player's class: cls a PC_CLASS_* value (asserted). */
+void pc_set_class(nge_entity_id_t id, uint8_t cls) NGE_BANKED;
 
 /**
  * @brief The XP level needs (PC_LEVEL_MIN to PC_LEVEL_MAX): 0 for level 1.

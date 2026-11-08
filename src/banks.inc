@@ -75,7 +75,9 @@
 //                                 (unused)
 //                        138/139  attrs: deriving attribute values / (unused:
 //                                 page 121 is mapped into slot 7 by hand)
-//                        140-151  free
+//                        140/141  chargen: the classes and making the player /
+//                                 (unused)
+//                        142-151  free
 //             152-223  game assets (maps, graphics, level data):
 //                        153  the map tiles' palette (slot 7, via nge_palette_load9();
 //                             src/data/tile_palette_data.asm, generated)
@@ -167,6 +169,9 @@
 
 // game attrs: deriving attribute values (game/attrs)
 #pragma define CRT_ORG_PAGE_138 = 0x8AC000
+
+// game chargen: character creation (game/chargen)
+#pragma define CRT_ORG_PAGE_140 = 0x8CC000
 
 // nge map: set-up functions
 #pragma define CRT_ORG_PAGE_44 = 0x2CC000

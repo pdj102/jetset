@@ -15,7 +15,8 @@
 #   (GEN_GAME_SRCS, with the components, effects and attributes, for test_gen,
 #   LEVEL_GAME_SRCS and those for test_level,
 #   ACT_GAME_SRCS (with the AI files that act, and the features' reactions, which act) and the level and gen ones for test_act and test_ai, the gen ones for
-#   test_inventory, UI_GAME_SRCS and the action ones for test_ui and test_target).
+#   test_inventory, UI_GAME_SRCS (with character creation) and the action ones for test_ui and test_target,
+#   the action ones and character creation for test_chargen).
 #   Library files that only work on the Next (inline asm traps, Layer 2
 #   drawing by address) are listed in LIB_EXCLUDE and replaced by fakes in
 #   support/ (test.c, test_layer2.c); the map's palette, assembly in
@@ -68,7 +69,7 @@ ACT_GAME_SRCS := $(wildcard $(GAMEDIR)/actions/*.c) $(addprefix $(GAMEDIR)/ai/,a
 ACT_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(ACT_GAME_SRCS)) $(LEVEL_GAME_OBJS)
 UI_GAME_SRCS := $(wildcard $(GAMEDIR)/ui/*.c) \
                 $(addprefix $(GAMEDIR)/,player/player.c player/player_bank.c messages/messages_bank.c \
-                target/target_bank.c)
+                target/target_bank.c chargen/chargen_bank.c)
 UI_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(UI_GAME_SRCS)) $(ACT_GAME_OBJS)
 
 ANIM_GAME_SRCS := $(addprefix $(GAMEDIR)/,anim/anim.c anim/anim_bank.c anim/anim_pdata.c)
@@ -126,6 +127,10 @@ $(BUILD)/test_ui: $(BUILD)/test_ui.o $(LIB_OBJS) $(SUPPORT_OBJS) $(UI_GAME_OBJS)
 	$(HOSTCC) $(CFLAGS) $^ -o $@
 
 $(BUILD)/test_target: $(BUILD)/test_target.o $(LIB_OBJS) $(SUPPORT_OBJS) $(UI_GAME_OBJS)
+	$(HOSTCC) $(CFLAGS) $^ -o $@
+
+# Character creation equips its kits through the actions
+$(BUILD)/test_chargen: $(BUILD)/test_chargen.o $(LIB_OBJS) $(SUPPORT_OBJS) $(ACT_GAME_OBJS) $(BUILD)/game/chargen/chargen_bank.o
 	$(HOSTCC) $(CFLAGS) $^ -o $@
 
 $(BUILD)/test_anim: $(BUILD)/test_anim.o $(LIB_OBJS) $(SUPPORT_OBJS) $(ANIM_GAME_OBJS)

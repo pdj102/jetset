@@ -70,6 +70,14 @@ void pc_set_name(nge_entity_id_t id, const char *name) NGE_BANKED
     pc_name[i] = '\0';
 }
 
+void pc_set_class(nge_entity_id_t id, uint8_t cls) NGE_BANKED
+{
+    check_pc(id);
+    nge_util_assert(cls < PC_CLASS_COUNT);
+
+    pc_class = cls;
+}
+
 uint16_t pc_xp_needed(uint8_t level) NGE_BANKED
 {
     nge_util_assert(level >= PC_LEVEL_MIN && level <= PC_LEVEL_MAX);

@@ -470,9 +470,9 @@ int main(void)
     test_layer2_row(4, 28, 39, text);
     CHECK(strcmp(text, "AC       10 ") == 0);
     test_layer2_row(5, 28, 39, text);
-    CHECK(strcmp(text, "Str      16 ") == 0);
+    CHECK(strcmp(text, "Str      12 ") == 0);
     test_layer2_row(10, 28, 39, text);
-    CHECK(strcmp(text, "Cha      10 ") == 0);
+    CHECK(strcmp(text, "Cha      12 ") == 0);
     test_layer2_row(11, 28, 39, text);
     CHECK(strcmp(text, "            ") == 0);
     test_layer2_row(12, 28, 39, text);
@@ -482,7 +482,7 @@ int main(void)
     effect_apply(EF_STRENGTH, 1, actor_player, NGE_ENTITY_INVALID);
     player_show_stats();
     test_layer2_row(5, 28, 39, text);
-    CHECK(strcmp(text, "Str      17 ") == 0);
+    CHECK(strcmp(text, "Str      13 ") == 0);
     nge_event_flush();
     /* MP follow their events */
     mana_spend(actor_player, 2);

@@ -4,7 +4,7 @@
 /**
  * @file quest.h
  * @brief The quest item (docs/winning.md): the one item of kind IT_QUEST,
- *        made once a game by actors_create() (game/actors.c), persistent,
+ *        made once a game by actors_create_persistents() (game/actors.c), persistent,
  *        never destroyed. The player wins by climbing out of depth 1 with
  *        it (act_ascend(), game/actions/act.h).
  *

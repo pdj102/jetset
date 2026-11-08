@@ -33,7 +33,9 @@
 #define CR_WRAITH         18
 #define CR_TROLL          19
 #define CR_DRAGON         20
-#define CR_COUNT          21
+#define CR_FIGHTER        21   /* the player as a Fighter (game/chargen); CR_PLAYER is the Dev */
+#define CR_MAGE           22   /* the player as a Mage */
+#define CR_COUNT          23
 
 /* Items (CLASS_ITEM): IT_QUEST is one a game, made by game/actors.c, never at random */
 #define IT_CLUB              0

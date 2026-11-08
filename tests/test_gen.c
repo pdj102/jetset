@@ -532,6 +532,9 @@ int main(void)
     }
     CHECK(ok);
     CHECK(seen[CR_PLAYER] == 0 && seen[CR_RAT] > 0 && seen[CR_GOBLIN] > 0);   /* rarity 0: never */
+    CHECK(seen[CR_FIGHTER] == 0 && seen[CR_MAGE] == 0);   /* the classes' players (game/chargen): never */
+    CHECK((gen_creatures[CR_FIGHTER].flags & CREATURE_PLAYER) && (gen_creatures[CR_MAGE].flags & CREATURE_PLAYER));
+    CHECK(gen_creatures[CR_PLAYER].stats.ability[ABIL_STR] == 12 && gen_creatures[CR_PLAYER].stats.ability[ABIL_CHA] == 12);
     CHECK(seen[CR_RAT] > seen[CR_GOBLIN]);                                      /* rarity 10 against 6 */
 
     /* ---- the creatures' bands: every depth has several kinds, and the weakest leave ---- */
@@ -543,7 +546,7 @@ int main(void)
             const gen_where_t *w = &gen_creatures[kind].where;
 
             kinds += i >= w->depth && i <= w->depth_max && w->rarity != 0;
-            ok = ok && w->depth_max <= LEVEL_DEPTH_BOTTOM && (kind == CR_PLAYER || w->depth >= 1);
+            ok = ok && w->depth_max <= LEVEL_DEPTH_BOTTOM && (gen_creatures[kind].flags & CREATURE_PLAYER || w->depth >= 1);
         }
         ok = ok && kinds >= 3;
     }

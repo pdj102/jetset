@@ -8,23 +8,11 @@
 #include "ecs/nge_owner.h"
 #include "hw/nge_palette.h"
 #include "game/dev.h"
-#include "game/attrs/attrs.h"
-#include "game/components/health.h"
 #include "game/components/kind.h"
-#include "game/components/pc.h"
 #include "game/gen/gen.h"
 #include "game/level/level.h"
 #include "game/quest/quest.h"
 #include "sprite/nge_sprite.h"
-
-#if GAME_DEV_KIT
-/* The development kit's items, owned by the player: in their pack, which keeps 2 places free */
-static const uint8_t dev_kit[] = {
-    IT_SWORD, IT_HEAL_DRAUGHT, IT_STAFF_HEALING, IT_RING_HEALTH_2, IT_RING_FRAILTY, IT_PLATE_ARMOUR_2,
-    IT_POTION_HASTE, IT_WAND_SLEEP, IT_SHORT_BOW, IT_ARROWS, IT_LOCK_PICK, IT_WAND_FIRE, IT_LANTERN,
-    IT_DARTS, IT_BREAD, IT_OIL, IT_ARROWS
-};
-#endif
 
 /* A persistent entity: made once a game, in its depth's area (game/level/level.h) */
 typedef struct actor_persistent {
@@ -58,21 +46,12 @@ void actors_load_graphics(void)
     nge_palette_load9(SPRITE_PALETTE_PAGE, RPC_SELECT_SPRITES_PALETTE_0, 0, sprite_palette, SPRITE_PALETTE_ENTRIES);
 }
 
-void actors_create(const char *name)
+void actors_create_persistents(void)
 {
-    /*
-     * The player, from its kind data: placed by level_generate(). Created
-     * first, so entity 0: on a tick where others are due too, its turn
-     * comes first (timers fire in ID order)
-     */
+    /* Not placed: each is placed when its depth's level is generated */
     const actor_persistent_t *p;
     nge_entity_id_t id;
 
-    actor_player = gen_creature(CR_PLAYER, NGE_OWNER_WORLD);
-    nge_util_assert(actor_player != NGE_ENTITY_INVALID);
-    pc_set_name(actor_player, name);
-
-    /* Not placed: each is placed when its depth's level is generated */
     for (p = persistents; p->cls != CLASS_NONE; p++) {
         nge_util_assert(p->depth >= 1 && p->depth <= LEVEL_DEPTH_BOTTOM);
         id = (p->cls == CLASS_CREATURE) ? gen_creature(p->kind, NGE_OWNER_AREA(p->depth))
@@ -83,18 +62,4 @@ void actors_create(const char *name)
             quest_set(id);
         }
     }
-
-#if GAME_DEV_KIT
-    {
-        uint8_t i;
-
-        for (i = 0; i < sizeof(dev_kit); i++) {
-            gen_item(dev_kit[i], actor_player);   /* owned, not placed: stowed */
-        }
-        /* Every damage outcome can be seen with the X key (immune to acid: poison still hurts) */
-        effects_set_base(actor_player, ATTR_IMMUNE, DMG_BIT(DMG_ACID));
-        effects_set_base(actor_player, ATTR_RESIST, DMG_BIT(DMG_FIRE));
-        effects_set_base(actor_player, ATTR_VULN, DMG_BIT(DMG_COLD));
-    }
-#endif
 }

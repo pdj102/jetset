@@ -96,6 +96,13 @@ int main(void)
     rat = gen_creature(CR_RAT, NGE_OWNER_WORLD);
     CHECK(!PC_IS(rat));
 
+    /* ---- the class: any PC_CLASS_* ---- */
+    pc_set_class(p, PC_CLASS_MAGE);
+    CHECK(pc_class == PC_CLASS_MAGE);
+    TEST_EXPECT_HALT(pc_set_class(p, PC_CLASS_COUNT));
+    TEST_EXPECT_HALT(pc_set_class(rat, PC_CLASS_FIGHTER));
+    pc_set_class(p, PC_CLASS_FIGHTER);
+
     /* ---- the name: at most PC_NAME_MAX characters ---- */
     pc_set_name(p, "bo");
     CHECK(strcmp(pc_name, "bo") == 0);
@@ -118,13 +125,13 @@ int main(void)
     pc_gain_xp(p, 0);                                  /* nothing: nothing posted */
     CHECK(pc_xp == 19 && events() == 0);
 
-    /* ---- exactly the figure: a level, more hit points (1d8 + Con 14's +2), the XP first ---- */
+    /* ---- exactly the figure: a level, more hit points (1d8 + Con 12's +1), the XP first ---- */
     hp_max = health_hp_max[p];
     CHECK(health_hp[p] == hp_max);
     pc_gain_xp(p, 1);
     CHECK(pc_xp == 20 && pc_level == 2);
     gain = (uint8_t)(health_hp_max[p] - hp_max);
-    CHECK(gain >= 3 && gain <= 10 && health_hp_max_base[p] == health_hp_max[p]);
+    CHECK(gain >= 2 && gain <= 9 && health_hp_max_base[p] == health_hp_max[p]);
     CHECK(health_hp[p] == health_hp_max[p]);           /* the current hit points up by the same */
     events();
     CHECK(first(EV_XP_GAINED) == 0 && count(EV_LEVEL_GAINED) == 1 && count(EV_HEALED) == 1);
@@ -132,9 +139,9 @@ int main(void)
     /* Then the spells of level 2: Cure Wounds */
     CHECK(seen[seen_count - 1].id == EV_SPELL_LEARNED && seen[seen_count - 1].p1 == SP_CURE_WOUNDS &&
           first(EV_LEVEL_GAINED) == seen_count - 2 && spell_knows(p, SP_CURE_WOUNDS));
-    /* MP the same way, by 1d4 + Int 10's 0: maximum and current, after the hit points */
+    /* MP the same way, by 1d4 + Int 12's +1: maximum and current, after the hit points */
     gain = (uint8_t)(mana_mp_max[p] - 5);
-    CHECK(gain >= 1 && gain <= 4 && mana_mp_max_base[p] == mana_mp_max[p] && mana_mp[p] == mana_mp_max[p]);
+    CHECK(gain >= 2 && gain <= 5 && mana_mp_max_base[p] == mana_mp_max[p] && mana_mp[p] == mana_mp_max[p]);
     CHECK(count(EV_MANA_RESTORED) == 1 && seen[first(EV_MANA_RESTORED)].p1 == gain);
     CHECK(first(EV_HEALED) < first(EV_MANA_RESTORED) && count(EV_ATTRS_CHANGED) == 2 && seen_count == 7);
 

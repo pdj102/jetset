@@ -24,6 +24,7 @@
 #include "game/components/feature.h"
 #include "game/components/pc.h"
 #include "game/anim/anim.h"
+#include "game/chargen/chargen.h"
 #include "game/dev.h"
 #include "game/effects/effects.h"
 #include "game/events.h"
@@ -304,24 +305,30 @@ static void play_step(void)
     nge_ecs_check_guard();
 }
 
+/* The class a new game starts as, until the creation screen chooses one: the Dev in debug builds */
+#if GAME_DEV_KIT
+#define START_CLASS  PC_CLASS_DEV
+#else
+#define START_CLASS  PC_CLASS_FIGHTER
+#endif
+
 /*
  * A new game: every module the game uses back to its initial state (each
- * init can be called again), the persistent entities, the player in the
- * first level. The player's name and the message window are kept
+ * init can be called again), the player and the persistent entities, the
+ * player in the first level. The player's name and the message window are
+ * kept
  */
 static void play_start(void)
 {
 #if !GAME_DEV_KIT
     srand(frames);           /* once a game: each visit to a depth is new (debug builds seed per level) */
 #endif
-    nge_entity_init();       /* every entity free: the last game's are gone */
-    nge_render_init();       /* their sprites hidden at the next upload */
-    nge_timer_init();        /* turn 0, the clock running */
-    nge_event_init();
+    /* Every entity, sprite, timer and event gone, then the player made as entity 0 */
+    chargen_make(START_CLASS, name);
+    actors_create_persistents();
     player_init();           /* not the player's turn until their timer fires */
     level_clear_request();
     ended = 0;
-    actors_create(name);
     nge_render_follow(actor_player);   /* the camera slides with them (after nge_render_init()) */
     level_generate(1, actor_player, LEVEL_ARRIVE_ANY);   /* the first level; the camera on the player */
 #if GAME_DEV_KIT

@@ -67,12 +67,12 @@
                               NGE_SPRITE_PALETTE(bank), LAYER_MONSTERS }
 
 const gen_creature_kind_t gen_creatures[CR_COUNT] = {
-    [CR_PLAYER] = {
+    [CR_PLAYER] = {                                     /* the Dev class (game/chargen): medium abilities */
         .name = "you",
         .render = { SPRITE_PLAYER_IDLE, SPRITE_PLAYER_IDLE_COUNT, SPRITE_PLAYER_IDLE_RATE,
                     NGE_SPRITE_PALETTE(BANK_PLAYER), LAYER_PLAYER },
         .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
-        .stats = { .speed = 10, .ability = { 16, 14, 14, 10, 10, 10 } },   /* Str Dex Con Int Wis Cha */
+        .stats = { .speed = 10, .ability = { 12, 12, 12, 12, 12, 12 } },   /* Str Dex Con Int Wis Cha */
         .health = { .hp_max = 12, .ac = 10 },
         .mana = { .mp_max = 5 },
         .spells = { SP_MAGIC_BOLT },                    /* every spell learned at level 1: level 1 is never gained */
@@ -359,5 +359,43 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .flags = 0,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
         .where = { .depth = 9, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 2 },
+    },
+    [CR_FIGHTER] = {                                    /* the Fighter class: no mana, no spells */
+        .name = "you",
+        .render = { SPRITE_PLAYER_IDLE, SPRITE_PLAYER_IDLE_COUNT, SPRITE_PLAYER_IDLE_RATE,
+                    NGE_SPRITE_PALETTE(BANK_PLAYER), LAYER_PLAYER },
+        .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
+        .stats = { .speed = 10, .ability = { 16, 14, 14, 9, 9, 10 } },   /* Str Dex Con Int Wis Cha */
+        .health = { .hp_max = 12, .ac = 10 },
+        .melee = { .to_hit = 0, .dice = 1, .sides = 2, .bonus = 0, .type = DMG_BLUNT, .range = 1 },   /* fists */
+        .inventory = { .capacity = 20, .slots = SLOTS_HUMANOID },
+        .xp = 0,
+        .flags = CREATURE_PLAYER,
+        .ai = { .brain = AI_BRAIN_NONE },               /* their turns wait for commands */
+        .hooks = { [GEN_HOOK_INNATE] = { EF_REGEN, 1 } },
+        .seqs = {
+            [GEN_SEQ_ATTACK] = { SPRITE_PLAYER_ATTACK, SPRITE_PLAYER_ATTACK_COUNT, SPRITE_PLAYER_ATTACK_RATE },
+        },
+        .where = { .depth = 0, .depth_max = 0, .rarity = 0 },          /* never at random */
+    },
+    [CR_MAGE] = {                                       /* the Mage class: frail, with mana */
+        .name = "you",
+        .render = { SPRITE_PLAYER_IDLE, SPRITE_PLAYER_IDLE_COUNT, SPRITE_PLAYER_IDLE_RATE,
+                    NGE_SPRITE_PALETTE(BANK_PLAYER), LAYER_PLAYER },
+        .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
+        .stats = { .speed = 10, .ability = { 9, 10, 12, 16, 14, 10 } },   /* Str Dex Con Int Wis Cha */
+        .health = { .hp_max = 8, .ac = 10 },
+        .mana = { .mp_max = 8 },
+        .spells = { SP_MAGIC_BOLT },                    /* every spell learned at level 1: level 1 is never gained */
+        .melee = { .to_hit = 0, .dice = 1, .sides = 2, .bonus = 0, .type = DMG_BLUNT, .range = 1 },   /* fists */
+        .inventory = { .capacity = 20, .slots = SLOTS_HUMANOID },
+        .xp = 0,
+        .flags = CREATURE_PLAYER,
+        .ai = { .brain = AI_BRAIN_NONE },               /* their turns wait for commands */
+        .hooks = { [GEN_HOOK_INNATE] = { EF_REGEN, 1 } },
+        .seqs = {
+            [GEN_SEQ_ATTACK] = { SPRITE_PLAYER_ATTACK, SPRITE_PLAYER_ATTACK_COUNT, SPRITE_PLAYER_ATTACK_RATE },
+        },
+        .where = { .depth = 0, .depth_max = 0, .rarity = 0 },          /* never at random */
     },
 };

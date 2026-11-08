@@ -21,6 +21,7 @@
 #include "ui/nge_panel.h"
 
 #include "game/actors.h"
+#include "game/chargen/chargen.h"
 #include "game/components/attack.h"
 #include "game/components/health.h"
 #include "game/components/mana.h"
@@ -82,9 +83,7 @@ static const nge_panel_t panels[PANEL_COUNT] = {
 
 #define SPEED_NORMAL   10       /* ticks between turns at normal speed (game/components/stats.h) */
 #define TURNS_ALWAYS   0xFFFF   /* an effect that lasts for ever */
-#define TITLE_MAX      (PC_NAME_MAX + 13)   /* "<name> the Fighter", and its NUL */
-
-static const char *const class_names[PC_CLASS_COUNT] = { "Fighter" };
+#define TITLE_MAX      (PC_NAME_MAX + 5 + CHARGEN_NAME_MAX + 1)   /* "<name> the Fighter", and its NUL */
 
 /* The damage types' two-letter names (the grid) and words (the attack), by DMG_* */
 static const char dmg_short[DMG_COUNT][3] = { "Bl", "Sl", "Pi", "Fi", "Co", "Po", "Ac", "Ma" };
@@ -150,7 +149,7 @@ static void draw_title(NGE_FILE *s)
 
     strcpy(title, pc_name);   /* slot 0: PC_NAME_MAX characters at most */
     strcat(title, " the ");
-    strcat(title, class_names[pc_class]);
+    chargen_class_name(pc_class, title + strlen(title));   /* on the stack: copied from page 140 */
     nge_text_ink(NGE_INK_YELLOW, s);
     nge_panel_centre(&panels[PANEL_TITLE], 0, title, s);
 }

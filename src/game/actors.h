@@ -50,20 +50,16 @@ extern nge_entity_id_t actor_player;
 void actors_load_graphics(void);
 
 /**
- * @brief Create the player (not yet placed: see level_generate()) and the
- *        other persistent entities (a table in actors.c: each in its
- *        depth's area, not placed, NGE_ENTITY_PERSISTENT), for a new game
- *        (play_start(), game/game.c). The player is entity 0. The quest
- *        item waits on the bottom depth (game/quest/quest.h). With
- *        GAME_DEV_KIT, a persistent goblin waits on depth 2. With GAME_DEV_KIT
- *        (game/dev.h, debug builds), the player starts with a sword, three
- *        rings and one of each potion and food in their pack and some
- *        resistances, for trying things out.
- * @param name The player's name (game/components/pc.h): 1 to PC_NAME_MAX
- *        characters, in common memory.
+ * @brief Create the persistent entities besides the player (a table in
+ *        actors.c: each in its depth's area, not placed,
+ *        NGE_ENTITY_PERSISTENT), for a new game (play_start(),
+ *        game/game.c), after the player (game/chargen/chargen.h, entity 0).
+ *        The quest item waits on the bottom depth (game/quest/quest.h).
+ *        With GAME_DEV_KIT (game/dev.h, debug builds), a persistent goblin
+ *        waits on depth 2.
  *
- * Call after nge_entity_init(), nge_render_init() and nge_timer_init().
+ * Call after chargen_make().
  */
-void actors_create(const char *name);
+void actors_create_persistents(void);
 
 #endif
