@@ -4,8 +4,8 @@ This plan gives the steps that build what [help_screen.md](help_screen.md)
 specifies. The spec says what the feature is and why. This file says in
 what order it is built, what changes, and how each step is checked.
 
-Status: in progress. Step 1 built, and its CSpect checks passed
-(2026-11-09). Step 2 built, and its CSpect checks passed.
+Status: done (2026-11-09). Steps 1-3 built, and their CSpect checks
+passed. The hardware check (the page turn time) is still to do.
 
 ## 1. How the steps work
 

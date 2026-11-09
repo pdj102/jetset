@@ -34,7 +34,7 @@ the five item screens.
 | Overlay screen | Any other screen: shown over the main screen, pausing the game |
 | Panel | A rectangle of cells (`nge_rect_t`) in a screen, with a paper colour and a mode. A text panel has a Layer 2 stream; the map panel is a transparent hole onto the tilemap and the sprites |
 | Help line | Row 31, always shown: what the keys do now (the "help pane" in the request) |
-| Help screen | A future overlay screen of help pages |
+| Help screen | The overlay screen of help pages, opened by `?` in play: [help_screen.md](help_screen.md) |
 | Layer 2 buffer | One 320 x 256 Layer 2 image (80K). Two are proposed (D2): 0 for the main screen, 1 for overlay screens |
 | Paused | No game time passes, no animation advances, no sprite changes |
 
@@ -88,7 +88,8 @@ a requirement that differs from the request, with the reason.
   its context changes. Closing a screen puts back the help of the screen
   beneath.
 - **R13 (later)** From any screen, `?` opens the help screen at the
-  page for the current context. The context is a number each screen
+  page for the current context. *Still later: today `?` works in play
+  only (help_screen.md D6). Context help is to-do item U1.5.* The context is a number each screen
   passes with its help line, so help pages can be added without
   changing the screens.
 
@@ -133,7 +134,9 @@ a requirement that differs from the request, with the reason.
 
 - **R23 (later)** Stats screen: the player's full stats. Built as the
   player character screen: [pc_screen.md](pc_screen.md).
-- **R24 (later)** Help screen: pages of help, by context (R13).
+- **R24 (later)** Help screen: pages of help, by context (R13). *Built
+  by [help_screen.md](help_screen.md) (2026-11-09), without the contexts:
+  four pages, opened by `?` in play.*
 - **R25 (later)** Title screen: full screen, with an optional demo in a
   map panel (R8).
 - **R26 (later)** Character generation: choices and the name prompt, a
@@ -422,6 +425,8 @@ line editor echoes to a panel stream, running the paused loop.
   `memory_map.md`: Layer 2 becomes 16-35, spare 36-39); 92/93 nge `ui`; 116/117 the
   framework and the inventory; 104/105 the title. Later screens: a pair
   each where they outgrow 116 (the help screen's text in an odd page).
+  *As built, the PC screen, the spell list and the help screen share
+  104/105, with the help screen's text in page 105.*
 
 ## 6. Scope
 

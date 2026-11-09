@@ -18,7 +18,7 @@ detail goes in a spec when an item is picked up.
 - To pick one up, ask: *"Write a spec for U1"* (whole objective) or
   *"Write a spec and plan for U1.3"* (one feature).
 
-Topic codes: `C` Character creation, `U` UI, `V` Visual effects.
+Topic codes: `C` Character creation, `G` Game rules, `U` UI, `V` Visual effects.
 
 ---
 
@@ -31,15 +31,25 @@ Topic codes: `C` Character creation, `U` UI, `V` Visual effects.
 - C1.3 Additional classes
 - C1.4 Randomised stats
 
+## G — Game rules
+
+### G1 Abilities in attacks
+
+- Str to melee hit and damage, Dex to ranged hit, and a use for Cha. The
+  help screen's Abilities page (`screen_guide_pdata.c`) changes with it
+
 ## U — UI
 
-### U1 Help screen `[plan]` [spec](help_screen.md), [plan](help_screen_plan.md)
+### U1 Help screen `[done]` (2026-11-09) [spec](help_screen.md), [plan](help_screen_plan.md)
 
-- U1.1 Multiple pages
-- U1.2 Keyboard commands overview
-- U1.3 Attributes and what each is used for (e.g. STR: melee hit and damage;
-  DEX: ranged hit, lock pick)
-- U1.4 Game objective and how to win
+- U1.1 Multiple pages `[done]`
+- U1.2 Keyboard commands overview `[done]`
+- U1.3 Attributes and what each is used for, as the rules are now
+  (help_screen.md R10) `[done]`
+- U1.4 Game objective and how to win `[done]`
+- U1.5 Context help: `?` on each screen and prompt opens the page for it
+  (ui_screens.md R13)
+- U1.6 Tell the player about `?` on the title or creation screen
 
 ### U2 Main stats panel
 - Stats are coloured to show delta from base - cyan for better, red for worse

@@ -1,8 +1,9 @@
 # Help screen: requirements and design
 
-Status: in progress (2026-11-09). Three questions were answered before
-writing (section 9), and decisions D1-D9 were agreed. Plan step 1 is
-built, and CSpect checks 1-4 and 6 passed (section 10).
+Status: implemented (2026-11-09). Three questions were answered before
+writing (section 9), and decisions D1-D9 were agreed the same day. CSpect
+checks 1-7 passed (2026-11-09). The page turn time on hardware is not
+measured yet. Section 10 lists where the build differs from this design.
 
 Covers to-do objective **U1** (U1.1-U1.4) in [todo.md](todo.md). Builds
 on [ui_screens.md](ui_screens.md) (the overlay screen framework,
