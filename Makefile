@@ -62,7 +62,7 @@ DEPFLAGS = -MM -MG -MP -MT $@ -MF $(@:.o=.d) -D__SDCC
 export PATH := $(Z88DK_ROOT)/bin:$(PATH)
 export ZCCCFG
 
-.PHONY: all build check clean sprites test tiles
+.PHONY: all balance build check clean sprites test tiles
 
 all: build
 
@@ -160,6 +160,10 @@ $(BIN_TARGET).nex: $(GAME_OBJS) $(NGE_LIB) $(BANKS_INC)
 
 check:
 	./scripts/check-toolchain.sh
+
+# Difficulty balance check, from the game's tables; see docs/difficulty.md
+balance:
+	python3 scripts/balance.py
 
 # PC tests for the nge library; see tests/Makefile
 test: $(TILE_DATA) $(SPRITE_DATA)

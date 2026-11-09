@@ -31,12 +31,54 @@ Topic codes: `C` Character creation, `G` Game rules, `U` UI, `V` Visual effects.
 - C1.3 Additional classes
 - C1.4 Randomised stats
 
+## D - Difficulty scaling
+D1 - Create a roadmap guide for game mechanic scaling `[spec]` [spec](difficulty.md)
+- D1.1 Define key parameters that are key inputs to  scaling game mechanics e.g. maximum dungeon depth, maximum character level
+- D1.2 Define key principles e.g. player character should on average gain 1 level per dungeon depth fully cleared - when going down
 ## G — Game rules
 
 ### G1 Abilities in attacks
 
 - Str to melee hit and damage, Dex to ranged hit, and a use for Cha. The
   help screen's Abilities page (`screen_guide_pdata.c`) changes with it
+
+## L — Look around
+### L1 Look around line of sight
+- L1.1 Look checks for line of sight of sight
+- L1.2 Target cursor is green if there is  LoS and red if no LoS
+## M
+## N
+## O
+## P
+## S - Spells
+### S1 - Implement identify spell
+- S1.1 Each item has an identified flag, default unidentified
+- S1.2 An unidentified item's name does not reveal its effects in the UI (e.g. in the inventory screen, messages)
+- S1.3 An identified item's name reveals its effects 
+- S1.4 The identify spell identifies a single item in the inventory, setting its identified flag
+### S2 - Implement spell slots for every class
+- S2.1 Each spell has a level
+- S2.2 Each spell caster has a number of spell slots per spell level
+- S2.3 A spell caster can learn a spell of a spell level if they have an available spell slot at that spell level
+- S2.4 The numer of spell slots per spell level is determined by character class and character level
+- S2.5 Mage spell slots scale fastest e.g. level 1: 1st:2; level 2: 1st:3; level 3: 1st 3, 2nd:1; etc
+- S2.6 Fighter spell slots scale slower 
+- S2.7 Character class spell slots  should be tables
+### S3 -  Implement mana for every class
+- S3.1 Every player character class has mana
+- S3.2 Mage gains 4 MP (+ INT modifier) per level  
+- S3.3 Fighter gains 2 MP (+ INT modifier) per level  
+- S3.4 Dev gains 4 MP (+ INT modifier) per level
+### S4 - Implement spell books
+- S4.1 Implement a new item type - spell book
+- S4.2 A spell book contains spells that a spell caster can learn
+- ### S5 - Learning spells
+- S5.1 A player learns a spell by reading the book and selecting the spell to learn  
+- S5.2 The UI shows all the spells in the book and indicates which ones a player can learn, if any
+- S5.3 The UI allows the player to select a spell to learn, and the player can learn multiple spells in one turn
+## T - Targetting action
+T1 - Selecting previous target
+- T1.1 the player character targetting action should select the previous target, if one exists and it is still alive
 
 ## U — UI
 
