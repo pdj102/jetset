@@ -47,8 +47,14 @@
 #include "core/nge_bank.h"
 
 #ifndef NGE_ENTITY_MAX
-/** Number of entities, at most 250 (checked at compile time). */
-#define NGE_ENTITY_MAX  100
+/**
+ * Number of entities, at most 250 (checked at compile time). The real
+ * limits are lower: the owners (NGE_ENTITY_MAX + 1 + NGE_OWNER_AREA_MAX
+ * at most 255, so 190 with 64 areas, ecs/nge_owner.h) and the ECS data
+ * page in slot 0 (Jetset's tables take 39 bytes per entity plus 19 of
+ * its 7,936, so about 203; docs/slot0_tables.md).
+ */
+#define NGE_ENTITY_MAX  150
 #endif
 
 /** Not an entity: returned when there is none to give. */

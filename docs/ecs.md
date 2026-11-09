@@ -100,7 +100,7 @@ and effects find their way out when it goes.
 
 - **R1** An entity is a one-byte ID. Its state, flags and component bits are in
   tables indexed by that ID.
-- **R2** There are `NGE_ENTITY_MAX` entities, 100 today. `0xFF` is never an ID.
+- **R2** There are `NGE_ENTITY_MAX` entities, 150 today (100 until docs/slot0_tables.md). `0xFF` is never an ID.
 - **R3** `nge_entity_create()` returns `NGE_ENTITY_INVALID` when none is free. That
   isn't an error: the caller decides what it means.
 - **R4** A new entity is alive, with no flags or components, owned by
@@ -393,9 +393,9 @@ that a new entity may be visited if its ID is higher.
 
 | Owner value | Meaning |
 |---|---|
-| 0 to `NGE_ENTITY_MAX`-1 (0-99) | That entity |
-| `NGE_OWNER_WORLD` (100) | In the game but not placed. New entities start here |
-| `NGE_OWNER_AREA(a)` (101-164) | Placed in area a, a depth of the dungeon |
+| 0 to `NGE_ENTITY_MAX`-1 (0-149) | That entity |
+| `NGE_OWNER_WORLD` (150) | In the game but not placed. New entities start here |
+| `NGE_OWNER_AREA(a)` (151-214) | Placed in area a, a depth of the dungeon |
 
 An owner value is one byte, with the entity numbers as they are, so an entity can be
 compared with its owner directly. `NGE_OWNER_COUNT` must stay at or below 255, which
@@ -498,7 +498,7 @@ without an init of their own need none, as every bit is 0.
 
 | Limit | Value | Set by |
 |---|---|---|
-| Entities | 100 | `NGE_ENTITY_MAX`, at most 250 |
+| Entities | 150 | `NGE_ENTITY_MAX`, at most 250; in Jetset also page 50, about 203 ([slot0_tables.md](slot0_tables.md)) |
 | Areas | 64 | `NGE_OWNER_AREA_MAX` |
 | Component tables | 3, so 24 components | `NGE_COMPONENT_TABLES` |
 | Game flags | 5 | The flags byte |
@@ -506,8 +506,8 @@ without an init of their own need none, as every bit is 0.
 `NGE_OWNER_COUNT` is entities + 1 + areas, at most 255, so with 64 areas the
 real limit on entities is 190. Both limits are checked at compile time.
 
-The entity and owner tables take 601 bytes in page 50, and the bookkeeping 302 in
-page 49, at 100 entities.
+The entity and owner tables take 901 bytes in page 50, and the bookkeeping 452 in
+page 49, at 150 entities.
 
 ### 4.11 Banking
 
