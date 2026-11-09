@@ -255,7 +255,7 @@ static void play_turn(void)
 
 void game_play_help(void)
 {
-    screen_help("g:get i:inv u:use w:wear r:off <>:stairs");
+    screen_help("?:help i:inv g:get <>:stairs");   /* the help screen lists every key (docs/help_screen.md, R6) */
 }
 
 void game_play_redraw(void)

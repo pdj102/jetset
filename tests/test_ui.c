@@ -40,6 +40,7 @@
 #include "game/quest/quest.h"
 #include "game/spells/spells.h"
 #include "game/ui/screen.h"
+#include "game/ui/screen_guide.h"
 #include "game/ui/screen_inv.h"
 #include "game/ui/screen_main.h"
 #include "game/ui/screen_pc.h"
@@ -1759,6 +1760,61 @@ int main(void)
     effects_recompute(actor_player);
     nge_event_flush();
     CHECK(effects_check(actor_player));
+
+    /* ---- the help screen (docs/help_screen.md) ---- */
+    /* Turning: right and l on, left and h back, wrapping round; the digits go to a page; other keys stay */
+    CHECK(screen_guide_turn(0, 9) == 1 && screen_guide_turn(0, 'l') == 1);
+    CHECK(screen_guide_turn(3, 9) == 0 && screen_guide_turn(3, 'l') == 0);
+    CHECK(screen_guide_turn(0, 8) == 3 && screen_guide_turn(0, 'h') == 3);
+    CHECK(screen_guide_turn(2, 8) == 1 && screen_guide_turn(2, 'h') == 1);
+    CHECK(screen_guide_turn(2, '1') == 0 && screen_guide_turn(0, '2') == 1 && screen_guide_turn(0, '3') == 2 &&
+          screen_guide_turn(0, '4') == 3);
+    CHECK(screen_guide_turn(1, '5') == 1 && screen_guide_turn(1, '0') == 1 && screen_guide_turn(1, '?') == 1 &&
+          screen_guide_turn(1, 13) == 1 && screen_guide_turn(1, 'j') == 1);
+    /* ? (SYMBOL SHIFT + C) in play: page 1, no turn used, the main screen untouched */
+    memcpy(main_before, test_layer2_buf[0], sizeof(main_before));
+    fresh();
+    press(EV(NGE_KEY_SPACE));
+    player_turn = 1;
+    player_command(NGE_KEY_C | (NGE_MOD_SYM << 8));
+    CHECK(RAN_AND_CLOSED());
+    CHECK(player_turn && nge_event_count() == 0);
+    CHECK(memcmp(main_before, test_layer2_buf[0], sizeof(main_before)) == 0);
+    CHECK(strstr(OVER_ROW(0), " Commands ") != NULL && INK(0, 16) == L2_YELLOW);
+    CHECK(strcmp(seen_cols(1, 0, 37, 39), "1/4") == 0);
+    CHECK(starts(LIST_ROW(0), "Keys in play") && INK(2, 0) == L2_YELLOW);
+    CHECK(strcmp(HELP(), "Left/right:page 1-4:go to SPACE:back    ") == 0);
+    CHECK(seen[1][0][0].paper == SCREEN_PAPER && seen[1][30][39].paper == SCREEN_PAPER);   /* rows 0-30 covered */
+    /* Right: page 2, the last page's text cleared */
+    fresh();
+    press(EV(NGE_KEY_RIGHT));
+    press(EV(NGE_KEY_SPACE));
+    screen_guide_run();
+    CHECK(RAN_AND_CLOSED());
+    CHECK(strstr(OVER_ROW(0), " Screens and prompts ") != NULL && strcmp(seen_cols(1, 0, 37, 39), "2/4") == 0);
+    CHECK(strcmp(LIST_ROW(0), "Keys in screens and prompts             ") == 0);
+    /* Right, 4: page 4. A key that isn't the screen's (a) changes nothing */
+    fresh();
+    press(EV(NGE_KEY_RIGHT));
+    press(EV(NGE_KEY_4));
+    press(EV(NGE_KEY_A));
+    press(EV(NGE_KEY_SPACE));
+    screen_guide_run();
+    CHECK(RAN_AND_CLOSED());
+    CHECK(strstr(OVER_ROW(0), " Abilities and stats ") != NULL && strcmp(seen_cols(1, 0, 37, 39), "4/4") == 0);
+    CHECK(starts(LIST_ROW(0), "What the abilities do"));
+    /* Left from page 1: page 4; then 3 */
+    fresh();
+    press(EV(NGE_KEY_LEFT));
+    press(EV(NGE_KEY_SPACE));
+    screen_guide_run();
+    CHECK(RAN_AND_CLOSED() && strcmp(seen_cols(1, 0, 37, 39), "4/4") == 0);
+    fresh();
+    press(EV(NGE_KEY_3));
+    press(EV(NGE_KEY_SPACE));
+    screen_guide_run();
+    CHECK(RAN_AND_CLOSED() && strstr(OVER_ROW(0), " Goal ") != NULL && strcmp(seen_cols(1, 0, 37, 39), "3/4") == 0);
+    CHECK(memcmp(main_before, test_layer2_buf[0], sizeof(main_before)) == 0);
 
     /* ---- asserts ---- */
     TEST_EXPECT_HALT(screen_inv_run(ACT_COUNT + 1, &chosen, &used));

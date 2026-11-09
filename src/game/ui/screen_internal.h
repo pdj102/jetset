@@ -9,8 +9,12 @@
  * - screen_inv_bank.c (page 116): the inventory screen;
  * - screen_title_bank.c (page 116): the title screen;
  * - screen_pc_bank.c (page 104): the player character screen;
+ * - screen_spell_bank.c (page 104): the spell list;
+ * - screen_guide_bank.c (page 104): the help screen;
  * - screen_pdata.c (page 117): the inventory's list, mapped into slot 7
- *   while the module's code runs.
+ *   while the module's code runs;
+ * - screen_guide_pdata.c (page 105): the help screen's pages, mapped into
+ *   slot 7 while page 104's code runs.
  */
 
 #include <stdint.h>
@@ -55,6 +59,26 @@ extern nge_sprite_attr_t screen_overlay[SCREEN_OVERLAY_COUNT];
  * if lower_is_better (speed: ticks between turns)
  */
 uint8_t screen_pc_ink(uint8_t value, uint8_t base, uint8_t lower_is_better);
+
+/* ---- The help screen (screen_guide_bank.c, screen_guide_pdata.c) ---- */
+
+#define SCREEN_GUIDE_PAGES  4   /* the help line's "1-4" says it too */
+
+/* A page: its heading, and its text, lines ending in \n, with INK codes (docs/help_screen.md, D1) */
+typedef struct screen_guide_page {
+    const char *title;
+    const char *text;
+} screen_guide_page_t;
+
+/* The pages, in page 105 */
+extern const screen_guide_page_t screen_guide_pages[SCREEN_GUIDE_PAGES];
+
+/*
+ * The page after key c (nge_key_ascii()) on page page: right or l the next,
+ * left or h the one before, wrapping round; '1' to the page count that
+ * page; any other key page
+ */
+uint8_t screen_guide_turn(uint8_t page, uint8_t c);
 
 /* ---- The inventory's page data (screen_pdata.c) ---- */
 

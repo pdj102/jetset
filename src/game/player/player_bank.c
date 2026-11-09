@@ -37,6 +37,7 @@
 #include "game/spells/spells.h"
 #include "game/target/target.h"
 #include "game/ui/screen.h"
+#include "game/ui/screen_guide.h"
 #include "game/ui/screen_main.h"
 #include "game/ui/screen_inv.h"
 #include "game/ui/screen_pc.h"
@@ -602,6 +603,9 @@ void player_command(nge_key_event_t ev) NGE_BANKED
         break;
     case 'C':
         screen_pc_run();   /* only shows: no turn used */
+        break;
+    case '?':
+        screen_guide_run();   /* only shows: no turn used */
         break;
     case '<':
         stairs(ACT_ASCEND);

@@ -33,7 +33,7 @@ Topic codes: `C` Character creation, `U` UI, `V` Visual effects.
 
 ## U — UI
 
-### U1 Help screen
+### U1 Help screen `[plan]` [spec](help_screen.md), [plan](help_screen_plan.md)
 
 - U1.1 Multiple pages
 - U1.2 Keyboard commands overview
