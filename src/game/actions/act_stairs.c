@@ -53,7 +53,8 @@ static uint8_t take_stairs(act_t *a, uint8_t mode, uint8_t can, int8_t step)
     a->target = stairs;
     depth = (uint8_t)(level_depth + step);
     if (depth == LEVEL_DEPTH_SURFACE && (!PC_IS(actor) || !quest_carried(actor))) {
-        return act_fail(a, ACT_R_NO_QUEST);   /* only the player leaves, and only with it (docs/winning.md) */
+        /* Only the player leaves, and only with it (docs/winning.md): described in the help screen (game/ui/screen_guide_pdata.c) */
+        return act_fail(a, ACT_R_NO_QUEST);
     }
     if (mode == ACT_CHECK) {
         return act_checked(a);

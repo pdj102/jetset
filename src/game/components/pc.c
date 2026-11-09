@@ -90,7 +90,8 @@ uint16_t pc_xp_needed(uint8_t level) NGE_BANKED
  * Constitution modifier, at least 1 (the base, through the effects: the
  * maximum stops at 255), and current hit points by the same. With mana,
  * maximum and current MP the same way, by 1d4 plus the Intelligence
- * modifier (docs/spells.md, R21)
+ * modifier (docs/spells.md, R21). Described in the help screen
+ * (game/ui/screen_guide_pdata.c)
  */
 static void level_up(nge_entity_id_t id)
 {
@@ -154,7 +155,7 @@ void pc_gain_gold(nge_entity_id_t id, uint16_t amount) NGE_BANKED
     }
     pc_gold += amount;
     nge_event_post(id, EV_GOLD_CHANGED, NGE_EVENT_NONE, 0, 0);
-    pc_gain_xp(id, amount);   /* classic D&D: an XP a gold piece */
+    pc_gain_xp(id, amount);   /* classic D&D: an XP a gold piece; described in the help screen */
 }
 
 void pc_spend_gold(nge_entity_id_t id, uint16_t amount) NGE_BANKED

@@ -168,6 +168,7 @@ static int16_t check_total(nge_entity_id_t actor, uint8_t ability, uint8_t roll)
     return total;
 }
 
+/* The checks below (Wis to find, Dex to disarm and pick) are described in the help screen (game/ui/screen_guide_pdata.c) */
 uint8_t feature_found_by(nge_entity_id_t actor, nge_entity_id_t id, uint8_t roll) NGE_BANKED
 {
     check_feature(id);

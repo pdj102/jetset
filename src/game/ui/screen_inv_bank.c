@@ -555,7 +555,10 @@ static uint8_t move(uint8_t mode, int8_t delta)
     return KEY_STAY;
 }
 
-/* The screen's answer to one key event: an allowed action (ACT_*), SCREEN_INV_BACK, or KEY_STAY */
+/*
+ * The screen's answer to one key event: an allowed action (ACT_*),
+ * SCREEN_INV_BACK, or KEY_STAY. The keys are described in the help screen (game/ui/screen_guide_pdata.c)
+ */
 static uint8_t key(uint8_t mode, nge_key_event_t ev)
 {
     uint8_t c = nge_key_ascii(ev);

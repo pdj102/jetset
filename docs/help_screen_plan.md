@@ -5,7 +5,7 @@ specifies. The spec says what the feature is and why. This file says in
 what order it is built, what changes, and how each step is checked.
 
 Status: in progress. Step 1 built, and its CSpect checks passed
-(2026-11-09).
+(2026-11-09). Step 2 built, and its CSpect checks passed.
 
 ## 1. How the steps work
 

@@ -452,3 +452,36 @@ one-line placeholder body per page.
 - **`?` in play is tested on the PC:** `player_command()` with SYMBOL
   SHIFT + C runs the screen and leaves the player's turn unused. CSpect
   check 6 still covers play's screen coming back with sprites.
+
+Step 2 (2026-11-09): the four pages' text, checked against the code.
+Lines that changed from section 5.2's draft:
+
+- **Commands:**
+  - `move into` also opens a door: "attack; open a door".
+  - `f` also throws ammunition: "fire or throw a missile".
+  - `o` has no levers. It uses shrines, altars and fountains: "use a
+    shrine or fountain".
+  - `p` chooses a key or a lock pick: "unlock: a key or a pick".
+  - `s` finds hidden features: "search for hidden traps".
+- **Screens and prompts:**
+  - In the inventory, exchange is `x`, not `e`: `w r x d u a`, "act on it
+    (bottom line)".
+  - The inventory gets a new line: ENTER does the obvious action ("use,
+    aim, wear or take off", `obvious_action()`).
+  - Choosing an item: "letter", not "a-t", because a list can be longer
+    than the pack's 20.
+  - Spells: `j k` move too.
+  - The targeting cursor takes `hjkl` too, and SPACE chooses as ENTER
+    does.
+  - This help: "arrows h l".
+- **Goal:** as drafted.
+- **Abilities and stats:**
+  - `STATS_MOD()` rounds down, so 9 gives -1 as 8 does: "(score - 10) /
+    2, rounded down. 8-9 -1, 10-11 +0, 12-13 +1."
+  - Wis: "finding hidden traps".
+  - XP: "from kills, and 1 a gold piece" (`pc_gain_gold()` confirmed).
+- **D9's comments** are also beside the inventory's, the spell list's and
+  the cursor's keys, the direction prompts, and the stairs' crown check
+  (`act_stairs.c`), as the pages describe those too.
+- **Memory:** page 105 holds 2.7K. Page 104 and common memory are
+  unchanged.

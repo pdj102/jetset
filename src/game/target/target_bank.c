@@ -70,6 +70,7 @@ static void scroll(const target_t *t)
     }
 }
 
+/* The cursor's keys: described in the help screen (game/ui/screen_guide_pdata.c) */
 uint8_t target_key(target_t *t, nge_key_event_t ev) NGE_BANKED
 {
     int8_t dx;

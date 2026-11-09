@@ -159,6 +159,7 @@ static uint8_t try(spell_screen_t *w)
     return allowed(w, w->spells[w->list.cursor], 1) ? KEY_CHOSEN : KEY_STAY;
 }
 
+/* The list's keys: described in the help screen (game/ui/screen_guide_pdata.c) */
 static uint8_t key(spell_screen_t *w, nge_key_event_t ev)
 {
     uint8_t c = nge_key_ascii(ev);

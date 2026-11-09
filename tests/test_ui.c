@@ -1771,6 +1771,37 @@ int main(void)
           screen_guide_turn(0, '4') == 3);
     CHECK(screen_guide_turn(1, '5') == 1 && screen_guide_turn(1, '0') == 1 && screen_guide_turn(1, '?') == 1 &&
           screen_guide_turn(1, 13) == 1 && screen_guide_turn(1, 'j') == 1);
+    /* The text fits its panel (R11): 29 lines of 40 characters, only INK codes and \n, no trailing spaces */
+    {
+        const unsigned char *t;
+        uint8_t p;
+        int lines;
+        int col;
+        int ok = 1;
+
+        for (p = 0; p < SCREEN_GUIDE_PAGES; p++) {
+            lines = 0;
+            col = 0;
+            for (t = (const unsigned char *)screen_guide_pages[p].text; *t != '\0'; t++) {
+                if (*t == NGE_CTRL_INK) {
+                    t++;
+                    ok = ok && (*t == NGE_INK_WHITE || *t == NGE_INK_YELLOW || *t == NGE_INK_CYAN);
+                } else if (*t == '\n') {
+                    ok = ok && (col == 0 || t[-1] != ' ');
+                    lines++;
+                    col = 0;
+                } else {
+                    ok = ok && *t >= ' ' && *t < 127;
+                    col++;
+                    ok = ok && col <= 40;
+                }
+            }
+            ok = ok && (col == 0 || t[-1] != ' ');
+            lines += col != 0;   /* the last line, with no \n */
+            ok = ok && lines <= 29 && lines > 1;
+        }
+        CHECK(ok);
+    }
     /* ? (SYMBOL SHIFT + C) in play: page 1, no turn used, the main screen untouched */
     memcpy(main_before, test_layer2_buf[0], sizeof(main_before));
     fresh();
@@ -1782,7 +1813,8 @@ int main(void)
     CHECK(memcmp(main_before, test_layer2_buf[0], sizeof(main_before)) == 0);
     CHECK(strstr(OVER_ROW(0), " Commands ") != NULL && INK(0, 16) == L2_YELLOW);
     CHECK(strcmp(seen_cols(1, 0, 37, 39), "1/4") == 0);
-    CHECK(starts(LIST_ROW(0), "Keys in play") && INK(2, 0) == L2_YELLOW);
+    CHECK(starts(LIST_ROW(0), "Moving") && INK(2, 0) == L2_YELLOW);
+    CHECK(starts(LIST_ROW(1), " arrows/hjkl  move;") && INK(3, 1) == L2_CYAN && INK(3, 14) == L2_WHITE);
     CHECK(strcmp(HELP(), "Left/right:page 1-4:go to SPACE:back    ") == 0);
     CHECK(seen[1][0][0].paper == SCREEN_PAPER && seen[1][30][39].paper == SCREEN_PAPER);   /* rows 0-30 covered */
     /* Right: page 2, the last page's text cleared */
@@ -1792,7 +1824,7 @@ int main(void)
     screen_guide_run();
     CHECK(RAN_AND_CLOSED());
     CHECK(strstr(OVER_ROW(0), " Screens and prompts ") != NULL && strcmp(seen_cols(1, 0, 37, 39), "2/4") == 0);
-    CHECK(strcmp(LIST_ROW(0), "Keys in screens and prompts             ") == 0);
+    CHECK(strcmp(LIST_ROW(0), "Inventory (i)                           ") == 0);
     /* Right, 4: page 4. A key that isn't the screen's (a) changes nothing */
     fresh();
     press(EV(NGE_KEY_RIGHT));
@@ -1802,7 +1834,7 @@ int main(void)
     screen_guide_run();
     CHECK(RAN_AND_CLOSED());
     CHECK(strstr(OVER_ROW(0), " Abilities and stats ") != NULL && strcmp(seen_cols(1, 0, 37, 39), "4/4") == 0);
-    CHECK(starts(LIST_ROW(0), "What the abilities do"));
+    CHECK(starts(LIST_ROW(0), "Abilities"));
     /* Left from page 1: page 4; then 3 */
     fresh();
     press(EV(NGE_KEY_LEFT));

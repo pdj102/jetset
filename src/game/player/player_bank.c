@@ -539,6 +539,7 @@ static void stairs(uint8_t action)
     player_act(action, &a);
 }
 
+/* The keys in play: described in the help screen (game/ui/screen_guide_pdata.c) */
 void player_command(nge_key_event_t ev) NGE_BANKED
 {
     int8_t dx;
@@ -742,6 +743,7 @@ typedef struct player_prompt {
     const char *help;
 } player_prompt_t;
 
+/* The direction prompts, and their keys: described in the help screen (game/ui/screen_guide_pdata.c) */
 static const player_prompt_t prompts[PLAYER_PROMPT_COUNT] = {
     [PLAYER_PROMPT_CLOSE] = { "Close in which direction?", "Direction: close   Other keys: back" },
     [PLAYER_PROMPT_UNLOCK] = { "Unlock in which direction?", "Direction: unlock   Other keys: back" },

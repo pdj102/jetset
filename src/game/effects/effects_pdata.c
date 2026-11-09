@@ -5,6 +5,8 @@
  * hand to copy a row's statuses and modifiers (EFFECTS_PDATA_PAGE). Tables
  * are here, not in page 120, whose addresses carry the page in their high
  * bits. See "Page data" in docs/memory_map.md.
+ *
+ * The player's saves (.save) are described in the help screen (game/ui/screen_guide_pdata.c).
  */
 #ifdef __SDCC
 #pragma constseg PAGE_121
