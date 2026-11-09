@@ -51,7 +51,7 @@ static uint16_t fitting_slots(act_t *a, nge_entity_id_t actor, nge_entity_id_t i
         act_fail(a, ACT_R_CANT_EQUIP);
         return 0;
     }
-    slots &= inv_slots[actor];
+    slots &= inv_slots_of(actor);
     if (want != SLOT_NONE) {
         slots &= SLOT_BIT(want);
     }
@@ -165,7 +165,7 @@ uint8_t act_exchange(act_t *a, uint8_t mode) NGE_BANKED
         }
     }
     /* One for one needs no room (R41); two for one needs a free place (R45): target, the second */
-    if (n == 2 && inv_count(actor) >= inv_capacity[actor]) {
+    if (n == 2 && inv_count(actor) >= inv_capacity_of(actor)) {
         return act_fail(a, ACT_R_FULL);
     }
     a->slot = slot;
@@ -210,7 +210,7 @@ uint8_t act_unequip(act_t *a, uint8_t mode) NGE_BANKED
     if (inv_cursed(item)) {
         return act_fail(a, ACT_R_CURSED);
     }
-    if (inv_count(actor) >= inv_capacity[actor]) {
+    if (inv_count(actor) >= inv_capacity_of(actor)) {
         return act_fail(a, ACT_R_FULL);
     }
     if (mode == ACT_CHECK) {

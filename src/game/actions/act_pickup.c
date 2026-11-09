@@ -80,7 +80,7 @@ uint8_t act_pickup(act_t *a, uint8_t mode) NGE_BANKED
     }
     a->target = item;
     stack = find_stack(actor, item);
-    if (stack == NGE_ENTITY_INVALID && inv_count(actor) >= inv_capacity[actor]) {
+    if (stack == NGE_ENTITY_INVALID && inv_count(actor) >= inv_capacity_of(actor)) {
         return act_fail(a, ACT_R_FULL);
     }
     if (mode == ACT_CHECK) {

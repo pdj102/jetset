@@ -7,7 +7,7 @@
 #include "ecs/systems/nge_render.h"
 #include "ecs/systems/nge_timer.h"
 
-#include "game/components/inventory.h"
+#include "game/components/inventory_internal.h"
 #include "game/components/item.h"
 #include "game/gen/gen.h"
 
@@ -64,6 +64,10 @@ int main(void)
     CHECK(INV_HAS(player) && inv_capacity[player] == 20 && inv_slots[player] == SLOTS_HUMANOID);
     CHECK(INV_HAS(goblin) && inv_capacity[goblin] == 4 && inv_slots[goblin] == SLOT_BIT(SLOT_WEAPON));
     CHECK(!INV_HAS(rat) && !ITEM_IS(rat));
+    /* The getters for other pages: the tables, and 0 without an inventory */
+    CHECK(inv_capacity_of(player) == 20 && inv_slots_of(player) == SLOTS_HUMANOID);
+    CHECK(inv_capacity_of(goblin) == 4 && inv_slots_of(goblin) == SLOT_BIT(SLOT_WEAPON));
+    CHECK(inv_capacity_of(rat) == 0 && inv_slots_of(rat) == 0);
     a = gen_item(IT_SWORD, AREA);
     CHECK(ITEM_IS(a) && item_slot[a] == SLOT_NONE && !INV_HAS(a));
 

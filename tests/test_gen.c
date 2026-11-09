@@ -11,6 +11,7 @@
 #include "ecs/systems/nge_render_internal.h"
 #include "ecs/systems/nge_timer.h"
 
+#include "game/components/inventory_internal.h"
 #include "game/components/attack_internal.h"
 #include "game/attrs/attrs_internal.h"
 #include "game/ai/ai_internal.h"

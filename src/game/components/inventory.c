@@ -1,13 +1,14 @@
 /*
  * The inventory component's functions: banked in page 110 with the shared
- * generator helpers; its tables are in slot 0 (inventory_cdata.c).
+ * generator helpers; its tables are page data in page 111
+ * (inventory_pdata.c), in slot 7 while this code runs.
  */
 #ifdef __SDCC
 #pragma codeseg PAGE_110
 #pragma constseg PAGE_110
 #endif
 
-#include "game/components/inventory.h"
+#include "game/components/inventory_internal.h"
 
 #include "core/nge_util.h"
 #include "ecs/components/nge_location.h"
@@ -42,6 +43,20 @@ void inv_add(nge_entity_id_t id, uint8_t capacity, uint16_t slots) NGE_BANKED
     inv_capacity[id] = capacity;
     inv_slots[id] = slots;
     NGE_ENTITY_ADD_COMPONENT(id, COMPONENT_INVENTORY);
+}
+
+uint8_t inv_capacity_of(nge_entity_id_t id) NGE_BANKED
+{
+    check_entity(id);
+
+    return INV_HAS(id) ? inv_capacity[id] : 0;
+}
+
+uint16_t inv_slots_of(nge_entity_id_t id) NGE_BANKED
+{
+    check_entity(id);
+
+    return INV_HAS(id) ? inv_slots[id] : 0;
 }
 
 uint8_t inv_count(nge_entity_id_t holder) NGE_BANKED

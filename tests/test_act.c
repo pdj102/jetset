@@ -19,7 +19,7 @@
 #include "game/components/attack.h"
 #include "game/attrs/attrs.h"
 #include "game/components/health.h"
-#include "game/components/inventory.h"
+#include "game/components/inventory_internal.h"
 #include "game/components/feature.h"
 #include "game/components/item.h"
 #include "game/components/mana.h"

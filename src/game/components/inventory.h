@@ -12,14 +12,16 @@
  * components/item.h). A holder's inventory is the items it owns that
  * aren't equipped, in no particular order (ID order when walked with
  * inv_next()); its equipment is the items it owns in a slot. A holder can
- * stow up to inv_capacity items; equipped items don't count. inv_slots is
- * the mask of equipment slots it has (SLOT_BIT()).
+ * stow up to inv_capacity_of() items; equipped items don't count.
+ * inv_slots_of() is the mask of equipment slots it has (SLOT_BIT()).
  *
  * inv_stow() and inv_place() move an item without checking the rules: the
  * actions (game/actions/act.h) check them first, asking inv_hands_taken()
  * and inv_cursed() for the rules that depend on an item's kind.
  *
- * The tables are in slot 0 (inventory_cdata.c). Banking: every function is
+ * The tables are page data in page 111 (inventory_pdata.c,
+ * inventory_internal.h): read on commands and AI turns, not every frame,
+ * so out of slot 0 (docs/slot0_tables.md). Banking: every function is
  * banked (NGE_BANKED, page 110, with the shared generator helpers): they
  * run on commands and actions, not every frame.
  */
@@ -31,10 +33,6 @@
 #include "ecs/nge_owner.h"
 #include "game/components/components.h"
 
-/* Tables in slot 0 (inventory_cdata.c): meaningful only with COMPONENT_INVENTORY */
-extern uint8_t  inv_capacity[NGE_ENTITY_MAX];   /**< Items it can stow, 1 or more. */
-extern uint16_t inv_slots[NGE_ENTITY_MAX];      /**< The equipment slots it has (SLOT_BIT() mask). */
-
 /** The entity has the inventory component. */
 #define INV_HAS(id)  NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_INVENTORY)
 
@@ -44,6 +42,12 @@ extern uint16_t inv_slots[NGE_ENTITY_MAX];      /**< The equipment slots it has 
  * @param slots The equipment slots it has, a mask of SLOT_BIT(); 0 for none.
  */
 void inv_add(nge_entity_id_t id, uint8_t capacity, uint16_t slots) NGE_BANKED;
+
+/** @brief The items id can stow, 1 or more; 0 if it has no inventory. */
+uint8_t inv_capacity_of(nge_entity_id_t id) NGE_BANKED;
+
+/** @brief The equipment slots id has (SLOT_BIT() mask); 0 if it has no inventory. */
+uint16_t inv_slots_of(nge_entity_id_t id) NGE_BANKED;
 
 /** @brief The number of items holder has stowed (alive, owned by it, not equipped). */
 uint8_t inv_count(nge_entity_id_t holder) NGE_BANKED;

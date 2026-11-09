@@ -124,14 +124,14 @@ static const help_key_t help_keys[] = {
 
 /* ---- The items ---- */
 
-/* An item in the pack belongs in list (LIST_STOWED, LIST_EQUIPPABLE or LIST_USABLE) */
-static uint8_t listed(uint8_t list, nge_entity_id_t id)
+/* An item in the pack belongs in list (LIST_STOWED, LIST_EQUIPPABLE or LIST_USABLE); slots: the player's */
+static uint8_t listed(uint8_t list, nge_entity_id_t id, uint16_t slots)
 {
     uint8_t subclass;
 
     switch (list) {
     case LIST_EQUIPPABLE:
-        return (gen_item_fits(kind_index[id]) & inv_slots[actor_player]) != 0;
+        return (gen_item_fits(kind_index[id]) & slots) != 0;
     case LIST_USABLE:
         return GEN_HOOK_EF(gen_hook_of(id, GEN_HOOK_USE)) != EF_NONE;
     case LIST_AIMABLE:
@@ -148,9 +148,10 @@ static uint8_t listed(uint8_t list, nge_entity_id_t id)
 static uint8_t collect_stowed(uint8_t list, uint8_t n)
 {
     nge_entity_id_t id = NGE_ENTITY_INVALID;
+    uint16_t slots = inv_slots_of(actor_player);   /* once, not per item: a banked call */
 
     while (n < SCREEN_INV_MAX && (id = inv_next(actor_player, id)) != NGE_ENTITY_INVALID) {
-        if (listed(list, id)) {
+        if (listed(list, id, slots)) {
             screen_inv_ids[n++] = id;
         }
     }
@@ -197,7 +198,7 @@ static nge_entity_id_t selected(void)
 /* The slots an item fits that the player has */
 static uint16_t fitting(nge_entity_id_t id)
 {
-    return gen_item_fits(kind_index[id]) & inv_slots[actor_player];
+    return gen_item_fits(kind_index[id]) & inv_slots_of(actor_player);
 }
 
 /*
@@ -390,7 +391,7 @@ static void draw_pack(void)
     nge_puts("Pack ", s);
     nge_putu16w(inv_count(actor_player), 2, ' ', s);
     nge_putc('/', s);
-    nge_putu16w(inv_capacity[actor_player], 2, ' ', s);
+    nge_putu16w(inv_capacity_of(actor_player), 2, ' ', s);
 }
 
 /* The help line: a choosing mode's own, or the actions allowed for the selected item */

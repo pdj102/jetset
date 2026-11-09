@@ -77,6 +77,7 @@ ai_can_t ai_can(nge_entity_id_t id) NGE_BANKED
     ai_can_t can = 0;
     uint8_t intel = 0;   /* no stats: none of the AI's rules that need a mind */
     uint8_t rooted = 0;  /* ...and no statuses */
+    uint16_t slots;
 
     nge_util_assert(id < NGE_ENTITY_MAX && NGE_ENTITY_IS_ALIVE(id));
 
@@ -89,14 +90,15 @@ ai_can_t ai_can(nge_entity_id_t id) NGE_BANKED
     }
     if (INV_HAS(id)) {
         can |= AI_CAN_PICKUP;
-        if (inv_slots[id] != 0) {
+        slots = inv_slots_of(id);   /* once: a banked call */
+        if (slots != 0) {
             can |= AI_CAN_EQUIP;
         }
         if (intel >= AI_INT_USE) {
             can |= AI_CAN_USE;
         }
         /* The slot first: inv_equipped() looks at every entity, and few kinds have one */
-        if ((inv_slots[id] & SLOT_BIT(SLOT_AMMO)) && inv_equipped(id, SLOT_AMMO) != NGE_ENTITY_INVALID) {
+        if ((slots & SLOT_BIT(SLOT_AMMO)) && inv_equipped(id, SLOT_AMMO) != NGE_ENTITY_INVALID) {
             can |= AI_CAN_RANGED;
         }
     }
