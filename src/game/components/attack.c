@@ -1,13 +1,14 @@
 /*
  * The attack component's functions: banked in page 110 with the other
- * component functions; its tables are in slot 0 (attack_cdata.c).
+ * component functions; its tables are page data in page 111
+ * (attack_pdata.c), in slot 7 while this code runs.
  */
 #ifdef __SDCC
 #pragma codeseg PAGE_110
 #pragma constseg PAGE_110
 #endif
 
-#include "game/components/attack.h"
+#include "game/components/attack_internal.h"
 
 #include <stdlib.h>
 
@@ -45,6 +46,23 @@ void attack_remove(nge_entity_id_t id, uint8_t use) NGE_BANKED
     check_entity(id, use);
 
     NGE_ENTITY_REMOVE_COMPONENT(id, ATTACK_COMPONENT(use));
+}
+
+void attack_get(nge_entity_id_t id, uint8_t use, attack_kind_t *out) NGE_BANKED
+{
+    uint16_t i;
+
+    check_entity(id, use);
+    nge_util_assert(ATTACK_HAS(id, use));
+
+    /* One offset into each [use][entity] table, read as bytes: [use][id] six times costs zsdcc about 250 bytes */
+    i = (uint16_t)(use == ATTACK_MELEE ? 0 : NGE_ENTITY_MAX) + id;
+    out->to_hit = (int8_t)((const uint8_t *)attack_to_hit)[i];
+    out->dice = ((const uint8_t *)attack_dice)[i];
+    out->sides = ((const uint8_t *)attack_sides)[i];
+    out->bonus = (int8_t)((const uint8_t *)attack_bonus)[i];
+    out->type = ((const uint8_t *)attack_type)[i];
+    out->range = ((const uint8_t *)attack_range)[i];
 }
 
 uint8_t attack_hits(nge_entity_id_t id, uint8_t use, nge_entity_id_t target, uint8_t roll, int8_t to_hit) NGE_BANKED

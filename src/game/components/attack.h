@@ -17,9 +17,11 @@
  * health.h); a roll of 20 always hits and a 1 always misses. A hit does
  * dice d sides + bonus damage of its type, at least 1.
  *
- * The tables are in slot 0 (attack_cdata.c), one row per use. Banking: the
- * functions are banked (NGE_BANKED, page 110, with the other component
- * functions).
+ * The tables are page data in page 111 (attack_pdata.c, attack_internal.h),
+ * one row per use: read at most once a turn, so out of slot 0
+ * (docs/slot0_tables.md). Code in other pages reads an attack with
+ * attack_get(). Banking: the functions are banked (NGE_BANKED, page 110,
+ * with the other component functions).
  */
 
 #include <stdint.h>
@@ -53,14 +55,6 @@ typedef struct attack_kind {
 /** A kind record's attack part gives the component: it has damage dice. */
 #define ATTACK_KIND_HAS(k)  ((k)->dice != 0)
 
-/* Tables in slot 0 (attack_cdata.c): [use][entity], meaningful only with the use's component */
-extern int8_t  attack_to_hit[ATTACK_USE_COUNT][NGE_ENTITY_MAX];
-extern uint8_t attack_dice[ATTACK_USE_COUNT][NGE_ENTITY_MAX];
-extern uint8_t attack_sides[ATTACK_USE_COUNT][NGE_ENTITY_MAX];
-extern int8_t  attack_bonus[ATTACK_USE_COUNT][NGE_ENTITY_MAX];
-extern uint8_t attack_type[ATTACK_USE_COUNT][NGE_ENTITY_MAX];
-extern uint8_t attack_range[ATTACK_USE_COUNT][NGE_ENTITY_MAX];
-
 /** The entity has an attack of this use. */
 #define ATTACK_HAS(id, use)  NGE_ENTITY_HAS_COMPONENT(id, ATTACK_COMPONENT(use))
 
@@ -74,6 +68,13 @@ void attack_add(nge_entity_id_t id, uint8_t use, const attack_kind_t *k) NGE_BAN
 
 /** @brief Remove the attack of this use. */
 void attack_remove(nge_entity_id_t id, uint8_t use) NGE_BANKED;
+
+/**
+ * @brief Copy id's attack of this use into out; id has the use's
+ *        component (asserted).
+ * @param out In common memory (on the caller's stack): the call maps page 110.
+ */
+void attack_get(nge_entity_id_t id, uint8_t use, attack_kind_t *out) NGE_BANKED;
 
 /**
  * @brief Does a d20 roll (1-20) with id's attack of this use hit target

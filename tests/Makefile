@@ -49,7 +49,7 @@ GEN_GAME_SRCS := $(addprefix $(GAMEDIR)/,gen/gen.c gen/gen_shared_bank.c \
                  components/item.c components/item_cdata.c components/inventory.c \
                  components/inventory_cdata.c components/health.c components/health_cdata.c \
                  components/mana.c components/mana_cdata.c components/pc.c components/pc_cdata.c \
-                 components/attack.c components/attack_cdata.c \
+                 components/attack.c components/attack_pdata.c \
                  ai/ai.c ai/ai_bank.c ai/ai_brains.c ai/ai_pdata.c \
                  components/feature.c components/feature_cdata.c \
                  gen/gen_feature_bank.c gen/gen_feature_pdata.c \

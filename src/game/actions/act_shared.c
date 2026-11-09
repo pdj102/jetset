@@ -32,6 +32,7 @@
 uint8_t act_strike(act_t *a, nge_entity_id_t attacker, uint8_t use, nge_entity_id_t hooks, int8_t to_hit,
                    int8_t bonus)
 {
+    attack_kind_t k;
     nge_entity_id_t actor = a->actor;
     nge_entity_id_t target = a->target;
     nge_entity_id_t item = a->item;
@@ -50,7 +51,8 @@ uint8_t act_strike(act_t *a, nge_entity_id_t attacker, uint8_t use, nge_entity_i
 
     /* Apply: the hit, then the damage (its events follow), then the hit's effect */
     nge_event_post(target, EV_HIT, actor, roll, item);
-    a->damage = attack_type[use][attacker];
+    attack_get(attacker, use, &k);
+    a->damage = k.type;
     a->amount = health_damage(target, actor, damage, a->damage);
     hook = gen_hook_of(hooks, GEN_HOOK_HIT);
     if (GEN_HOOK_EF(hook) != EF_NONE) {

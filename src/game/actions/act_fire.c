@@ -72,7 +72,8 @@ uint8_t act_fire(act_t *a, uint8_t mode) NGE_BANKED
     }
     item = (attacker != actor) ? attacker : NGE_ENTITY_INVALID;
     a->item = item;
-    a->amount = attack_range[ATTACK_RANGED][attacker];
+    attack_get(attacker, ATTACK_RANGED, &ammo);   /* the launcher's (or the thrown item's): ammo is set again below */
+    a->amount = ammo.range;
 
     /* 2. Validate: a line to something that can be hit */
     reason = act_line(a, a->amount, ACT_LINE_BOLT);   /* a shot flies (D29) */

@@ -2,11 +2,12 @@
 #include "test.h"
 
 #include <stdlib.h>
+#include <string.h>
 
 #include "ecs/nge_entity.h"
 #include "ecs/nge_owner.h"
 
-#include "game/components/attack.h"
+#include "game/components/attack_internal.h"
 #include "game/components/health.h"
 #include "game/components/inventory.h"
 #include "game/components/item.h"
@@ -78,6 +79,13 @@ int main(void)
           attack_sides[ATTACK_RANGED][id] == 4 && attack_bonus[ATTACK_RANGED][id] == -1 &&
           attack_type[ATTACK_RANGED][id] == DMG_PIERCE && attack_range[ATTACK_RANGED][id] == 4);
     CHECK(attack_to_hit[ATTACK_MELEE][id] == 1 && attack_range[ATTACK_MELEE][id] == 1);   /* melee untouched */
+    /* attack_get(): what attack_add() stored, for each use */
+    memset(&b, 0xAA, sizeof(b));
+    attack_get(id, ATTACK_RANGED, &b);
+    CHECK(b.to_hit == 3 && b.dice == 2 && b.sides == 4 && b.bonus == -1 && b.type == DMG_PIERCE && b.range == 4);
+    memset(&b, 0xAA, sizeof(b));
+    attack_get(id, ATTACK_MELEE, &b);
+    CHECK(b.to_hit == 1 && b.dice == 1 && b.sides == 6 && b.bonus == 0 && b.type == DMG_PIERCE && b.range == 1);
     target = nge_entity_create();
     health_add(target, &h);
     health_ac[target] = 10;

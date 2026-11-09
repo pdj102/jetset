@@ -231,7 +231,7 @@ static void draw_attributes(NGE_FILE *s)
 static void draw_attack(NGE_FILE *s)
 {
     nge_entity_id_t attacker = attack_weapon(actor_player);
-    int8_t bonus;
+    attack_kind_t k;
 
     if (attacker == NGE_ENTITY_INVALID) {
         attacker = actor_player;
@@ -241,17 +241,17 @@ static void draw_attack(NGE_FILE *s)
         nge_puts("none", s);
         return;
     }
-    put_signed(attack_to_hit[ATTACK_MELEE][attacker], s);
+    attack_get(attacker, ATTACK_MELEE, &k);
+    put_signed(k.to_hit, s);
     nge_puts(" to hit  ", s);
-    nge_putu16(attack_dice[ATTACK_MELEE][attacker], s);
+    nge_putu16(k.dice, s);
     nge_putc('d', s);
-    nge_putu16(attack_sides[ATTACK_MELEE][attacker], s);
-    bonus = attack_bonus[ATTACK_MELEE][attacker];
-    if (bonus != 0) {
-        put_signed(bonus, s);
+    nge_putu16(k.sides, s);
+    if (k.bonus != 0) {
+        put_signed(k.bonus, s);
     }
     nge_putc(' ', s);
-    nge_puts(dmg_words[attack_type[ATTACK_MELEE][attacker]], s);
+    nge_puts(dmg_words[k.type], s);
 }
 
 /* One row of the defences grid: a * where the value has the type, cyan or red (worse) where only effects give it */

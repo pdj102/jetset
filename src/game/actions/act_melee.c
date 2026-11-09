@@ -17,6 +17,7 @@
 
 uint8_t act_melee(act_t *a, uint8_t mode) NGE_BANKED
 {
+    attack_kind_t k;
     nge_entity_id_t actor = a->actor;
     nge_entity_id_t target = a->target;
     nge_entity_id_t weapon;
@@ -60,7 +61,8 @@ uint8_t act_melee(act_t *a, uint8_t mode) NGE_BANKED
     }
     tx = NGE_LOCATION_X(target);
     ty = NGE_LOCATION_Y(target);
-    if ((tx == x && ty == y) || !nge_map_within(x, y, tx, ty, attack_range[ATTACK_MELEE][attacker])) {
+    attack_get(attacker, ATTACK_MELEE, &k);   /* its reach */
+    if ((tx == x && ty == y) || !nge_map_within(x, y, tx, ty, k.range)) {
         return act_fail(a, ACT_R_OUT_OF_RANGE);
     }
     if (mode == ACT_CHECK) {
