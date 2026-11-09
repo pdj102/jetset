@@ -4,6 +4,7 @@
 #include "ecs/nge_entity.h"
 #include "event/nge_event.h"
 
+#include "game/attrs/attrs_internal.h"
 #include "game/components/mana.h"
 #include "game/events.h"
 

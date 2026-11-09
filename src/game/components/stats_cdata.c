@@ -9,5 +9,3 @@
 uint8_t stats_speed[NGE_ENTITY_MAX];
 uint8_t stats_ability[ABIL_COUNT][NGE_ENTITY_MAX];
 uint8_t stats_status[NGE_ENTITY_MAX];
-uint8_t stats_speed_base[NGE_ENTITY_MAX];
-uint8_t stats_ability_base[ABIL_COUNT][NGE_ENTITY_MAX];

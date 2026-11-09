@@ -53,7 +53,7 @@ GEN_GAME_SRCS := $(addprefix $(GAMEDIR)/,gen/gen.c gen/gen_shared_bank.c \
                  ai/ai.c ai/ai_bank.c ai/ai_brains.c ai/ai_pdata.c \
                  components/feature.c components/feature_cdata.c \
                  gen/gen_feature_bank.c gen/gen_feature_pdata.c \
-                 effects/effects_bank.c effects/effects_pdata.c attrs/attrs_bank.c \
+                 effects/effects_bank.c effects/effects_pdata.c attrs/attrs_bank.c attrs/attrs_pdata.c \
                  spells/spells_bank.c spells/spells_pdata.c)
 LEVEL_GAME_SRCS := $(addprefix $(GAMEDIR)/,level/level.c level/level_bank.c level/level_gen.c level/level_deco.c \
                    level/level_travel.c level/level_pdata.c quest/quest.c quest/quest_bank.c)

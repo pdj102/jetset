@@ -135,12 +135,17 @@ order.
 | Base | `_base` | `health_ac_base`, `health_hp_max_base`, `stats_ability_base[a]` |
 | Current | The pool's name | `health_hp` |
 
-Bases are read-only outside their component and the attributes module.
+Values are in slot 0 with their component. Bases are the attributes module's page
+data, in page 139 (`game/attrs/attrs_pdata.c`, [slot0_tables.md](slot0_tables.md)):
+only that module reads them directly. Other code reads one with `effects_base(id,
+attr)` (the player character screen, levelling up), and the components' add
+functions set them with `effects_put_base(id, attr, value)`.
 
 ### 4.3 Setting and recomputing
 
-- **At creation,** `health_add()` and `stats_add()` set base and value from the kind
-  values. There are no modifiers yet, so no recompute is needed.
+- **At creation,** `health_add()`, `stats_add()` and `mana_add()` set each value from
+  the kind values, and each base through `effects_put_base()`, which stores without
+  recomputing. There are no modifiers yet, so no recompute is needed.
 - **`effects_recompute()`** calls `derive()`, which starts from each base (0 for an
   attribute the entity hasn't) and adds the worn effects of equipped items and the
   entity's active effects, copying each one's statuses and modifiers from the
@@ -168,8 +173,10 @@ The attributes module (`game/attrs/attrs_bank.c`, page 138) holds:
   maximum, and the timer period.
 
 Its functions keep the `effects_` prefix they had in the effects module, so their
-callers didn't change. Page 139 is unused: page 121 is mapped into slot 7 while
-`derive()` copies a definition's row, and never across a banked call.
+callers didn't change. Page 139 holds the bases (`attrs_pdata.c`), in slot 7 while the
+module runs. `mods_of()` maps page 121 into slot 7 over them while `derive()` copies a
+definition's row, and maps them back, never across a banked call: no base can be read
+between the two maps.
 
 ### 4.5 Statuses and conditions
 

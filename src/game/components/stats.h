@@ -83,10 +83,6 @@ extern uint8_t stats_speed[NGE_ENTITY_MAX];                 /**< Ticks between t
 extern uint8_t stats_ability[ABIL_COUNT][NGE_ENTITY_MAX];   /**< Scores by ABIL_*, 1-30. Derived (ATTR_ABILITY()). */
 extern uint8_t stats_status[NGE_ENTITY_MAX];                /**< STATUS_* granted by its effects. Derived. */
 
-/* The attributes' bases (attrs.h): read-only outside this component and the effects */
-extern uint8_t stats_speed_base[NGE_ENTITY_MAX];
-extern uint8_t stats_ability_base[ABIL_COUNT][NGE_ENTITY_MAX];
-
 /** Creature id (with stats) has any of statuses s. */
 #define STATUS_HAS(id, s)  ((stats_status[id] & (s)) != 0)
 

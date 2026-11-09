@@ -10,6 +10,7 @@
 #include "game/components/stats.h"
 
 #include "core/nge_util.h"
+#include "game/attrs/attrs.h"
 
 static void check_entity(nge_entity_id_t id)
 {
@@ -27,15 +28,15 @@ void stats_add(nge_entity_id_t id, const stats_kind_t *k) NGE_BANKED
     nge_util_assert(k->speed != 0);
 
     stats_speed[id] = k->speed;
-    stats_speed_base[id] = k->speed;
+    stats_status[id] = 0;
+    NGE_ENTITY_ADD_COMPONENT(id, COMPONENT_STATS);   /* first: effects_put_base() asserts it */
+    effects_put_base(id, ATTR_SPEED, k->speed);
     for (a = 0; a < ABIL_COUNT; a++) {
         score = k->ability[a];
         nge_util_assert(score >= STATS_ABILITY_MIN && score <= STATS_ABILITY_MAX);
         stats_ability[a][id] = score;
-        stats_ability_base[a][id] = score;
+        effects_put_base(id, ATTR_ABILITY(a), score);
     }
-    stats_status[id] = 0;
-    NGE_ENTITY_ADD_COMPONENT(id, COMPONENT_STATS);
 }
 
 void stats_remove(nge_entity_id_t id) NGE_BANKED

@@ -103,7 +103,7 @@ static void level_up(nge_entity_id_t id)
     if (gain < 1) {
         gain = 1;
     }
-    hp_max = (uint16_t)(health_hp_max_base[id] + gain);
+    hp_max = (uint16_t)(effects_base(id, ATTR_HP_MAX) + gain);
     effects_set_base(id, ATTR_HP_MAX, hp_max > 255 ? 255 : (uint8_t)hp_max);
     health_heal(id, (uint8_t)gain);   /* up to the new maximum: posts EV_HEALED */
     if (MANA_IS(id)) {
@@ -111,7 +111,7 @@ static void level_up(nge_entity_id_t id)
         if (gain < 1) {
             gain = 1;
         }
-        mp_max = (uint16_t)(mana_mp_max_base[id] + gain);
+        mp_max = (uint16_t)(effects_base(id, ATTR_MP_MAX) + gain);
         effects_set_base(id, ATTR_MP_MAX, mp_max > 255 ? 255 : (uint8_t)mp_max);
         mana_restore(id, (uint8_t)gain);   /* up to the new maximum: posts EV_MANA_RESTORED */
     }

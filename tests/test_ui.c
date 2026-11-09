@@ -21,6 +21,7 @@
 
 #include "data/tile_data.h"
 
+#include "game/attrs/attrs_internal.h"
 #include "game/components/attack.h"
 #include "game/components/health.h"
 #include "game/components/feature.h"

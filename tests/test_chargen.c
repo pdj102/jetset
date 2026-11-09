@@ -9,6 +9,7 @@
 #include "map/nge_map.h"
 
 #include "game/chargen/chargen.h"
+#include "game/attrs/attrs_internal.h"
 #include "game/components/health.h"
 #include "game/components/inventory.h"
 #include "game/components/item.h"

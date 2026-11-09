@@ -14,7 +14,8 @@
  *   kind value  constant, in its kind record (health_kind_t.hp_max):
  *               sets the base when the entity is created
  *   base        changed only for good, by effects_set_base() (a potion
- *               of vitality): health_hp_max_base
+ *               of vitality): health_hp_max_base, in this module's
+ *               page 139; other code reads it with effects_base()
  *   value       base + the modifiers of equipped items' worn effects and
  *               of active effects, clamped: health_hp_max. The one rules
  *               read; only effects_recompute() writes it, and it is recomputed whenever a source changes
@@ -25,12 +26,15 @@
  * within the value. A lower maximum takes it down; a higher one doesn't
  * heal.
  *
- * The tables live in the component each attribute belongs to, meaningful
- * only for an entity with that component; this file numbers them (ATTR_*).
- * The components set the bases and values from the kind values
- * (health_add(), stats_add()); the attributes module does the rest
- * (attrs_bank.c), finding each attribute's base table through its own
- * table (attrs_internal.h). It reads each source's statuses and modifiers
+ * The value tables live in slot 0 with the component each attribute
+ * belongs to, meaningful only for an entity with that component; this
+ * file numbers them (ATTR_*). The bases are read every turn only here, so
+ * they are this module's page data (attrs_pdata.c, page 139;
+ * docs/slot0_tables.md). The components set the values from the kind
+ * values and the bases through effects_put_base() (health_add(),
+ * stats_add()); the attributes module does the rest (attrs_bank.c),
+ * finding each attribute's base table through its own table
+ * (attrs_internal.h). It reads each source's statuses and modifiers
  * from the effect definitions (game/effects/effects_defs.h), mapping their
  * page in by hand: an equipped item's worn hook (game/gen/gen.h) and each
  * active effect (ecs/systems/nge_effect.h).
@@ -38,9 +42,10 @@
  * Its functions keep the effects_ prefix they had when derivation was part
  * of the effects module, so their callers didn't change.
  *
- * Banking: the functions are banked (NGE_BANKED, page 138; page 139 is
- * unused, as page 121 is mapped into slot 7 while they copy a definition).
- * Don't call them while game code has its own page mapped in slot 6 or 7.
+ * Banking: the functions are banked (NGE_BANKED, page 138, with the bases
+ * in page 139; page 121 is mapped into slot 7 over them while they copy a
+ * definition, and back). Don't call them while game code has its own page
+ * mapped in slot 6 or 7.
  */
 
 #include <stdint.h>
@@ -88,5 +93,15 @@ void effects_set_base(nge_entity_id_t id, uint8_t attr, uint8_t value) NGE_BANKE
 
 /** @brief Add amount (maybe negative) to attribute attr's base, kept within 0-255, then recompute (as effects_set_base()). */
 void effects_raise_base(nge_entity_id_t id, uint8_t attr, int8_t amount) NGE_BANKED;
+
+/** @brief Attribute attr's base for id, which has the attribute's component (asserted). */
+uint8_t effects_base(nge_entity_id_t id, uint8_t attr) NGE_BANKED;
+
+/**
+ * @brief Store attribute attr's base for id without recomputing: for the
+ *        components' add functions, which set the values themselves. id
+ *        is in use and has the attribute's component (asserted).
+ */
+void effects_put_base(nge_entity_id_t id, uint8_t attr, uint8_t value) NGE_BANKED;
 
 #endif

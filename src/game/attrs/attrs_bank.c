@@ -1,7 +1,8 @@
 /*
  * The attributes module, banked in page 138 (see attrs.h): deriving each
- * entity's attribute values and statuses from its bases and the modifiers
- * of its sources, clamped and stored in its components' tables (slot 0).
+ * entity's attribute values and statuses from its bases (page 139,
+ * attrs_pdata.c, in slot 7 while this code runs) and the modifiers of its
+ * sources, clamped and stored in its components' tables (slot 0).
  *
  * A source's statuses and modifiers are in the effect definitions in page
  * 121 (game/effects/effects_defs.h). mods_of() maps that page into slot 7
@@ -75,7 +76,11 @@ static int16_t times(int8_t amount, int8_t power)
     return v;
 }
 
-/* Effect ef's statuses, and its modifiers into mod: copied from page 121, mapped in for the copy only */
+/*
+ * Effect ef's statuses, and its modifiers into mod: copied from page 121,
+ * mapped in for the copy only. Page 121 goes into slot 7 over this
+ * module's page 139, the bases: read no base between the two maps.
+ */
 static uint8_t mods_of(uint8_t ef, effect_mod_t *mod)
 {
     uint8_t page;
@@ -275,4 +280,18 @@ void effects_raise_base(nge_entity_id_t id, uint8_t attr, int8_t amount) NGE_BAN
     v = (int16_t)base[id] + amount;   /* a base stays within 0-255 */
     base[id] = (v < 0) ? 0 : (v > 255) ? 255 : (uint8_t)v;
     recompute(id);
+}
+
+uint8_t effects_base(nge_entity_id_t id, uint8_t attr) NGE_BANKED
+{
+    nge_util_assert(id < NGE_ENTITY_MAX);
+
+    return base_of(id, attr)[id];
+}
+
+void effects_put_base(nge_entity_id_t id, uint8_t attr, uint8_t value) NGE_BANKED
+{
+    nge_util_assert(id < NGE_ENTITY_MAX && NGE_ENTITY_STATE(id) != NGE_ENTITY_FREE);
+
+    base_of(id, attr)[id] = value;
 }

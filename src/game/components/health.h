@@ -32,7 +32,8 @@
  * healed.
  *
  * hp_max, ac and the masks are attributes (game/attrs/attrs.h):
- * kind value, base, derived value. Hit points are a pool: hp is its
+ * kind value, base (in the attributes module's page: effects_base()),
+ * derived value. Hit points are a pool: hp is its
  * current amount, kept within hp_max. Change the attributes only through
  * the effects (game/effects/effects.h).
  *
@@ -90,13 +91,6 @@ extern uint8_t health_immune[NGE_ENTITY_MAX];   /**< Damage types it takes nothi
 extern uint8_t health_resist[NGE_ENTITY_MAX];   /**< ...takes half from. Derived (ATTR_RESIST). */
 extern uint8_t health_vuln[NGE_ENTITY_MAX];     /**< ...takes double from. Derived (ATTR_VULN). */
 extern uint8_t health_ac[NGE_ENTITY_MAX];       /**< Armour class. Derived (ATTR_AC). */
-
-/* The attributes' bases (attrs.h): read-only outside this component and the effects */
-extern uint8_t health_hp_max_base[NGE_ENTITY_MAX];
-extern uint8_t health_immune_base[NGE_ENTITY_MAX];
-extern uint8_t health_resist_base[NGE_ENTITY_MAX];
-extern uint8_t health_vuln_base[NGE_ENTITY_MAX];
-extern uint8_t health_ac_base[NGE_ENTITY_MAX];
 
 /**
  * @brief Give an entity in use the health component from kind health:

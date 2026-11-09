@@ -506,6 +506,29 @@ int main(void)
           attrs_table[ATTR_SPEED].component == COMPONENT_STATS &&
           attrs_table[ATTR_ABILITY(ABIL_CHA)].base == stats_ability_base[ABIL_CHA]);
 
+    /* ---- effects_base() and effects_put_base(): the bases outside page 138 ---- */
+    reset();
+    g = goblin();
+    ok = 1;
+    for (i = 0; i < ATTR_COUNT; i++) {
+        if (NGE_ENTITY_HAS_COMPONENT(g, attrs_table[i].component)) {
+            ok = ok && effects_base(g, i) == attrs_table[i].base[g];
+        }
+    }
+    CHECK(ok);
+    /* No effects: each base is its value */
+    k = health_hp_max[g];
+    CHECK(effects_base(g, ATTR_HP_MAX) == k && effects_base(g, ATTR_AC) == health_ac[g] &&
+          effects_base(g, ATTR_SPEED) == stats_speed[g] && effects_base(g, ATTR_ABILITY(ABIL_STR)) == 8);
+    /* Stored without recomputing: the value stays, so the check sees a stale value until a recompute */
+    effects_put_base(g, ATTR_HP_MAX, (uint8_t)(k + 3));
+    effects_put_base(g, ATTR_ABILITY(ABIL_STR), 12);
+    CHECK(effects_base(g, ATTR_HP_MAX) == k + 3 && health_hp_max_base[g] == k + 3 && health_hp_max[g] == k);
+    CHECK(effects_base(g, ATTR_ABILITY(ABIL_STR)) == 12 && stats_ability[ABIL_STR][g] == 8);
+    CHECK(!effects_check(g) && events() == 0);
+    effects_recompute(g);
+    CHECK(health_hp_max[g] == k + 3 && stats_ability[ABIL_STR][g] == 12 && effects_check(g));
+
     /* ---- a target that dies: its effects stop acting, and no end event ---- */
     reset();
     g = goblin();

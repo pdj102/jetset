@@ -14,6 +14,7 @@
 
 #include "core/nge_util.h"
 #include "event/nge_event.h"
+#include "game/attrs/attrs.h"
 #include "game/components/pc.h"
 #include "game/events.h"
 
@@ -40,12 +41,12 @@ void health_add(nge_entity_id_t id, const health_kind_t *k) NGE_BANKED
     health_resist[id] = k->resist;
     health_vuln[id] = k->vuln;
     health_ac[id] = k->ac;
-    health_hp_max_base[id] = k->hp_max;
-    health_ac_base[id] = k->ac;
-    health_immune_base[id] = k->immune;
-    health_resist_base[id] = k->resist;
-    health_vuln_base[id] = k->vuln;
-    NGE_ENTITY_ADD_COMPONENT(id, COMPONENT_HEALTH);
+    NGE_ENTITY_ADD_COMPONENT(id, COMPONENT_HEALTH);   /* first: effects_put_base() asserts it */
+    effects_put_base(id, ATTR_HP_MAX, k->hp_max);
+    effects_put_base(id, ATTR_AC, k->ac);
+    effects_put_base(id, ATTR_IMMUNE, k->immune);
+    effects_put_base(id, ATTR_RESIST, k->resist);
+    effects_put_base(id, ATTR_VULN, k->vuln);
 }
 
 uint8_t health_dealt(nge_entity_id_t id, uint8_t amount, uint8_t type, uint8_t *outcome) NGE_BANKED

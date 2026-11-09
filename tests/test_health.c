@@ -7,6 +7,7 @@
 #include "ecs/nge_owner.h"
 #include "event/nge_event.h"
 
+#include "game/attrs/attrs_internal.h"
 #include "game/components/health.h"
 #include "game/components/kind.h"
 #include "game/components/pc.h"

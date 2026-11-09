@@ -21,6 +21,7 @@
 #include "ui/nge_panel.h"
 
 #include "game/actors.h"
+#include "game/attrs/attrs.h"
 #include "game/chargen/chargen.h"
 #include "game/components/attack.h"
 #include "game/components/health.h"
@@ -179,18 +180,20 @@ static void draw_abilities(NGE_FILE *s)
     nge_entity_id_t id = actor_player;
     const char *name = ability_names[0];   /* walked by pointer: an index splits the banked address (integer range) */
     uint8_t value;
+    uint8_t base;
     uint8_t ink;
     uint8_t a;
 
     puts_at(0, 0, "      Now  Mod Base", NGE_INK_YELLOW, s);
     for (a = 0; a < ABIL_COUNT; a++, name += sizeof(ability_names[0])) {
         value = stats_ability[a][id];
-        ink = screen_pc_ink(value, stats_ability_base[a][id], 0);
+        base = effects_base(id, ATTR_ABILITY(a));
+        ink = screen_pc_ink(value, base, 0);
         puts_at((uint8_t)(1 + a), 1, name, NGE_INK_WHITE, s);
         put_at((uint8_t)(1 + a), COL_ABIL_NOW, value, 4, ink, s);
         nge_text_at((uint8_t)(1 + a), COL_ABIL_MOD, s);
         put_mod(STATS_MOD(value), s);
-        put_at((uint8_t)(1 + a), COL_ABIL_BASE, stats_ability_base[a][id], 4, NGE_INK_WHITE, s);
+        put_at((uint8_t)(1 + a), COL_ABIL_BASE, base, 4, NGE_INK_WHITE, s);
     }
 }
 
@@ -211,15 +214,15 @@ static void draw_attributes(NGE_FILE *s)
     uint8_t speed = stats_speed[id];
 
     puts_at(ROW_ATTR_HEADER, 0, "         Now  Value  Base", NGE_INK_YELLOW, s);
-    draw_attr(ROW_HP, "HP", health_hp_max[id], health_hp_max_base[id], 0, s);
+    draw_attr(ROW_HP, "HP", health_hp_max[id], effects_base(id, ATTR_HP_MAX), 0, s);
     put_at(ROW_HP, COL_ATTR_NOW, health_hp[id], 3, NGE_INK_WHITE, s);
     if (MANA_IS(id)) {
         /* Maximum MP isn't an attribute yet (docs/mana.md, D2): its base is its maximum */
         draw_attr(ROW_MP, "MP", mana_mp_max[id], mana_mp_max[id], 0, s);
         put_at(ROW_MP, COL_ATTR_NOW, mana_mp[id], 3, NGE_INK_WHITE, s);
     }
-    draw_attr(ROW_AC, "AC", health_ac[id], health_ac_base[id], 0, s);
-    draw_attr(ROW_SPEED, "Speed", speed, stats_speed_base[id], 1, s);
+    draw_attr(ROW_AC, "AC", health_ac[id], effects_base(id, ATTR_AC), 0, s);
+    draw_attr(ROW_SPEED, "Speed", speed, effects_base(id, ATTR_SPEED), 1, s);
     puts_at(ROW_SPEED, COL_ATTR_WORD, (speed < SPEED_NORMAL) ? "fast" : (speed == SPEED_NORMAL) ? "normal" : "slow",
             NGE_INK_WHITE, s);
 }
@@ -277,9 +280,9 @@ static void draw_defences(NGE_FILE *s)
         nge_text_at(ROW_DMG_HEADER, (uint8_t)(COL_DMG + 3 * t), s);
         nge_puts(dmg_short[t], s);
     }
-    draw_defence(ROW_IMMUNE, "Immune", health_immune[id], health_immune_base[id], 0, s);
-    draw_defence(ROW_IMMUNE + 1, "Resist", health_resist[id], health_resist_base[id], 0, s);
-    draw_defence(ROW_IMMUNE + 2, "Vuln.", health_vuln[id], health_vuln_base[id], 1, s);
+    draw_defence(ROW_IMMUNE, "Immune", health_immune[id], effects_base(id, ATTR_IMMUNE), 0, s);
+    draw_defence(ROW_IMMUNE + 1, "Resist", health_resist[id], effects_base(id, ATTR_RESIST), 0, s);
+    draw_defence(ROW_IMMUNE + 2, "Vuln.", health_vuln[id], effects_base(id, ATTR_VULN), 1, s);
 }
 
 /* The statuses by name, conditions in red; "None" */
