@@ -852,6 +852,8 @@ void level_dev_bandit(nge_entity_id_t player) NGE_BANKED
     if (dev_out_of_sight(player, &x, &y)) {
         nge_location_set(gen_creature(CR_GOBLIN_SHAMAN, LEVEL_AREA), x, y);   /* to watch a caster (docs/spells_plan.md, step 4) */
     }
+    /* A basic spellbook at the player's feet, for a Fighter to try reading (docs/spells_plan.md, step 8) */
+    nge_location_set(gen_item(IT_BOOK_BASIC, LEVEL_AREA), NGE_LOCATION_X(player), NGE_LOCATION_Y(player));
 }
 
 /* Development: a feature of kind on the interior tile nearest the player of those tried; NGE_ENTITY_INVALID if none */

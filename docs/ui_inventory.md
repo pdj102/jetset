@@ -486,3 +486,17 @@ CSpect and hardware checks:
   use by slot, then the pack by ID) rather than fixing them, as destroyed items' IDs are reused.
   The question's own frame isn't seen by the tests (they see the last frame); what it does is,
   and the title it leaves.
+
+## 13. Reading spell books (spells.md section 10)
+
+Built by [spells.md](spells.md) section 10.5.6 (step 8, 2026-11-10):
+
+- **A mode, `ACT_LEARN`:** "Study", "Letter/ENTER: read it  SPACE: back", "You have no
+  spell book.", listing `LIST_BOOKS`: stowed items of subclass `ITEM_BOOK`. The check is
+  `ACT_LEARN` with `SP_NONE` in the spell byte (`SLOT_NONE` is the same 0), so a book the
+  player can't learn from is refused with its reason, and the screen stays open.
+- **Browse mode:** `b` is `ACT_LEARN`, and ENTER on a book is too (`obvious_action()`, after
+  use and aim). The help line gains ` b:read` when it is allowed. It isn't bundled: like aim,
+  it closes the screen and `item_command()` opens the book (`screen_book_run()`), using the
+  turn if a spell was learned.
+- **`b` in play** opens the screen in Study mode (`player_command()`).

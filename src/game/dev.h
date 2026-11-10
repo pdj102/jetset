@@ -30,7 +30,8 @@
  * (game/messages), to watch the AI (game/ai/ai.h); bandits start awake,
  * and a new game has one out of sight with a short bow and arrows at its
  * feet (level_dev_bandit()), to watch a monster arm itself and shoot,
- * and a goblin shaman out of sight, asleep, to watch a monster cast.
+ * and a goblin shaman out of sight, asleep, to watch a monster cast,
+ * and a basic spellbook at the player's feet, for a Fighter to read.
  */
 
 #ifndef GAME_DEV_KIT

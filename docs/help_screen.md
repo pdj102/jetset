@@ -242,6 +242,7 @@ Fighting and magic
  f            fire a missile
  a            aim a wand
  m            cast a spell
+ b            read a spell book: learn
 The dungeon
  o            operate a lever, fountain
  c            close a door
@@ -486,3 +487,11 @@ Lines that changed from section 5.2's draft:
   (`act_stairs.c`), as the pages describe those too.
 - **Memory:** page 105 holds 2.7K. Page 104 and common memory are
   unchanged.
+
+Spell books ([spells.md](spells.md) section 10, step 8, 2026-11-10):
+
+- **Commands:** `b`, "read a spell book: learn", after `m`. The page has 28 of its 29 lines.
+- **Screens and prompts:** the choosing heading is "Choosing an item (d w r e u a p b)". The
+  inventory's key line stays `w r x d u a`, and ENTER's stays "use, aim, wear or take off":
+  neither has room for `b` or "read" in 40 columns. The inventory's help line shows
+  ` b:read` on a book.

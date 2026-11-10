@@ -1428,6 +1428,125 @@ int main(void)
         nge_event_flush();
     }
 
+    /* ---- read: b chooses a book in Study mode, the book screen learns (docs/spells.md, section 10) ---- */
+    {
+        static const uint8_t bolt[] = { SP_MAGIC_BOLT };
+        uint8_t cls = pc_class;
+        uint8_t lvl = pc_level;
+        nge_entity_id_t book;
+
+        /* No book: said, and no screen */
+        fresh();
+        player_turn = 1;
+        player_command(EV(NGE_KEY_B));
+        CHECK(said("You have no spell book.") && player_turn && paused == 0);
+
+        /* A level 1 Mage knowing Magic Bolt, with a basic spellbook */
+        spell_add(actor_player, bolt, sizeof(bolt));
+        pc_class = PC_CLASS_MAGE;
+        pc_level = 1;
+        book = gen_item(IT_BOOK_BASIC, actor_player);
+        nge_event_flush();
+
+        /* b: Study lists the book; choosing it opens the book: the rows coloured, the key and the free slots */
+        fresh();
+        press(EV(NGE_KEY_A));
+        press(EV(NGE_KEY_SPACE));                                  /* taken by the Study screen's closing frame */
+        press(EV(NGE_KEY_C));                                      /* Hold: red, and why */
+        press(EV(NGE_KEY_SPACE));
+        player_command(EV(NGE_KEY_B));
+        CHECK(RAN_AND_CLOSED() && player_turn);                    /* nothing learned: no turn (D22) */
+        CHECK(strstr(OVER_ROW(0), "basic spellbook") != NULL && INK(0, 12) == L2_YELLOW);
+        CHECK(starts(OVER_ROW(3), " a) Magic Bolt") && INK(3, 4) == L2_CYAN);
+        CHECK(starts(OVER_ROW(4), " b) Cure Wounds") && INK(4, 4) == L2_WHITE);
+        CHECK(starts(OVER_ROW(5), " c) Hold") && INK(5, 4) == L2_RED && starts(seen_cols(1, 5, 20, 28), "    2   2"));
+        CHECK(starts(OVER_ROW(6), " d) Enfeeble") && INK(6, 4) == L2_RED && strcmp(OVER_ROW(7), BLANK) == 0);
+        CHECK(starts(OVER_ROW(25), " cyan: known  red: can't learn yet") && INK(25, 1) == L2_CYAN && INK(25, 14) == L2_RED);
+        CHECK(starts(OVER_ROW(26), " Free slots  L1:1 L2:0 L3:0 L4:0 L5:0"));
+        CHECK(starts(STATUS(), "That spell is beyond you for now."));
+        CHECK(starts(HELP(), "Letter/ENTER: learn  SPACE: close"));
+        /* The Study screen itself, backed out of */
+        fresh();
+        press(EV(NGE_KEY_SPACE));
+        player_command(EV(NGE_KEY_B));
+        CHECK(RAN_AND_CLOSED() && player_turn && strstr(OVER_ROW(0), " Study ") != NULL);
+        CHECK(starts(LIST_ROW(0), "a)") && strstr(LIST_ROW(0), "basic spellbook") != NULL && strcmp(LIST_ROW(1), BLANK) == 0);
+        CHECK(starts(HELP(), "Letter/ENTER: read it  SPACE: back"));
+
+        /* A known row: why; then Cure Wounds learned: said, cyan, the foot, the screen open; closing uses the turn */
+        fresh();
+        press(EV(NGE_KEY_A));
+        press(EV(NGE_KEY_SPACE));                                  /* taken by the Study screen's closing frame */
+        press(EV(NGE_KEY_A));
+        press(EV(NGE_KEY_B));
+        press(EV(NGE_KEY_SPACE));
+        player_command(EV(NGE_KEY_B));
+        CHECK(RAN_AND_CLOSED() && !player_turn && spell_knows(actor_player, SP_CURE_WOUNDS));
+        CHECK(starts(STATUS(), "You learn Cure Wounds.") && INK(4, 4) == L2_CYAN && HIGHLIGHTED(2));
+        CHECK(starts(OVER_ROW(26), " Free slots  L1:0 L2:0"));
+        CHECK(shown("You learn Cure Wounds.") && NGE_ENTITY_IS_ALIVE(book) && NGE_OWNER_OF(book) == actor_player);
+        fresh();
+        press(EV(NGE_KEY_A));
+        press(EV(NGE_KEY_SPACE));                                  /* taken by the Study screen's closing frame */
+        press(EV(NGE_KEY_A));
+        press(EV(NGE_KEY_SPACE));
+        player_turn = 1;
+        player_command(EV(NGE_KEY_B));
+        CHECK(RAN_AND_CLOSED() && player_turn && starts(STATUS(), "You know that spell already."));
+
+        /* Level 3: Hold learned; Enfeeble turns red, its level's one slot filled: why, and the screen stays open */
+        pc_level = 3;
+        fresh();
+        press(EV(NGE_KEY_A));
+        press(EV(NGE_KEY_SPACE));                                  /* taken by the Study screen's closing frame */
+        press(EV(NGE_KEY_C));
+        press(EV(NGE_KEY_D));
+        press(EV(NGE_KEY_SPACE));
+        player_command(EV(NGE_KEY_B));
+        CHECK(RAN_AND_CLOSED() && !player_turn && spell_knows(actor_player, SP_HOLD) && !spell_knows(actor_player, SP_ENFEEBLE));
+        CHECK(INK(5, 4) == L2_CYAN && INK(6, 4) == L2_RED && starts(STATUS(), "No room for more spells of that level."));
+        CHECK(starts(OVER_ROW(26), " Free slots  L1:1 L2:0"));
+        nge_event_flush();
+
+        /* Browse mode: b:read on the help line for a book; b, and ENTER, open it */
+        fresh();
+        down(inv_pos(book));
+        press(EV(NGE_KEY_B));
+        press(EV(NGE_KEY_SPACE));                                  /* taken by the inventory's closing frame */
+        press(EV(NGE_KEY_SPACE));
+        player_turn = 1;
+        player_command(EV(NGE_KEY_I));
+        CHECK(RAN_AND_CLOSED() && player_turn && strstr(OVER_ROW(0), "basic spellbook") != NULL);
+        fresh();
+        down(inv_pos(book));
+        press(EV(NGE_KEY_ENTER));
+        press(EV(NGE_KEY_SPACE));                                  /* taken by the inventory's closing frame */
+        press(EV(NGE_KEY_SPACE));
+        player_command(EV(NGE_KEY_I));
+        CHECK(RAN_AND_CLOSED() && player_turn && strstr(OVER_ROW(0), "basic spellbook") != NULL);
+        fresh();
+        down(inv_pos(book));
+        press(EV(NGE_KEY_SPACE));
+        player_command(EV(NGE_KEY_I));
+        CHECK(RAN_AND_CLOSED() && strstr(HELP(), " b:read") != NULL);
+
+        /* No mana, as a Fighter: the book refused in Study, why on the status line, the screen still open */
+        NGE_ENTITY_REMOVE_COMPONENT(actor_player, COMPONENT_MANA);
+        fresh();
+        press(EV(NGE_KEY_A));
+        press(EV(NGE_KEY_SPACE));
+        player_command(EV(NGE_KEY_B));
+        CHECK(RAN_AND_CLOSED() && player_turn && strstr(OVER_ROW(0), " Study ") != NULL &&
+              starts(STATUS(), "The spells mean nothing to you."));
+        NGE_ENTITY_ADD_COMPONENT(actor_player, COMPONENT_MANA);
+
+        nge_entity_destroy(book);
+        nge_event_flush();
+        spell_add(actor_player, bolt, sizeof(bolt));
+        pc_class = cls;
+        pc_level = lvl;
+    }
+
     /* ---- diagonals: two direction keys held together (docs/diagonals.md) ---- */
     {
         uint8_t ox = NGE_LOCATION_X(actor_player);

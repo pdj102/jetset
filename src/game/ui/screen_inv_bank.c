@@ -69,7 +69,8 @@ static const nge_panel_t panels[SCREEN_INV_COUNT] = {
 #define LIST_USABLE      4   /* in the pack, doing something when used */
 #define LIST_AIMABLE     5   /* in the pack, with something to aim */
 #define LIST_TOOLS       6   /* in the pack, a key or a lock pick */
-#define LIST_COUNT       7   /* the number of lists */
+#define LIST_BOOKS       7   /* in the pack, a spell book (docs/spells.md, 10.5.6) */
+#define LIST_COUNT       8   /* the number of lists */
 
 /* A key's answer, besides an action (ACT_*) and SCREEN_INV_BACK: stay open */
 #define KEY_STAY  (ACT_COUNT + 1)
@@ -102,6 +103,7 @@ static const inv_mode_t modes[MODE_WHICH + 1] = {
     [ACT_AIM]     = { "Take Aim", "Letter/ENTER: aim it  SPACE: back", "You have nothing to aim.",
                       LIST_AIMABLE },
     [ACT_UNLOCK]  = { "Try a Lock", "Letter/ENTER: try it  SPACE: back", "You have no key or pick.", LIST_TOOLS },
+    [ACT_LEARN]   = { "Study", "Letter/ENTER: read it  SPACE: back", "You have no spell book.", LIST_BOOKS },
     [ACT_EXCHANGE] = { "Exchange Thy Gear", "Letter/ENTER: wear it  SPACE: back", "You have nothing to equip.",
                        LIST_EQUIPPABLE },
     [MODE_WHICH]  = { "Which Shall Go?", "Letter/ENTER: take it off  SPACE: back", "", LIST_EQUIPPED },
@@ -120,6 +122,7 @@ typedef struct help_key {
 static const help_key_t help_keys[] = {
     { ACT_EQUIP, " w:wear" }, { ACT_EXCHANGE, " x:swap" }, { ACT_UNEQUIP, " r:off" },
     { ACT_DROP, " d:drop" },  { ACT_USE, " u:use" },       { ACT_AIM, " a:aim" },
+    { ACT_LEARN, " b:read" },
 };
 
 /* ---- The items ---- */
@@ -139,6 +142,8 @@ static uint8_t listed(uint8_t list, nge_entity_id_t id, uint16_t slots)
     case LIST_TOOLS:
         subclass = gen_item_subclass(kind_index[id]);
         return subclass == ITEM_KEY || subclass == ITEM_TOOL;
+    case LIST_BOOKS:
+        return gen_item_subclass(kind_index[id]) == ITEM_BOOK;
     default:
         return 1;
     }
@@ -544,6 +549,9 @@ static uint8_t obvious_action(void)
     if (GEN_HOOK_EF(gen_hook_of(id, GEN_HOOK_AIM)) != EF_NONE) {
         return ACT_AIM;
     }
+    if (gen_item_subclass(kind_index[id]) == ITEM_BOOK) {
+        return ACT_LEARN;   /* read it: it closes the screen, as aim does */
+    }
     return ACT_EQUIP;
 }
 
@@ -608,6 +616,8 @@ static uint8_t key(uint8_t mode, nge_key_event_t ev)
         return try(ACT_USE);
     case 'a':
         return try(ACT_AIM);
+    case 'b':
+        return try(ACT_LEARN);
     default:
         return KEY_STAY;
     }

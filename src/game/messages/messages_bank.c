@@ -536,6 +536,24 @@ void messages_act_failed(const act_t *a) NGE_BANKED
     case ACT_R_NO_SPELL:
         screen_message("You don't know that spell.");
         break;
+    case ACT_R_NOT_BOOK:
+        screen_message("That isn't a spell book.");
+        break;
+    case ACT_R_CANT_LEARN:
+        screen_message("The spells mean nothing to you.");
+        break;
+    case ACT_R_NOT_IN_BOOK:
+        screen_message("That spell isn't in the book.");
+        break;
+    case ACT_R_KNOWN:
+        screen_message("You know that spell already.");
+        break;
+    case ACT_R_BEYOND:
+        screen_message("That spell is beyond you for now.");
+        break;
+    case ACT_R_SLOTS_FULL:
+        screen_message("No room for more spells of that level.");
+        break;
     case ACT_R_CANT_OPERATE:
         say_named("You can't use the ", target, ".");
         break;

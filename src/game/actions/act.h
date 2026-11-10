@@ -74,7 +74,7 @@ typedef struct act {
         uint8_t slot;         /**< Equip, exchange: in and out, the slot (SLOT_*). */
         uint8_t damage;       /**< Melee, fire: out, the damage type (DMG_*)... */
         uint8_t effect;       /**< Use, aim: out, the effect (EF_*). */
-        uint8_t spell;        /**< Cast: in, the spell (SP_*). */
+        uint8_t spell;        /**< Cast, learn: in, the spell (SP_*). */
     };
     uint8_t amount;           /**< ...and amount. */
     /* Out */
@@ -111,7 +111,8 @@ typedef struct act {
 #define ACT_OPERATE 17
 #define ACT_SEARCH  18
 #define ACT_DISARM  19
-#define ACT_COUNT   20
+#define ACT_LEARN   20
+#define ACT_COUNT   21
 
 /** How far an aimed item reaches (nge_map_within()): a kind has no range of its own. */
 #define ACT_AIM_RANGE  8
@@ -162,7 +163,13 @@ typedef struct act {
 #define ACT_R_CANT_DISARM       42  /**< Refused: the feature isn't a trap that can be disarmed. a->target: it. */
 #define ACT_R_DISARM_FAILED     43  /**< Attempted: the trap held (the turn is used). a->target: it. */
 #define ACT_R_SET_OFF           44  /**< Attempted: the disarm failed badly, and the trap went off at the actor. */
-#define ACT_R_COUNT             45
+#define ACT_R_NOT_BOOK          45  /**< Refused: the item isn't a spell book. */
+#define ACT_R_CANT_LEARN        46  /**< Refused: the actor isn't the player with mana and spells (a Fighter). */
+#define ACT_R_NOT_IN_BOOK       47  /**< Refused: the spell isn't in the book. */
+#define ACT_R_KNOWN             48  /**< Refused: the actor knows the spell already. */
+#define ACT_R_BEYOND            49  /**< Refused: no slot at the spell's level yet. */
+#define ACT_R_SLOTS_FULL        50  /**< Refused: every slot at the spell's level is filled. */
+#define ACT_R_COUNT             51
 
 /**
  * @brief Move one tile.
@@ -452,6 +459,22 @@ uint8_t act_unlock(act_t *a, uint8_t mode) NGE_BANKED;
  * whether the actor can cast it at all: that reason means yes.
  */
 uint8_t act_cast(act_t *a, uint8_t mode) NGE_BANKED;
+
+/**
+ * @brief Learn a spell from a spell book (docs/spells.md, section 10.5.4).
+ *
+ * In: actor (alive), item (the book), spell (SP_NONE to ask about the book
+ * only, in check mode: D24). Succeeds if the actor carries the item,
+ * stowed, it is a book (ITEM_BOOK), the actor is the player with mana and
+ * spells, the spell is in the book, not known, and its level has a slot
+ * (spell_slots()) that is free (spell_free()): spell_learn(), which posts
+ * EV_SPELL_LEARNED. The book is kept. Refused, in that order, with
+ * ACT_R_NOT_CARRIED, ACT_R_NOT_BOOK, ACT_R_CANT_LEARN, ACT_R_NOT_IN_BOOK,
+ * ACT_R_KNOWN, ACT_R_BEYOND or ACT_R_SLOTS_FULL. A spell of SP_NONE stops
+ * after the actor's test, with success in check mode; in do mode it is an
+ * assert.
+ */
+uint8_t act_learn(act_t *a, uint8_t mode) NGE_BANKED;
 
 /** @brief Call action (ACT_MOVE...) by number: for the AI and delayed actions. */
 uint8_t act_do(uint8_t action, act_t *a, uint8_t mode);

@@ -8,7 +8,7 @@ melee when out of MP passed in CSpect; healing itself and holding a bolt are cov
 `test_ai` only. Step 5 closed the docs.
 
 Part 2, spell slots and spell books (spells.md section 10, to-do S1 to S3): proposed
-2026-11-10, steps 6 to 9 in section 4. Step 6 done 2026-11-10, its CSpect checks passed. Step 7 done 2026-11-10, its CSpect check passed.
+2026-11-10, steps 6 to 9 in section 4. Step 6 done 2026-11-10, its CSpect checks passed. Step 7 done 2026-11-10, its CSpect check passed. Step 8 done 2026-11-10, its CSpect checks passed.
 
 ## 1. How the steps work
 
@@ -166,3 +166,4 @@ todo.md: S1, S2, S3 `[done]`.
 | Start | 4,289 | Used: page 104 6,478; 109 6,248; 110 7,677; 116 6,630; 134 1,542; 135 798; `BANK_56` 13,672. `make balance`: 0 failed, 4 warnings |
 | 6 | 4,289 | Page 109 +128. Sprites 85 of 128. `make balance` unchanged, also after the book rarities rose to 4, 10, 10 and items a level to 9-15 (check 4) |
 | 7 | 4,289 | Page 134 +832: 2,374; 135 +163: 961; 110 -65: 7,612; 118 6,117 |
+| 8 | -32: 4,257 | `BANK_56` +690: 14,362. Page 104 +1,072: 7,550 (642 free); 116 +169: 6,799; 118 +267: 6,384; 102 7,987 (205 free) |

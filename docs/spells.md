@@ -1133,3 +1133,18 @@ Differences from sections 10.1 to 10.8, by step:
   holds 40. Page 134 grew by 832 bytes, not about 0.2K: the five functions and their
   asserts; it has 5.8K free. The slot table is read by its three indices directly: the map
   shows no new library routine (10.7).
+- **Step 8.**
+  - Common memory fell by 32 bytes, not about 15: `act_do()`'s case with its banked call is
+    26, and the reason table 6.
+  - Page 104 grew by 1,072 bytes (0.5K estimated): it has 642 bytes free. The book screen
+    stayed there; it shares the spell list's rows, keys and loop (`run()`).
+  - The book screen's key line draws "cyan: known" in cyan and "red: can't learn yet" in
+    red.
+  - The book opens after the Study (or browse) screen has closed, and closing flushes the
+    keys, as every screen does. Keys typed before the book appears are dropped, and the PC
+    tests press a key for that closing frame, as they do for aim.
+  - The help screen: `b` on the keys page, and `b` in the choosing heading; the inventory's
+    lines had no room (help_screen.md, section 10).
+  - The debug build's basic spellbook lies at the player's feet in a new game
+    (`level_dev_bandit()`), for check 6.
+

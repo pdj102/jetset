@@ -332,6 +332,12 @@ static void item_command(uint8_t mode)
     if (action == SCREEN_INV_BACK || (action == ACT_AIM && !choose_tile(TARGET_AIM, ACT_AIM_RANGE, &a))) {
         return;
     }
+    if (action == ACT_LEARN) {
+        if (screen_book_run(a.item)) {
+            player_turn = 0;   /* the book learned from in its screen: one turn for the reading (D22) */
+        }
+        return;
+    }
     if (action == ACT_UNLOCK) {
         if (!player_ask_direction(PLAYER_PROMPT_UNLOCK, &a.dx, &a.dy)) {
             return;
@@ -580,6 +586,9 @@ void player_command(nge_key_event_t ev) NGE_BANKED
         break;
     case 'p':
         item_command(ACT_UNLOCK);
+        break;
+    case 'b':
+        item_command(ACT_LEARN);   /* read a spell book: learning is done in its screen */
         break;
     case 'o':
         operate_command();

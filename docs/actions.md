@@ -200,6 +200,7 @@ a move that is refused, followed by a melee.
 | `act_open.c` | `BANK_56` | Open and close | 1,179 |
 | `act_stairs.c` | `BANK_56` | Ascend and descend | 781 |
 | `act_wait.c` | `BANK_56` | Wait | 161 |
+| `act_learn.c` | `BANK_56` | Learn a spell from a book ([spells.md](spells.md) 10.5.4) | 690 |
 
 The sizes are from the debug build's map, with asserts, after step 9, and total 9,652 bytes of
 `BANK_56`'s 16,384 (pages 112 and 113, D22). After the line modes the section is 10,484, which
@@ -219,7 +220,7 @@ and `item`: entity 0 is a real ID, so an action that accepts no target says so w
 | `item` | The item used | The weapon used |
 | `dx`, `dy` | A direction | |
 | `x`, `y` | A tile: fire and aim read them | |
-| `kind` | One byte, named by its use: `slot` to equip in, `spell` to cast | `slot`, `damage` or `effect` used |
+| `kind` | One byte, named by its use: `slot` to equip in, `spell` to cast or learn | `slot`, `damage` or `effect` used |
 | `amount` | | The damage taken; in fire's check, its range |
 | `reason` | | `ACT_R_*` |
 | `used` | | 1 if the turn was used |
@@ -242,6 +243,7 @@ Who reads what:
 | Fire, with `x`, `y` | Out: the first in line | Out: the launcher or thrown item | | Out: `damage` |
 | Aim, with `x`, `y` | Out: the first in line, the one on the tile if direct, or the actor | In | | Out: `effect` |
 | Cast, with `x`, `y` for a bolt or direct spell | Out: the first in line, the one on the tile if direct, or the actor if self | | | In: `spell` |
+| Learn | | In: the book | | In: `spell`; `SP_NONE` asks about the book only (check mode) |
 
 A context can be passed straight to the next action. After a move is refused,
 `target` already holds the blocker, ready for a melee or an open. It can also be
@@ -556,7 +558,7 @@ form `act.h` will need.
 | Addition | Names |
 |---|---|
 | Actions | `ACT_CAST` 15, `ACT_EXCHANGE` 16, `ACT_OPERATE` 17, `ACT_SEARCH` 18 and `ACT_DISARM` 19 (built), `ACT_STEAL` |
-| Refused reasons | `ACT_R_NO_MANA` 38, `ACT_R_NO_SPELL` 39, `ACT_R_CANT_OPERATE` 40, `ACT_R_SPENT` 41 and `ACT_R_CANT_DISARM` 42 (built), `ACT_R_NOTHING_TO_STEAL` |
+| Refused reasons | `ACT_R_NO_MANA` 38, `ACT_R_NO_SPELL` 39, `ACT_R_CANT_OPERATE` 40, `ACT_R_SPENT` 41, `ACT_R_CANT_DISARM` 42, and `ACT_R_NOT_BOOK` 45 to `ACT_R_SLOTS_FULL` 50 for `ACT_LEARN` 20 ([spells.md](spells.md) 10.5.4) (built), `ACT_R_NOTHING_TO_STEAL` |
 | Attempted reasons | `ACT_R_DISARM_FAILED` 43 and `ACT_R_SET_OFF` 44 (built), `ACT_R_CAUGHT` |
 | Events | `EV_CAST`, `EV_OPERATED`, `EV_TRIGGERED`, `EV_FOUND`, `EV_DISARMED`, `EV_SEARCHED` (built), `EV_STOLEN` |
 

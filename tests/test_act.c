@@ -23,6 +23,7 @@
 #include "game/components/feature.h"
 #include "game/components/item.h"
 #include "game/components/mana.h"
+#include "game/components/pc.h"
 #include "game/components/stats.h"
 #include "game/effects/effects.h"
 #include "game/events.h"
@@ -227,6 +228,95 @@ static void wear(nge_entity_id_t actor, nge_entity_id_t item, uint8_t slot)
     a.item = item;
     a.slot = slot;
     CHECK(act_equip(&a, ACT_DO) == ACT_SUCCESS);
+}
+
+/* act_learn() of spell sp from book by actor: its result, and the context in *a */
+static uint8_t learn(act_t *a, nge_entity_id_t actor, nge_entity_id_t book, uint8_t sp, uint8_t mode)
+{
+    *a = ctx(actor);
+    a->item = book;
+    a->spell = sp;
+    return act_learn(a, mode);
+}
+
+/* Refused with reason, the turn not used, nothing posted */
+static int refused(const act_t *a, uint8_t result, uint8_t reason)
+{
+    return result == ACT_FAIL && a->reason == reason && a->used == 0 && events() == 0;
+}
+
+/* Learn (docs/spells.md 10.5.4): a Mage at level 1 with a basic spellbook; a Fighter; a shaman */
+static void test_learn(void)
+{
+    nge_entity_id_t fighter;
+    nge_entity_id_t mage;
+    nge_entity_id_t shaman;
+    nge_entity_id_t book;
+    nge_entity_id_t potion;
+    nge_entity_id_t floor;
+    nge_entity_id_t adept;
+    act_t a;
+    int r1;
+
+    events();
+    nge_entity_init();
+    fighter = creature(CR_FIGHTER, 2, 2);
+    mage = creature(CR_MAGE, 3, 3);   /* the last PC made: level 1, its class set below */
+    shaman = creature(CR_GOBLIN_SHAMAN, 5, 5);
+    pc_set_class(mage, PC_CLASS_MAGE);
+    book = gen_item(IT_BOOK_BASIC, mage);
+    adept = gen_item(IT_BOOK_ADEPT, mage);
+    potion = gen_item(IT_HEAL_POTION, mage);
+    floor = gen_item(IT_BOOK_BASIC, AREA);
+    nge_location_set(floor, 3, 3);
+    events();
+    CHECK(pc_level == 1 && spell_knows(mage, SP_MAGIC_BOLT) && !MANA_IS(fighter) && !PC_IS(shaman));
+
+    /* ---- each refusal, in order: nothing changed, nothing posted, the turn not used ---- */
+    CHECK(refused(&a, learn(&a, mage, floor, SP_CURE_WOUNDS, ACT_DO), ACT_R_NOT_CARRIED));   /* on the floor (R51) */
+    CHECK(refused(&a, learn(&a, mage, potion, SP_CURE_WOUNDS, ACT_DO), ACT_R_NOT_BOOK));
+    nge_owner_set(book, fighter);
+    CHECK(refused(&a, learn(&a, mage, book, SP_CURE_WOUNDS, ACT_DO), ACT_R_NOT_CARRIED));    /* another's */
+    CHECK(refused(&a, learn(&a, fighter, book, SP_CURE_WOUNDS, ACT_DO), ACT_R_CANT_LEARN));  /* no mana */
+    CHECK(refused(&a, learn(&a, fighter, book, SP_NONE, ACT_CHECK), ACT_R_CANT_LEARN));      /* the book alone */
+    nge_owner_set(book, shaman);
+    CHECK(refused(&a, learn(&a, shaman, book, SP_CURE_WOUNDS, ACT_DO), ACT_R_CANT_LEARN));   /* a monster (R37) */
+    nge_owner_set(book, mage);
+    CHECK(refused(&a, learn(&a, mage, book, SP_HASTE, ACT_DO), ACT_R_NOT_IN_BOOK));
+    CHECK(refused(&a, learn(&a, mage, book, SP_MAGIC_BOLT, ACT_DO), ACT_R_KNOWN));
+    CHECK(refused(&a, learn(&a, mage, book, SP_HOLD, ACT_DO), ACT_R_BEYOND));                /* no level 2 slot yet */
+    CHECK(refused(&a, learn(&a, mage, adept, SP_FIRE_BOLT, ACT_DO), ACT_R_BEYOND));
+    CHECK(!spell_knows(mage, SP_CURE_WOUNDS) && !spell_knows(mage, SP_HOLD));
+
+    /* ---- the book alone, in check mode: success (D24); in do mode, an assert ---- */
+    CHECK(learn(&a, mage, book, SP_NONE, ACT_CHECK) == ACT_SUCCESS && a.reason == ACT_R_NONE && a.used == 0);
+    TEST_EXPECT_HALT(learn(&a, mage, book, SP_NONE, ACT_DO));
+    CHECK(test_halt_count == 1);
+
+    /* ---- check mode: the answer, and nothing changes, not even rand() ---- */
+    srand(5);
+    r1 = rand();
+    srand(5);
+    CHECK(learn(&a, mage, book, SP_CURE_WOUNDS, ACT_CHECK) == ACT_SUCCESS && a.used == 0);
+    CHECK(rand() == r1 && events() == 0 && !spell_knows(mage, SP_CURE_WOUNDS));
+
+    /* ---- a learn: the spell known, its event, the turn used; the book kept (R50) ---- */
+    CHECK(spell_free(mage, 1) == 1);
+    CHECK(learn(&a, mage, book, SP_CURE_WOUNDS, ACT_DO) == ACT_SUCCESS && a.reason == ACT_R_NONE && a.used == 1);
+    CHECK(spell_knows(mage, SP_CURE_WOUNDS) && events() == 1 && is(0, mage, EV_SPELL_LEARNED, NGE_EVENT_NONE) &&
+          seen[0].p1 == SP_CURE_WOUNDS);
+    CHECK(NGE_ENTITY_IS_ALIVE(book) && NGE_OWNER_OF(book) == mage && spell_free(mage, 1) == 0);
+
+    /* ---- level 3: one level 2 slot; the last filled, then the next refused ---- */
+    pc_level = 3;
+    a = ctx(mage);
+    a.item = book;
+    a.spell = SP_HOLD;
+    CHECK(act_do(ACT_LEARN, &a, ACT_DO) == ACT_SUCCESS);                                      /* by number */
+    CHECK(events() == 1 && spell_knows(mage, SP_HOLD) && spell_free(mage, 2) == 0);
+    CHECK(refused(&a, learn(&a, mage, book, SP_ENFEEBLE, ACT_DO), ACT_R_SLOTS_FULL));
+    CHECK(refused(&a, learn(&a, mage, book, SP_ENFEEBLE, ACT_CHECK), ACT_R_SLOTS_FULL));
+    pc_level = 1;
 }
 
 /* ---- exchange (docs/actions.md, section 6.14): a bandit, capacity 6 ---- */
@@ -2285,6 +2375,7 @@ int main(void)
     test_traps();
     test_search_disarm();
     test_trapdoor();
+    test_learn();
 
     return test_summary("act");
 }
