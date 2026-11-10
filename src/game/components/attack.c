@@ -16,6 +16,7 @@
 #include "game/components/health.h"
 #include "game/components/inventory.h"
 #include "game/components/item.h"
+#include "game/components/stats.h"
 
 static void check_entity(nge_entity_id_t id, uint8_t use)
 {
@@ -95,6 +96,17 @@ uint8_t attack_damage(nge_entity_id_t id, uint8_t use, int8_t to_damage) NGE_BAN
         return 1;
     }
     return (damage > 255) ? 255 : (uint8_t)damage;
+}
+
+int8_t attack_actor_mod(nge_entity_id_t actor, uint8_t use) NGE_BANKED
+{
+    nge_util_assert(actor < NGE_ENTITY_MAX);
+    nge_util_assert(use < ATTACK_USE_COUNT);
+
+    if (use != ATTACK_MELEE || !NGE_ENTITY_HAS_COMPONENT(actor, COMPONENT_STATS)) {
+        return 0;
+    }
+    return STATS_MOD(stats_ability[ABIL_STR][actor]);
 }
 
 nge_entity_id_t attack_weapon(nge_entity_id_t id) NGE_BANKED

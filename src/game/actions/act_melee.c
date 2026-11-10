@@ -27,6 +27,7 @@ uint8_t act_melee(act_t *a, uint8_t mode) NGE_BANKED
     uint8_t y;
     uint8_t tx;
     uint8_t ty;
+    int8_t mod;
 
     /* 1. Context: the attack used, and the target */
     nge_util_assert(actor < NGE_ENTITY_MAX && NGE_ENTITY_IS_ALIVE(actor));
@@ -69,6 +70,7 @@ uint8_t act_melee(act_t *a, uint8_t mode) NGE_BANKED
         return act_checked(a);
     }
 
-    /* 3, 4. Resolve and apply: the attacker's roll, damage and hit effect */
-    return act_strike(a, attacker, ATTACK_MELEE, attacker, 0, 0);
+    /* 3, 4. Resolve and apply: the attacker's roll, damage and hit effect, with the actor's Strength */
+    mod = attack_actor_mod(actor, ATTACK_MELEE);
+    return act_strike(a, attacker, ATTACK_MELEE, attacker, mod, mod);
 }

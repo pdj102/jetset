@@ -916,6 +916,7 @@ int main(void)
     act_t a;
     uint8_t x;
     uint8_t y;
+    uint8_t str;   /* the player's Strength, put back after the melee checks */
     int r1;
     int r2;
     int ok;
@@ -1279,6 +1280,10 @@ int main(void)
 
     /* ---- melee: the player (sword i2 wielded) at (4, 5), a goblin west of it ---- */
     CHECK(at(player, 4, 5) && item_slot[i2] == SLOT_WEAPON);
+    str = stats_ability[ABIL_STR][player];
+    effects_set_base(player, ATTR_ABILITY(ABIL_STR), 10);   /* Strength +0 until its own checks below */
+    events();
+    CHECK(attack_actor_mod(player, ATTACK_MELEE) == 0);
     gob = creature(CR_GOBLIN, 3, 5);
     effects_set_base(gob, ATTR_HP_MAX, 200);
     health_hp[gob] = 200;
@@ -1322,6 +1327,45 @@ int main(void)
         health_hp[gob] = 200;
     }
     CHECK(ok);
+    /* Strength 14 (+2) adds to the sword's to hit: hits if roll + 1 + 2 >= 13 */
+    effects_set_base(player, ATTR_ABILITY(ABIL_STR), 14);
+    events();
+    CHECK(attack_actor_mod(player, ATTACK_MELEE) == 2 && attack_actor_mod(player, ATTACK_RANGED) == 0);
+    CHECK(attack_actor_mod(i2, ATTACK_MELEE) == 0);            /* no stats: the sword itself */
+    ok = 1;
+    for (roll = 2; roll <= 19 && ok; roll++) {
+        srand(seed_for_roll(roll));
+        a = ctx(player);
+        a.target = gob;
+        r1 = act_melee(&a, ACT_DO);
+        ok = (r1 == ACT_SUCCESS) == (roll + 3 >= 13) && a.used == 1;
+        events();
+        health_hp[gob] = 200;
+    }
+    CHECK(ok);
+    /* ... and to its damage: 1d8 + 2 */
+    srand(seed_for_roll(20));
+    a = ctx(player);
+    a.target = gob;
+    CHECK(act_melee(&a, ACT_DO) == ACT_SUCCESS && a.amount >= 3 && a.amount <= 10);
+    events();
+    health_hp[gob] = 200;
+    /* Strength 6 (-2): hits if roll + 1 - 2 >= 13 */
+    effects_set_base(player, ATTR_ABILITY(ABIL_STR), 6);
+    events();
+    ok = 1;
+    for (roll = 2; roll <= 19 && ok; roll++) {
+        srand(seed_for_roll(roll));
+        a = ctx(player);
+        a.target = gob;
+        r1 = act_melee(&a, ACT_DO);
+        ok = (r1 == ACT_SUCCESS) == (roll - 1 >= 13) && a.used == 1;
+        events();
+        health_hp[gob] = 200;
+    }
+    CHECK(ok);
+    effects_set_base(player, ATTR_ABILITY(ABIL_STR), 10);
+    events();
     /* Its own attack without a weapon: fists, blunt, which the goblin resists */
     item_slot[i2] = SLOT_NONE;
     srand(seed_for_roll(20));
@@ -1330,6 +1374,16 @@ int main(void)
     CHECK(act_melee(&a, ACT_DO) == ACT_SUCCESS && a.item == NGE_ENTITY_INVALID && a.damage == DMG_BLUNT);
     CHECK(a.amount == 1 && health_hp[gob] == 199);            /* 1d2 resisted: rounded up to 1 */
     CHECK(events() == 2 && seen[0].p2 == NGE_EVENT_NONE && EV_DMG_OUTCOME(seen[1].p2) == DMG_RESISTED);
+    /* Strength adds to its own attack too: 1d2 + 2, resisted: 2 */
+    effects_set_base(player, ATTR_ABILITY(ABIL_STR), 14);
+    events();
+    srand(seed_for_roll(20));
+    a = ctx(player);
+    a.target = gob;
+    CHECK(act_melee(&a, ACT_DO) == ACT_SUCCESS && a.amount == 2 && health_hp[gob] == 197);
+    events();
+    effects_set_base(player, ATTR_ABILITY(ABIL_STR), str);
+    events();
     /* A kill: EV_DIED, the goblin destroyed */
     health_hp[gob] = 1;
     srand(seed_for_roll(20));

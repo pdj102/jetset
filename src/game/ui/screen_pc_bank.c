@@ -227,11 +227,12 @@ static void draw_attributes(NGE_FILE *s)
             NGE_INK_WHITE, s);
 }
 
-/* The melee attack the player makes now: their wielded weapon's, or their own */
+/* The melee attack the player makes now: their wielded weapon's, or their own, with their Strength */
 static void draw_attack(NGE_FILE *s)
 {
     nge_entity_id_t attacker = attack_weapon(actor_player);
     attack_kind_t k;
+    int8_t mod;
 
     if (attacker == NGE_ENTITY_INVALID) {
         attacker = actor_player;
@@ -242,6 +243,9 @@ static void draw_attack(NGE_FILE *s)
         return;
     }
     attack_get(attacker, ATTACK_MELEE, &k);
+    mod = attack_actor_mod(actor_player, ATTACK_MELEE);
+    k.to_hit = (int8_t)(k.to_hit + mod);
+    k.to_damage = (int8_t)(k.to_damage + mod);
     put_signed(k.to_hit, s);
     nge_puts(" to hit  ", s);
     nge_putu16(k.dice, s);
