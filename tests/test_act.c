@@ -1330,7 +1330,7 @@ int main(void)
     /* Strength 14 (+2) adds to the sword's to hit: hits if roll + 1 + 2 >= 13 */
     effects_set_base(player, ATTR_ABILITY(ABIL_STR), 14);
     events();
-    CHECK(attack_actor_mod(player, ATTACK_MELEE) == 2 && attack_actor_mod(player, ATTACK_RANGED) == 0);
+    CHECK(attack_actor_mod(player, ATTACK_MELEE) == 2);
     CHECK(attack_actor_mod(i2, ATTACK_MELEE) == 0);            /* no stats: the sword itself */
     ok = 1;
     for (roll = 2; roll <= 19 && ok; roll++) {
@@ -2056,7 +2056,9 @@ int main(void)
     rat = creature(CR_RAT, 3, 2);
     effects_set_base(rat, ATTR_HP_MAX, 200);
     health_hp[rat] = 200;
+    effects_set_base(player, ATTR_ABILITY(ABIL_DEX), 10);   /* Dexterity +0 until its own checks below */
     events();
+    CHECK(attack_actor_mod(player, ATTACK_RANGED) == 0);
     /* The shooter table: what is refused, nothing changing */
     CHECK(fire(player, 3, 2, ACT_DO) == ACT_FAIL && last.reason == ACT_R_NO_ATTACK && last.used == 0);
     i1 = equipped(IT_ARROWS, player, SLOT_AMMO);
@@ -2105,6 +2107,26 @@ int main(void)
     health_ac[rat] = 11;
     srand(seed_for_roll(10));
     CHECK(fire(player, 3, 2, ACT_DO) == ACT_FAIL && last.reason == ACT_R_MISSED);
+    /* Dexterity 14 (+2) adds to the bow's to hit: a 9 hits AC 11, an 8 misses; and to its damage, 1d6 + 2 */
+    item_count[i1] = 20;
+    effects_set_base(player, ATTR_ABILITY(ABIL_DEX), 14);
+    events();
+    CHECK(attack_actor_mod(player, ATTACK_RANGED) == 2 && attack_actor_mod(i2, ATTACK_RANGED) == 0);
+    srand(seed_for_roll(8));
+    CHECK(fire(player, 3, 2, ACT_DO) == ACT_FAIL && last.reason == ACT_R_MISSED);
+    srand(seed_for_roll(9));
+    CHECK(fire(player, 3, 2, ACT_DO) == ACT_SUCCESS && last.amount >= 3 && last.amount <= 8);
+    health_hp[rat] = 200;
+    /* Dexterity 6 (-2): a 12 misses, a 13 hits */
+    effects_set_base(player, ATTR_ABILITY(ABIL_DEX), 6);
+    events();
+    srand(seed_for_roll(12));
+    CHECK(fire(player, 3, 2, ACT_DO) == ACT_FAIL && last.reason == ACT_R_MISSED);
+    srand(seed_for_roll(13));
+    CHECK(fire(player, 3, 2, ACT_DO) == ACT_SUCCESS);
+    health_hp[rat] = 200;
+    effects_set_base(player, ATTR_ABILITY(ABIL_DEX), 10);
+    events();
     nge_entity_destroy(i1);
     i1 = equipped(IT_ARROWS_1, player, SLOT_AMMO);
     srand(seed_for_roll(10));

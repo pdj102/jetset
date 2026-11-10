@@ -61,6 +61,7 @@ uint8_t act_fire(act_t *a, uint8_t mode) NGE_BANKED
     nge_entity_id_t shot;
     nge_entity_id_t item;
     uint8_t reason;
+    int8_t mod;
 
     /* 1. Context: the shooter, and its range */
     nge_util_assert(actor < NGE_ENTITY_MAX && NGE_ENTITY_IS_ALIVE(actor));
@@ -84,15 +85,16 @@ uint8_t act_fire(act_t *a, uint8_t mode) NGE_BANKED
         return act_checked(a);
     }
 
-    /* 3, 4. Resolve and apply: the attacker's roll with the ammo's bonuses, and the ammo's hit effect */
+    /* 3, 4. Resolve and apply: the attacker's roll with the ammo's bonuses and the actor's Dexterity, and the ammo's hit effect */
     ammo.to_hit = 0;
     ammo.to_damage = 0;
     if (shot != NGE_ENTITY_INVALID && shot != attacker) {
         gen_item_attack(kind_index[shot], &ammo);
     }
+    mod = attack_actor_mod(actor, ATTACK_RANGED);
     nge_event_post(a->target, EV_FIRED, actor, item, 0);
     reason = act_strike(a, attacker, ATTACK_RANGED, (shot != NGE_ENTITY_INVALID) ? shot : attacker,
-                        ammo.to_hit, ammo.to_damage);
+                        (int8_t)(ammo.to_hit + mod), (int8_t)(ammo.to_damage + mod));
 
     /* 4. Apply: the shot is used up, hit or miss */
     if (shot != NGE_ENTITY_INVALID) {

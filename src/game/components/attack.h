@@ -16,7 +16,8 @@
  * An attack hits if 1d20 + to_hit >= the target's AC (game/components/
  * health.h); a roll of 20 always hits and a 1 always misses. A hit does
  * dice d sides + to_damage damage of its type, at least 1. The attacking
- * creature's own bonus, attack_actor_mod() (Strength for melee), adds to
+ * creature's own bonus, attack_actor_mod() (Strength for melee, Dexterity
+ * for ranged), adds to
  * both; the caller passes it in with any others.
  *
  * The tables are page data in page 111 (attack_pdata.c, attack_internal.h),
@@ -98,8 +99,9 @@ uint8_t attack_damage(nge_entity_id_t id, uint8_t use, int8_t to_damage) NGE_BAN
 /**
  * @brief The bonus creature actor adds to both to hit and damage with an
  *        attack of this use, whoever's attack component it makes (its
- *        weapon's or its own): its Strength modifier (STATS_MOD()) for
- *        melee; 0 for ranged, and 0 without stats (COMPONENT_STATS).
+ *        weapon's, launcher's, thrown item's or its own): its modifier
+ *        (STATS_MOD()) of Strength for melee, of Dexterity for ranged; 0
+ *        without stats (COMPONENT_STATS).
  */
 int8_t attack_actor_mod(nge_entity_id_t actor, uint8_t use) NGE_BANKED;
 
