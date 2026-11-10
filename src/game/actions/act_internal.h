@@ -19,7 +19,7 @@ extern const uint8_t act_reason_flags[ACT_R_COUNT];
 /*
  * The shared endings (act_shared.c, BANK_56). Functions, not macros of
  * comma expressions: zsdcc (z88dk, Oct 2026) dropped the assignments in
- * `return (a->reason = r, a->cost = c, ACT_FAIL);`
+ * `return (a->reason = r, a->used = u, ACT_FAIL);`
  */
 
 /*
@@ -46,7 +46,7 @@ uint8_t act_checked(act_t *a);
 uint8_t act_strike(act_t *a, nge_entity_id_t attacker, uint8_t use, nge_entity_id_t hooks, int8_t to_hit,
                    int8_t to_damage);
 
-/* Line modes (act_line()'s how): who a line reaches. See docs/actions.md, section 6.13 */
+/* Line modes (act_line()'s how): who a line reaches. See docs/actions.md, section 4.11 */
 #define ACT_LINE_BOLT    0   /* the first creature on the line: what flies */
 #define ACT_LINE_DIRECT  1   /* the creature on the chosen tile, past any on the way */
 #define ACT_LINE_COUNT   2

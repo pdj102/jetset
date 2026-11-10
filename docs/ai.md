@@ -216,7 +216,7 @@ adds to it, with the reason.
 - **R21 (later)** A dev-kit key that switches every AI entity to the next
   brain (and back), to compare models in CSpect: once there is a second
   brain.
-- **R22** `AI_CAN_RANGED` is built ([actions.md](actions.md), 6.3).
+- **R22** `AI_CAN_RANGED` is built ([action_fire.md](action_fire.md)).
   `AI_CAN_CAST` is built: a creature that knows spells, `opt_cast()` first
   in the hunt ([spells.md](spells.md), 4.9).
 

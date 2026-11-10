@@ -14,7 +14,7 @@
  * no way between anywhere else, so its lock stops nothing that has to be
  * reached. What is placed at random keeps out of them, the player and the
  * quest item included. A locked room holds one item, and its key is
- * somewhere else on the level (docs/actions.md, 6.12).
+ * somewhere else on the level (docs/action_unlock.md).
  */
 #ifdef __SDCC
 #pragma codeseg PAGE_102

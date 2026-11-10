@@ -365,7 +365,7 @@ only when a hidden panel is painted.
 Status: agreed and implemented 2026-11-04, with Q8 to Q10 answered; the PC tests
 pass, and the CSpect checks in 12.5 passed 2026-11-04; hardware not yet. Section 12.7 lists
 where the build differs. The action is `ACT_EXCHANGE`,
-[actions.md](actions.md) section 6.14 (R40-R46, D31-D36): what it takes off and puts on,
+[action_exchange.md](action_exchange.md) (R1-R7, D1-D6): what it takes off and puts on,
 and why. This section is its keys and its place in the screen.
 
 ### 12.1 Requirements
@@ -373,15 +373,15 @@ and why. This section is its keys and its place in the screen.
 - **R18** In browse mode, `x` exchanges the selected item: a stowed item that can be
   equipped goes into its slot, and what was there goes into the pack. It is bundled (R1):
   the screen stays open and redraws, and the visit's one turn covers it (R2).
-- **R19** `x` needs no free place in the pack (actions.md R41), and on a free slot it
-  equips, as `w` does (actions.md R43).
+- **R19** `x` needs no free place in the pack (action_exchange.md R2), and on a free slot it
+  equips, as `w` does (action_exchange.md R4).
 - **R20** A refused exchange shows its reason on the status line and changes nothing (R4),
   as for the other bundled actions: "It is cursed: it won't come off.", "You can't carry any
-  more." (actions.md R45).
+  more." (action_exchange.md R6).
 - **R21 (New)** A ring with both ring slots in use asks which one goes: the list shows the
   two worn rings, lettered, under the title "Which Shall Go?", and a letter (or the cursor and
   ENTER) chooses; SPACE goes back to browse with nothing done. With one ring worn, `x`
-  replaces that one and doesn't ask (actions.md R44). *Reason: the player must say which
+  replaces that one and doesn't ask (action_exchange.md R5). *Reason: the player must say which
   (user requirement 6), and the rings are the only items that fit two slots, so no other
   item asks.*
 - **R22 (New)** `x` on an item in use is refused, as `w` is ("You are already using that.",
@@ -410,8 +410,8 @@ and why. This section is its keys and its place in the screen.
   r: right"): the screen shows no left and right since D3, so the player would have to
   remember which ring is where; the names say which. *Rejected:* exchanging the left ring
   always: breaks requirement 6.
-- **D10 The two messages, off then on, reach the status line and the log** (R5, actions.md
-  D34). The status line has two rows (section 11), so both show.
+- **D10 The two messages, off then on, reach the status line and the log** (R5, action_exchange.md
+  D4). The status line has two rows (section 11), so both show.
 
 ### 12.3 Layout
 
@@ -480,8 +480,8 @@ CSpect and hardware checks:
   its mode, and equal to `KEY_STAY` it never closed (found by the PC tests).
 - **Memory:** page 116 6,399 -> 7,031 bytes of 8,192, where 12.4 said about 200 more: the ring
   question, `relist()` and `draw_title()` split out of the action loop, and the new mode's row
-  in `modes[]`. 1,161 bytes are left. Page 114: 17 bytes for `e`. Common memory: as
-  actions.md section 9 says.
+  in `modes[]`. 1,161 bytes are left. Page 114: 17 bytes for `e`. Common memory: 26 bytes for
+  `act_do()`'s case.
 - **Tests:** `test_ui`'s exchange block works out each item's row from the list's rule (in
   use by slot, then the pack by ID) rather than fixing them, as destroyed items' IDs are reused.
   The question's own frame isn't seen by the tests (they see the last frame); what it does is,

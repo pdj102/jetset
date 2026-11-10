@@ -242,7 +242,7 @@ The data is laid out for firing, which isn't built:
 - **`flags`** hold `ITEMF_TWO_HANDS`, `ITEMF_CURSED` and `ITEMF_DIRECT`. The first two's
   rules are in the inventory component, and an item's lifted curse is an entity flag,
   `ITEM_UNCURSED`. `ITEMF_DIRECT` makes an aimed item pass creatures on the way to the
-  chosen tile ([actions.md](actions.md), section 6.13).
+  chosen tile ([actions.md](actions.md), section 4.11, and [action_aim.md](action_aim.md)).
 
 ### 4.8 Generation
 

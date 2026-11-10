@@ -135,7 +135,7 @@ uint8_t act_exchange(act_t *a, uint8_t mode) NGE_BANKED
     if (slots == 0) {
         return ACT_FAIL;
     }
-    /* The first slot it fits that is taken; the first it fits if none is (docs/actions.md R43, R44) */
+    /* The first slot it fits that is taken; the first it fits if none is (docs/action_exchange.md R4, R5) */
     for (slot = 1; slot < SLOT_COUNT; slot++) {
         if (slots & SLOT_BIT(slot)) {
             if (first == SLOT_NONE) {
@@ -151,7 +151,7 @@ uint8_t act_exchange(act_t *a, uint8_t mode) NGE_BANKED
     if (slot == SLOT_COUNT) {
         slot = first;
     }
-    /* What is in the way of the hands: the shield for a two-hander, a two-hander for a shield (R45, R46) */
+    /* What is in the way of the hands: the shield for a two-hander, a two-hander for a shield (R6, R7) */
     id = inv_hands_taken(actor, item, slot);
     if (id != NGE_ENTITY_INVALID) {
         off[n++] = id;
@@ -164,7 +164,7 @@ uint8_t act_exchange(act_t *a, uint8_t mode) NGE_BANKED
             return act_fail(a, ACT_R_CURSED);
         }
     }
-    /* One for one needs no room (R41); two for one needs a free place (R45): target, the second */
+    /* One for one needs no room (R2); two for one needs a free place (R6): target, the second */
     if (n == 2 && inv_count(actor) >= inv_capacity_of(actor)) {
         return act_fail(a, ACT_R_FULL);
     }

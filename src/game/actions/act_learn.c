@@ -1,6 +1,6 @@
 /*
  * The learn action: banked in BANK_56 with the other actions (see act.h for
- * the pattern its steps follow). See docs/spells.md, section 10.5.4.
+ * the pattern its steps follow). See docs/action_learn.md.
  */
 #ifdef __SDCC
 #pragma codeseg BANK_56
@@ -31,10 +31,10 @@ uint8_t act_learn(act_t *a, uint8_t mode) NGE_BANKED
     nge_util_assert(item < NGE_ENTITY_MAX);
     nge_util_assert(sp < SPELL_COUNT);
 
-    /* 2. Validate: a book the actor carries, a player who can learn, then the spell (docs/spells.md, 10.5.4) */
+    /* 2. Validate: a book the actor carries, a player who can learn, then the spell (docs/action_learn.md) */
     if (!NGE_ENTITY_IS_ALIVE(item) || !ITEM_IS(item) || NGE_OWNER_OF(item) != actor ||
         item_slot[item] != SLOT_NONE) {
-        return act_fail(a, ACT_R_NOT_CARRIED);   /* from the pack only, not the floor (R51) */
+        return act_fail(a, ACT_R_NOT_CARRIED);   /* from the pack only, not the floor (R2) */
     }
     kind = kind_index[item];
     if (gen_item_subclass(kind) != ITEM_BOOK) {
@@ -44,7 +44,7 @@ uint8_t act_learn(act_t *a, uint8_t mode) NGE_BANKED
         return act_fail(a, ACT_R_CANT_LEARN);
     }
     if (sp == SP_NONE) {
-        nge_util_assert(mode == ACT_CHECK);   /* only the book asked about (D24) */
+        nge_util_assert(mode == ACT_CHECK);   /* only the book asked about (D2) */
         return act_checked(a);
     }
     if (!spell_in_book(gen_item_group(kind), sp)) {
@@ -56,7 +56,7 @@ uint8_t act_learn(act_t *a, uint8_t mode) NGE_BANKED
     spell_get(sp, &def);
     level = def.level;
     if (spell_slots(actor, level) == 0) {
-        return act_fail(a, ACT_R_BEYOND);       /* no slot at that level yet (D25) */
+        return act_fail(a, ACT_R_BEYOND);       /* no slot at that level yet (D3) */
     }
     if (spell_free(actor, level) == 0) {
         return act_fail(a, ACT_R_SLOTS_FULL);   /* slots, all filled */
@@ -67,7 +67,7 @@ uint8_t act_learn(act_t *a, uint8_t mode) NGE_BANKED
 
     /* 3. Resolve: nothing to roll */
 
-    /* 4. Apply: the one way to add a spell, which posts EV_SPELL_LEARNED (R8). The book is kept (R50) */
+    /* 4. Apply: the one way to add a spell, which posts EV_SPELL_LEARNED (docs/spells.md R8). The book is kept (R4) */
     spell_learn(actor, sp);
     return act_succeed(a);
 }

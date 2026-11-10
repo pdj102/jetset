@@ -254,7 +254,7 @@ static int fail(int depth, const char *what)
 }
 
 /*
- * Locks (Q1, option A, actions.md 6.12): each guards a side room, with one
+ * Locks (docs/action_unlock.md): each guards a side room, with one
  * doorway and no stairs, holding at most one item and no monster, and has
  * its key elsewhere. With every lock shut, everything else can be reached
  * from the player. Sets *locks to how many there are

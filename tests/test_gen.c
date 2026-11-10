@@ -405,7 +405,7 @@ int main(void)
           gen_item_group(IT_SWORD) == GROUP_NONE);
     CHECK(gen_item_flags(IT_QUARTERSTAFF) == ITEMF_TWO_HANDS && gen_item_flags(IT_RUSTY_SWORD) == ITEMF_CURSED &&
           gen_item_flags(IT_SWORD) == 0);
-    /* Direct items: exactly the five that don't fly (docs/actions.md, section 6.13) */
+    /* Direct items: exactly the five that don't fly (docs/actions.md, section 4.11) */
     ok = 1;
     for (kind = 0; kind < IT_COUNT; kind++) {
         ok = ok && ((gen_item_flags(kind) & ITEMF_DIRECT) != 0) ==

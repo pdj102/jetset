@@ -3,7 +3,7 @@
 How Jetset's spells work: what a spell is, who knows which, how one is cast and paid
 for, and how new ones are learned.
 
-Spells are cast with an action ([actions.md](actions.md)), do what an effect says
+Spells are cast with an action ([action_cast.md](action_cast.md)), do what an effect says
 ([effects.md](effects.md)) and cost mana ([mana.md](mana.md)). Character levels are in
 [player_character.md](player_character.md), and how a monster chooses is in
 [ai.md](ai.md).
@@ -11,8 +11,8 @@ Spells are cast with an action ([actions.md](actions.md)), do what an effect say
 Status: implemented 2026-11-03, in the 5 steps of [spells_plan.md](spells_plan.md). CSpect
 checks 1 to 5, 7 and 8 passed; check 6 in part: the shaman casts and comes to melee out of
 MP, and healing itself was checked only by the PC tests. Differences from the design are in
-section 9. Proposed 2026-11-02; `SPELL_DIRECT` added 2026-11-03, agreed in actions.md
-(section 6.13, D30). This spec replaces the sketch in actions.md, section 6.6.
+section 9. Proposed 2026-11-02; `SPELL_DIRECT` added 2026-11-03 with the line modes
+(actions.md 4.11, action_cast.md D2).
 
 **Spell slots and spell books** (to-do S1, S2, S3): implemented 2026-11-10, in section 10,
 in steps 6 to 9 of [spells_plan.md](spells_plan.md), part 2. Every CSpect check of section
@@ -69,7 +69,7 @@ learned. Later ways of learning, such as a scroll or a shrine, call the same fun
 | Cost | The MP a cast takes, worked out from the spell level |
 | Shape | Who a spell reaches: `SPELL_SELF`, `SPELL_BOLT` or `SPELL_DIRECT` |
 | Bolt | A spell sent along a line, stopping at the first creature (actions.md, D11) |
-| Direct | A spell sent along a line to the creature on the chosen tile, past any on the way (actions.md, 6.13) |
+| Direct | A spell sent along a line to the creature on the chosen tile, past any on the way (actions.md, 4.11) |
 | Known spells | The set of spells an entity can cast, in `COMPONENT_SPELLS` |
 | Learn | Add a spell to the known set, with `spell_learn()` |
 | Caster | An entity with `COMPONENT_SPELLS` |
@@ -115,7 +115,7 @@ learned. Later ways of learning, such as a scroll or a shrine, call the same fun
 - **R15** An ability needs no mana component and tests no MP.
 - **R16** A valid cast always happens: there is no casting roll, and a bolt can't miss. A
   saving throw belongs to the effect (effects.md, R4).
-- **R17** The effect's source is the actor, so a kill earns its XP (actions.md, D17).
+- **R17** The effect's source is the actor, so a kill earns its XP (actions.md, D13).
 - **R18** Casting at a creature other than the caster counts as attacking it, whatever
   the effect, so a monster reacts to a hold as it does to a hit.
 
@@ -218,42 +218,21 @@ The cast matters: zsdcc makes a constant `1 << 7` -128, and the PC tests miss it
 
 ### 4.4 `act_cast()`
 
-**Cast a spell.** In: actor (alive, placed in an area), spell (`SP_*`), and x, y for a bolt
-or a direct spell.
-Out: target. `spell` stays as it was, so `ai_try()` can pass the context twice.
-
-1. **Context:** `spell_get()` and `spell_cost()`. Fields go into locals (T-ZSDCC-1).
-2. **Validate:**
-   - not known: `ACT_R_NO_SPELL`;
-   - cost above 0, and no mana component or `!MANA_HAS()`: `ACT_R_NO_MANA`;
-   - `SPELL_SELF`: the target is the actor;
-   - `SPELL_BOLT` and `SPELL_DIRECT`: the actor's own tile is `ACT_R_NO_TARGET`, then
-     `act_line()` with `ACT_LINE_BOLT` or `ACT_LINE_DIRECT`, which may give
-     `ACT_R_OUT_OF_RANGE`, `ACT_R_NO_LINE` or `ACT_R_NO_TARGET`.
-3. **Resolve:** nothing to roll (R16).
-4. **Apply:** `EV_CAST`, `mana_spend()` if the cost is above 0, then `effect_apply()` with
-   the actor as source.
-
-| Addition | Value |
-|---|---|
-| Action | `ACT_CAST` 15, a case in `act_do()` |
-| Refused reasons | `ACT_R_NO_MANA` 38, `ACT_R_NO_SPELL` 39, `ACT_R_COUNT` 40 |
-| Texts | "You haven't the mana.", "You don't know that spell." |
-| `act_t` table, actions.md 4.2 | `target` out; `spell` in; x, y for a bolt or a direct spell |
-
-`ACT_R_NO_TARGET` on the actor's own tile means the spell can be cast, as it does for fire:
-the list asks that way, before there is a tile.
+The action is specified in [action_cast.md](action_cast.md): its inputs, steps, reasons,
+events and callers. It meets R12 to R18 here. Its additions are `ACT_CAST` 15,
+`ACT_R_NO_SPELL` and `ACT_R_NO_MANA`, with the texts "You don't know that spell." and "You
+haven't the mana."
 
 ### 4.5 Shapes
 
 | Shape | Target | Who reads x, y |
 |---|---|---|
 | `SPELL_SELF` | The actor | Nobody |
-| `SPELL_BOLT` | The first creature on the line, from `act_line()` with `ACT_LINE_BOLT` (actions.md, 6.2) | `act_line()` |
-| `SPELL_DIRECT` | The creature on the chosen tile, past any on the way, from `act_line()` with `ACT_LINE_DIRECT` (actions.md, 6.13) | `act_line()` |
+| `SPELL_BOLT` | The first creature on the line, from `act_line()` with `ACT_LINE_BOLT` (actions.md, 4.11) | `act_line()` |
+| `SPELL_DIRECT` | The creature on the chosen tile, past any on the way, from `act_line()` with `ACT_LINE_DIRECT` (actions.md, 4.11) | `act_line()` |
 
 A wall or closed door stops either line. A bolt suits what flies, such as fire; direct suits
-what doesn't, such as a hold or a teleport of another (actions.md, D28). In section 4.12,
+what doesn't, such as a hold or a teleport of another (action_aim.md, D3). In section 4.12,
 Hold and Enfeeble are direct, as the wands of sleep and slowness are, and the damaging spells
 are bolts.
 
@@ -423,7 +402,7 @@ Made when this is built:
 
 | Spec | Change |
 |---|---|
-| actions.md | Section 6.6 points here; tables in 4.1, 4.2, 4.5 and 4.7; R27 no longer "later"; reasons and events out of 6.1 |
+| actions.md, action_cast.md | The action's spec in action_cast.md; its rows in the tables of actions.md 4.1, 4.2 and 4.6 |
 | effects.md | `act_cast()` among the callers of `effect_apply()`; `OP_LEARN` when it comes |
 | mana.md | R13, R14 and R15 done; D2's attribute built |
 | player_character.md | R18 done; `level_up()`'s two additions |
@@ -451,7 +430,7 @@ Made when this is built:
   and perhaps what pays for it, not in how it reaches its target or what it does. So when
   they come, a `school` field and one test in `act_cast()` are enough, and `ACT_CAST`, `spell`
   and the callers stay. *Rejected:* adding `school` now, with one value. *Rejected:* an
-  `ACT_PRAY`, an action that differs only in its data (actions.md, D20).
+  `ACT_PRAY`, an action that differs only in its data (action_cast.md, D1).
 - **D3 Every spell is an effect.** There is one way to change a creature, and no spell needs
   code of its own. Self-targeted ops cover the spells that don't look like effects: light,
   mapping, teleport, summon and a shrieker's shriek. *Rejected:* a spell op of its own beside
@@ -505,7 +484,7 @@ Made when this is built:
 - **D14 A cast at another creature is an attack (R18).** A hold does no damage, so
   `EV_DAMAGED` wouldn't wake its target. `EV_CAST` does it, from one test in `ai_on_event()`.
   *Rejected:* posting `EV_HIT`, which carries a roll and would lunge the caster.
-- **D15 Abilities are level 0, in this table** (actions.md, D20). The rule costs one test, so
+- **D15 Abilities are level 0, in this table** (action_cast.md, D1). The rule costs one test, so
   it is here from the start, though no kind uses it yet (section 6).
 - **D16 The first list uses only working effects.** A spell that takes MP and does nothing
   reads as a bug. *Rejected:* adding pending rows as items do (items.md, R12).
@@ -809,11 +788,7 @@ from the to-do list, with the reason.
   spell level range in the book, which needs no list: every new spell would join a book
   whether wanted or not, and a book of a theme couldn't be made. *Rejected:* a list in the
   item kind, which grows all 163 kinds for 3 of them.
-- **D21 Learning is an action, `ACT_LEARN`.** In: actor, item (the book), spell. It has the
-  four steps of every action, so the screen asks it in check mode for each row's colour and
-  reason, as the spell list asks `ACT_CAST`. *Rejected:* calling `spell_learn()` from the
-  screen, which puts the rules in the UI, where the PC tests can't reach them without
-  driving the screen.
+- **D21 Learning is an action, `ACT_LEARN`.** In [action_learn.md](action_learn.md), D1.
 - **D22 Several spells in one reading, one turn (Q3).** The book screen does each
   `ACT_LEARN` itself and stays open, and closing it uses a turn if one was learned: the
   inventory's way with equip and drop in browse mode (ui_inventory.md). `a->used` is set
@@ -823,15 +798,8 @@ from the to-do list, with the reason.
   book, does the same. *Rejected:* `u` on a book. `act_use()` applies a use hook and
   destroys the item, so a book would need exceptions in the action, the inventory's
   usable list and its help line.
-- **D24 With no spell chosen, the check asks only about the book.** `a->spell` `SP_NONE`
-  stops validation after the caster test, with success in check mode, so the inventory
-  screen can refuse a Fighter's book with its reason before the book opens. `SP_NONE` is
-  also `SLOT_NONE`, the value the inventory screen already puts in that byte (D1). In do
-  mode, `SP_NONE` is an assert. This is how `ACT_CAST` treats a bolt on the actor's own
-  tile (4.4).
-- **D25 Two refusals for no room.** "Beyond you" when the class has no slot at that level
-  yet, and "no room" when it has slots and all are full. Both are red in the book, and the
-  status line says which, which is what S3.2 asks the player to see.
+- **D24 With no spell chosen, the check asks only about the book.** In [action_learn.md](action_learn.md), D2.
+- **D25 Two refusals for no room.** In [action_learn.md](action_learn.md), D3.
 - **D26 The level-up message reads the table, not the player.** `messages_on_event()` runs
   after the queue drains, perhaps after more levels. It compares the slot table's rows for
   the event's level and the one before, so each level's message is right whatever has
@@ -918,29 +886,11 @@ Kits (`chargen_bank.c`): `{ IT_BOOK_BASIC, 0 }` added to `kit_mage[]` and `kit_d
 
 #### 10.5.4 `act_learn()` (`act_learn.c`, `BANK_56`)
 
-**Learn a spell from a book.** In: actor, item (the book), spell (`SP_NONE` to check the
-book only, D24). Out: nothing.
-
-1. **Context:** the book's kind, subclass and `group`; the spell's level, if one.
-2. **Validate**, in this order:
-
-   | Test | Reason | Text |
-   |---|---|---|
-   | The actor has the item, stowed | `ACT_R_NOT_CARRIED` | (as now) |
-   | It is a book | `ACT_R_NOT_BOOK` 45 | "That isn't a spell book." |
-   | The actor is the player, with mana and spells | `ACT_R_CANT_LEARN` 46 | "The spells mean nothing to you." |
-   | `spell` is `SP_NONE`: check mode only, success | | |
-   | The spell is in the book | `ACT_R_NOT_IN_BOOK` 47 | "That spell isn't in the book." |
-   | Not known already | `ACT_R_KNOWN` 48 | "You know that spell already." |
-   | `spell_slots()` at its level above 0 | `ACT_R_BEYOND` 49 | "That spell is beyond you for now." |
-   | `spell_free()` at its level above 0 | `ACT_R_SLOTS_FULL` 50 | "No room for more spells of that level." |
-
-   `ACT_R_COUNT` becomes 51. All are refusals.
-3. **Resolve:** nothing to roll.
-4. **Apply:** `spell_learn()`, which posts `EV_SPELL_LEARNED` ("You learn Hold.").
-
-`ACT_LEARN` is 20, a case in `act_do()`, and `ACT_COUNT` 21. The class's mana and spells
-components come with the kind: the Mage and Dev have both, the Fighter neither.
+The action is specified in [action_learn.md](action_learn.md): its inputs, the order of its
+refusals and their texts, and its callers. It meets R46 to R51. Its additions are
+`ACT_LEARN` 20 and the reasons `ACT_R_NOT_BOOK` 45 to `ACT_R_SLOTS_FULL` 50, all refused.
+The class's mana and spells components come with the kind: the Mage and Dev have both, the
+Fighter neither.
 
 #### 10.5.5 The book screen (`screen_spell_bank.c`, page 104)
 
@@ -1017,7 +967,7 @@ item kinds change only the item pools, so C1 to C5 shouldn't move; the after fig
 
 | Spec | Change |
 |---|---|
-| actions.md | `ACT_LEARN`, its reasons, its row in the tables of 4.1 and 4.2 |
+| actions.md, action_learn.md | The action's spec in action_learn.md; its rows in the tables of actions.md 4.1, 4.2 and 4.6 |
 | items.md | `ITEM_BOOK`, the three kinds |
 | ui_inventory.md | The `ACT_LEARN` mode, `LIST_BOOKS`, `b` in browse mode |
 | character_creation.md | The book in the Mage's and Dev's kits (D4) |

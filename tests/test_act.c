@@ -319,7 +319,7 @@ static void test_learn(void)
     pc_level = 1;
 }
 
-/* ---- exchange (docs/actions.md, section 6.14): a bandit, capacity 6 ---- */
+/* ---- exchange (docs/action_exchange.md): a bandit, capacity 6 ---- */
 /* Operate (docs/features.md 4.6): a bandit at (7, 7), a healing shrine east, a foul fountain south, a door west */
 static void test_operate(void)
 {
@@ -746,12 +746,12 @@ static void test_exchange(void)
     nge_location_set(h, 1, 1);
     events();
 
-    /* A free slot: equipped, as equip would (R43); no target */
+    /* A free slot: equipped, as equip would (R4); no target */
     CHECK(exchange(h, sword, SLOT_NONE, ACT_DO) == ACT_SUCCESS && last.used == 1 && last.slot == SLOT_WEAPON &&
           last.target == NGE_ENTITY_INVALID && item_slot[sword] == SLOT_WEAPON);
     CHECK(events() >= 1 && seen_at(sword, EV_EQUIPPED) >= 0 && seen_at(sword, EV_UNEQUIPPED) < 0);
 
-    /* One for one, with a full pack (R41): the check first, changing nothing and drawing no numbers */
+    /* One for one, with a full pack (R2): the check first, changing nothing and drawing no numbers */
     inv_capacity[h] = inv_count(h);
     srand(5);
     r1 = (unsigned int)rand();
@@ -767,7 +767,7 @@ static void test_exchange(void)
     CHECK(events() >= 2 && seen_at(sword, EV_UNEQUIPPED) >= 0 &&
           seen_at(sword, EV_UNEQUIPPED) < seen_at(sword2, EV_EQUIPPED) &&
           seen[seen_at(sword2, EV_EQUIPPED)].p1 == SLOT_WEAPON && seen[seen_at(sword, EV_UNEQUIPPED)].source == h);
-    /* Equip still refuses a taken slot (D31) */
+    /* Equip still refuses a taken slot (D1) */
     a = ctx(h);
     a.item = sword;
     CHECK(act_equip(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_SLOT_TAKEN && a.target == sword2);
@@ -789,7 +789,7 @@ static void test_exchange(void)
           last.target == NGE_ENTITY_INVALID && item_slot[sword2] == SLOT_WEAPON);
     events();
 
-    /* A two-hander for a sword and a shield, two for one (R45): a full pack refuses, target the shield */
+    /* A two-hander for a sword and a shield, two for one (R6): a full pack refuses, target the shield */
     inv_capacity[h] = inv_count(h);
     CHECK(exchange(h, staff, SLOT_NONE, ACT_CHECK) == ACT_FAIL && last.reason == ACT_R_FULL && last.target == shield);
     CHECK(exchange(h, staff, SLOT_NONE, ACT_DO) == ACT_FAIL && last.reason == ACT_R_FULL && last.used == 0 &&
@@ -804,18 +804,18 @@ static void test_exchange(void)
           seen_at(sword2, EV_UNEQUIPPED) < seen_at(shield, EV_UNEQUIPPED) &&
           seen_at(shield, EV_UNEQUIPPED) < seen_at(staff, EV_EQUIPPED));
 
-    /* A shield with a two-hander wielded, full pack: the two-hander is exchanged (R46) */
+    /* A shield with a two-hander wielded, full pack: the two-hander is exchanged (R7) */
     inv_capacity[h] = inv_count(h);
     CHECK(exchange(h, shield, SLOT_NONE, ACT_DO) == ACT_SUCCESS && last.slot == SLOT_SHIELD && last.target == staff &&
           item_slot[shield] == SLOT_SHIELD && item_slot[staff] == SLOT_NONE);
     events();
-    /* A two-hander with only a shield worn: the shield is exchanged (R46) */
+    /* A two-hander with only a shield worn: the shield is exchanged (R7) */
     CHECK(exchange(h, staff, SLOT_NONE, ACT_DO) == ACT_SUCCESS && last.slot == SLOT_WEAPON && last.target == shield &&
           item_slot[staff] == SLOT_WEAPON && item_slot[shield] == SLOT_NONE);
     events();
     inv_capacity[h] = 6;
 
-    /* A cursed weapon in the slot: refused, target it, nothing changes (R42) */
+    /* A cursed weapon in the slot: refused, target it, nothing changes (R3) */
     nge_entity_destroy(potion);
     nge_entity_release(nge_entity_next_dying());
     cursed = gen_item(IT_RUSTY_SWORD, h);
@@ -829,7 +829,7 @@ static void test_exchange(void)
     inv_drop_all(h);   /* the curse doesn't stop a death's drop: start again with an empty pack */
     events();
 
-    /* Rings: the one in use goes, not the free slot (R44); a slot asked for; worn effects counted */
+    /* Rings: the one in use goes, not the free slot (R5); a slot asked for; worn effects counted */
     ring1 = gen_item(IT_RING_HEALTH_2, h);
     ring2 = gen_item(IT_RING_HEALTH_2, h);
     ring3 = gen_item(IT_RING_HEALTH_2, h);

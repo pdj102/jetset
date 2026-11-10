@@ -34,7 +34,8 @@
  * - refused: a precondition failed and nothing changed: the turn isn't
  *   used, no events (blocked by a wall, not consumable);
  * - attempted: the action was tried and didn't succeed: the turn is used
- *   and events say so (an attack that missed).
+ *   (an attack that missed). Some post an event (EV_MISSED); others leave
+ *   the text to the reason (rooted, a failed pick).
  * The action sets a->used from that (1 on success), so callers decide
  * whether the entity used its turn from used alone; act_attempted() tells
  * the two kinds apart for callers that care. Every action takes the same
@@ -240,7 +241,7 @@ uint8_t act_equip(act_t *a, uint8_t mode) NGE_BANKED;
  * Refused with ACT_R_NO_INVENTORY, ACT_R_NOT_CARRIED,
  * ACT_R_ALREADY_EQUIPPED, ACT_R_CANT_EQUIP, ACT_R_NO_SLOT, ACT_R_CURSED
  * (a->target: the cursed item) or ACT_R_FULL (a->target: the second item
- * to come off). See docs/actions.md, section 6.14.
+ * to come off). See docs/action_exchange.md.
  */
 uint8_t act_exchange(act_t *a, uint8_t mode) NGE_BANKED;
 
@@ -445,7 +446,7 @@ uint8_t act_unlock(act_t *a, uint8_t mode) NGE_BANKED;
  *        tile (a->x, a->y) (SPELL_BOLT), or the creature on that tile, past
  *        any on the way (SPELL_DIRECT), within the spell's range. Costs the
  *        MP of its level; an ability (level 0) needs no mana. No roll: a
- *        valid cast always happens. See docs/spells.md, section 4.4.
+ *        valid cast always happens. See docs/action_cast.md.
  *
  * Inputs: actor (alive, placed), spell, and x, y for a bolt or a direct
  * spell. Outputs: target; spell is left as it was, so a context can be
@@ -461,10 +462,10 @@ uint8_t act_unlock(act_t *a, uint8_t mode) NGE_BANKED;
 uint8_t act_cast(act_t *a, uint8_t mode) NGE_BANKED;
 
 /**
- * @brief Learn a spell from a spell book (docs/spells.md, section 10.5.4).
+ * @brief Learn a spell from a spell book (docs/action_learn.md).
  *
  * In: actor (alive), item (the book), spell (SP_NONE to ask about the book
- * only, in check mode: D24). Succeeds if the actor carries the item,
+ * only, in check mode: D2). Succeeds if the actor carries the item,
  * stowed, it is a book (ITEM_BOOK), the actor is the player with mana and
  * spells, the spell is in the book, not known, and its level has a slot
  * (spell_slots()) that is free (spell_free()): spell_learn(), which posts

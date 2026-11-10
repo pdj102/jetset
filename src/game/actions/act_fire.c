@@ -76,7 +76,7 @@ uint8_t act_fire(act_t *a, uint8_t mode) NGE_BANKED
     a->amount = ammo.range;
 
     /* 2. Validate: a line to something that can be hit */
-    reason = act_line(a, a->amount, ACT_LINE_BOLT);   /* a shot flies (D29) */
+    reason = act_line(a, a->amount, ACT_LINE_BOLT);   /* a shot flies (docs/action_fire.md, D3) */
     if (reason != ACT_R_NONE) {
         return act_fail(a, reason);
     }

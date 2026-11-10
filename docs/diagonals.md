@@ -12,7 +12,7 @@ targeting cursor, and adds two small things to `nge_input`.
 ## 1. Goal
 
 Actions and the AI already use all eight directions ([actions.md](actions.md)
-4.7, "Diagonals"): `act_move()` takes `dx`, `dy` of -1, 0 or 1 each, and a
+4.7, "Directions"): `act_move()` takes `dx`, `dy` of -1, 0 or 1 each, and a
 monster can step or attack diagonally. The player's keys give only four, so
 a monster standing diagonally can hit the player, and the player can't hit
 back without first stepping. That is a limit of the command, not the action.

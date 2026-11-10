@@ -1,6 +1,6 @@
 /*
  * The cast action: banked in BANK_56 with the other actions (see act.h for
- * the pattern its steps follow). See docs/spells.md, section 4.4.
+ * the pattern its steps follow). See docs/action_cast.md.
  */
 #ifdef __SDCC
 #pragma codeseg BANK_56

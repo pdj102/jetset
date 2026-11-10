@@ -13,7 +13,7 @@ The data is not repeated here. The kinds are in
 [feature.h](../src/game/components/feature.h), and the effects in
 [effects_pdata.c](../src/game/effects/effects_pdata.c). An entity's lifecycle,
 ownership and clean-up are specified in [ecs.md](ecs.md). The actions'
-pattern is in [actions.md](actions.md), and its section 6.9 points here.
+pattern is in [actions.md](actions.md), and the feature actions have files of their own (4.6).
 
 ## 1. Overview
 
@@ -102,7 +102,7 @@ disarmed trap needs no saving. A revisited depth is a new level.
 - **R7** A **container** holds items that are generated with it. They drop on
   its tile when it is opened, or when it is broken.
 - **R8** A container that opens can be locked, and is unlocked as a door is,
-  by the same rule and action (actions.md 6.5).
+  by the same rule and action ([action_unlock.md](action_unlock.md)).
 - **R9** A **breakable** feature has hit points, AC and damage masks, is
   attacked as a creature is, and is destroyed at 0 hit points. It gives no XP
   and takes no effects.
@@ -141,7 +141,7 @@ disarmed trap needs no saving. A revisited depth is a new level.
   a free corridor tile 3 times in 4, else on free room floor, never on a
   doorway or a stairs tile. Reason: section 12.
 - **R19** Nothing else is generated on a feature's tile, and no feature goes
-  in a locked room (actions.md R35).
+  in a locked room (action_unlock.md R9).
 - **R20** A feature never cuts off the stairs or the quest item. Locks and
   hidden features may cut off only what is optional.
 
@@ -258,28 +258,18 @@ a boulder does nothing (Q6).
 
 ### 4.6 Actions
 
-Three actions are added, with the numbers actions.md 6.1 reserved, each given
-when it is built:
+Three actions use features, each specified in its own file: `ACT_OPERATE`
+([action_operate.md](action_operate.md)), `ACT_SEARCH`
+([action_search.md](action_search.md)) and `ACT_DISARM`
+([action_disarm.md](action_disarm.md)). Open, close, unlock, operate and disarm find their
+feature with `act_find_feature()` (actions.md, 4.13). A rooted actor can operate,
+search and disarm, as none of them changes its tile.
 
-| Action | Context | Refused | Attempted | Success |
-|---|---|---|---|---|
-| `ACT_OPERATE` | A feature next to the actor or on its tile, by `target` or direction | `ACT_R_NOTHING_THERE`, `ACT_R_CANT_OPERATE`, `ACT_R_SPENT`, `ACT_R_OUT_OF_RANGE` | None | Use hook applied; spent if `FCAN_ONCE`; `EV_OPERATED` |
-| `ACT_SEARCH` | The actor's tile and its eight neighbours | None | None | Each hidden feature there rolls; found ones get `EV_FOUND`. Finding nothing is still a success |
-| `ACT_DISARM` | A known feature with `FCAN_DISARM`, next to the actor or on its tile | `ACT_R_NOTHING_THERE`, `ACT_R_CANT_DISARM` | `ACT_R_DISARM_FAILED`, `ACT_R_SET_OFF` | `EV_DISARMED`, then destroyed |
-
-`find_openable()` in `act_open.c` becomes a shared `find_feature(a, can)`
-that all six feature actions use. A rooted actor can operate, search and
-disarm, as none of them changes its tile.
-
-The existing actions need these changes:
-
-| Action | Change |
-|---|---|
-| `ACT_OPEN` | None. A container empties in reaction to `EV_OPENED` (4.9) |
-| `ACT_CLOSE` | A container that is open refuses with `ACT_R_CANT_OPEN`. Once it has spilled there is nothing to close it on |
-| `ACT_DESCEND` | On a trap that leads down: arrives at random (`LEVEL_ARRIVE_ANY`), not at the up stairs |
-| `ACT_MELEE`, `ACT_FIRE` | None: they already strike anything with the health component |
-| `ACT_MOVE` | None: it already posts `EV_STOOD_ON` for each entity on the new tile |
+Features also change what three existing actions do: `ACT_CLOSE` refuses an open
+container ([action_open.md](action_open.md)), `ACT_OPEN` on a container spills it in
+reaction to `EV_OPENED` (4.9), and `ACT_DESCEND` goes down a known trapdoor, arriving
+anywhere ([action_stairs.md](action_stairs.md)). Melee and fire already strike anything
+with health, and move already posts `EV_STOOD_ON` for each entity on the new tile.
 
 ### 4.7 Events and reactions
 
@@ -343,7 +333,7 @@ known trap without `FCAN_DISARM` (a web) can be walked into.
 - **Leaving the level** destroys them with the chest: features lose their
   location first, so nothing is dropped (level_transitions.md R13).
 - **A locked container** uses `feature_lock()`, and its key is placed as a
-  door's is (actions.md 6.12, R34): on free floor outside every locked room,
+  door's is (action_unlock.md R8, R10): on free floor outside every locked room,
   never inside the chest it opens (Q4, D17). The lock's kind is rolled by
   depth as a door's. Chests are locked after the side rooms, from what is left
   of `LEVEL_LOCKS_MAX`, one chest in three at most.
@@ -502,7 +492,7 @@ Spent and open looks share the ready look where a kind can't be used up.
   draughts), 100 bytes of slot 0 for what `FCAN_ONCE` covers. A count can be
   added with the first kind that needs it.
 - **D3 A chest is a door that holds items.** It opens and unlocks with the
-  existing actions (actions.md 6.9), its lock is a door's, and the bump rule
+  existing actions (action_open.md, action_unlock.md), its lock is a door's, and the bump rule
   already opens it. *Rejected:* `ACT_LOOT`, or opening by operating, which
   repeats what opening does.
 - **D4 Contents are entities owned by the container.** That is how a pack
@@ -516,7 +506,7 @@ Spent and open looks share the ready look where a kind can't be used up.
   missed, damaged and destroyed by the code that does it to creatures, and
   the damage masks say what breaks them. *Rejected:* a "break" action with its
   own roll, which repeats melee.
-- **D7 A trap fires as a reaction to `EV_STOOD_ON`** (actions.md 6.9), so
+- **D7 A trap fires as a reaction to `EV_STOOD_ON`** (actions.md, section 6), so
   every way onto a tile that posts it sets traps off, and the move action
   stays as it is. *Rejected:* a check in `act_move()`, which would make the
   move's result depend on the trap.
@@ -555,7 +545,7 @@ Spent and open looks share the ready look where a kind can't be used up.
   feature through attacks only. *Rejected:* attributes for features, so that
   a fire bolt burns a web: a cost in slot 0 for one kind (Q6).
 - **D17 A locked chest's key is placed as a door's** (Q4). The rule of
-  actions.md 6.12 then covers both, and a chest's lock is never part of the
+  action_unlock.md then covers both, and a chest's lock is never part of the
   way to the stairs. The cap is shared and side rooms come first, so chests
   never take a lock from a door. *Rejected:* making the locked side room's
   item a chest, a lock behind a lock. *Rejected:* a cap of their own, which
@@ -582,8 +572,8 @@ Each step builds and passes the tests on its own:
 
 ### 7.1 Documents changed with the build
 
-- **actions.md:** R30 and 6.9 point here. 6.1's reasons and events take
-  their final names.
+- **actions.md and the action files:** the three actions, their reasons and
+  events, in action_operate.md, action_search.md and action_disarm.md.
 - **events.md:** the four new events in the table of events and reactions.
 - **feature.h, gen.h, gen_internal.h:** the comments on what features are and
   do.
