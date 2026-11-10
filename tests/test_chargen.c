@@ -91,11 +91,12 @@ int main(void)
     CHECK(in_slot(IT_LEATHER_ARMOUR, SLOT_BODY));
     CHECK(in_slot(IT_SHIELD, SLOT_SHIELD));
     CHECK(items() == 3 && inv_count(actor_player) == 0);   /* all equipped */
+    CHECK(carried(IT_BOOK_BASIC) == NGE_ENTITY_INVALID);
     CHECK(health_ac[actor_player] > health_ac_base[actor_player]);   /* the armour and shield count */
     CHECK(nge_event_count() == 0);                                     /* no "You wield..." */
     used_fighter = (uint8_t)(NGE_ENTITY_MAX - nge_entity_free_count());
 
-    /* ---- the Mage, made over the Fighter: frail, with mana and Magic Bolt; a typed name ---- */
+    /* ---- the Mage, made over the Fighter: frail, with mana, Magic Bolt and a spell book; a typed name ---- */
     chargen_make(PC_CLASS_MAGE, "Ana");
     CHECK(actor_player == 0 && pc_class == PC_CLASS_MAGE && kind_index[actor_player] == CR_MAGE);
     CHECK(strcmp(pc_name, "Ana") == 0);
@@ -106,10 +107,11 @@ int main(void)
     CHECK(in_slot(IT_DAGGER, SLOT_WEAPON));
     CHECK(in_slot(IT_SLING, SLOT_RANGED));
     CHECK(in_slot(IT_STONES, SLOT_AMMO));
-    CHECK(items() == 3 && carried(IT_SHORT_SWORD) == NGE_ENTITY_INVALID);
+    CHECK(in_slot(IT_BOOK_BASIC, SLOT_NONE));   /* carried, not equipped (docs/spells.md R44) */
+    CHECK(items() == 4 && inv_count(actor_player) == 1 && carried(IT_SHORT_SWORD) == NGE_ENTITY_INVALID);
     CHECK(nge_event_count() == 0);
     used_mage = (uint8_t)(NGE_ENTITY_MAX - nge_entity_free_count());
-    CHECK(used_mage == used_fighter + 1);   /* the same, and mana's regeneration: nothing of the Fighter's is left */
+    CHECK(used_mage == used_fighter + 2);   /* the same, mana's regeneration and the book: nothing of the Fighter's is left */
     chargen_make(PC_CLASS_MAGE, "Ana");
     CHECK((uint8_t)(NGE_ENTITY_MAX - nge_entity_free_count()) == used_mage);
 
@@ -118,7 +120,7 @@ int main(void)
     CHECK(strlen(pc_name) == PC_NAME_MAX);
 
 #if GAME_DEV_KIT
-    /* ---- the Dev: 12s; its four equipped, the rest of the development kit carried ---- */
+    /* ---- the Dev: 12s; its four equipped, the book and the rest of the development kit carried ---- */
     chargen_make(PC_CLASS_DEV, "");
     CHECK(pc_class == PC_CLASS_DEV && kind_index[actor_player] == CR_PLAYER);
     CHECK(strcmp(pc_name, "Dev") == 0);
@@ -128,7 +130,8 @@ int main(void)
     CHECK(in_slot(IT_PLATE_ARMOUR_2, SLOT_BODY));
     CHECK(in_slot(IT_SHORT_BOW, SLOT_RANGED));
     CHECK(in_slot(IT_RING_FRAILTY, SLOT_NONE) && in_slot(IT_POTION_HASTE, SLOT_NONE));   /* cursed: not put on */
-    CHECK(items() == 17 && inv_count(actor_player) == 13);
+    CHECK(in_slot(IT_BOOK_BASIC, SLOT_NONE));
+    CHECK(items() == 18 && inv_count(actor_player) == 14);
     CHECK(health_immune[actor_player] == DMG_BIT(DMG_ACID) && health_resist[actor_player] == DMG_BIT(DMG_FIRE));
     CHECK(nge_event_count() == 0);
 #endif

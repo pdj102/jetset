@@ -1897,7 +1897,7 @@ int main(void)
         CHECK(starts(HELP(), "Up/down:class N:change name ENTER:start"));
         CHECK(said("i inv, d drop, f fire, x look, Q quit."));
 
-        /* Down: the Mage, frail, with mana, a spell, and stones counted */
+        /* Down: the Mage, frail, with mana, a spell, stones counted and a spell book */
         fresh();
         press(EV(NGE_KEY_DOWN));
         press(EV(NGE_KEY_ENTER));
@@ -1911,6 +1911,7 @@ int main(void)
         CHECK(starts(seen_cols(1, 14, 13, 39), " dagger"));
         CHECK(starts(seen_cols(1, 15, 13, 39), " sling"));
         CHECK(starts(seen_cols(1, 16, 13, 39), " pouch of stones ("));
+        CHECK(starts(seen_cols(1, 17, 13, 39), " basic spellbook ") && INK(17, 14) != L2_CYAN);   /* carried */
 
         /* The ends: up from the first and down from the last stay put (j and k too) */
         fresh();
@@ -1956,7 +1957,7 @@ int main(void)
         CHECK(strstr(OVER_ROW(2), " ana the Dev ") != NULL);
         CHECK(strcmp(seen_cols(1, 7, 13, 39), "Str 12  +1   Int 12  +1    ") == 0);
         CHECK(starts(seen_cols(1, 14, 13, 39), " sword"));
-        CHECK(starts(seen_cols(1, 27, 13, 39), " and 4 more in the pack"));
+        CHECK(starts(seen_cols(1, 27, 13, 39), " and 5 more in the pack"));
 #endif
         TEST_EXPECT_HALT(chargen_run(CHARGEN_CLASSES, cname));
     }

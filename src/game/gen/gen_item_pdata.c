@@ -14,6 +14,7 @@
 #include "data/sprite_data.h"
 #include "game/actors.h"
 #include "game/level/level.h"
+#include "game/spells/spells.h"
 #include "sprite/nge_sprite.h"
 
 /* An item's sprite: one still pattern in a bank */
@@ -1290,6 +1291,28 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .subclass = ITEM_TREASURE,
         .count = 250,
         .where = { .depth = 7, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 2 },
+    },
+    /* ---- Spell books (docs/spells.md 10.5.3, D28): group is the book's list; can't be used ---- */
+    [IT_BOOK_BASIC] = {
+        .name = "basic spellbook",
+        .render = ITEM_RENDER(SPRITE_BOOK, BANK_BLUE),
+        .subclass = ITEM_BOOK,
+        .group = SPELL_BOOK_BASIC,
+        .where = { .depth = 1, .depth_max = 5, .rarity = 4 },
+    },
+    [IT_BOOK_ADEPT] = {
+        .name = "adept's spellbook",
+        .render = ITEM_RENDER(SPRITE_BOOK, BANK_PURPLE),
+        .subclass = ITEM_BOOK,
+        .group = SPELL_BOOK_ADEPT,
+        .where = { .depth = 4, .depth_max = 8, .rarity = 10 },
+    },
+    [IT_BOOK_MASTER] = {
+        .name = "master's spellbook",
+        .render = ITEM_RENDER(SPRITE_BOOK, BANK_GOLD),
+        .subclass = ITEM_BOOK,
+        .group = SPELL_BOOK_MASTER,
+        .where = { .depth = 8, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 10 },
     },
     /* ---- Quest ---- */
     /* The quest item (docs/winning.md). Rarity 0: never at random */

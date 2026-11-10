@@ -159,6 +159,7 @@ the records, so adding one should change code and leave the data alone.
 | `ITEM_TOOL` | Lock picks | Group is its bonus; count is uses |
 | `ITEM_TREASURE` | Gold and gems | Count is gold |
 | `ITEM_QUEST` | The quest item | Rarity 0; see [winning.md](winning.md) |
+| `ITEM_BOOK` | Spell books: basic, adept's, master's (`IT_BOOK_*`, after `IT_QUEST`) | Group is its list of spells (`SPELL_BOOK_*`); no hook, can't be used, worn or aimed; read with `b`. See [spells.md](spells.md) section 10 |
 
 ### 4.3 Where an item is
 

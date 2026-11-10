@@ -60,6 +60,13 @@
 /* Spell levels: 0 is an ability, which costs nothing */
 #define SPELL_LEVEL_MAX  5
 
+/* Spell books (docs/spells.md 10.5.3): an ITEM_BOOK kind's group, a row of spell_books[] */
+#define SPELL_BOOK_BASIC   0   /**< Spells of levels 1 and 2. */
+#define SPELL_BOOK_ADEPT   1   /**< Levels 3 and 4. */
+#define SPELL_BOOK_MASTER  2   /**< Level 5. */
+#define SPELL_BOOK_COUNT   3
+#define SPELL_BOOK_MAX     8   /**< Spells in a book, at most. */
+
 #define SPELL_NAME_MAX   14   /**< Characters in a name, at most. */
 #define SPELL_SET_BYTES  4    /**< Bytes of a known set: 1 bit a spell. */
 

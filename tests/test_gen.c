@@ -18,6 +18,7 @@
 #include "game/effects/effects_defs.h"
 #include "game/gen/gen_internal.h"
 #include "game/level/level.h"
+#include "game/spells/spells.h"
 #include "game/timers.h"
 #include "game/effects/effects.h"
 
@@ -182,6 +183,9 @@ static int kind_ok(uint8_t kind)
         return (k->group == GROUP_THROWN) ? k->attack.dice != 0 && k->attack.range >= 2 : k->attack.dice == 0;
     case ITEM_KEY:
         return k->group >= KEY_IRON && k->group < KEY_COUNT;
+    case ITEM_BOOK:   /* a list of spells, never used, worn or aimed (docs/spells.md R40) */
+        return k->group < SPELL_BOOK_COUNT && h->ef == EF_NONE && k->fits == 0 &&
+               k->attack.dice == 0 && k->count == 0;
     case ITEM_WEAPON:
         return k->fits == SLOT_BIT(SLOT_WEAPON) && k->attack.dice != 0 && k->attack.range == 1;
     case ITEM_POTION:
@@ -633,6 +637,19 @@ int main(void)
         }
     }
     CHECK(ok);
+    /* The spell books: each names its own list (docs/spells.md 10.5.3), and is made as an item */
+    CHECK(gen_item_subclass(IT_BOOK_BASIC) == ITEM_BOOK && gen_item_group(IT_BOOK_BASIC) == SPELL_BOOK_BASIC);
+    CHECK(gen_item_subclass(IT_BOOK_ADEPT) == ITEM_BOOK && gen_item_group(IT_BOOK_ADEPT) == SPELL_BOOK_ADEPT);
+    CHECK(gen_item_subclass(IT_BOOK_MASTER) == ITEM_BOOK && gen_item_group(IT_BOOK_MASTER) == SPELL_BOOK_MASTER);
+    ok = 1;
+    for (kind = 0; kind < IT_COUNT; kind++) {
+        ok = ok && (gen_items[kind].subclass == ITEM_BOOK) == (kind >= IT_BOOK_BASIC && kind <= IT_BOOK_MASTER);
+    }
+    CHECK(ok);
+    CHECK(gen_item_hook(IT_BOOK_BASIC, GEN_HOOK_USE) == 0 && gen_item_fits(IT_BOOK_BASIC) == 0);
+    id = gen_item(IT_BOOK_ADEPT, AREA);
+    CHECK(item_ok(id, AREA, IT_BOOK_ADEPT) && !ATTACK_HAS(id, ATTACK_MELEE));
+    nge_entity_destroy(id);
     /* A negative power and a ranged kind, as made */
     CHECK((int8_t)gen_items[IT_RING_FRAILTY].hook.power == -3 && GEN_HOOK_POWER(gen_item_hook(IT_RING_FRAILTY, GEN_HOOK_WORN)) == -3);
     id = gen_item(IT_LONG_BOW, AREA);

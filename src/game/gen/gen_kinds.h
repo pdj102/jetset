@@ -198,7 +198,10 @@
 #define IT_GEM_RUBY          157
 #define IT_GEM_DIAMOND       158
 #define IT_QUEST             159
-#define IT_COUNT             160
+#define IT_BOOK_BASIC        160   /* spell books (docs/spells.md 10.5.3): after IT_QUEST, so no number moves */
+#define IT_BOOK_ADEPT        161
+#define IT_BOOK_MASTER       162
+#define IT_COUNT             163
 
 /* Features (CLASS_FEATURE) */
 #define FT_DOOR         0
@@ -242,7 +245,8 @@
 #define ITEM_KEY        13
 #define ITEM_TOOL       14
 #define ITEM_TREASURE   15
-#define ITEM_COUNT      16
+#define ITEM_BOOK       16   /* a spell book: group is a SPELL_BOOK_* (docs/spells.md 10.5.3) */
+#define ITEM_COUNT      17
 
 /* Item flags, in each item's kind record: their rules are in the inventory component */
 #define ITEMF_TWO_HANDS  0x01   /* fills SLOT_SHIELD too */

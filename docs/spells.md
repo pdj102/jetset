@@ -855,9 +855,16 @@ from the to-do list, with the reason.
 
   | Book | Kind | Spells | Depths | Rarity | Colourway |
   |---|---|---|---|---|---|
-  | basic spellbook | `IT_BOOK_BASIC` | Magic Bolt, Cure Wounds, Hold, Enfeeble | 1-5 | 2 | `BANK_BLUE` |
-  | adept's spellbook | `IT_BOOK_ADEPT` | Fire Bolt, Frost Bolt, Stoneskin, Haste | 4-8 | 2 | `BANK_PURPLE` |
-  | master's spellbook | `IT_BOOK_MASTER` | Power Bolt, Renewal | 8-10 | 1 | `BANK_GOLD` |
+  | basic spellbook | `IT_BOOK_BASIC` | Magic Bolt, Cure Wounds, Hold, Enfeeble | 1-5 | 4 | `BANK_BLUE` |
+  | adept's spellbook | `IT_BOOK_ADEPT` | Fire Bolt, Frost Bolt, Stoneskin, Haste | 4-8 | 10 | `BANK_PURPLE` |
+  | master's spellbook | `IT_BOOK_MASTER` | Power Bolt, Renewal | 8-10 | 10 | `BANK_GOLD` |
+
+  *Changed in step 6 (CSpect check 7):* the first rarities, 2, 2 and 1, against item weights
+  of 214 to 420 a depth and 4 to 10 items a level, gave about a 5% chance of a book a level,
+  and half a book a game. Levels now place 9 to 15 items (`LEVEL_ITEMS_*`,
+  [difficulty.md](difficulty.md) section 6), and with these rarities a player who clears
+  each depth finds a book at some depth of its band with a chance of about 50% (basic, which
+  the Mage starts with), 80% (adept) and 75% (master).
 
   The first level 3 slot comes at level 5, the player's level on reaching depth 5 (D2 of
   difficulty.md), so the adept's book starts a depth earlier, at 4. The master's starts at

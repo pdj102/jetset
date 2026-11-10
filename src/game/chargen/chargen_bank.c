@@ -34,12 +34,12 @@ static const chargen_kit_t kit_fighter[] = {
 };
 
 static const chargen_kit_t kit_mage[] = {
-    { IT_DAGGER, 1 }, { IT_SLING, 1 }, { IT_STONES, 1 },
+    { IT_DAGGER, 1 }, { IT_SLING, 1 }, { IT_STONES, 1 }, { IT_BOOK_BASIC, 0 },
 };
 
 /* The development kit (game/dev.h): the pack keeps 2 places free */
 static const chargen_kit_t kit_dev[] = {
-    { IT_SWORD, 1 }, { IT_PLATE_ARMOUR_2, 1 }, { IT_SHORT_BOW, 1 }, { IT_ARROWS, 1 },
+    { IT_SWORD, 1 }, { IT_PLATE_ARMOUR_2, 1 }, { IT_SHORT_BOW, 1 }, { IT_ARROWS, 1 }, { IT_BOOK_BASIC, 0 },
 #if GAME_DEV_KIT
     { IT_HEAL_DRAUGHT, 0 }, { IT_STAFF_HEALING, 0 }, { IT_RING_HEALTH_2, 0 }, { IT_RING_FRAILTY, 0 },
     { IT_POTION_HASTE, 0 }, { IT_WAND_SLEEP, 0 }, { IT_LOCK_PICK, 0 }, { IT_WAND_FIRE, 0 },

@@ -71,7 +71,7 @@ with the reason.
   |---|---|---|---|
   | Abilities | high Str, Dex; low Int, Wis | high Int, Wis; low Str, Dex | 12 in each (Q3) |
   | Mana | none | yes | yes |
-  | Kit | short sword, leather armour, shield | dagger, sling, stones | sword, plate armour +2, short bow, arrows (Q4) |
+  | Kit | short sword, leather armour, shield | dagger, sling, stones, basic spellbook | sword, plate armour +2, short bow, arrows, basic spellbook (Q4) |
 
   The figures are in D4.
 - **R7 (New)** A class with mana knows Magic Bolt, as today's player does.
@@ -160,8 +160,8 @@ Later, each in its own spec or to-do item:
   | Class | Equipped | Carried |
   |---|---|---|
   | Fighter | `IT_SHORT_SWORD`, `IT_LEATHER_ARMOUR`, `IT_SHIELD` | |
-  | Mage | `IT_DAGGER`, `IT_SLING`, `IT_STONES` | |
-  | Dev | `IT_SWORD`, `IT_PLATE_ARMOUR_2`, `IT_SHORT_BOW`, `IT_ARROWS` | the rest of today's `dev_kit[]` |
+  | Mage | `IT_DAGGER`, `IT_SLING`, `IT_STONES` | `IT_BOOK_BASIC` ([spells.md](spells.md) R44) |
+  | Dev | `IT_SWORD`, `IT_PLATE_ARMOUR_2`, `IT_SHORT_BOW`, `IT_ARROWS` | `IT_BOOK_BASIC`, and the rest of today's `dev_kit[]` |
 
 - **D5 A kit item is equipped only if its record says so (R8).** Each kit
   entry is a kind plus an equip flag. It is made with `gen_item()`, owned

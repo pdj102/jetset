@@ -152,7 +152,7 @@ table: D6 there) and the generator tables in `game/gen`. The check is
 | HP die per level | d8 | `PC_HIT_DIE` |
 | Rooms per level | 5-10 | `LEVEL_ROOMS_MIN/MAX` (game/level/level_internal.h) |
 | Monsters per level | 2-5 | `LEVEL_MONSTERS_MIN/MAX` |
-| Items per level | 4-10, plus locked rooms and containers | `LEVEL_ITEMS_*`, `LEVEL_LOCKS_MAX`, `LEVEL_FEATURES_MAX`, `LEVEL_CONTENTS_MAX` |
+| Items per level | 9-15 (4-10 until 2026-11-10, raised so spell books are found: [spells.md](spells.md) D28), plus locked rooms and containers | `LEVEL_ITEMS_*`, `LEVEL_LOCKS_MAX`, `LEVEL_FEATURES_MAX`, `LEVEL_CONTENTS_MAX` |
 | Kinds, bands, rarity, XP, HP | 20 random creature kinds, 159 item kinds | `gen_creature_pdata.c`, `gen_item_pdata.c`, `gen_feature_pdata.c` |
 | Pace | level *d* at depth *d* | `TARGETS` (D2) |
 

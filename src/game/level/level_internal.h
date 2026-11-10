@@ -51,8 +51,8 @@
 #define LEVEL_LOCKS_MAX     2  /* locks per level: side rooms first, then chests (docs/features.md D17) */
 #define LEVEL_FEATURES_MAX  4  /* random features per level (docs/features.md R17) */
 #define LEVEL_CONTENTS_MAX  4  /* items in containers per level (R24) */
-#define LEVEL_ITEMS_MIN     4  /* items per level, not counting a locked room's */
-#define LEVEL_ITEMS_MAX     10
+#define LEVEL_ITEMS_MIN     9  /* items per level, not counting a locked room's */
+#define LEVEL_ITEMS_MAX     15
 #define LEVEL_MONSTERS_MIN  2  /* monsters per level */
 #define LEVEL_MONSTERS_MAX  5
 
