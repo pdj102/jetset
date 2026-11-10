@@ -49,7 +49,18 @@ D1 - Create a roadmap guide for game mechanic scaling `[spec]` [spec](difficulty
 ## M
 ## N
 ## O
-## P
+## P — Performance optimisations
+
+### P1 Entity loops scale with entities in use, not NGE_ENTITY_MAX ([slot0_tables.md](slot0_tables.md) R9)
+
+- P1.1 Time a monster turn and an idle frame at NGE_ENTITY_MAX 150 against
+  100, in CSpect and on hardware
+- P1.2 Timer system's three loops over every ID (`nge_timer.c`) walk the
+  used list instead
+- P1.3 The other loops over every ID, if timing still shows them:
+  `nge_location_find()`, the inventory walks (`inventory.c`), `act_pickup.c`,
+  `player_bank.c`, the owner searches (`nge_owner_set.c`)
+
 ## S - Spells
 ### S1 - Magical Player Characters have Spell Slots `[plan]` [spec](spells.md) (section 10), [plan](spells_plan.md) (part 2)
 - S1.1 A Spell Slots table defines the number of spells a Player Character can learn by Spell Level 
