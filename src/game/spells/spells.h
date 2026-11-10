@@ -15,9 +15,14 @@
  * Known spells: the component COMPONENT_SPELLS, a set of 1 bit a spell for
  * each caster, in the module's page data (page 135). A kind's record lists
  * the spells its creatures start with (spell_add()); spell_learn() is the
- * only way to add one later, and posts EV_SPELL_LEARNED. The player learns
- * the spells of each character level as they reach it
- * (spell_learn_level(), from level_up() in game/components/pc.c).
+ * only way to add one later, and posts EV_SPELL_LEARNED.
+ *
+ * Slots and books (docs/spells.md section 10): the player has spell slots
+ * at each spell level, by class and character level (spell_slots()); each
+ * known spell fills one of its level. The player learns only from a spell
+ * book, an item whose kind's group is a SPELL_BOOK_* list (spell_book()),
+ * into a free slot (spell_free()): ACT_LEARN, which ends in spell_learn().
+ * Monsters have no slots and know their kind's list.
  *
  * Banking: banked (NGE_BANKED, page 134, with the data in page 135): don't
  * call these while game code has its own page mapped in slot 6 or 7.
@@ -81,7 +86,6 @@ typedef struct spell_def {
     uint8_t     ef;      /**< EF_*: what it does; never EF_NONE or worn. */
     int8_t      power;   /**< The effect's power: above 0. */
     uint8_t     range;   /**< A bolt's or direct spell's reach (nge_map_within()); 0 for SPELL_SELF. */
-    uint8_t     learn;   /**< The character level the player learns it at; 0 for never. */
     uint8_t     ai;      /**< SPELL_AI_*. */
 } spell_def_t;
 
@@ -106,8 +110,37 @@ uint8_t spell_knows(nge_entity_id_t id, uint8_t sp) NGE_BANKED;
  */
 void spell_learn(nge_entity_id_t id, uint8_t sp) NGE_BANKED;
 
-/** @brief Teach caster id every spell learned at character level level (none for 0). */
-void spell_learn_level(nge_entity_id_t id, uint8_t level) NGE_BANKED;
+/**
+ * @brief The spell slots id has at spell level level (1 to SPELL_LEVEL_MAX):
+ *        the slot table's for the player's class and character level if id
+ *        is the player with mana; 0 for anything else.
+ */
+uint8_t spell_slots(nge_entity_id_t id, uint8_t level) NGE_BANKED;
+
+/**
+ * @brief The free slots id has at spell level level: spell_slots() less the
+ *        spells of that level id knows, 0 if none (never below 0).
+ */
+uint8_t spell_free(nge_entity_id_t id, uint8_t level) NGE_BANKED;
+
+/**
+ * @brief 1 if character level pc_level (PC_LEVEL_MIN to PC_LEVEL_MAX) gives
+ *        class cls a slot, at any spell level, that pc_level - 1 didn't; 0
+ *        for level 1. Reads only the table, so a message handler that runs
+ *        after more levels is still right for this one (docs/spells.md, D26).
+ */
+uint8_t spell_slots_new(uint8_t cls, uint8_t pc_level) NGE_BANKED;
+
+/**
+ * @brief Copy book book's spells (SPELL_BOOK_*) into list, in order, and
+ *        return how many there are.
+ * @param list In common memory (the caller's stack), SPELL_BOOK_MAX bytes:
+ *        entries past the count are SP_NONE.
+ */
+uint8_t spell_book(uint8_t book, uint8_t *list) NGE_BANKED;
+
+/** @brief 1 if spell sp is in book book (SPELL_BOOK_*); 0 for SP_NONE. */
+uint8_t spell_in_book(uint8_t book, uint8_t sp) NGE_BANKED;
 
 /**
  * @brief The next spell after sp that caster id knows, wrapping round to

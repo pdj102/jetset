@@ -136,14 +136,13 @@ int main(void)
     events();
     CHECK(first(EV_XP_GAINED) == 0 && count(EV_LEVEL_GAINED) == 1 && count(EV_HEALED) == 1);
     CHECK(seen[first(EV_LEVEL_GAINED)].p1 == 2);
-    /* Then the spells of level 2: Cure Wounds */
-    CHECK(seen[seen_count - 1].id == EV_SPELL_LEARNED && seen[seen_count - 1].p1 == SP_CURE_WOUNDS &&
-          first(EV_LEVEL_GAINED) == seen_count - 2 && spell_knows(p, SP_CURE_WOUNDS));
+    /* The level last, and no spell learned: spells come from books (docs/spells.md, D18) */
+    CHECK(first(EV_LEVEL_GAINED) == seen_count - 1 && count(EV_SPELL_LEARNED) == 0 && !spell_knows(p, SP_CURE_WOUNDS));
     /* MP the same way, by 1d4 + Int 12's +1: maximum and current, after the hit points */
     gain = (uint8_t)(mana_mp_max[p] - 5);
     CHECK(gain >= 2 && gain <= 5 && mana_mp_max_base[p] == mana_mp_max[p] && mana_mp[p] == mana_mp_max[p]);
     CHECK(count(EV_MANA_RESTORED) == 1 && seen[first(EV_MANA_RESTORED)].p1 == gain);
-    CHECK(first(EV_HEALED) < first(EV_MANA_RESTORED) && count(EV_ATTRS_CHANGED) == 2 && seen_count == 7);
+    CHECK(first(EV_HEALED) < first(EV_MANA_RESTORED) && count(EV_ATTRS_CHANGED) == 2 && seen_count == 6);
 
     /* ---- hurt: a level heals the gain, not to full ---- */
     health_damage(p, NGE_ENTITY_INVALID, 10, DMG_BLUNT);
@@ -165,8 +164,8 @@ int main(void)
         }
     }
     CHECK(ok && gain == 7);
-    /* Each level 6 events, its spell among them: 19 for three, posted in one handler call, which a queue of 32 holds */
-    CHECK(count(EV_SPELL_LEARNED) == 3 && seen_count == 1 + 3 * 6 && nge_event_peak() <= NGE_EVENT_QUEUE);
+    /* Each level 5 events, and no spell: 16 for three, posted in one handler call, within half the queue of 32 */
+    CHECK(count(EV_SPELL_LEARNED) == 0 && seen_count == 1 + 3 * 5 && nge_event_peak() <= NGE_EVENT_QUEUE / 2);
 
     /* ---- more than 255 XP: the amount in p1 and p2 ---- */
     pc_gain_xp(p, 300);

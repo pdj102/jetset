@@ -207,7 +207,7 @@ anchors:
 
 | Curve | By | Follows | Used by |
 |---|---|---|---|
-| XP needed | level | `level_xp[]` | levels; later spell slots (S2), MP (S3) |
+| XP needed | level | `level_xp[]` | levels; spell slots (S1: [spells.md](spells.md) D27, spell level L at character level 2L - 1); MP |
 | XP available | depth | monster pools, counts (M1-M2), gold (M4) | C1, C2 |
 | Target level | depth | D2: level = depth | anything that should match the player at a depth: monster HP and damage, lock difficulty, trap DCs, item tiers |
 | Monster power | depth | pools: HP, damage, AC (C5) | new monster kinds: choose band and stats so C5 stays smooth |
@@ -215,8 +215,9 @@ anchors:
 
 For example, a new monster kind is given a band of depths and an XP
 value. Running `make balance` then shows its effect on C1, C2, C3 and C5.
-A spell slot table (S2) is given by level, and the target level curve
-says at which depth the player gets each slot.
+The spell slot table (S1, [spells.md](spells.md) D27) is given by
+level, and the target level curve says at which depth the player gets
+each slot: the spell books are found from those depths (D28).
 
 ## 7. Today's results (2026-11-09)
 

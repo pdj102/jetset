@@ -1,6 +1,6 @@
 /*
  * The spells' functions: banked in page 134, with their data in page 135
- * (spells_pdata.c). See docs/spells.md.
+ * (spells_pdata.c). See docs/spells.md; slots and books are section 10.
  */
 #ifdef __SDCC
 #pragma codeseg PAGE_134
@@ -13,6 +13,7 @@
 
 #include "core/nge_util.h"
 #include "event/nge_event.h"
+#include "game/components/mana.h"
 #include "game/events.h"
 
 /* Spell sp's byte and bit in a set: the cast keeps zsdcc from making 1 << 7 a negative int (T-INT-2) */
@@ -72,19 +73,90 @@ void spell_learn(nge_entity_id_t id, uint8_t sp) NGE_BANKED
     nge_event_post(id, EV_SPELL_LEARNED, NGE_EVENT_NONE, sp, 0);
 }
 
-void spell_learn_level(nge_entity_id_t id, uint8_t level) NGE_BANKED
+/* The slot table's row for class cls at character level pc_level: one byte a spell level */
+static const uint8_t *slot_row(uint8_t cls, uint8_t pc_level)
 {
+    nge_util_assert(cls < PC_CLASS_COUNT);
+    nge_util_assert(pc_level >= PC_LEVEL_MIN && pc_level <= PC_LEVEL_MAX);
+    return spell_slots_table[cls][pc_level - PC_LEVEL_MIN];
+}
+
+uint8_t spell_slots(nge_entity_id_t id, uint8_t level) NGE_BANKED
+{
+    nge_util_assert(id < NGE_ENTITY_MAX);
+    nge_util_assert(level >= 1 && level <= SPELL_LEVEL_MAX);
+    if (!PC_IS(id) || !MANA_IS(id)) {
+        return 0;   /* monsters and the Fighter: no slots (R36, R37) */
+    }
+    return slot_row(pc_class, pc_level)[level - 1];
+}
+
+uint8_t spell_free(nge_entity_id_t id, uint8_t level) NGE_BANKED
+{
+    uint8_t slots;
     uint8_t sp;
 
-    check_caster(id);
-    if (level == 0) {
-        return;   /* a row with learn 0 is never learned this way */
+    slots = spell_slots(id, level);
+    if (slots == 0 || !SPELLS_IS(id)) {
+        return slots;
     }
-    for (sp = 1; sp < SPELL_COUNT; sp++) {
-        if (spell_defs[sp].learn == level) {
-            spell_learn(id, sp);
+    for (sp = 1; sp < SPELL_COUNT && slots != 0; sp++) {
+        if (spell_defs[sp].level == level && knows(id, sp)) {
+            slots--;   /* stops at 0: a table retuned below what is known forgets nothing (10.7) */
         }
     }
+    return slots;
+}
+
+uint8_t spell_slots_new(uint8_t cls, uint8_t pc_level) NGE_BANKED
+{
+    const uint8_t *now;
+    const uint8_t *before;
+    uint8_t i;
+
+    now = slot_row(cls, pc_level);
+    if (pc_level == PC_LEVEL_MIN) {
+        return 0;
+    }
+    before = slot_row(cls, (uint8_t)(pc_level - 1));
+    for (i = 0; i < SPELL_LEVEL_MAX; i++) {
+        if (now[i] > before[i]) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+uint8_t spell_book(uint8_t book, uint8_t *list) NGE_BANKED
+{
+    uint8_t i;
+    uint8_t n = 0;
+
+    nge_util_assert(book < SPELL_BOOK_COUNT);
+    for (i = 0; i < SPELL_BOOK_MAX; i++) {
+        list[i] = spell_books[book][i];
+        if (list[i] != SP_NONE) {
+            n++;
+        }
+    }
+    return n;
+}
+
+uint8_t spell_in_book(uint8_t book, uint8_t sp) NGE_BANKED
+{
+    uint8_t i;
+
+    nge_util_assert(book < SPELL_BOOK_COUNT);
+    nge_util_assert(sp < SPELL_COUNT);
+    if (sp == SP_NONE) {
+        return 0;
+    }
+    for (i = 0; i < SPELL_BOOK_MAX; i++) {
+        if (spell_books[book][i] == sp) {
+            return 1;
+        }
+    }
+    return 0;
 }
 
 uint8_t spell_next(nge_entity_id_t id, uint8_t sp, uint8_t ai) NGE_BANKED

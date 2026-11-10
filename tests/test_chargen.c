@@ -68,6 +68,31 @@ static int abilities(uint8_t str, uint8_t dex, uint8_t con, uint8_t in, uint8_t 
            stats_ability[ABIL_WIS][p] == wis && stats_ability[ABIL_CHA][p] == cha;
 }
 
+/* The player's starting spells fit its level 1 slots, at every spell level (docs/spells.md, R38) */
+static int spells_fit(void)
+{
+    spell_def_t def;
+    uint8_t known[SPELL_LEVEL_MAX + 1] = { 0 };
+    uint8_t sp;
+    uint8_t level;
+
+    for (sp = 1; sp < SPELL_COUNT; sp++) {
+        if (spell_knows(actor_player, sp)) {
+            spell_get(sp, &def);
+            known[def.level]++;
+        }
+    }
+    if (known[0] != 0) {
+        return 0;   /* an ability has no slot */
+    }
+    for (level = 1; level <= SPELL_LEVEL_MAX; level++) {
+        if (known[level] > spell_slots(actor_player, level)) {
+            return 0;
+        }
+    }
+    return pc_level == PC_LEVEL_MIN;
+}
+
 int main(void)
 {
     char buf[CHARGEN_NAME_MAX + 1];
@@ -87,6 +112,7 @@ int main(void)
     CHECK(abilities(16, 14, 14, 9, 9, 10));
     CHECK(health_hp_max[actor_player] == 12 && health_hp[actor_player] == 12);
     CHECK(!MANA_IS(actor_player) && !SPELLS_IS(actor_player));
+    CHECK(spells_fit() && spell_slots(actor_player, 1) == 0);   /* no slots, and nothing to fill them */
     CHECK(in_slot(IT_SHORT_SWORD, SLOT_WEAPON));
     CHECK(in_slot(IT_LEATHER_ARMOUR, SLOT_BODY));
     CHECK(in_slot(IT_SHIELD, SLOT_SHIELD));
@@ -104,6 +130,7 @@ int main(void)
     CHECK(health_hp_max[actor_player] == 8);
     CHECK(MANA_IS(actor_player) && mana_mp_max[actor_player] == 8 && mana_mp[actor_player] == 8);
     CHECK(SPELLS_IS(actor_player) && spell_knows(actor_player, SP_MAGIC_BOLT));
+    CHECK(spells_fit() && spell_free(actor_player, 1) == 1);   /* 2 slots, Magic Bolt in one */
     CHECK(in_slot(IT_DAGGER, SLOT_WEAPON));
     CHECK(in_slot(IT_SLING, SLOT_RANGED));
     CHECK(in_slot(IT_STONES, SLOT_AMMO));
@@ -126,6 +153,7 @@ int main(void)
     CHECK(strcmp(pc_name, "Dev") == 0);
     CHECK(abilities(12, 12, 12, 12, 12, 12));
     CHECK(MANA_IS(actor_player) && mana_mp_max[actor_player] == 5 && SPELLS_IS(actor_player));
+    CHECK(spells_fit());
     CHECK(in_slot(IT_SWORD, SLOT_WEAPON));
     CHECK(in_slot(IT_PLATE_ARMOUR_2, SLOT_BODY));
     CHECK(in_slot(IT_SHORT_BOW, SLOT_RANGED));

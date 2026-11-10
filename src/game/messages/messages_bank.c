@@ -22,6 +22,8 @@
 #include "game/components/health.h"
 #include "game/components/item.h"
 #include "game/components/kind.h"
+#include "game/components/mana.h"
+#include "game/components/pc.h"
 #include "game/dev.h"
 #include "game/effects/effects.h"
 #include "game/events.h"
@@ -418,6 +420,9 @@ void messages_on_event(const nge_event_t *e) NGE_BANKED
         break;
     case EV_LEVEL_GAINED:
         say_level(p1);
+        if (MANA_IS(target) && spell_slots_new(pc_class, p1)) {   /* the table, not the player: more levels may have come (D26) */
+            screen_message("You can learn more spells from a book.");
+        }
         break;
     case EV_CAST:
         say_cast(source, p1);

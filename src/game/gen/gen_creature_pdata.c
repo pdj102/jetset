@@ -75,7 +75,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .stats = { .speed = 10, .ability = { 12, 12, 12, 12, 12, 12 } },   /* Str Dex Con Int Wis Cha */
         .health = { .hp_max = 12, .ac = 10 },
         .mana = { .mp_max = 5 },
-        .spells = { SP_MAGIC_BOLT },                    /* every spell learned at level 1: level 1 is never gained */
+        .spells = { SP_MAGIC_BOLT },                    /* the starting spells: within level 1's slots (docs/spells.md, R38) */
         .melee = { .to_hit = 0, .dice = 1, .sides = 2, .bonus = 0, .type = DMG_BLUNT, .range = 1 },   /* fists */
         .inventory = { .capacity = 20, .slots = SLOTS_HUMANOID },
         .xp = 0,
@@ -386,7 +386,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .stats = { .speed = 10, .ability = { 9, 10, 12, 16, 14, 10 } },   /* Str Dex Con Int Wis Cha */
         .health = { .hp_max = 8, .ac = 10 },
         .mana = { .mp_max = 8 },
-        .spells = { SP_MAGIC_BOLT },                    /* every spell learned at level 1: level 1 is never gained */
+        .spells = { SP_MAGIC_BOLT },                    /* the starting spells: within level 1's slots (docs/spells.md, R38) */
         .melee = { .to_hit = 0, .dice = 1, .sides = 2, .bonus = 0, .type = DMG_BLUNT, .range = 1 },   /* fists */
         .inventory = { .capacity = 20, .slots = SLOTS_HUMANOID },
         .xp = 0,

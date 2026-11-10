@@ -1121,3 +1121,15 @@ Open, for review:
   this design).
 - **Q6 (D28)** The book names, depths and rarities.
 - **Q7 (D23)** `b` for read.
+
+### 10.9 As built
+
+Differences from sections 10.1 to 10.8, by step:
+
+- **Step 6.** The books' rarities are 4, 10 and 10, not 2, 2 and 1, and a level places 9 to
+  15 random items, not 4 to 10: the first figures gave about one book in 20 levels (D28).
+- **Step 7.** The level-up message is "You can learn more spells from a book.": the spec's
+  "You can learn more spells: read a spell book." has 45 characters, and a message line
+  holds 40. Page 134 grew by 832 bytes, not about 0.2K: the five functions and their
+  asserts; it has 5.8K free. The slot table is read by its three indices directly: the map
+  shows no new library routine (10.7).

@@ -988,10 +988,23 @@ int main(void)
     CHECK(strcmp(OVER_ROW(11), "               NGE ROGUE                ") == 0);
     CHECK(strcmp(seen_cols(1, 29, 0, 39), BLANK) == 0);   /* no prompt */
     CHECK(starts(HELP(), "Any key: start a new game"));
-    /* A new experience level's message */
+    /* A new experience level's message: a Fighter's row has no slots, so only the welcome */
+    CHECK(MANA_IS(actor_player) && pc_class == PC_CLASS_FIGHTER);
     nge_event_post(actor_player, EV_LEVEL_GAINED, NGE_EVENT_NONE, 2, 0);
     nge_event_process(messages_on_event);
     CHECK(said("Welcome to experience level 2."));
+    /* A Mage's level that adds a slot: the welcome, then the slots (docs/spells.md, R39), whatever pc_level is now */
+    pc_class = PC_CLASS_MAGE;
+    nge_event_post(actor_player, EV_LEVEL_GAINED, NGE_EVENT_NONE, 3, 0);
+    nge_event_process(messages_on_event);
+    CHECK(said("You can learn more spells from a book.") && shown("Welcome to experience level 3."));
+    /* Without mana, none: a class's table counts only for the player with mana (R36) */
+    NGE_ENTITY_REMOVE_COMPONENT(actor_player, COMPONENT_MANA);
+    nge_event_post(actor_player, EV_LEVEL_GAINED, NGE_EVENT_NONE, 4, 0);
+    nge_event_process(messages_on_event);
+    CHECK(said("Welcome to experience level 4."));
+    NGE_ENTITY_ADD_COMPONENT(actor_player, COMPONENT_MANA);
+    pc_class = PC_CLASS_FIGHTER;
 
     /* ---- doors: bump to open, c and a direction to close ---- */
     fresh();
@@ -1336,6 +1349,8 @@ int main(void)
         mana_restore(actor_player, 255);
         nge_event_flush();
         player_turn = 1;
+        spell_learn(actor_player, SP_CURE_WOUNDS);                 /* a second spell, as a book would teach */
+        nge_event_flush();
         CHECK(spell_knows(actor_player, SP_MAGIC_BOLT) && mana_mp[actor_player] == mana_mp_max[actor_player]);
         press(EV(NGE_KEY_SPACE));                                  /* back from the list */
         player_command(EV(NGE_KEY_M));
@@ -1366,7 +1381,7 @@ int main(void)
         nge_event_process(messages_on_event);
         CHECK(shown("You cast Magic Bolt."));
         player_turn = 1;
-        /* A self spell (known from a level gained above): no tile asked for */
+        /* A self spell (b, Cure Wounds, learned above): no tile asked for */
         spell_learn(actor_player, SP_HASTE);
         nge_event_process(messages_on_event);
         CHECK(said("You learn Haste."));
