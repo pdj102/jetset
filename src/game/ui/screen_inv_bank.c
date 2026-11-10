@@ -305,7 +305,7 @@ static void describe(nge_entity_id_t id, NGE_FILE *s)
         nge_putc('[', s);
         put_signed(k.to_hit, s);
         nge_putc(',', s);
-        put_signed(k.bonus, s);
+        put_signed(k.to_damage, s);
         nge_putc(']', s);
         return;
     case ITEM_WAND:

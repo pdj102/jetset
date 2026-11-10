@@ -27,7 +27,7 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .render = ITEM_RENDER(SPRITE_MACE, BANK_EARTH),
         .subclass = ITEM_WEAPON,
         .fits = SLOT_BIT(SLOT_WEAPON),
-        .attack = { .to_hit = 0, .dice = 1, .sides = 4, .bonus = 0, .type = DMG_BLUNT, .range = 1 },
+        .attack = { .to_hit = 0, .dice = 1, .sides = 4, .to_damage = 0, .type = DMG_BLUNT, .range = 1 },
         .where = { .depth = 1, .depth_max = 3, .rarity = 5 },
     },
     [IT_DAGGER] = {
@@ -35,7 +35,7 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .render = ITEM_RENDER(SPRITE_DAGGER, BANK_IRON),
         .subclass = ITEM_WEAPON,
         .fits = SLOT_BIT(SLOT_WEAPON),
-        .attack = { .to_hit = 1, .dice = 1, .sides = 4, .bonus = 0, .type = DMG_PIERCE, .range = 1 },
+        .attack = { .to_hit = 1, .dice = 1, .sides = 4, .to_damage = 0, .type = DMG_PIERCE, .range = 1 },
         .where = { .depth = 1, .depth_max = 5, .rarity = 6 },
     },
     [IT_QUARTERSTAFF] = {
@@ -44,7 +44,7 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .subclass = ITEM_WEAPON,
         .flags = ITEMF_TWO_HANDS,
         .fits = SLOT_BIT(SLOT_WEAPON),
-        .attack = { .to_hit = 0, .dice = 1, .sides = 6, .bonus = 0, .type = DMG_BLUNT, .range = 1 },
+        .attack = { .to_hit = 0, .dice = 1, .sides = 6, .to_damage = 0, .type = DMG_BLUNT, .range = 1 },
         .where = { .depth = 1, .depth_max = 4, .rarity = 5 },
     },
     [IT_SHORT_SWORD] = {
@@ -52,7 +52,7 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .render = ITEM_RENDER(SPRITE_SWORD, BANK_IRON),
         .subclass = ITEM_WEAPON,
         .fits = SLOT_BIT(SLOT_WEAPON),
-        .attack = { .to_hit = 1, .dice = 1, .sides = 6, .bonus = 0, .type = DMG_SLASH, .range = 1 },
+        .attack = { .to_hit = 1, .dice = 1, .sides = 6, .to_damage = 0, .type = DMG_SLASH, .range = 1 },
         .where = { .depth = 1, .depth_max = 6, .rarity = 5 },
     },
     [IT_HAND_AXE] = {
@@ -60,7 +60,7 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .render = ITEM_RENDER(SPRITE_AXE, BANK_IRON),
         .subclass = ITEM_WEAPON,
         .fits = SLOT_BIT(SLOT_WEAPON),
-        .attack = { .to_hit = 0, .dice = 1, .sides = 6, .bonus = 1, .type = DMG_SLASH, .range = 1 },
+        .attack = { .to_hit = 0, .dice = 1, .sides = 6, .to_damage = 1, .type = DMG_SLASH, .range = 1 },
         .where = { .depth = 1, .depth_max = 6, .rarity = 5 },
     },
     [IT_SPEAR] = {
@@ -68,7 +68,7 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .render = ITEM_RENDER(SPRITE_SPEAR, BANK_IRON),
         .subclass = ITEM_WEAPON,
         .fits = SLOT_BIT(SLOT_WEAPON),
-        .attack = { .to_hit = 1, .dice = 1, .sides = 6, .bonus = 0, .type = DMG_PIERCE, .range = 1 },
+        .attack = { .to_hit = 1, .dice = 1, .sides = 6, .to_damage = 0, .type = DMG_PIERCE, .range = 1 },
         .where = { .depth = 1, .depth_max = 6, .rarity = 5 },
     },
     [IT_MACE] = {
@@ -76,7 +76,7 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .render = ITEM_RENDER(SPRITE_MACE, BANK_IRON),
         .subclass = ITEM_WEAPON,
         .fits = SLOT_BIT(SLOT_WEAPON),
-        .attack = { .to_hit = 0, .dice = 1, .sides = 6, .bonus = 1, .type = DMG_BLUNT, .range = 1 },
+        .attack = { .to_hit = 0, .dice = 1, .sides = 6, .to_damage = 1, .type = DMG_BLUNT, .range = 1 },
         .where = { .depth = 2, .depth_max = 7, .rarity = 5 },
     },
     [IT_SWORD] = {
@@ -84,7 +84,7 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .render = ITEM_RENDER(SPRITE_SWORD, BANK_BLUE),
         .subclass = ITEM_WEAPON,
         .fits = SLOT_BIT(SLOT_WEAPON),
-        .attack = { .to_hit = 1, .dice = 1, .sides = 8, .bonus = 0, .type = DMG_SLASH, .range = 1 },
+        .attack = { .to_hit = 1, .dice = 1, .sides = 8, .to_damage = 0, .type = DMG_SLASH, .range = 1 },
         .where = { .depth = 1, .depth_max = 8, .rarity = 5 },
     },
     [IT_BATTLE_AXE] = {
@@ -92,7 +92,7 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .render = ITEM_RENDER(SPRITE_AXE, BANK_BLUE),
         .subclass = ITEM_WEAPON,
         .fits = SLOT_BIT(SLOT_WEAPON),
-        .attack = { .to_hit = 0, .dice = 1, .sides = 8, .bonus = 1, .type = DMG_SLASH, .range = 1 },
+        .attack = { .to_hit = 0, .dice = 1, .sides = 8, .to_damage = 1, .type = DMG_SLASH, .range = 1 },
         .where = { .depth = 3, .depth_max = 9, .rarity = 4 },
     },
     [IT_WAR_HAMMER] = {
@@ -100,7 +100,7 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .render = ITEM_RENDER(SPRITE_MACE, BANK_BLUE),
         .subclass = ITEM_WEAPON,
         .fits = SLOT_BIT(SLOT_WEAPON),
-        .attack = { .to_hit = 0, .dice = 1, .sides = 8, .bonus = 1, .type = DMG_BLUNT, .range = 1 },
+        .attack = { .to_hit = 0, .dice = 1, .sides = 8, .to_damage = 1, .type = DMG_BLUNT, .range = 1 },
         .where = { .depth = 3, .depth_max = 9, .rarity = 4 },
     },
     [IT_GREATSWORD] = {
@@ -109,7 +109,7 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .subclass = ITEM_WEAPON,
         .flags = ITEMF_TWO_HANDS,
         .fits = SLOT_BIT(SLOT_WEAPON),
-        .attack = { .to_hit = 0, .dice = 1, .sides = 10, .bonus = 1, .type = DMG_SLASH, .range = 1 },
+        .attack = { .to_hit = 0, .dice = 1, .sides = 10, .to_damage = 1, .type = DMG_SLASH, .range = 1 },
         .where = { .depth = 4, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 3 },
     },
     [IT_HALBERD] = {
@@ -118,7 +118,7 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .subclass = ITEM_WEAPON,
         .flags = ITEMF_TWO_HANDS,
         .fits = SLOT_BIT(SLOT_WEAPON),
-        .attack = { .to_hit = 1, .dice = 1, .sides = 10, .bonus = 0, .type = DMG_PIERCE, .range = 1 },
+        .attack = { .to_hit = 1, .dice = 1, .sides = 10, .to_damage = 0, .type = DMG_PIERCE, .range = 1 },
         .where = { .depth = 5, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 3 },
     },
     [IT_DAGGER_1] = {
@@ -126,7 +126,7 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .render = ITEM_RENDER(SPRITE_DAGGER, BANK_GREEN),
         .subclass = ITEM_WEAPON,
         .fits = SLOT_BIT(SLOT_WEAPON),
-        .attack = { .to_hit = 2, .dice = 1, .sides = 4, .bonus = 1, .type = DMG_PIERCE, .range = 1 },
+        .attack = { .to_hit = 2, .dice = 1, .sides = 4, .to_damage = 1, .type = DMG_PIERCE, .range = 1 },
         .where = { .depth = 2, .depth_max = 6, .rarity = 2 },
     },
     [IT_SWORD_1] = {
@@ -134,7 +134,7 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .render = ITEM_RENDER(SPRITE_SWORD, BANK_GREEN),
         .subclass = ITEM_WEAPON,
         .fits = SLOT_BIT(SLOT_WEAPON),
-        .attack = { .to_hit = 2, .dice = 1, .sides = 8, .bonus = 1, .type = DMG_SLASH, .range = 1 },
+        .attack = { .to_hit = 2, .dice = 1, .sides = 8, .to_damage = 1, .type = DMG_SLASH, .range = 1 },
         .where = { .depth = 3, .depth_max = 8, .rarity = 2 },
     },
     [IT_SWORD_2] = {
@@ -142,7 +142,7 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .render = ITEM_RENDER(SPRITE_SWORD, BANK_PURPLE),
         .subclass = ITEM_WEAPON,
         .fits = SLOT_BIT(SLOT_WEAPON),
-        .attack = { .to_hit = 3, .dice = 1, .sides = 8, .bonus = 2, .type = DMG_SLASH, .range = 1 },
+        .attack = { .to_hit = 3, .dice = 1, .sides = 8, .to_damage = 2, .type = DMG_SLASH, .range = 1 },
         .where = { .depth = 5, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 2 },
     },
     [IT_SWORD_3] = {
@@ -150,7 +150,7 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .render = ITEM_RENDER(SPRITE_SWORD, BANK_GOLD),
         .subclass = ITEM_WEAPON,
         .fits = SLOT_BIT(SLOT_WEAPON),
-        .attack = { .to_hit = 4, .dice = 1, .sides = 8, .bonus = 3, .type = DMG_SLASH, .range = 1 },
+        .attack = { .to_hit = 4, .dice = 1, .sides = 8, .to_damage = 3, .type = DMG_SLASH, .range = 1 },
         .where = { .depth = 8, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 1 },
     },
     [IT_MACE_1] = {
@@ -158,7 +158,7 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .render = ITEM_RENDER(SPRITE_MACE, BANK_GREEN),
         .subclass = ITEM_WEAPON,
         .fits = SLOT_BIT(SLOT_WEAPON),
-        .attack = { .to_hit = 1, .dice = 1, .sides = 6, .bonus = 2, .type = DMG_BLUNT, .range = 1 },
+        .attack = { .to_hit = 1, .dice = 1, .sides = 6, .to_damage = 2, .type = DMG_BLUNT, .range = 1 },
         .where = { .depth = 3, .depth_max = 8, .rarity = 2 },
     },
     [IT_BATTLE_AXE_1] = {
@@ -166,7 +166,7 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .render = ITEM_RENDER(SPRITE_AXE, BANK_GREEN),
         .subclass = ITEM_WEAPON,
         .fits = SLOT_BIT(SLOT_WEAPON),
-        .attack = { .to_hit = 1, .dice = 1, .sides = 8, .bonus = 2, .type = DMG_SLASH, .range = 1 },
+        .attack = { .to_hit = 1, .dice = 1, .sides = 8, .to_damage = 2, .type = DMG_SLASH, .range = 1 },
         .where = { .depth = 5, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 2 },
     },
     [IT_GREATSWORD_2] = {
@@ -175,7 +175,7 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .subclass = ITEM_WEAPON,
         .flags = ITEMF_TWO_HANDS,
         .fits = SLOT_BIT(SLOT_WEAPON),
-        .attack = { .to_hit = 2, .dice = 1, .sides = 10, .bonus = 3, .type = DMG_SLASH, .range = 1 },
+        .attack = { .to_hit = 2, .dice = 1, .sides = 10, .to_damage = 3, .type = DMG_SLASH, .range = 1 },
         .where = { .depth = 7, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 1 },
     },
     [IT_RUSTY_SWORD] = {
@@ -184,7 +184,7 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .subclass = ITEM_WEAPON,
         .flags = ITEMF_CURSED,
         .fits = SLOT_BIT(SLOT_WEAPON),
-        .attack = { .to_hit = -1, .dice = 1, .sides = 8, .bonus = -1, .type = DMG_SLASH, .range = 1 },
+        .attack = { .to_hit = -1, .dice = 1, .sides = 8, .to_damage = -1, .type = DMG_SLASH, .range = 1 },
         .where = { .depth = 1, .depth_max = 5, .rarity = 2 },
     },
     [IT_VENOM_DAGGER] = {
@@ -192,7 +192,7 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .render = ITEM_RENDER(SPRITE_DAGGER, BANK_LIME),
         .subclass = ITEM_WEAPON,
         .fits = SLOT_BIT(SLOT_WEAPON),
-        .attack = { .to_hit = 1, .dice = 1, .sides = 4, .bonus = 0, .type = DMG_PIERCE, .range = 1 },
+        .attack = { .to_hit = 1, .dice = 1, .sides = 4, .to_damage = 0, .type = DMG_PIERCE, .range = 1 },
         .hook = { GEN_HOOK_HIT, EF_POISON, 2 },
         .where = { .depth = 4, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 1 },
     },
@@ -201,7 +201,7 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .render = ITEM_RENDER(SPRITE_SWORD, BANK_ORANGE),
         .subclass = ITEM_WEAPON,
         .fits = SLOT_BIT(SLOT_WEAPON),
-        .attack = { .to_hit = 2, .dice = 1, .sides = 8, .bonus = 0, .type = DMG_SLASH, .range = 1 },
+        .attack = { .to_hit = 2, .dice = 1, .sides = 8, .to_damage = 0, .type = DMG_SLASH, .range = 1 },
         .hook = { GEN_HOOK_HIT, EF_BOLT_FIRE, 3 },
         .where = { .depth = 6, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 1 },
     },
@@ -210,7 +210,7 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .render = ITEM_RENDER(SPRITE_AXE, BANK_ICE),
         .subclass = ITEM_WEAPON,
         .fits = SLOT_BIT(SLOT_WEAPON),
-        .attack = { .to_hit = 1, .dice = 1, .sides = 8, .bonus = 1, .type = DMG_SLASH, .range = 1 },
+        .attack = { .to_hit = 1, .dice = 1, .sides = 8, .to_damage = 1, .type = DMG_SLASH, .range = 1 },
         .hook = { GEN_HOOK_HIT, EF_BOLT_COLD, 3 },
         .where = { .depth = 6, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 1 },
     },
@@ -221,7 +221,7 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .subclass = ITEM_RANGED,
         .group = GROUP_STONE,
         .fits = SLOT_BIT(SLOT_RANGED),
-        .attack = { .to_hit = 0, .dice = 1, .sides = 4, .bonus = 0, .type = DMG_BLUNT, .range = 5 },
+        .attack = { .to_hit = 0, .dice = 1, .sides = 4, .to_damage = 0, .type = DMG_BLUNT, .range = 5 },
         .where = { .depth = 1, .depth_max = 5, .rarity = 5 },
     },
     [IT_SHORT_BOW] = {
@@ -230,7 +230,7 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .subclass = ITEM_RANGED,
         .group = GROUP_ARROW,
         .fits = SLOT_BIT(SLOT_RANGED),
-        .attack = { .to_hit = 0, .dice = 1, .sides = 6, .bonus = 0, .type = DMG_PIERCE, .range = 6 },
+        .attack = { .to_hit = 0, .dice = 1, .sides = 6, .to_damage = 0, .type = DMG_PIERCE, .range = 6 },
         .where = { .depth = 1, .depth_max = 7, .rarity = 5 },
     },
     [IT_LONG_BOW] = {
@@ -239,7 +239,7 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .subclass = ITEM_RANGED,
         .group = GROUP_ARROW,
         .fits = SLOT_BIT(SLOT_RANGED),
-        .attack = { .to_hit = 1, .dice = 1, .sides = 8, .bonus = 0, .type = DMG_PIERCE, .range = 8 },
+        .attack = { .to_hit = 1, .dice = 1, .sides = 8, .to_damage = 0, .type = DMG_PIERCE, .range = 8 },
         .where = { .depth = 3, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 4 },
     },
     [IT_CROSSBOW] = {
@@ -248,7 +248,7 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .subclass = ITEM_RANGED,
         .group = GROUP_BOLT,
         .fits = SLOT_BIT(SLOT_RANGED),
-        .attack = { .to_hit = 1, .dice = 1, .sides = 8, .bonus = 0, .type = DMG_PIERCE, .range = 7 },
+        .attack = { .to_hit = 1, .dice = 1, .sides = 8, .to_damage = 0, .type = DMG_PIERCE, .range = 7 },
         .where = { .depth = 2, .depth_max = 8, .rarity = 4 },
     },
     [IT_HEAVY_CROSSBOW] = {
@@ -257,7 +257,7 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .subclass = ITEM_RANGED,
         .group = GROUP_BOLT,
         .fits = SLOT_BIT(SLOT_RANGED),
-        .attack = { .to_hit = 1, .dice = 1, .sides = 10, .bonus = 1, .type = DMG_PIERCE, .range = 7 },
+        .attack = { .to_hit = 1, .dice = 1, .sides = 10, .to_damage = 1, .type = DMG_PIERCE, .range = 7 },
         .where = { .depth = 5, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 2 },
     },
     [IT_LONG_BOW_2] = {
@@ -266,7 +266,7 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .subclass = ITEM_RANGED,
         .group = GROUP_ARROW,
         .fits = SLOT_BIT(SLOT_RANGED),
-        .attack = { .to_hit = 3, .dice = 1, .sides = 8, .bonus = 2, .type = DMG_PIERCE, .range = 9 },
+        .attack = { .to_hit = 3, .dice = 1, .sides = 8, .to_damage = 2, .type = DMG_PIERCE, .range = 9 },
         .where = { .depth = 7, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 1 },
     },
     /* ---- Ammo ---- */
@@ -286,7 +286,7 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .group = GROUP_STONE,
         .count = 12,
         .fits = SLOT_BIT(SLOT_AMMO),
-        .attack = { .to_hit = 0, .bonus = 1 },
+        .attack = { .to_hit = 0, .to_damage = 1 },
         .where = { .depth = 3, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 2 },
     },
     [IT_ARROWS] = {
@@ -305,7 +305,7 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .group = GROUP_ARROW,
         .count = 10,
         .fits = SLOT_BIT(SLOT_AMMO),
-        .attack = { .to_hit = 1, .bonus = 1 },
+        .attack = { .to_hit = 1, .to_damage = 1 },
         .where = { .depth = 4, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 2 },
     },
     [IT_BOLTS] = {
@@ -324,7 +324,7 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .group = GROUP_BOLT,
         .count = 8,
         .fits = SLOT_BIT(SLOT_AMMO),
-        .attack = { .to_hit = 1, .bonus = 1 },
+        .attack = { .to_hit = 1, .to_damage = 1 },
         .where = { .depth = 5, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 2 },
     },
     [IT_DARTS] = {
@@ -334,7 +334,7 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .group = GROUP_THROWN,
         .count = 8,
         .fits = SLOT_BIT(SLOT_AMMO),
-        .attack = { .to_hit = 0, .dice = 1, .sides = 3, .bonus = 0, .type = DMG_PIERCE, .range = 4 },
+        .attack = { .to_hit = 0, .dice = 1, .sides = 3, .to_damage = 0, .type = DMG_PIERCE, .range = 4 },
         .where = { .depth = 1, .depth_max = 6, .rarity = 4 },
     },
     [IT_JAVELINS] = {
@@ -344,7 +344,7 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .group = GROUP_THROWN,
         .count = 5,
         .fits = SLOT_BIT(SLOT_AMMO),
-        .attack = { .to_hit = 0, .dice = 1, .sides = 6, .bonus = 0, .type = DMG_PIERCE, .range = 5 },
+        .attack = { .to_hit = 0, .dice = 1, .sides = 6, .to_damage = 0, .type = DMG_PIERCE, .range = 5 },
         .where = { .depth = 2, .depth_max = 8, .rarity = 3 },
     },
     [IT_OIL] = {
@@ -354,7 +354,7 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .group = GROUP_THROWN,
         .count = 1,
         .fits = SLOT_BIT(SLOT_AMMO),
-        .attack = { .to_hit = 0, .dice = 1, .sides = 2, .bonus = 0, .type = DMG_BLUNT, .range = 4 },
+        .attack = { .to_hit = 0, .dice = 1, .sides = 2, .to_damage = 0, .type = DMG_BLUNT, .range = 4 },
         .hook = { GEN_HOOK_HIT, EF_BOLT_FIRE, 4 },
         .where = { .depth = 2, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 3 },
     },

@@ -247,8 +247,8 @@ static void draw_attack(NGE_FILE *s)
     nge_putu16(k.dice, s);
     nge_putc('d', s);
     nge_putu16(k.sides, s);
-    if (k.bonus != 0) {
-        put_signed(k.bonus, s);
+    if (k.to_damage != 0) {
+        put_signed(k.to_damage, s);
     }
     nge_putc(' ', s);
     nge_puts(dmg_words[k.type], s);

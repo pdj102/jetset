@@ -23,7 +23,7 @@ static nge_entity_id_t with_attack(int8_t to_hit, uint8_t dice, uint8_t sides, i
     b.to_hit = to_hit;
     b.dice = dice;
     b.sides = sides;
-    b.bonus = bonus;
+    b.to_damage = bonus;
     b.type = DMG_PIERCE;
     b.range = 1;
     attack_add(id, ATTACK_MELEE, &b);
@@ -54,7 +54,7 @@ int main(void)
     id = with_attack(-2, 3, 6, 4);
     CHECK(ATTACK_HAS(id, ATTACK_MELEE) && attack_to_hit[ATTACK_MELEE][id] == -2 &&
           attack_dice[ATTACK_MELEE][id] == 3 && attack_sides[ATTACK_MELEE][id] == 6 &&
-          attack_bonus[ATTACK_MELEE][id] == 4 && attack_type[ATTACK_MELEE][id] == DMG_PIERCE &&
+          attack_to_damage[ATTACK_MELEE][id] == 4 && attack_type[ATTACK_MELEE][id] == DMG_PIERCE &&
           attack_range[ATTACK_MELEE][id] == 1);
     CHECK(!NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_RANGED));
     attack_remove(id, ATTACK_MELEE);
@@ -69,23 +69,23 @@ int main(void)
     b.to_hit = 3;
     b.dice = 2;
     b.sides = 4;
-    b.bonus = -1;
+    b.to_damage = -1;
     b.type = DMG_PIERCE;
     b.range = 4;
     attack_add(id, ATTACK_RANGED, &b);
     CHECK(ATTACK_COMPONENT(ATTACK_RANGED) == COMPONENT_RANGED);
     CHECK(ATTACK_HAS(id, ATTACK_RANGED) && ATTACK_HAS(id, ATTACK_MELEE));
     CHECK(attack_to_hit[ATTACK_RANGED][id] == 3 && attack_dice[ATTACK_RANGED][id] == 2 &&
-          attack_sides[ATTACK_RANGED][id] == 4 && attack_bonus[ATTACK_RANGED][id] == -1 &&
+          attack_sides[ATTACK_RANGED][id] == 4 && attack_to_damage[ATTACK_RANGED][id] == -1 &&
           attack_type[ATTACK_RANGED][id] == DMG_PIERCE && attack_range[ATTACK_RANGED][id] == 4);
     CHECK(attack_to_hit[ATTACK_MELEE][id] == 1 && attack_range[ATTACK_MELEE][id] == 1);   /* melee untouched */
     /* attack_get(): what attack_add() stored, for each use */
     memset(&b, 0xAA, sizeof(b));
     attack_get(id, ATTACK_RANGED, &b);
-    CHECK(b.to_hit == 3 && b.dice == 2 && b.sides == 4 && b.bonus == -1 && b.type == DMG_PIERCE && b.range == 4);
+    CHECK(b.to_hit == 3 && b.dice == 2 && b.sides == 4 && b.to_damage == -1 && b.type == DMG_PIERCE && b.range == 4);
     memset(&b, 0xAA, sizeof(b));
     attack_get(id, ATTACK_MELEE, &b);
-    CHECK(b.to_hit == 1 && b.dice == 1 && b.sides == 6 && b.bonus == 0 && b.type == DMG_PIERCE && b.range == 1);
+    CHECK(b.to_hit == 1 && b.dice == 1 && b.sides == 6 && b.to_damage == 0 && b.type == DMG_PIERCE && b.range == 1);
     target = nge_entity_create();
     health_add(target, &h);
     health_ac[target] = 10;
@@ -190,7 +190,7 @@ int main(void)
     b.to_hit = 0;
     b.dice = 1;
     b.sides = 4;
-    b.bonus = 0;
+    b.to_damage = 0;
     b.type = DMG_BLUNT;
     b.range = 2;                                              /* melee reaches 1 */
     TEST_EXPECT_HALT(attack_add(id, ATTACK_MELEE, &b));

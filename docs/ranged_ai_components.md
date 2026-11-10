@@ -38,7 +38,7 @@ monster's turn still waits (`TIMER_MONSTER`, game/timers.h).
 ### Ranged attack
 
 - **R1** `ATTACK_RANGED` is the attack component's second use: the same
-  fields as melee (to-hit, dice, sides, bonus, damage type, range), set
+  fields as melee (to-hit, dice, sides, to-damage, damage type, range), set
   from an `attack_kind_t` by `attack_add()`, removed by `attack_remove()`,
   with `COMPONENT_RANGED`.
 - **R2** `attack_hits()` and `attack_damage()` work for it unchanged: one

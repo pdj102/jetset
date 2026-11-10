@@ -82,7 +82,7 @@ with the reason.
   `ATTR_VULN`) that rings and potions will change, and the player can't
   see them anywhere else.*
 - **R16 (New)** The melee attack the player makes now: to hit, damage
-  dice and bonus, damage type; the wielded weapon's attack, or their own
+  dice and to-damage, damage type; the wielded weapon's attack, or their own
   (`act_melee.c`'s choice). Not the weapon's name. *Reason: it is the
   character's fighting strength, the number that matters most in play;
   the item itself stays on the inventory screen. See Q4.*
@@ -299,7 +299,7 @@ row 0  |          Rogue the Fighter             |   title, centred
 - **Abilities (20-39, rows 2-8):** the modifier signed, always ("+0").
 - **Attributes (rows 10-15):** "Now" only for HP and MP. MP's row is
   left out when the player has no mana component. Attack: the to-hit
-  signed, the dice as `NdS`, the bonus only when not 0, the type's
+  signed, the dice as `NdS`, the to-damage only when not 0, the type's
   name; no colour (it has no base, R16).
 - **Defences (rows 17-20):** two-letter types, to keep the grid
   3 columns a type: 8 + 8 x 3 = 32 columns.

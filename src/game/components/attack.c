@@ -35,7 +35,7 @@ void attack_add(nge_entity_id_t id, uint8_t use, const attack_kind_t *k) NGE_BAN
     attack_to_hit[use][id] = k->to_hit;
     attack_dice[use][id] = k->dice;
     attack_sides[use][id] = k->sides;
-    attack_bonus[use][id] = k->bonus;
+    attack_to_damage[use][id] = k->to_damage;
     attack_type[use][id] = k->type;
     attack_range[use][id] = k->range;
     NGE_ENTITY_ADD_COMPONENT(id, ATTACK_COMPONENT(use));
@@ -60,7 +60,7 @@ void attack_get(nge_entity_id_t id, uint8_t use, attack_kind_t *out) NGE_BANKED
     out->to_hit = (int8_t)((const uint8_t *)attack_to_hit)[i];
     out->dice = ((const uint8_t *)attack_dice)[i];
     out->sides = ((const uint8_t *)attack_sides)[i];
-    out->bonus = (int8_t)((const uint8_t *)attack_bonus)[i];
+    out->to_damage = (int8_t)((const uint8_t *)attack_to_damage)[i];
     out->type = ((const uint8_t *)attack_type)[i];
     out->range = ((const uint8_t *)attack_range)[i];
 }
@@ -80,14 +80,14 @@ uint8_t attack_hits(nge_entity_id_t id, uint8_t use, nge_entity_id_t target, uin
     return (int16_t)roll + attack_to_hit[use][id] + to_hit >= (int16_t)health_ac[target];
 }
 
-uint8_t attack_damage(nge_entity_id_t id, uint8_t use, int8_t bonus) NGE_BANKED
+uint8_t attack_damage(nge_entity_id_t id, uint8_t use, int8_t to_damage) NGE_BANKED
 {
     int16_t damage;
     uint8_t i;
 
     check_entity(id, use);
 
-    damage = (int16_t)attack_bonus[use][id] + bonus;
+    damage = (int16_t)attack_to_damage[use][id] + to_damage;
     for (i = 0; i < attack_dice[use][id]; i++) {
         damage += 1 + (int16_t)((unsigned int)rand() % attack_sides[use][id]);
     }

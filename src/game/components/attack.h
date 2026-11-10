@@ -15,7 +15,7 @@
  *
  * An attack hits if 1d20 + to_hit >= the target's AC (game/components/
  * health.h); a roll of 20 always hits and a 1 always misses. A hit does
- * dice d sides + bonus damage of its type, at least 1.
+ * dice d sides + to_damage damage of its type, at least 1.
  *
  * The tables are page data in page 111 (attack_pdata.c, attack_internal.h),
  * one row per use: read at most once a turn, so out of slot 0
@@ -44,12 +44,12 @@
 
 /** Kind attack: the attack part of a creature's (melee) or an item's kind record (its range says melee or ranged). */
 typedef struct attack_kind {
-    int8_t  to_hit;   /**< Added to the d20 roll. */
-    uint8_t dice;     /**< Damage dice, 0 for no attack. */
-    uint8_t sides;    /**< Sides on each die, 1 or more. */
-    int8_t  bonus;    /**< Added to the damage roll. */
-    uint8_t type;     /**< Damage type (DMG_*). */
-    uint8_t range;    /**< Tiles: 1 for melee, 2 or more for ranged. */
+    int8_t  to_hit;    /**< Added to the d20 roll. */
+    uint8_t dice;      /**< Damage dice, 0 for no attack. */
+    uint8_t sides;     /**< Sides on each die, 1 or more. */
+    int8_t  to_damage; /**< Added to the damage roll. */
+    uint8_t type;      /**< Damage type (DMG_*). */
+    uint8_t range;     /**< Tiles: 1 for melee, 2 or more for ranged. */
 } attack_kind_t;
 
 /** A kind record's attack part gives the component: it has damage dice. */
@@ -88,10 +88,10 @@ uint8_t attack_hits(nge_entity_id_t id, uint8_t use, nge_entity_id_t target, uin
 
 /**
  * @brief Roll id's damage with its attack of this use: dice d sides + the
- *        attack's bonus + bonus, 1 to 255.
- * @param bonus As attack_hits()'s to_hit, for damage. 0 for none.
+ *        attack's own to_damage + this to_damage, 1 to 255.
+ * @param to_damage As attack_hits()'s to_hit, for damage. 0 for none.
  */
-uint8_t attack_damage(nge_entity_id_t id, uint8_t use, int8_t bonus) NGE_BANKED;
+uint8_t attack_damage(nge_entity_id_t id, uint8_t use, int8_t to_damage) NGE_BANKED;
 
 /**
  * @brief The melee weapon id wields (SLOT_WEAPON, with a melee attack),

@@ -30,7 +30,7 @@
 #define LINE_PASS  ((nge_block_t)~(NGE_BLOCK_SOLID | NGE_BLOCK_EDGE))
 
 uint8_t act_strike(act_t *a, nge_entity_id_t attacker, uint8_t use, nge_entity_id_t hooks, int8_t to_hit,
-                   int8_t bonus)
+                   int8_t to_damage)
 {
     attack_kind_t k;
     nge_entity_id_t actor = a->actor;
@@ -47,7 +47,7 @@ uint8_t act_strike(act_t *a, nge_entity_id_t attacker, uint8_t use, nge_entity_i
         nge_event_post(target, EV_MISSED, actor, roll, item);
         return act_fail(a, ACT_R_MISSED);
     }
-    damage = attack_damage(attacker, use, bonus);
+    damage = attack_damage(attacker, use, to_damage);
 
     /* Apply: the hit, then the damage (its events follow), then the hit's effect */
     nge_event_post(target, EV_HIT, actor, roll, item);

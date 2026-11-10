@@ -51,7 +51,7 @@ static int melee_is(nge_entity_id_t id, const attack_kind_t *m)
     }
     return ATTACK_HAS(id, ATTACK_MELEE) && attack_to_hit[ATTACK_MELEE][id] == m->to_hit &&
            attack_dice[ATTACK_MELEE][id] == m->dice && attack_sides[ATTACK_MELEE][id] == m->sides &&
-           attack_bonus[ATTACK_MELEE][id] == m->bonus && attack_type[ATTACK_MELEE][id] == m->type &&
+           attack_to_damage[ATTACK_MELEE][id] == m->to_damage && attack_type[ATTACK_MELEE][id] == m->type &&
            attack_range[ATTACK_MELEE][id] == 1;
 }
 

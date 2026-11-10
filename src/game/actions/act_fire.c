@@ -86,13 +86,13 @@ uint8_t act_fire(act_t *a, uint8_t mode) NGE_BANKED
 
     /* 3, 4. Resolve and apply: the attacker's roll with the ammo's bonuses, and the ammo's hit effect */
     ammo.to_hit = 0;
-    ammo.bonus = 0;
+    ammo.to_damage = 0;
     if (shot != NGE_ENTITY_INVALID && shot != attacker) {
         gen_item_attack(kind_index[shot], &ammo);
     }
     nge_event_post(a->target, EV_FIRED, actor, item, 0);
     reason = act_strike(a, attacker, ATTACK_RANGED, (shot != NGE_ENTITY_INVALID) ? shot : attacker,
-                        ammo.to_hit, ammo.bonus);
+                        ammo.to_hit, ammo.to_damage);
 
     /* 4. Apply: the shot is used up, hit or miss */
     if (shot != NGE_ENTITY_INVALID) {

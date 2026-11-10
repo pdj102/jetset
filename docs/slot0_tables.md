@@ -35,7 +35,7 @@ that touch the table directly (110 is the game components' functions).
 | health immune, resist, vuln | 3 | attrs (138) writes, health damage (110) reads, PC screen | stays: writes would cross pages for 3 bytes |
 | mana mp, mp_max | 2 | attrs, player, the spell list, PC screen | stays: shared |
 | **attribute bases** (health ×5, stats speed + abilities ×6, mana mp_max) | **13** | attrs (138); set once in the `*_add()` functions (110); read by `pc.c` (110) and the PC screen (104) | **moves to page 139** (step 1) |
-| **attack** to_hit, dice, sides, bonus, type, range ×2 uses | **12** | `attack.c` (110); read by the PC screen (104) and 3 actions (112) | **moves to page 111** (step 2) |
+| **attack** to_hit, dice, sides, to_damage, type, range ×2 uses | **12** | `attack.c` (110); read by the PC screen (104) and 3 actions (112) | **moves to page 111** (step 2) |
 | **inventory** capacity, slots (`uint16_t`) | **3** | `inventory.c` (110); read by 2 actions (112), the inventory screen (116), the AI (130) | **may move to page 111** (step 3, optional) |
 | **Total** | **67** | | |
 

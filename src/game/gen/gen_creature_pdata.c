@@ -76,7 +76,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .health = { .hp_max = 12, .ac = 10 },
         .mana = { .mp_max = 5 },
         .spells = { SP_MAGIC_BOLT },                    /* the starting spells: within level 1's slots (docs/spells.md, R38) */
-        .melee = { .to_hit = 0, .dice = 1, .sides = 2, .bonus = 0, .type = DMG_BLUNT, .range = 1 },   /* fists */
+        .melee = { .to_hit = 0, .dice = 1, .sides = 2, .to_damage = 0, .type = DMG_BLUNT, .range = 1 },   /* fists */
         .inventory = { .capacity = 20, .slots = SLOTS_HUMANOID },
         .xp = 0,
         .flags = CREATURE_PLAYER,
@@ -94,7 +94,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
         .stats = { .speed = MONSTER_SPEED, .ability = { 2, 11, 9, 2, 10, 4 } },
         .health = { .hp_max = 3, .immune = DMG_BIT(DMG_POISON), .ac = 12 },
-        .melee = { .to_hit = 0, .dice = 1, .sides = 3, .bonus = 0, .type = DMG_PIERCE, .range = 1 },  /* bite */
+        .melee = { .to_hit = 0, .dice = 1, .sides = 3, .to_damage = 0, .type = DMG_PIERCE, .range = 1 },  /* bite */
         .inventory = { .capacity = 0, .slots = 0 },     /* carries nothing */
         .xp = 5,                                        /* below 1 hit die */
         .flags = 0,
@@ -109,7 +109,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
         .stats = { .speed = MONSTER_SPEED, .ability = { 8, 14, 10, 10, 8, 8 } },
         .health = { .hp_max = 6, .resist = DMG_BIT(DMG_BLUNT), .vuln = DMG_BIT(DMG_FIRE), .ac = 13 },
-        .melee = { .to_hit = 0, .dice = 1, .sides = 4, .bonus = 0, .type = DMG_SLASH, .range = 1 },   /* claws */
+        .melee = { .to_hit = 0, .dice = 1, .sides = 4, .to_damage = 0, .type = DMG_SLASH, .range = 1 },   /* claws */
         .inventory = { .capacity = 4, .slots = SLOT_BIT(SLOT_WEAPON) },
         .xp = 5,                                        /* 1-1 hit dice */
         .flags = 0,
@@ -122,7 +122,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NO_FLOOR },   /* flies: over holes and traps */
         .stats = { .speed = MONSTER_FAST, .ability = { 4, 15, 8, 2, 12, 6 } },
         .health = { .hp_max = 3, .ac = 13 },
-        .melee = { .to_hit = 0, .dice = 1, .sides = 2, .bonus = 0, .type = DMG_PIERCE, .range = 1 },  /* bite */
+        .melee = { .to_hit = 0, .dice = 1, .sides = 2, .to_damage = 0, .type = DMG_PIERCE, .range = 1 },  /* bite */
         .inventory = { .capacity = 0, .slots = 0 },
         .xp = 5,                                        /* below 1 hit die */
         .flags = 0,
@@ -135,7 +135,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
         .stats = { .speed = MONSTER_SPEED, .ability = { 6, 14, 10, 1, 10, 3 } },
         .health = { .hp_max = 5, .immune = DMG_BIT(DMG_POISON), .ac = 13 },
-        .melee = { .to_hit = 1, .dice = 1, .sides = 3, .bonus = 0, .type = DMG_PIERCE, .range = 1 },  /* bite */
+        .melee = { .to_hit = 1, .dice = 1, .sides = 3, .to_damage = 0, .type = DMG_PIERCE, .range = 1 },  /* bite */
         .inventory = { .capacity = 0, .slots = 0 },
         .xp = 13,                                       /* 1 hit die, special */
         .flags = 0,
@@ -149,7 +149,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
         .stats = { .speed = MONSTER_SLOW, .ability = { 2, 2, 10, 1, 6, 1 } },
         .health = { .hp_max = 4, .immune = DMG_BIT(DMG_POISON), .vuln = DMG_BIT(DMG_FIRE), .ac = 9 },
-        .melee = { .to_hit = 1, .dice = 1, .sides = 1, .bonus = 0, .type = DMG_BLUNT, .range = 1 },   /* a sticky touch */
+        .melee = { .to_hit = 1, .dice = 1, .sides = 1, .to_damage = 0, .type = DMG_BLUNT, .range = 1 },   /* a sticky touch */
         .inventory = { .capacity = 0, .slots = 0 },
         .xp = 13,                                       /* 1 hit die, special */
         .flags = 0,
@@ -164,7 +164,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .stats = { .speed = MONSTER_SLOW, .ability = { 4, 4, 14, 1, 4, 1 } },
         .health = { .hp_max = 9, .immune = DMG_BIT(DMG_POISON) | DMG_BIT(DMG_ACID),
                     .resist = DMG_BIT(DMG_BLUNT) | DMG_BIT(DMG_PIERCE), .vuln = DMG_BIT(DMG_FIRE), .ac = 8 },
-        .melee = { .to_hit = 2, .dice = 1, .sides = 4, .bonus = 0, .type = DMG_ACID, .range = 1 },    /* a burning touch */
+        .melee = { .to_hit = 2, .dice = 1, .sides = 4, .to_damage = 0, .type = DMG_ACID, .range = 1 },    /* a burning touch */
         .inventory = { .capacity = 0, .slots = 0 },
         .xp = 25,                                       /* 2 hit dice, special */
         .flags = 0,
@@ -190,7 +190,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
         .stats = { .speed = MONSTER_SPEED, .ability = { 11, 13, 11, 10, 9, 8 } },
         .health = { .hp_max = 9, .ac = 12 },
-        .melee = { .to_hit = 1, .dice = 1, .sides = 4, .bonus = 0, .type = DMG_SLASH, .range = 1 },   /* a knife */
+        .melee = { .to_hit = 1, .dice = 1, .sides = 4, .to_damage = 0, .type = DMG_SLASH, .range = 1 },   /* a knife */
         .inventory = { .capacity = 6, .slots = SLOTS_HUMANOID },
         .xp = 20,                                       /* 2 hit dice */
         .flags = 0,
@@ -203,7 +203,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
         .stats = { .speed = MONSTER_SPEED, .ability = { 13, 10, 12, 8, 8, 7 } },
         .health = { .hp_max = 10, .ac = 13 },
-        .melee = { .to_hit = 2, .dice = 1, .sides = 6, .bonus = 0, .type = DMG_SLASH, .range = 1 },   /* claws */
+        .melee = { .to_hit = 2, .dice = 1, .sides = 6, .to_damage = 0, .type = DMG_SLASH, .range = 1 },   /* claws */
         .inventory = { .capacity = 4, .slots = SLOTS_FIGHTER },
         .xp = 20,                                       /* 2 hit dice */
         .flags = 0,
@@ -216,7 +216,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
         .stats = { .speed = MONSTER_SPEED, .ability = { 8, 15, 10, 1, 10, 2 } },
         .health = { .hp_max = 13, .immune = DMG_BIT(DMG_POISON), .ac = 14 },
-        .melee = { .to_hit = 3, .dice = 1, .sides = 6, .bonus = 0, .type = DMG_PIERCE, .range = 1 },  /* bite */
+        .melee = { .to_hit = 3, .dice = 1, .sides = 6, .to_damage = 0, .type = DMG_PIERCE, .range = 1 },  /* bite */
         .inventory = { .capacity = 0, .slots = 0 },
         .xp = 50,                                       /* 3 hit dice, special */
         .flags = 0,
@@ -230,7 +230,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
         .stats = { .speed = MONSTER_SPEED, .ability = { 10, 12, 10, 3, 8, 4 } },
         .health = { .hp_max = 9, .immune = IMMUNE_UNDEAD, .resist = DMG_BIT(DMG_PIERCE), .vuln = DMG_BIT(DMG_BLUNT), .ac = 13 },
-        .melee = { .to_hit = 2, .dice = 1, .sides = 6, .bonus = 0, .type = DMG_SLASH, .range = 1 },   /* claws */
+        .melee = { .to_hit = 2, .dice = 1, .sides = 6, .to_damage = 0, .type = DMG_SLASH, .range = 1 },   /* claws */
         .inventory = { .capacity = 2, .slots = SLOT_BIT(SLOT_WEAPON) },
         .xp = 20,                                       /* 2 hit dice */
         .flags = 0,
@@ -245,7 +245,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .health = { .hp_max = 9, .resist = DMG_BIT(DMG_BLUNT), .vuln = DMG_BIT(DMG_FIRE), .ac = 12 },
         .mana = { .mp_max = 6 },
         .spells = { SP_MAGIC_BOLT, SP_CURE_WOUNDS, SP_ENFEEBLE },
-        .melee = { .to_hit = 1, .dice = 1, .sides = 4, .bonus = 0, .type = DMG_BLUNT, .range = 1 },   /* a stick */
+        .melee = { .to_hit = 1, .dice = 1, .sides = 4, .to_damage = 0, .type = DMG_BLUNT, .range = 1 },   /* a stick */
         .inventory = { .capacity = 4, .slots = SLOT_BIT(SLOT_WEAPON) },
         .xp = 25,                                       /* 2 hit dice, special */
         .flags = 0,
@@ -258,7 +258,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
         .stats = { .speed = MONSTER_SPEED, .ability = { 8, 16, 11, 1, 12, 4 } },
         .health = { .hp_max = 13, .immune = DMG_BIT(DMG_POISON), .ac = 14 },
-        .melee = { .to_hit = 3, .dice = 1, .sides = 6, .bonus = 0, .type = DMG_PIERCE, .range = 1 },  /* bite */
+        .melee = { .to_hit = 3, .dice = 1, .sides = 6, .to_damage = 0, .type = DMG_PIERCE, .range = 1 },  /* bite */
         .inventory = { .capacity = 0, .slots = 0 },
         .xp = 50,                                       /* 3 hit dice, special */
         .flags = 0,
@@ -285,7 +285,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
         .stats = { .speed = MONSTER_SPEED, .ability = { 14, 8, 14, 3, 10, 1 } },
         .health = { .hp_max = 18, .immune = DMG_BIT(DMG_ACID), .ac = 12 },
-        .melee = { .to_hit = 4, .dice = 2, .sides = 4, .bonus = 0, .type = DMG_BLUNT, .range = 1 },   /* a slam */
+        .melee = { .to_hit = 4, .dice = 2, .sides = 4, .to_damage = 0, .type = DMG_BLUNT, .range = 1 },   /* a slam */
         .inventory = { .capacity = 0, .slots = 0 },
         .xp = 125,                                      /* 4 hit dice, special */
         .flags = 0,
@@ -299,7 +299,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
         .stats = { .speed = MONSTER_SPEED, .ability = { 17, 8, 15, 6, 8, 6 } },
         .health = { .hp_max = 23, .ac = 14 },
-        .melee = { .to_hit = 5, .dice = 2, .sides = 6, .bonus = 0, .type = DMG_BLUNT, .range = 1 },   /* fists */
+        .melee = { .to_hit = 5, .dice = 2, .sides = 6, .to_damage = 0, .type = DMG_BLUNT, .range = 1 },   /* fists */
         .inventory = { .capacity = 3, .slots = SLOT_BIT(SLOT_WEAPON) },
         .xp = 175,                                      /* 5 hit dice */
         .flags = 0,
@@ -312,7 +312,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NO_FLOOR },   /* floats: over holes and traps */
         .stats = { .speed = MONSTER_SPEED, .ability = { 2, 14, 10, 10, 12, 12 } },
         .health = { .hp_max = 20, .immune = IMMUNE_UNDEAD | DMG_BIT(DMG_COLD), .resist = RESIST_WEAPONS, .ac = 15 },
-        .melee = { .to_hit = 4, .dice = 1, .sides = 8, .bonus = 0, .type = DMG_COLD, .range = 1 },    /* a chill touch */
+        .melee = { .to_hit = 4, .dice = 1, .sides = 8, .to_damage = 0, .type = DMG_COLD, .range = 1 },    /* a chill touch */
         .inventory = { .capacity = 0, .slots = 0 },
         .xp = 225,                                      /* 5 hit dice, special */
         .flags = 0,
@@ -325,7 +325,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
         .stats = { .speed = MONSTER_SPEED, .ability = { 10, 15, 10, 12, 13, 14 } },
         .health = { .hp_max = 27, .immune = IMMUNE_UNDEAD | DMG_BIT(DMG_COLD), .resist = RESIST_WEAPONS, .ac = 16 },
-        .melee = { .to_hit = 6, .dice = 1, .sides = 10, .bonus = 0, .type = DMG_COLD, .range = 1 },   /* a draining touch */
+        .melee = { .to_hit = 6, .dice = 1, .sides = 10, .to_damage = 0, .type = DMG_COLD, .range = 1 },   /* a draining touch */
         .inventory = { .capacity = 0, .slots = 0 },
         .xp = 500,                                      /* 6 hit dice, special */
         .flags = 0,
@@ -339,7 +339,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
         .stats = { .speed = MONSTER_SPEED, .ability = { 20, 12, 18, 7, 9, 6 } },
         .health = { .hp_max = 31, .vuln = DMG_BIT(DMG_FIRE) | DMG_BIT(DMG_ACID), .ac = 15 },
-        .melee = { .to_hit = 7, .dice = 2, .sides = 6, .bonus = 2, .type = DMG_SLASH, .range = 1 },   /* claws */
+        .melee = { .to_hit = 7, .dice = 2, .sides = 6, .to_damage = 2, .type = DMG_SLASH, .range = 1 },   /* claws */
         .inventory = { .capacity = 0, .slots = 0 },
         .xp = 850,                                      /* 7 hit dice, special */
         .flags = 0,
@@ -353,7 +353,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
         .stats = { .speed = MONSTER_SPEED, .ability = { 22, 10, 20, 14, 14, 16 } },
         .health = { .hp_max = 60, .immune = DMG_BIT(DMG_FIRE), .vuln = DMG_BIT(DMG_COLD), .ac = 18 },
-        .melee = { .to_hit = 9, .dice = 3, .sides = 6, .bonus = 3, .type = DMG_PIERCE, .range = 1 },  /* bite */
+        .melee = { .to_hit = 9, .dice = 3, .sides = 6, .to_damage = 3, .type = DMG_PIERCE, .range = 1 },  /* bite */
         .inventory = { .capacity = 0, .slots = 0 },
         .xp = 1750,                                     /* 10 hit dice, special */
         .flags = 0,
@@ -367,7 +367,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
         .stats = { .speed = 10, .ability = { 16, 14, 14, 9, 9, 10 } },   /* Str Dex Con Int Wis Cha */
         .health = { .hp_max = 12, .ac = 10 },
-        .melee = { .to_hit = 0, .dice = 1, .sides = 2, .bonus = 0, .type = DMG_BLUNT, .range = 1 },   /* fists */
+        .melee = { .to_hit = 0, .dice = 1, .sides = 2, .to_damage = 0, .type = DMG_BLUNT, .range = 1 },   /* fists */
         .inventory = { .capacity = 20, .slots = SLOTS_HUMANOID },
         .xp = 0,
         .flags = CREATURE_PLAYER,
@@ -387,7 +387,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .health = { .hp_max = 8, .ac = 10 },
         .mana = { .mp_max = 8 },
         .spells = { SP_MAGIC_BOLT },                    /* the starting spells: within level 1's slots (docs/spells.md, R38) */
-        .melee = { .to_hit = 0, .dice = 1, .sides = 2, .bonus = 0, .type = DMG_BLUNT, .range = 1 },   /* fists */
+        .melee = { .to_hit = 0, .dice = 1, .sides = 2, .to_damage = 0, .type = DMG_BLUNT, .range = 1 },   /* fists */
         .inventory = { .capacity = 20, .slots = SLOTS_HUMANOID },
         .xp = 0,
         .flags = CREATURE_PLAYER,
