@@ -28,15 +28,16 @@ Status: built. Code: [act_melee.c](../src/game/actions/act_melee.c), with the st
 
    `ACT_CHECK` stops here.
 3. **Resolve and apply:** `act_strike()` with the attacker, `ATTACK_MELEE`, the attacker's
-   hit hook, and the actor's own bonus, `attack_actor_mod()` (its Strength modifier, 0
-   without stats), as both to hit and to damage (actions.md, 4.12). The attack's own to-hit
-   and to-damage still apply: the bonus adds to them. A hit posts `EV_HIT` (p1 the roll, p2 the
+   hit hook, and the actor's own bonuses: to hit from `attack_actor_to_hit()` (its Strength
+   modifier, and `ATTACK_BLINDED_TO_HIT`, -4, if it is blinded) and to damage from
+   `attack_actor_to_damage()` (its Strength modifier), both 0 without stats (actions.md,
+   4.12). The attack's own to-hit and to-damage still apply: these add to them. A hit posts `EV_HIT` (p1 the roll, p2 the
    weapon), damages the target, and applies the hit hook of the weapon, or of the actor if
    it has none, to a target left alive: a poisonous bite. A miss posts `EV_MISSED` and fails
    with `ACT_R_MISSED`, attempted.
 
-A hit is 1d20 plus the attack's to-hit plus the actor's Strength modifier at or above the
-target's AC; 20 always hits and 1 always misses (`attack_hits()`). Damage is the attack's
+A hit is 1d20 plus the attack's to-hit plus the actor's Strength modifier (less 4 if it is
+blinded) at or above the target's AC; 20 always hits and 1 always misses (`attack_hits()`). Damage is the attack's
 dice plus its to-damage plus the Strength modifier, at least 1 (`attack_damage()`). Monsters
 have stats too, so their Strength counts.
 
@@ -63,6 +64,7 @@ Largest case: `EV_HIT`, `EV_DAMAGED`, `EV_DIED`, `EV_EFFECT_STARTED` and
 ## 4. Tests
 
 `test_act`: hits, misses, and hit effects at the kind's power; Strength +2 and -2 on the
-roll, +2 on the damage of the weapon and of the actor's own attack; the weapon's attack and the
+roll, +2 on the damage of the weapon and of the actor's own attack; blinded, -4 on the roll and
+the damage unchanged; the weapon's attack and the
 actor's own; each refusal; reach to all 8 neighbours and no further; a target on the actor's
 own tile refused; and check mode drawing no numbers.

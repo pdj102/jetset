@@ -71,7 +71,7 @@ typedef struct stats_kind {
 
 /* Statuses: bits of stats_status, granted by effects (game/effects/effects.h) */
 #define STATUS_POISONED     0x01
-#define STATUS_BLINDED      0x02   /**< Granted, but no rule reads it yet (docs/attributes.md, "Not built yet"). */
+#define STATUS_BLINDED      0x02   /**< A penalty to hit (attack_actor_to_hit()). */
 #define STATUS_UNCONSCIOUS  0x04   /**< Granted, but no rule reads it yet (docs/attributes.md, "Not built yet"). */
 #define STATUS_ROOTED       0x08   /**< Can't leave its tile (act_move(), the stairs): for ever or for a while. */
 

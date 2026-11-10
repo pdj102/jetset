@@ -1283,7 +1283,7 @@ int main(void)
     str = stats_ability[ABIL_STR][player];
     effects_set_base(player, ATTR_ABILITY(ABIL_STR), 10);   /* Strength +0 until its own checks below */
     events();
-    CHECK(attack_actor_mod(player, ATTACK_MELEE) == 0);
+    CHECK(attack_actor_to_hit(player, ATTACK_MELEE) == 0 && attack_actor_to_damage(player, ATTACK_MELEE) == 0);
     gob = creature(CR_GOBLIN, 3, 5);
     effects_set_base(gob, ATTR_HP_MAX, 200);
     health_hp[gob] = 200;
@@ -1330,8 +1330,8 @@ int main(void)
     /* Strength 14 (+2) adds to the sword's to hit: hits if roll + 1 + 2 >= 13 */
     effects_set_base(player, ATTR_ABILITY(ABIL_STR), 14);
     events();
-    CHECK(attack_actor_mod(player, ATTACK_MELEE) == 2);
-    CHECK(attack_actor_mod(i2, ATTACK_MELEE) == 0);            /* no stats: the sword itself */
+    CHECK(attack_actor_to_hit(player, ATTACK_MELEE) == 2 && attack_actor_to_damage(player, ATTACK_MELEE) == 2);
+    CHECK(attack_actor_to_hit(i2, ATTACK_MELEE) == 0 && attack_actor_to_damage(i2, ATTACK_MELEE) == 0);   /* no stats */
     ok = 1;
     for (roll = 2; roll <= 19 && ok; roll++) {
         srand(seed_for_roll(roll));
@@ -1366,6 +1366,21 @@ int main(void)
     CHECK(ok);
     effects_set_base(player, ATTR_ABILITY(ABIL_STR), 10);
     events();
+    /* Blinded: -4 to hit (a 15 misses, a 16 hits: roll + 1 - 4 >= 13), the damage as ever */
+    stats_status[player] |= STATUS_BLINDED;
+    CHECK(attack_actor_to_hit(player, ATTACK_MELEE) == ATTACK_BLINDED_TO_HIT &&
+          attack_actor_to_damage(player, ATTACK_MELEE) == 0);
+    srand(seed_for_roll(15));
+    a = ctx(player);
+    a.target = gob;
+    CHECK(act_melee(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_MISSED);
+    srand(seed_for_roll(16));
+    a = ctx(player);
+    a.target = gob;
+    CHECK(act_melee(&a, ACT_DO) == ACT_SUCCESS && a.amount >= 1 && a.amount <= 8);
+    stats_status[player] &= (uint8_t)~STATUS_BLINDED;
+    events();
+    health_hp[gob] = 200;
     /* Its own attack without a weapon: fists, blunt, which the goblin resists */
     item_slot[i2] = SLOT_NONE;
     srand(seed_for_roll(20));
@@ -2058,7 +2073,7 @@ int main(void)
     health_hp[rat] = 200;
     effects_set_base(player, ATTR_ABILITY(ABIL_DEX), 10);   /* Dexterity +0 until its own checks below */
     events();
-    CHECK(attack_actor_mod(player, ATTACK_RANGED) == 0);
+    CHECK(attack_actor_to_hit(player, ATTACK_RANGED) == 0 && attack_actor_to_damage(player, ATTACK_RANGED) == 0);
     /* The shooter table: what is refused, nothing changing */
     CHECK(fire(player, 3, 2, ACT_DO) == ACT_FAIL && last.reason == ACT_R_NO_ATTACK && last.used == 0);
     i1 = equipped(IT_ARROWS, player, SLOT_AMMO);
@@ -2111,7 +2126,8 @@ int main(void)
     item_count[i1] = 20;
     effects_set_base(player, ATTR_ABILITY(ABIL_DEX), 14);
     events();
-    CHECK(attack_actor_mod(player, ATTACK_RANGED) == 2 && attack_actor_mod(i2, ATTACK_RANGED) == 0);
+    CHECK(attack_actor_to_hit(player, ATTACK_RANGED) == 2 && attack_actor_to_damage(player, ATTACK_RANGED) == 2);
+    CHECK(attack_actor_to_hit(i2, ATTACK_RANGED) == 0);       /* no stats: the bow itself */
     srand(seed_for_roll(8));
     CHECK(fire(player, 3, 2, ACT_DO) == ACT_FAIL && last.reason == ACT_R_MISSED);
     srand(seed_for_roll(9));
@@ -2124,6 +2140,18 @@ int main(void)
     CHECK(fire(player, 3, 2, ACT_DO) == ACT_FAIL && last.reason == ACT_R_MISSED);
     srand(seed_for_roll(13));
     CHECK(fire(player, 3, 2, ACT_DO) == ACT_SUCCESS);
+    health_hp[rat] = 200;
+    /* Dexterity 14 and blinded: +2 - 4 to hit (a 12 misses, a 13 hits), +2 damage */
+    effects_set_base(player, ATTR_ABILITY(ABIL_DEX), 14);
+    events();
+    stats_status[player] |= STATUS_BLINDED;
+    CHECK(attack_actor_to_hit(player, ATTACK_RANGED) == 2 + ATTACK_BLINDED_TO_HIT &&
+          attack_actor_to_damage(player, ATTACK_RANGED) == 2);
+    srand(seed_for_roll(12));
+    CHECK(fire(player, 3, 2, ACT_DO) == ACT_FAIL && last.reason == ACT_R_MISSED);
+    srand(seed_for_roll(13));
+    CHECK(fire(player, 3, 2, ACT_DO) == ACT_SUCCESS && last.amount >= 3 && last.amount <= 8);
+    stats_status[player] &= (uint8_t)~STATUS_BLINDED;
     health_hp[rat] = 200;
     effects_set_base(player, ATTR_ABILITY(ABIL_DEX), 10);
     events();

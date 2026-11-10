@@ -321,7 +321,7 @@ row 0  |          Rogue the Fighter             |   title, centred
 | Speed | `stats_speed`, `stats_speed_base` |
 | Abilities | `stats_ability`, `stats_ability_base` |
 | Defences | `health_immune`/`_resist`/`_vuln` and their `_base` |
-| Attack | the wielded weapon's `attack_*[ATTACK_MELEE]` if it has one, else the player's; to hit and to-damage plus `attack_actor_mod()` (Strength) |
+| Attack | the wielded weapon's `attack_*[ATTACK_MELEE]` if it has one, else the player's; to hit plus `attack_actor_to_hit()` (Strength, blinded), to-damage plus `attack_actor_to_damage()` (Strength) |
 | Statuses | `stats_status`, `STATUS_CONDITIONS` |
 | Effects | the player's active effects (`NGE_EFFECT_FOR_EACH`): `EFFECT_KIND_OF()`, `effect_text(EFFECT_TEXT_NAME)`, `effect_save_of()`, `nge_timer_count`/`_period`/`_cycles` |
 

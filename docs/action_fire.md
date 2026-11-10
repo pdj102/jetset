@@ -49,8 +49,10 @@ player gets `ACT_R_NO_ATTACK`.
    its kind, if the ammo isn't the attacker itself. `EV_FIRED` (target the creature in line,
    source the actor, p1 the item), then `act_strike()` with the attacker, `ATTACK_RANGED`,
    the hit hook of the shot (or of the attacker if there is no shot), and the bonuses: the
-   ammo's plus the actor's own, `attack_actor_mod()` (its Dexterity modifier, 0 without
-   stats), on both to hit and damage (actions.md, 4.12). The attacker's own to-hit and
+   ammo's plus the actor's own: to hit from `attack_actor_to_hit()` (its Dexterity modifier,
+   and `ATTACK_BLINDED_TO_HIT`, -4, if it is blinded) and to damage from
+   `attack_actor_to_damage()` (its Dexterity modifier), both 0 without stats. The action adds
+   them up into its to_hit and to_damage before `act_strike()` (actions.md, 4.12). The attacker's own to-hit and
    to-damage still apply: these add to them. A thrown item takes Dexterity too, and so do
    monsters, which have stats. A miss fails with `ACT_R_MISSED`, attempted. Then, hit or miss, the
    shot's `item_count[]` goes down by one, and at 0 the item is destroyed (R3).
@@ -115,7 +117,8 @@ and ammo put on. The PC screen shows the ranged attack (ranged_ai_components.md 
 ## 7. Tests
 
 `test_act`: each row of the shooter table; a shot used up on a hit and on a miss; the ammo's
-bonuses and hit effect; Dexterity +2 and -2 on the roll and +2 on the damage; the last of a stack and its slot emptying; a creature in the way hit
+bonuses and hit effect; Dexterity +2 and -2 on the roll and +2 on the damage;
+blinded, -4 on the roll and the damage unchanged; the last of a stack and its slot emptying; a creature in the way hit
 in place of the one aimed at; the own-tile check with the range in `amount`; and `act_do()`.
 `test_target` has the `f` key, and the same tiles in range as `target_in_range()`. `test_ai`
 has `opt_shoot()` holding its fire.

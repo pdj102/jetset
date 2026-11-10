@@ -16,9 +16,9 @@
  * An attack hits if 1d20 + to_hit >= the target's AC (game/components/
  * health.h); a roll of 20 always hits and a 1 always misses. A hit does
  * dice d sides + to_damage damage of its type, at least 1. The attacking
- * creature's own bonus, attack_actor_mod() (Strength for melee, Dexterity
- * for ranged), adds to
- * both; the caller passes it in with any others.
+ * creature's own bonuses, attack_actor_to_hit() and attack_actor_to_damage()
+ * (Strength for melee, Dexterity for ranged, less its conditions' penalties
+ * on to hit), add to them; the caller passes them in with any others.
  *
  * The tables are page data in page 111 (attack_pdata.c, attack_internal.h),
  * one row per use: read at most once a turn, so out of slot 0
@@ -44,6 +44,9 @@
 /** The d20 rolls that always hit and always miss. */
 #define ATTACK_ROLL_HIT   20
 #define ATTACK_ROLL_MISS  1
+
+/** To hit for an attacker that is blinded (STATUS_BLINDED), melee or ranged. */
+#define ATTACK_BLINDED_TO_HIT  (-4)
 
 /** Kind attack: the attack part of a creature's (melee) or an item's kind record (its range says melee or ranged). */
 typedef struct attack_kind {
@@ -85,7 +88,7 @@ void attack_get(nge_entity_id_t id, uint8_t use, attack_kind_t *out) NGE_BANKED;
  *        the attack's to_hit + to_hit >= the target's AC. The one place for
  *        the hit rule.
  * @param to_hit Added to the attack's own: what isn't in id's row, such as
- *               the ammo's or the creature's (attack_actor_mod()). 0 for none.
+ *               the ammo's or the creature's (attack_actor_to_hit()). 0 for none.
  */
 uint8_t attack_hits(nge_entity_id_t id, uint8_t use, nge_entity_id_t target, uint8_t roll, int8_t to_hit) NGE_BANKED;
 
@@ -97,13 +100,20 @@ uint8_t attack_hits(nge_entity_id_t id, uint8_t use, nge_entity_id_t target, uin
 uint8_t attack_damage(nge_entity_id_t id, uint8_t use, int8_t to_damage) NGE_BANKED;
 
 /**
- * @brief The bonus creature actor adds to both to hit and damage with an
- *        attack of this use, whoever's attack component it makes (its
- *        weapon's, launcher's, thrown item's or its own): its modifier
- *        (STATS_MOD()) of Strength for melee, of Dexterity for ranged; 0
- *        without stats (COMPONENT_STATS).
+ * @brief What creature actor adds to the roll with an attack of this use,
+ *        whoever's attack component it makes (its weapon's, launcher's,
+ *        thrown item's or its own): its ability modifier (STATS_MOD()), of
+ *        Strength for melee, of Dexterity for ranged, plus its conditions'
+ *        penalties (ATTACK_BLINDED_TO_HIT); 0 without stats (COMPONENT_STATS).
  */
-int8_t attack_actor_mod(nge_entity_id_t actor, uint8_t use) NGE_BANKED;
+int8_t attack_actor_to_hit(nge_entity_id_t actor, uint8_t use) NGE_BANKED;
+
+/**
+ * @brief What creature actor adds to the damage with an attack of this use:
+ *        its ability modifier, as attack_actor_to_hit()'s, with no
+ *        conditions; 0 without stats.
+ */
+int8_t attack_actor_to_damage(nge_entity_id_t actor, uint8_t use) NGE_BANKED;
 
 /**
  * @brief The melee weapon id wields (SLOT_WEAPON, with a melee attack),

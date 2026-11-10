@@ -254,7 +254,7 @@ effect (`nge_effect_destroy()`) first, with a reason in `EV_EFFECT_ENDED`'s p2:
 
 | Mechanic | What's there, what's missing |
 |---|---|
-| Blinded and unconscious | Effects grant them and the PC screen shows them, but no rule reads them and the main screen shows only poisoned |
+| Blinded and unconscious | Effects grant them and the PC screen shows them. Blinded gives -4 to hit (`attack_actor_to_hit()`), and nothing else reads it yet; no rule reads unconscious; the main screen shows only poisoned |
 | Other ways to avoid or end a condition | A saving throw when it is applied, waking when damaged, condition immunities (which could be a mask attribute) |
 | Messages by reason | The reason is in the event, but every ending uses the effect's one text |
 | More than 8 statuses | The mask and the definitions' `status` field would become `uint16_t` |

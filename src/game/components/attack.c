@@ -98,7 +98,30 @@ uint8_t attack_damage(nge_entity_id_t id, uint8_t use, int8_t to_damage) NGE_BAN
     return (damage > 255) ? 255 : (uint8_t)damage;
 }
 
-int8_t attack_actor_mod(nge_entity_id_t actor, uint8_t use) NGE_BANKED
+/* Actor's modifier of the ability an attack of this use takes (Str melee, Dex ranged); actor has stats */
+static int8_t ability_mod(nge_entity_id_t actor, uint8_t use)
+{
+    return STATS_MOD(stats_ability[(use == ATTACK_MELEE) ? ABIL_STR : ABIL_DEX][actor]);
+}
+
+int8_t attack_actor_to_hit(nge_entity_id_t actor, uint8_t use) NGE_BANKED
+{
+    int8_t to_hit;
+
+    nge_util_assert(actor < NGE_ENTITY_MAX);
+    nge_util_assert(use < ATTACK_USE_COUNT);
+
+    if (!NGE_ENTITY_HAS_COMPONENT(actor, COMPONENT_STATS)) {
+        return 0;
+    }
+    to_hit = ability_mod(actor, use);
+    if (STATUS_HAS(actor, STATUS_BLINDED)) {
+        to_hit = (int8_t)(to_hit + ATTACK_BLINDED_TO_HIT);
+    }
+    return to_hit;
+}
+
+int8_t attack_actor_to_damage(nge_entity_id_t actor, uint8_t use) NGE_BANKED
 {
     nge_util_assert(actor < NGE_ENTITY_MAX);
     nge_util_assert(use < ATTACK_USE_COUNT);
@@ -106,7 +129,7 @@ int8_t attack_actor_mod(nge_entity_id_t actor, uint8_t use) NGE_BANKED
     if (!NGE_ENTITY_HAS_COMPONENT(actor, COMPONENT_STATS)) {
         return 0;
     }
-    return STATS_MOD(stats_ability[(use == ATTACK_MELEE) ? ABIL_STR : ABIL_DEX][actor]);
+    return ability_mod(actor, use);
 }
 
 nge_entity_id_t attack_weapon(nge_entity_id_t id) NGE_BANKED
