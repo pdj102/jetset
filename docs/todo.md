@@ -62,26 +62,26 @@ D1 - Create a roadmap guide for game mechanic scaling `[spec]` [spec](difficulty
   `player_bank.c`, the owner searches (`nge_owner_set.c`)
 
 ## S - Spells
-### S1 - Magical Player Characters have Spell Slots `[plan]` [spec](spells.md) (section 10), [plan](spells_plan.md) (part 2)
-- S1.1 A Spell Slots table defines the number of spells a Player Character can learn by Spell Level 
-- S1.2 The Spell Slot table is indexed by Player Character Class and Player Character Level
-- S1.3 The  higher the Player Character Level the more spells they can learn 
-- S1.4 Not all Player Character Classes can learn spells (only characters with the Mana Component) 
-- S1.4 Non Player Characters do not learn spells and have a fixed set number of learnt spells defined by their Kind
-- S1.5 When a Player Character levels up, a message notifies the Player if they can learn new spells 
-### S2 - The game has Spell Books items `[plan]` [spec](spells.md) (section 10), [plan](spells_plan.md) (part 2)
-- S2.1 Implement a new item type - spell book.
-- S2.1b Implement a sprite for the spell book
-- S2.2 A spell book contains spells that a spell caster can learn
-- S2.3 Implement a basic spell book - contains spells levels 1 and 2
-- S2.4 Implement a intermediate spell book - contains spells levels 3 and 4
-- S2.5 Implement an advanced spell book - contains spells level 5
-- S2.6 The Mage and DEV character class start with a basic spell book
- ### S3 - Player Character can learn spells from Spell Books `[plan]` [spec](spells.md) (section 10), [plan](spells_plan.md) (part 2)
-- S3.1 The Player can read a Spell Book
-- S3.2 The Spell Book UI shows all the spells the book contains and highlights which spells the PlayerCharacter  already knows, which spells they could learn (based on available spell slots) and which spells they cannot learn (no spell slot)
-- S3.3 The Player can select a spell to learn 
-- S3.4 The Player Character can learn a spell if they have an free Spell Slot
+### S1 - Magical Player Characters have Spell Slots `[done]` (2026-11-10) [spec](spells.md) (section 10), [plan](spells_plan.md) (part 2)
+- S1.1 A Spell Slots table defines the number of spells a Player Character can learn by Spell Level `[done]`
+- S1.2 The Spell Slot table is indexed by Player Character Class and Player Character Level `[done]`
+- S1.3 The  higher the Player Character Level the more spells they can learn `[done]`
+- S1.4 Not all Player Character Classes can learn spells (only characters with the Mana Component) `[done]`
+- S1.4 Non Player Characters do not learn spells and have a fixed set number of learnt spells defined by their Kind `[done]`
+- S1.5 When a Player Character levels up, a message notifies the Player if they can learn new spells `[done]`
+### S2 - The game has Spell Books items `[done]` (2026-11-10) [spec](spells.md) (section 10), [plan](spells_plan.md) (part 2)
+- S2.1 Implement a new item type - spell book. `[done]`
+- S2.1b Implement a sprite for the spell book `[done]`
+- S2.2 A spell book contains spells that a spell caster can learn `[done]`
+- S2.3 Implement a basic spell book - contains spells levels 1 and 2 `[done]`
+- S2.4 Implement a intermediate spell book - contains spells levels 3 and 4 `[done]`
+- S2.5 Implement an advanced spell book - contains spells level 5 `[done]`
+- S2.6 The Mage and DEV character class start with a basic spell book `[done]`
+ ### S3 - Player Character can learn spells from Spell Books `[done]` (2026-11-10) [spec](spells.md) (section 10), [plan](spells_plan.md) (part 2)
+- S3.1 The Player can read a Spell Book `[done]`
+- S3.2 The Spell Book UI shows all the spells the book contains and highlights which spells the PlayerCharacter  already knows, which spells they could learn (based on available spell slots) and which spells they cannot learn (no spell slot) `[done]`
+- S3.3 The Player can select a spell to learn `[done]`
+- S3.4 The Player Character can learn a spell if they have an free Spell Slot `[done]`
  ### S10 - Implement identify spell
 - S10.1 Each item has an identified flag, default unidentified
 - S10.2 An unidentified item's name does not reveal its effects in the UI (e.g. in the inventory screen, messages)

@@ -327,7 +327,7 @@ else leaves at once. Only the player, carrying the quest item, can leave the dun
 
 ### 4.6 Reasons
 
-There are 40 reasons, with `ACT_R_NONE` (`ACT_R_COUNT`). Three are attempted:
+There are 51 reasons, with `ACT_R_NONE` (`ACT_R_COUNT`). Five are attempted: the three below, and `ACT_R_DISARM_FAILED` and `ACT_R_SET_OFF` ([features.md](features.md)). The six that `ACT_LEARN` gives are all refused ([spells.md](spells.md) 10.5.4):
 
 | Attempted reason | Where | Event | What the player is told |
 |---|---|---|---|

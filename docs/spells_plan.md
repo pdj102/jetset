@@ -7,8 +7,9 @@ Status: done 2026-11-03. Steps 1 to 3 passed in CSpect. Step 4: casting at range
 melee when out of MP passed in CSpect; healing itself and holding a bolt are covered by
 `test_ai` only. Step 5 closed the docs.
 
-Part 2, spell slots and spell books (spells.md section 10, to-do S1 to S3): proposed
-2026-11-10, steps 6 to 9 in section 4. Step 6 done 2026-11-10, its CSpect checks passed. Step 7 done 2026-11-10, its CSpect check passed. Step 8 done 2026-11-10, its CSpect checks passed.
+Part 2, spell slots and spell books (spells.md section 10, to-do S1 to S3): done
+2026-11-10, steps 6 to 9 in section 4. Steps 6 to 8 passed their CSpect checks; step 9
+closed the docs.
 
 ## 1. How the steps work
 

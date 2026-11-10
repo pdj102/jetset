@@ -14,10 +14,10 @@ MP, and healing itself was checked only by the PC tests. Differences from the de
 section 9. Proposed 2026-11-02; `SPELL_DIRECT` added 2026-11-03, agreed in actions.md
 (section 6.13, D30). This spec replaces the sketch in actions.md, section 6.6.
 
-**Spell slots and spell books** (to-do S1, S2, S3): proposed 2026-11-10, in section 10,
-with the build steps in [spells_plan.md](spells_plan.md), part 2. Q1 to Q4 were answered
-the same day (section 10.8). It changes R9 to R11, D7 and section 4.6: learning moves from
-level-ups to spell books.
+**Spell slots and spell books** (to-do S1, S2, S3): implemented 2026-11-10, in section 10,
+in steps 6 to 9 of [spells_plan.md](spells_plan.md), part 2. Every CSpect check of section
+10.6 passed. Differences from the design are in section 10.9. It changes R9 to R11, D7 and
+section 4.6: learning moves from level-ups to spell books.
 
 ## 1. Overview
 
@@ -679,9 +679,11 @@ Differences from the design above, step by step ([spells_plan.md](spells_plan.md
 
 ## 10. Spell slots and spell books (to-do S1, S2, S3)
 
-Status: proposed 2026-11-10. Q1 to Q4 answered the same day (section 10.8). Build steps:
-[spells_plan.md](spells_plan.md), part 2. New spells are a later step: this part only uses
-the 10 spells of section 4.12.
+Status: implemented 2026-11-10, in steps 6 to 9 of [spells_plan.md](spells_plan.md), part
+2; CSpect checks 1 to 8 of section 10.6 passed. Proposed the same day; Q1 to Q4 answered
+then (section 10.8), Q5 to Q7 still open for tuning in play. Differences from the design are
+in section 10.9. New spells are a later step: this part only uses the 10 spells of section
+4.12.
 
 ### 10.1 Overview
 
@@ -1147,4 +1149,5 @@ Differences from sections 10.1 to 10.8, by step:
     lines had no room (help_screen.md, section 10).
   - The debug build's basic spellbook lies at the player's feet in a new game
     (`level_dev_bandit()`), for check 6.
-
+- **Step 9.** `make balance` after: 0 failed, 4 warnings, the same as before (10.5.9): the
+  books change only the item pools, and the extra items a level don't count in C1 to C5.
