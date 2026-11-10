@@ -14,6 +14,11 @@ MP, and healing itself was checked only by the PC tests. Differences from the de
 section 9. Proposed 2026-11-02; `SPELL_DIRECT` added 2026-11-03, agreed in actions.md
 (section 6.13, D30). This spec replaces the sketch in actions.md, section 6.6.
 
+**Spell slots and spell books** (to-do S1, S2, S3): proposed 2026-11-10, in section 10,
+with the build steps in [spells_plan.md](spells_plan.md), part 2. Q1 to Q4 were answered
+the same day (section 10.8). It changes R9 to R11, D7 and section 4.6: learning moves from
+level-ups to spell books.
+
 ## 1. Overview
 
 **A spell is data.** Each is a row in a constant table, `spell_defs[]`, that says how
@@ -50,8 +55,8 @@ learned. Later ways of learning, such as a scroll or a shrine, call the same fun
                mana_spend() ------> EV_MANA_SPENT           |
                effect_apply(ef, power, target, actor) ------+--> instant or timed
 
- level_up() ---------> spell_learn_level() --+
- later: OP_LEARN ----------------------------+--> spell_learn() --> EV_SPELL_LEARNED
+ b key: a book ------> ACT_LEARN (section 10) --+
+ later: OP_LEARN -------------------------------+--> spell_learn() --> EV_SPELL_LEARNED
 ```
 
 ## 2. Terms
@@ -90,12 +95,13 @@ learned. Later ways of learning, such as a scroll or a shrine, call the same fun
   none doesn't get the component.
 - **R8** `spell_learn()` is the only way to add a spell, whatever the cause. Learning a
   spell already known changes nothing and posts nothing.
-- **R9** On reaching a character level, the player learns every spell whose row names
-  that level. A row naming 0 is never learned this way.
-- **R10** The player's kind lists every spell of `learn` 1, as level 1 is never gained. A
-  test holds this.
-- **R11** Spell level L is learned at character level 2L - 1 or later, the pace of classic
-  B/X. A test holds this.
+- **R9 (Changed, S1)** ~~On reaching a character level, the player learns every spell
+  whose row names that level.~~ Replaced by R36 and R46: a level-up gives spell slots, and
+  spells are learned from books.
+- **R10 (Changed, S1)** ~~The player's kind lists every spell of `learn` 1.~~ Replaced by
+  R38: a class's starting spells fit its level 1 slots.
+- **R11 (Changed, S1)** Spell level L can be learned at character level 2L - 1 or later,
+  the pace of classic B/X. The slot table now holds this (R35).
 
 ### Casting
 
@@ -160,7 +166,7 @@ learned. Later ways of learning, such as a scroll or a shrine, call the same fun
 | `shape` | `SPELL_SELF`, `SPELL_BOLT` or `SPELL_DIRECT` |
 | `ef`, `power` | The effect and its power |
 | `range` | A bolt's or direct spell's reach, through `nge_map_within()`; 0 for `SPELL_SELF` |
-| `learn` | The character level the player learns it at, or 0 for never |
+| ~~`learn`~~ | Goes (S1, D18): spells are learned from books |
 | `ai` | `SPELL_AI_NEVER`, `SPELL_AI_HURT` or `SPELL_AI_TARGET` |
 
 `SP_NONE` is 0, and its row is empty. `SPELL_COUNT` is at most 32 (section 4.3).
@@ -197,7 +203,7 @@ The macro is in common reach, so `ai_can()` asks without a banked call.
 | `spell_add(id, list)` | Gives the component with the kind's list, posting nothing |
 | `spell_knows(id, sp)` | 1 if `id` is a caster and knows `sp` |
 | `spell_learn(id, sp)` | Sets the bit and posts `EV_SPELL_LEARNED`, unless already known |
-| `spell_learn_level(id, level)` | Learns each row with that `learn` |
+| ~~`spell_learn_level(id, level)`~~ | Goes (S1, D18), with `learn`. Section 10.5.2 adds the slot and book functions |
 | `spell_next(id, sp, ai)` | The next known spell after `sp`, wrapping, with that `ai` value, or `SP_NONE`. `ai` may be `SPELL_AI_ANY` |
 | `spell_get(sp, def)` | Copies a row into `*def`, on the caller's stack |
 | `spell_cost(level)` | The MP for a spell level |
@@ -256,6 +262,10 @@ helps the caster is `SPELL_SELF`, so the player gets no prompt. Helping another 
 isn't possible yet, and no monster has an ally to help.
 
 ### 4.6 Learning
+
+**Changed (S1):** this section describes the build of 2026-11-03. Section 10.5 replaces
+it: `level_up()` no longer calls `spell_learn_level()`, which goes with the `learn` field.
+`OP_LEARN` stays the way for a scroll or shrine to teach a spell.
 
 `level_up()` in [pc.c](../src/game/components/pc.c) calls `spell_learn_level(id, pc_level)`
 directly, after the level has gone up. It runs inside `EV_DIED`'s handler or in
@@ -383,6 +393,9 @@ common memory (R30). The map must be compared before and after.
 
 ### 4.12 The first spells
 
+**Changed (S2):** the "Learned at" column goes with the `learn` field. Each spell is in a
+book instead (section 10.5.3).
+
 Only effects that work today, and one spell for each character level:
 
 | Learned at | `SP_*` | Name | Level | MP | Shape | Range | Effect, power | AI |
@@ -463,7 +476,7 @@ Made when this is built:
   100. *Rejected:* a kind's mask for monsters and a variable for the player, which saves 400
   bytes of a nearly empty page for two code paths. *Rejected:* slot 0, which has less room
   and no reader outside this module.
-- **D7 The player learns automatically.** `level_up()` runs in an event handler, and no
+- **D7 (Replaced by D18) The player learns automatically.** `level_up()` runs in an event handler, and no
   chooser can run there (events.md, section 4.4). The list is short, so a choice would be
   little to give up. *Rejected:* a pending choice held until the next turn, which needs a
   new state for a decision the first list doesn't have.
@@ -507,9 +520,9 @@ Made when this is built:
 | A shriek | A self-targeted effect with an op that wakes the level |
 | Spells on doors, walls and tiles | Knock, stone to mud, webs. Needs an op that reads the caster's surroundings, or a tile passed to `effect_apply()` (D3) |
 | Prayers | `school` and a list of their own (D2) |
-| Learning from scrolls and shrines | `spell_learn()` is ready. Needs `OP_LEARN`, its rows, and items or features that name them |
+| Learning from scrolls and shrines | `spell_learn()` is ready. Needs `OP_LEARN`, its rows, and items or features that name them. Should it obey slots (section 10)? |
 | Forgetting | No rule needs it |
-| Classes | Every character can cast until player_character.md R16. Then `learn` and maximum MP depend on the class |
+| Classes | Slots depend on the class (section 10). Maximum MP gained at a level doesn't yet |
 | Spell variety | Dice in effects, power by level, a chance to fail |
 | Spells that help others | `SPELL_DIRECT` can reach another creature. Needs allies |
 | A projectile animation | `EV_CAST` carries what it needs (animations.md, R14) |
@@ -663,3 +676,441 @@ Differences from the design above, step by step ([spells_plan.md](spells_plan.md
   (`level_dev_bandit()`), for the CSpect check.
 - Page 130 grew by 545 bytes; common memory is unchanged.
 
+
+## 10. Spell slots and spell books (to-do S1, S2, S3)
+
+Status: proposed 2026-11-10. Q1 to Q4 answered the same day (section 10.8). Build steps:
+[spells_plan.md](spells_plan.md), part 2. New spells are a later step: this part only uses
+the 10 spells of section 4.12.
+
+### 10.1 Overview
+
+**A level-up gives room, a book gives spells.** A spell caster has a number of **spell
+slots** at each spell level, read from a table by class and character level. Each spell
+known fills one slot of its level. Spells are learned only by reading a **spell book** the
+player carries, and only into a free slot. A level-up no longer teaches anything: it may
+add slots, and says so.
+
+**Everything reuses what is there.** A book is an item kind with a new subclass, and its
+`group` byte names its list of spells. Learning is an action, `ACT_LEARN`, which ends in
+`spell_learn()`, so the message and event are the ones a level-up used to give. The book
+screen is the spell list in a second mode. Choosing a book is the inventory screen in a new
+mode, as for every other item command.
+
+```text
+ b key --> screen_inv_run(ACT_LEARN): a book in the pack --+
+ browse: b, or ENTER on a book ----------------------------+
+                                                           v
+            screen_book_run(book): the book's spells, coloured known / can learn / can't
+                 letter --> act_do(ACT_LEARN, book, spell) in the screen
+                               validate: carried? a book? a caster? in the book?
+                                         known? a slot at that level? one free?
+                               apply:    spell_learn() --> EV_SPELL_LEARNED
+                 the screen stays open; SPACE closes: one turn if anything was learned
+
+ level_up() --> EV_LEVEL_GAINED --> messages: "Welcome to experience level 3."
+                                   and, if the level adds a slot,
+                                   "You can learn more spells: read a spell book."
+```
+
+### 10.2 Terms
+
+| Term | Meaning |
+|---|---|
+| Spell slot | Room for one known spell of one spell level |
+| Slot table | `spell_slots_table[]`: slots by class, character level and spell level |
+| Free slot | A slot of a spell level with no known spell in it: slots less spells known at that level |
+| Spell book | An item of subclass `ITEM_BOOK`. Its kind's `group` is a `SPELL_BOOK_*` |
+| Book list | A book's spells, a row of `spell_books[]` |
+| Read | Open a book's screen. Learning from it is the action |
+
+### 10.3 Requirements
+
+To-do features are in brackets. **New** or **Changed** marks a requirement that differs
+from the to-do list, with the reason.
+
+#### Spell slots (S1)
+
+- **R33 [S1.1]** A table gives the number of spells the player can know at each spell
+  level, 1 to 5. Every known spell of a level fills a slot of that level, the starting
+  spells included.
+- **R34 [S1.2]** The table is indexed by class and character level.
+- **R35 [S1.3]** Slots never fall as the character level rises, and the first slot of spell
+  level L comes at character level 2L - 1 (R11). A test holds both.
+- **R36 [S1.4]** Only a player character with the mana component has slots. The Fighter has
+  none and can't learn. The Dev has the Mage's table (Q4).
+- **R37 [S1.4b]** Monsters don't learn and have no slots: they know their kind's list, as
+  now (R7). Slots are a player rule only.
+- **R38 (New)** A class's starting spells fit its level 1 slots. A test holds this.
+  *Reason: otherwise a new character would start over its own limits.*
+- **R39 [S1.5]** When a level-up adds a slot at any spell level, the player is told they
+  can learn more spells, after the "Welcome to experience level" message.
+
+#### Spell books (S2)
+
+- **R40 [S2.1]** A new item subclass, `ITEM_BOOK`. Books are made, carried, dropped and
+  named as other items are. They can't be used (`u`), worn or aimed.
+- **R41 [S2.1b]** One new sprite pattern, shown in a different colourway for each book.
+- **R42 [S2.2]** A book holds a fixed list of spells, from its kind. Every spell of level 1
+  or more is in at least one book. A test holds this.
+- **R43 [S2.3-S2.5] (Changed)** Three books: the **basic spellbook** (spells of levels 1
+  and 2), the **adept's spellbook** (levels 3 and 4) and the **master's spellbook** (level
+  5). *Reason: a name has 19 characters at most, and "intermediate spellbook" has 22.*
+- **R44 [S2.6]** The Mage and the Dev start with a basic spellbook, carried.
+- **R45 (New)** Books are found in the dungeon, each from about the depth at which the
+  player gets slots for its spells (the target level curve, [difficulty.md](difficulty.md)
+  section 6). *Reason: a Mage who finds no book never learns again.*
+
+#### Learning from books (S3)
+
+- **R46 [S3.1]** The player reads a book they carry: `b`, or `b` or ENTER on a book in the
+  inventory. Spells are learned only from books, never on a level-up (Q1).
+- **R47 [S3.2]** The book screen lists every spell in the book, with its level and cost,
+  coloured: known, can be learned now, can't be learned. Choosing one that can't be learned
+  says why on the status line. The foot shows the free slots at each spell level.
+- **R48 [S3.3] (Changed, Q3)** The player chooses a spell to learn, and may learn several
+  before closing the book. Closing it takes one turn if anything was learned, and none if
+  not. *Reason: the user's answer to Q3.*
+- **R49 [S3.4]** A spell is learned only into a free slot of its level. The reasons a spell
+  can't be learned are: known already, no slot at its level yet, and every slot of its level
+  full.
+- **R50 (New, Q2)** A book isn't used up. *Reason: the player comes back to it when a
+  level-up adds slots.*
+- **R51 (New)** A book is read only from the pack, not from the floor. *Reason: it is an
+  item action, and every item action takes an item the actor carries.*
+
+#### Constraints
+
+- **R52** As R29 to R31: the slot table and book lists are in page 135, nothing new links
+  into common memory, and `ACT_LEARN`'s check changes nothing and draws no random number.
+
+### 10.4 Decisions
+
+- **D17 Slots count known spells; there is no memorising.** A slot is room to know a spell,
+  as S1.1 says, and a known spell can be cast as often as MP allows, as now. *Rejected:*
+  B/X memorising, where a slot holds one cast a day: the game has no rest, and MP already
+  limits casting.
+- **D18 Books only (Q1).** Learning has one way in for the player, and a level-up only adds
+  room. `spell_learn_level()` and the `learn` field go. The player's starting spells stay
+  in the class's creature kind (R7). *Rejected:* both ways, where an automatic spell could
+  take a slot the player wanted for another.
+- **D19 The slot table is in the spells module, by `PC_CLASS_*`.** It is spell data, and
+  the module reads `pc_class` and `pc_level`, which are in common memory. 3 classes x 10
+  levels x 5 spell levels is 150 bytes of page 135. *Rejected:* a slots field in the
+  chargen class record: page 140 would have to be called from inside an action, and the
+  table would be split from the rule that reads it. *Rejected:* a formula (a curve with a
+  rate per class): S2.7 of the old list asked for tables, and a table can be tuned a cell at
+  a time.
+- **D20 A book's kind names its list through `group`.** `gen_item_group()` already reads
+  that byte for keys and lock picks. The lists are in the spells module, `spell_books[]`,
+  by `SPELL_BOOK_*`, so a book of fire spells later is a row and an item kind. *Rejected:* a
+  spell level range in the book, which needs no list: every new spell would join a book
+  whether wanted or not, and a book of a theme couldn't be made. *Rejected:* a list in the
+  item kind, which grows all 163 kinds for 3 of them.
+- **D21 Learning is an action, `ACT_LEARN`.** In: actor, item (the book), spell. It has the
+  four steps of every action, so the screen asks it in check mode for each row's colour and
+  reason, as the spell list asks `ACT_CAST`. *Rejected:* calling `spell_learn()` from the
+  screen, which puts the rules in the UI, where the PC tests can't reach them without
+  driving the screen.
+- **D22 Several spells in one reading, one turn (Q3).** The book screen does each
+  `ACT_LEARN` itself and stays open, and closing it uses a turn if one was learned: the
+  inventory's way with equip and drop in browse mode (ui_inventory.md). `a->used` is set
+  by each learn, and the screen keeps whether any was. *Rejected:* one spell then close.
+- **D23 A new key, `b`, to read.** `b` is free. The inventory screen chooses the book, in
+  a mode of its own (`ACT_LEARN`, list `LIST_BOOKS`), and in browse mode `b`, or ENTER on a
+  book, does the same. *Rejected:* `u` on a book. `act_use()` applies a use hook and
+  destroys the item, so a book would need exceptions in the action, the inventory's
+  usable list and its help line.
+- **D24 With no spell chosen, the check asks only about the book.** `a->spell` `SP_NONE`
+  stops validation after the caster test, with success in check mode, so the inventory
+  screen can refuse a Fighter's book with its reason before the book opens. `SP_NONE` is
+  also `SLOT_NONE`, the value the inventory screen already puts in that byte (D1). In do
+  mode, `SP_NONE` is an assert. This is how `ACT_CAST` treats a bolt on the actor's own
+  tile (4.4).
+- **D25 Two refusals for no room.** "Beyond you" when the class has no slot at that level
+  yet, and "no room" when it has slots and all are full. Both are red in the book, and the
+  status line says which, which is what S3.2 asks the player to see.
+- **D26 The level-up message reads the table, not the player.** `messages_on_event()` runs
+  after the queue drains, perhaps after more levels. It compares the slot table's rows for
+  the event's level and the one before, so each level's message is right whatever has
+  happened since. It says "more spells", not which, and the book screen says the rest.
+- **D27 The slot figures.** The Mage's (and the Dev's), to tune in play:
+
+  | Level | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
+  |---|---|---|---|---|---|---|---|---|---|---|
+  | Spell level 1 | 2 | 3 | 3 | 3 | 4 | 4 | 4 | 4 | 5 | 5 |
+  | Spell level 2 | | | 1 | 2 | 2 | 2 | 3 | 3 | 3 | 4 |
+  | Spell level 3 | | | | | 1 | 2 | 2 | 2 | 3 | 3 |
+  | Spell level 4 | | | | | | | 1 | 2 | 2 | 2 |
+  | Spell level 5 | | | | | | | | | 1 | 2 |
+  | Total | 2 | 3 | 4 | 5 | 7 | 8 | 10 | 11 | 14 | 16 |
+
+  Every level adds a slot, so every level-up says so (R39). A new Mage knows Magic Bolt and
+  can learn one more level 1 spell at once. By level 10 a Mage can know all 10 of today's
+  spells, with 6 slots left for the spells to come. Today's book has 2 spells of level 1,
+  so the third level 1 slot (level 2) has nothing to fill it until more spells come. The
+  Fighter's row is all 0.
+
+- **D28 Book contents and where they're found.** Today's spells, by level (R43):
+
+  | Book | Kind | Spells | Depths | Rarity | Colourway |
+  |---|---|---|---|---|---|
+  | basic spellbook | `IT_BOOK_BASIC` | Magic Bolt, Cure Wounds, Hold, Enfeeble | 1-5 | 2 | `BANK_BLUE` |
+  | adept's spellbook | `IT_BOOK_ADEPT` | Fire Bolt, Frost Bolt, Stoneskin, Haste | 4-8 | 2 | `BANK_PURPLE` |
+  | master's spellbook | `IT_BOOK_MASTER` | Power Bolt, Renewal | 8-10 | 1 | `BANK_GOLD` |
+
+  The first level 3 slot comes at level 5, the player's level on reaching depth 5 (D2 of
+  difficulty.md), so the adept's book starts a depth earlier, at 4. The master's starts at
+  8, for the level 5 slot at level 9. A Fighter finds books too, and can only carry them.
+
+### 10.5 Design
+
+#### 10.5.1 The slot table (`spells_pdata.c`, page 135)
+
+```c
+/* Slots by class, character level - 1, spell level - 1 (D19, D27) */
+const uint8_t spell_slots_table[PC_CLASS_COUNT][PC_LEVEL_MAX][SPELL_LEVEL_MAX];
+```
+
+#### 10.5.2 The functions (`spells.h`, page 134)
+
+| Function | What it does |
+|---|---|
+| `spell_slots(id, level)` | Slots at spell level 1-5: the table's for the player (`PC_IS()`) with mana, else 0 |
+| `spell_free(id, level)` | `spell_slots()` less the spells `id` knows of that level, 0 if none |
+| `spell_slots_new(cls, pc_level)` | 1 if character level `pc_level` gives class `cls` a slot that `pc_level - 1` didn't (D26) |
+| `spell_book(book, list)` | Copies book `book`'s spells into `list` (common memory, `SPELL_BOOK_MAX`); returns the count |
+| `spell_in_book(book, sp)` | 1 if `sp` is in book `book` |
+
+`spell_learn_level()` goes. `spell_def_t` loses `learn`, a byte a row.
+
+#### 10.5.3 The books (`spells.h`, `spells_pdata.c`)
+
+```c
+#define SPELL_BOOK_BASIC   0
+#define SPELL_BOOK_ADEPT   1
+#define SPELL_BOOK_MASTER  2
+#define SPELL_BOOK_COUNT   3
+#define SPELL_BOOK_MAX     8    /* spells in a book, at most; SP_NONE for unused */
+
+const uint8_t spell_books[SPELL_BOOK_COUNT][SPELL_BOOK_MAX];   /* page 135: 24 bytes */
+```
+
+The items, in `gen_kinds.h` after `IT_QUEST`, so no number moves: `IT_BOOK_BASIC` 160,
+`IT_BOOK_ADEPT` 161, `IT_BOOK_MASTER` 162, `IT_COUNT` 163. `ITEM_BOOK` 16, `ITEM_COUNT` 17.
+Each row has `.subclass = ITEM_BOOK`, `.group = SPELL_BOOK_*`, the new `SPRITE_BOOK` in its
+colourway, no hook and no slot, and the band of D28.
+
+The sprite is frame 84 of `assets/Sprites.aseprite`, tag `book`: a closed book drawn in
+the layout's variable slots, so each bank colours its cover. A first version is drawn with
+the Aseprite command line, for the user to redraw if they wish.
+
+Kits (`chargen_bank.c`): `{ IT_BOOK_BASIC, 0 }` added to `kit_mage[]` and `kit_dev[]`.
+
+#### 10.5.4 `act_learn()` (`act_learn.c`, `BANK_56`)
+
+**Learn a spell from a book.** In: actor, item (the book), spell (`SP_NONE` to check the
+book only, D24). Out: nothing.
+
+1. **Context:** the book's kind, subclass and `group`; the spell's level, if one.
+2. **Validate**, in this order:
+
+   | Test | Reason | Text |
+   |---|---|---|
+   | The actor has the item, stowed | `ACT_R_NOT_CARRIED` | (as now) |
+   | It is a book | `ACT_R_NOT_BOOK` 45 | "That isn't a spell book." |
+   | The actor is the player, with mana and spells | `ACT_R_CANT_LEARN` 46 | "The spells mean nothing to you." |
+   | `spell` is `SP_NONE`: check mode only, success | | |
+   | The spell is in the book | `ACT_R_NOT_IN_BOOK` 47 | "That spell isn't in the book." |
+   | Not known already | `ACT_R_KNOWN` 48 | "You know that spell already." |
+   | `spell_slots()` at its level above 0 | `ACT_R_BEYOND` 49 | "That spell is beyond you for now." |
+   | `spell_free()` at its level above 0 | `ACT_R_SLOTS_FULL` 50 | "No room for more spells of that level." |
+
+   `ACT_R_COUNT` becomes 51. All are refusals.
+3. **Resolve:** nothing to roll.
+4. **Apply:** `spell_learn()`, which posts `EV_SPELL_LEARNED` ("You learn Hold.").
+
+`ACT_LEARN` is 20, a case in `act_do()`, and `ACT_COUNT` 21. The class's mana and spells
+components come with the kind: the Mage and Dev have both, the Fighter neither.
+
+#### 10.5.5 The book screen (`screen_spell_bank.c`, page 104)
+
+`screen_book_run(book)` is the spell list in a second mode, sharing its rows, cursor and
+keys:
+
+```text
+row  0          basic spellbook                (the book's name, yellow)
+row  2      Spell           Level  MP          (cyan)
+row  3   a) Magic Bolt          1   1          cyan: known
+row  4   b) Cure Wounds         1   1          white: can learn now
+row  5   c) Hold                2   2          red: can't learn now
+row  6   d) Enfeeble            2   2          red
+row 25   cyan: known  red: can't learn yet
+row 26   Free slots  L1:1 L2:0 L3:0 L4:0 L5:0
+row 29   status: "You learn Cure Wounds." or why not
+row 31   Letter/ENTER: learn  SPACE: close
+```
+
+- A row's colour is `ACT_LEARN` asked in check mode: success is white, `ACT_R_KNOWN` cyan,
+  anything else red.
+- A white row chosen: `ACT_LEARN` is done in the screen, as the inventory's `act_here()`
+  does: messages to the status line, `game_pause_events()`, then every row and the foot
+  redrawn, as one learn can turn others of its level red.
+- A cyan or red row chosen: its reason on the status line, as now.
+- It returns 1 if any spell was learned, so `item_command()` uses the turn (D22).
+
+The first screen's code stays as it is for casting: the mode picks the list (known spells
+or the book's), the action asked (`ACT_CAST` or `ACT_LEARN`), the title and the foot.
+
+#### 10.5.6 The inventory and the command (`screen_inv_bank.c` page 116, `player_bank.c` page 114)
+
+- A mode `[ACT_LEARN] = { "Study", "Letter/ENTER: read it  SPACE: back", "You have no spell
+  book.", LIST_BOOKS }`, and `LIST_BOOKS`: stowed items of subclass `ITEM_BOOK`.
+- Browse mode: `b` is `ACT_LEARN`; ENTER on a book is `ACT_LEARN` (`obvious_action()`); the
+  help line's keys gain " b:read". It isn't `BUNDLED()`: like aim, it closes the inventory
+  and returns to the command.
+- `player_command()`: `b` is `item_command(ACT_LEARN)`. `item_command()`, for `ACT_LEARN`,
+  opens `screen_book_run(a.item)` and uses the turn if it returns 1.
+- The help screen's keys page gains `b`. The play screen's help line is full and doesn't.
+
+#### 10.5.7 The level-up (`pc.c` page 110, `messages_bank.c` page 118)
+
+- `level_up()` loses its call to `spell_learn_level()`. A level-up posts 5 events, not 6
+  (section 9, step 1), so 3 levels from one gain post 16 with `EV_XP_GAINED`.
+- `messages_on_event()`, on `EV_LEVEL_GAINED` for the player: after "Welcome to experience
+  level 3.", if `MANA_IS()` and `spell_slots_new(pc_class, p1)`, "You can learn more
+  spells: read a spell book."
+
+#### 10.5.8 Memory
+
+| Where | What | About |
+|---|---|---|
+| Page 135 | The slot table, the book lists; less `learn` | +160 bytes, of 0.8K used |
+| Page 134 | The five functions; less `spell_learn_level()` | +0.2K, of 1.5K used |
+| `BANK_56` | `act_learn.c` | 0.4K, of 2.7K free |
+| Page 104 | The book mode | 0.5K, of about 1.7K free |
+| Page 116 | A mode, a list, a browse key | about 100 bytes; 7 bytes of `modes[]` (actions.md 4.9) |
+| Pages 114, 118, 110 | The command; a message and 6 reason texts; a call less | small |
+| Page 109 | 3 item kinds | about 120 bytes |
+| Page 140 | 2 kit entries | 4 bytes |
+| Common | `act_do()`'s case, 6 reason bytes | about 15 bytes |
+| Sprites | 1 pattern | 85 of 128 used |
+
+#### 10.5.9 Balance (difficulty.md R13)
+
+The slots follow the **XP needed** curve, through the character level: spell level L at
+level 2L - 1. The books follow the **target level** curve (D28). `make balance` before
+(2026-11-10): 0 failed, 4 warnings (C1 at depths 3, 4 and 9; C5 at depth 1). Three random
+item kinds change only the item pools, so C1 to C5 shouldn't move; the after figure goes in
+"As built".
+
+#### 10.5.10 Changes to other specs
+
+| Spec | Change |
+|---|---|
+| actions.md | `ACT_LEARN`, its reasons, its row in the tables of 4.1 and 4.2 |
+| items.md | `ITEM_BOOK`, the three kinds |
+| ui_inventory.md | The `ACT_LEARN` mode, `LIST_BOOKS`, `b` in browse mode |
+| character_creation.md | The book in the Mage's and Dev's kits (D4) |
+| player_character.md | `level_up()` no longer learns |
+| help_screen.md | The keys page: `b` |
+| difficulty.md | Section 6: slots are S1, and they follow the table of D27 |
+| memory_map.md, `src/game/README.md` | The pages' contents, the spells module's row |
+| todo.md | S1, S2, S3 status |
+
+### 10.6 Tests
+
+**`test_spell`:**
+
+- the slot table: never falling with character level (R35); the first slot of spell level
+  L at level 2L - 1 (R11); the Fighter's all 0; the Dev's the Mage's (R36);
+- each class's starting spells within its level 1 slots (R38);
+- `spell_slots()`: 0 for a monster, a Fighter and an entity with no mana; the table's for
+  the Mage at each level;
+- `spell_free()`: falls as spells are learned, never below 0;
+- `spell_slots_new()`: each level, and 0 for the Fighter;
+- the books: every entry a spell of level 1 or more, no spell twice in a book, every spell
+  of level 1 or more in some book (R42), and each book's levels as R43 says;
+- `spell_book()` and `spell_in_book()`;
+- the definitions without `learn`; the tests of `spell_learn_level()` go.
+
+**`test_act`:** each refusal of `ACT_LEARN` in order, with nothing changed and no events: a
+book on the floor, a potion, a Fighter, a monster, a spell not in the book, one known, one
+beyond the level, slots full; `SP_NONE` passing in check mode; a learn with its event; the
+last free slot filled, then the next refused; check mode changing nothing, including
+`rand()`; `act_do()` and the reasons' kinds.
+
+**`test_pc`:** a level-up learns nothing and posts 5 events; 3 levels within half the queue.
+
+**`test_gen`:** the book kinds: `ITEM_BOOK`, a `group` below `SPELL_BOOK_COUNT`, no hook, no
+slot; subclass shares by depth still sum.
+
+**`test_chargen`:** the Mage and Dev carry a basic spellbook, not equipped; the Fighter
+doesn't.
+
+**`test_ui`:**
+
+- `b` with no book: "You have no spell book."; with one: the inventory in "Study" mode;
+- a Fighter choosing a book: the reason on the status line, the screen still open;
+- the book screen's rows and colours, the foot's free slots;
+- learning: the message on the status line, the row turning cyan, others of its level
+  turning red when the slots fill, the screen staying open;
+- closing after a learn uses the turn; closing after none doesn't;
+- a red row and a cyan row: their reasons;
+- browse mode: `b` and ENTER on a book open it; " b:read" on the help line;
+- the level-up message: with a new slot, without one, and not for a Fighter;
+- the reasons' texts fit one line.
+
+**CSpect, by the user:**
+
+1. A new Mage: the inventory holds a basic spellbook. `m` lists only Magic Bolt.
+2. `b`: the Study screen lists the book; choosing it opens the book: Magic Bolt cyan, Cure
+   Wounds white, Hold and Enfeeble red; the foot reads "L1:1".
+3. Choose Hold: "That spell is beyond you for now." Choose Cure Wounds: "You learn Cure
+   Wounds.", the row turns cyan, the foot "L1:0". SPACE: one turn passes (a monster in
+   view moves once). `m` lists both spells.
+4. `E` twice: "Welcome to experience level 3." then "You can learn more spells: read a spell
+   book." No "You learn". The book now has Hold and Enfeeble white; learn Hold, then
+   Enfeeble is red: "No room for more spells of that level."
+5. Open the book and close it without learning: no turn passes.
+6. A Fighter: `b` on the basic spellbook a debug build places by the start (step 8):
+   "The spells mean nothing to you." `E`: no level-up message about spells.
+7. Books lie in the dungeon at their depths, show in their colours, and `u` refuses them.
+8. Common memory free, before and after, from the map.
+
+### 10.7 Known risks
+
+- **Slots with nothing to fill them.** Until more spells come, some slots (D27) have no
+  spell, and the level-up message announces them anyway. This is accepted until the next
+  step adds spells.
+- **Slots that shrink.** If the table is retuned so a level has fewer slots than a player
+  knows, `spell_free()` stays 0 and nothing is forgotten. R35's test prevents it in the
+  shipped table.
+- **The inventory.** A book is one of 20 places in the pack, and is kept (R50). The Dev's kit
+  goes to 18 of 20.
+- **Page 104.** About 1.7K free before this; the book mode is the largest addition. If it
+  doesn't fit, the book screen goes to a free pair (142/143), at the cost of a second copy
+  of the row drawing.
+- **The status line during a learn.** `act_here()` copies messages to the status line; the
+  book screen needs the same, and `game_pause_events()` must run so `EV_SPELL_LEARNED`'s
+  message appears before the rows are redrawn.
+- **zsdcc.** The table reads three indices; each comes from a byte, and the row's address
+  must be worked out without a multiply that links a library routine (R30): the index is
+  `pc_class * 50 + (level - 1) * 5`, so it is written as a pointer walked by rows, or the
+  map is checked for `__mulint`.
+
+### 10.8 Questions
+
+Answered 2026-11-10:
+
+- **Q1 (D18)** Books replace level-up learning? **Books only.**
+- **Q2 (R50)** Is a book used up? **No, it is kept.**
+- **Q3 (R48, D22)** How many spells a reading? **Several, for one turn.**
+- **Q4 (R36)** The Dev's slots? **The Mage's.**
+
+Open, for review:
+
+- **Q5 (D27)** The slot figures, and whether Intelligence should add slots (it doesn't, in
+  this design).
+- **Q6 (D28)** The book names, depths and rarities.
+- **Q7 (D23)** `b` for read.
