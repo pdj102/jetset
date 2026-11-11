@@ -15,16 +15,16 @@
 #include "game/components/feature.h"
 
 /*
- * The 8 directions, 0 north, then clockwise: a step and its neighbours
- * are one apart. Worked out, not tables: zsdcc's code for a table in a
- * banked page made the assembler warn about its address (integer range)
+ * The 8 directions (ai_internal.h). Worked out, not tables: zsdcc's code
+ * for a table in a banked page made the assembler warn about its address
+ * (integer range)
  */
-static int8_t dir_x(uint8_t d)
+int8_t ai_dir_x(uint8_t d)
 {
     return (d == 0 || d == 4) ? 0 : (d < 4) ? 1 : -1;
 }
 
-static int8_t dir_y(uint8_t d)
+int8_t ai_dir_y(uint8_t d)
 {
     return (d == 2 || d == 6) ? 0 : (d >= 3 && d <= 5) ? 1 : -1;
 }
@@ -50,8 +50,8 @@ uint8_t ai_step(const ai_ctx_t *c, uint8_t d, uint8_t open)
         return 0;
     }
     a.actor = c->id;
-    a.dx = dir_x(d);
-    a.dy = dir_y(d);
+    a.dx = ai_dir_x(d);
+    a.dy = ai_dir_y(d);
     if (ai_try(ACT_MOVE, &a)) {
         return 1;
     }
@@ -90,7 +90,7 @@ uint8_t ai_step_toward(const ai_ctx_t *c, uint8_t x, uint8_t y)
     if (e2 < ax) {
         dy = (y > y0) ? 1 : -1;
     }
-    for (d = 0; dir_x(d) != dx || dir_y(d) != dy; d++) {
+    for (d = 0; ai_dir_x(d) != dx || ai_dir_y(d) != dy; d++) {
     }
     /* The direct step, then 45 degrees left, then right */
     return ai_step(c, d, 1) || ai_step(c, (uint8_t)((d + 7) & 7), 1) || ai_step(c, (uint8_t)((d + 1) & 7), 1);

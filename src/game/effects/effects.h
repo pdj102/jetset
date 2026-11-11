@@ -70,6 +70,7 @@
 #include "ecs/nge_entity.h"
 #include "ecs/systems/nge_effect.h"
 #include "ecs/systems/nge_timer.h"
+#include "event/nge_event.h"
 #include "game/components/components.h"
 
 /*
@@ -89,8 +90,8 @@
 #define EF_STONE_SKIN         8    /**< Timed: AC +1 and speed +1 per power for 20 turns. */
 #define EF_RESIST_FIRE        9    /**< Timed: resist fire for 30 turns. */
 #define EF_RESIST_COLD        10   /**< Timed: resist cold for 30 turns. */
-#define EF_BLIND              11   /**< Timed: blinded, and -4 to hit (ATTR_TO_HIT), for up to 10 turns. */
-#define EF_SLEEP              12   /**< Timed: unconscious for 8 turns; pending: no rule reads it. */
+#define EF_BLIND              11   /**< Timed: blinded, and -4 to hit (ATTR_TO_HIT), for up to 10 turns; Con save. */
+#define EF_SLEEP              12   /**< Timed: unconscious for up to 8 turns, until damaged; Wis save. */
 #define EF_ROOT               13   /**< Timed, for ever, innate: rooted. */
 #define EF_HOLD               14   /**< Timed: rooted for 6 turns. */
 #define EF_MANA_REGEN         15   /**< Timed, for ever, innate: 1 MP every 20 turns (every kind with mana). */
@@ -118,52 +119,55 @@
 #define EF_BLESS              37   /**< Timed: +1 to hit per power for 30 turns. */
 #define EF_BANE               38   /**< Timed: -1 to hit per power for up to 20 turns; Cha save. */
 #define EF_HEROISM            39   /**< Timed: +1 to hit and HP max +2 per power for 30 turns. */
-#define EF_TIMED_COUNT        40   /**< Timed effects are 1 to this - 1. */
-#define EF_HEALING            40   /**< Instant: heal 1 per power. */
-#define EF_CURE               41   /**< Instant: ends poisoning. */
-#define EF_CURE_ALL           42   /**< Instant: ends every condition. */
-#define EF_CURE_BLIND         43   /**< Instant: ends blindness. */
-#define EF_MANA               44   /**< Instant: restore 1 MP per power. */
-#define EF_VITALITY           45   /**< Instant: +1 per power base maximum hit points, for good. */
-#define EF_RAISE_STR          46   /**< Instant: +1 per power base strength, for good. */
-#define EF_RAISE_DEX          47   /**< Instant: +1 per power base dexterity, for good. */
-#define EF_RAISE_CON          48   /**< Instant: +1 per power base constitution, for good. */
-#define EF_RAISE_INT          49   /**< Instant: +1 per power base intelligence, for good. */
-#define EF_RAISE_WIS          50   /**< Instant: +1 per power base wisdom, for good. */
-#define EF_RAISE_CHA          51   /**< Instant: +1 per power base charisma, for good. */
-#define EF_NOURISH            52   /**< Instant: food heals 1 per power, until there is hunger (docs/items.md D11). */
-#define EF_BOLT_MAGIC         53   /**< Instant: 1 magic damage per power. */
-#define EF_BOLT_FIRE          54   /**< Instant: 1 fire damage per power. */
-#define EF_BOLT_COLD          55   /**< Instant: 1 cold damage per power. */
-#define EF_BOLT_ACID          56   /**< Instant: 1 acid damage per power. */
-#define EF_LIGHT              57   /**< Instant, pending. */
-#define EF_IDENTIFY           58   /**< Instant, pending. */
-#define EF_MAP                59   /**< Instant, pending. */
-#define EF_TELEPORT           60   /**< Instant: to random free floor on the level. */
-#define EF_UNCURSE            61   /**< Instant: lifts the curse of everything the target has equipped. */
-#define EF_ENCHANT            62   /**< Instant, pending. */
-#define EF_SUMMON             63   /**< Instant: 1 random creature for the depth per power (at most 3) around the target. */
-#define EF_LEVEL_TELEPORT     64   /**< Instant: teleport a level up or down, at random, per power. */
-#define EF_WORN_HP            65   /**< Worn: +1 per power maximum hit points. */
-#define EF_WORN_AC            66   /**< Worn: AC +1 per power. */
-#define EF_WORN_SPEED         67   /**< Worn: speed -1 per power (lower is faster). */
-#define EF_WORN_STR           68   /**< Worn: Str +1 per power. */
-#define EF_WORN_DEX           69   /**< Worn: Dex +1 per power. */
-#define EF_WORN_CON           70   /**< Worn: Con +1 per power. */
-#define EF_WORN_INT           71   /**< Worn: Int +1 per power. */
-#define EF_WORN_WIS           72   /**< Worn: Wis +1 per power. */
-#define EF_WORN_CHA           73   /**< Worn: Cha +1 per power. */
-#define EF_WORN_RES_FIRE      74   /**< Worn: resist fire. */
-#define EF_WORN_RES_COLD      75   /**< Worn: resist cold. */
-#define EF_WORN_RES_POISON    76   /**< Worn: resist poison. */
-#define EF_WORN_RES_ACID      77   /**< Worn: resist acid. */
-#define EF_WORN_RES_MAGIC     78   /**< Worn: resist magic. */
-#define EF_WORN_IMMUNE_FIRE   79   /**< Worn: immune to fire. */
-#define EF_WORN_IMMUNE_COLD   80   /**< Worn: immune to cold. */
-#define EF_WORN_IMMUNE_POISON 81   /**< Worn: immune to poison. */
-#define EF_WORN_REGEN         82   /**< Worn, pending: a worn effect has no tick. */
-#define EF_WORN_LIGHT         83   /**< Worn, pending: no light radius yet; power is the radius. */
-#define EF_COUNT              84
+#define EF_CONFUSE            40   /**< Timed: confused for up to 8 turns; Wis save. */
+#define EF_FEAR               41   /**< Timed: frightened for up to 8 turns; Cha save. */
+#define EF_PARALYSE           42   /**< Timed: paralysed for up to 3 turns; Con save. */
+#define EF_TIMED_COUNT        43   /**< Timed effects are 1 to this - 1. */
+#define EF_HEALING            43   /**< Instant: heal 1 per power. */
+#define EF_CURE               44   /**< Instant: ends poisoning. */
+#define EF_CURE_ALL           45   /**< Instant: ends every condition. */
+#define EF_CURE_BLIND         46   /**< Instant: ends blindness. */
+#define EF_MANA               47   /**< Instant: restore 1 MP per power. */
+#define EF_VITALITY           48   /**< Instant: +1 per power base maximum hit points, for good. */
+#define EF_RAISE_STR          49   /**< Instant: +1 per power base strength, for good. */
+#define EF_RAISE_DEX          50   /**< Instant: +1 per power base dexterity, for good. */
+#define EF_RAISE_CON          51   /**< Instant: +1 per power base constitution, for good. */
+#define EF_RAISE_INT          52   /**< Instant: +1 per power base intelligence, for good. */
+#define EF_RAISE_WIS          53   /**< Instant: +1 per power base wisdom, for good. */
+#define EF_RAISE_CHA          54   /**< Instant: +1 per power base charisma, for good. */
+#define EF_NOURISH            55   /**< Instant: food heals 1 per power, until there is hunger (docs/items.md D11). */
+#define EF_BOLT_MAGIC         56   /**< Instant: 1 magic damage per power. */
+#define EF_BOLT_FIRE          57   /**< Instant: 1 fire damage per power. */
+#define EF_BOLT_COLD          58   /**< Instant: 1 cold damage per power. */
+#define EF_BOLT_ACID          59   /**< Instant: 1 acid damage per power. */
+#define EF_LIGHT              60   /**< Instant, pending. */
+#define EF_IDENTIFY           61   /**< Instant, pending. */
+#define EF_MAP                62   /**< Instant, pending. */
+#define EF_TELEPORT           63   /**< Instant: to random free floor on the level. */
+#define EF_UNCURSE            64   /**< Instant: lifts the curse of everything the target has equipped. */
+#define EF_ENCHANT            65   /**< Instant, pending. */
+#define EF_SUMMON             66   /**< Instant: 1 random creature for the depth per power (at most 3) around the target. */
+#define EF_LEVEL_TELEPORT     67   /**< Instant: teleport a level up or down, at random, per power. */
+#define EF_WORN_HP            68   /**< Worn: +1 per power maximum hit points. */
+#define EF_WORN_AC            69   /**< Worn: AC +1 per power. */
+#define EF_WORN_SPEED         70   /**< Worn: speed -1 per power (lower is faster). */
+#define EF_WORN_STR           71   /**< Worn: Str +1 per power. */
+#define EF_WORN_DEX           72   /**< Worn: Dex +1 per power. */
+#define EF_WORN_CON           73   /**< Worn: Con +1 per power. */
+#define EF_WORN_INT           74   /**< Worn: Int +1 per power. */
+#define EF_WORN_WIS           75   /**< Worn: Wis +1 per power. */
+#define EF_WORN_CHA           76   /**< Worn: Cha +1 per power. */
+#define EF_WORN_RES_FIRE      77   /**< Worn: resist fire. */
+#define EF_WORN_RES_COLD      78   /**< Worn: resist cold. */
+#define EF_WORN_RES_POISON    79   /**< Worn: resist poison. */
+#define EF_WORN_RES_ACID      80   /**< Worn: resist acid. */
+#define EF_WORN_RES_MAGIC     81   /**< Worn: resist magic. */
+#define EF_WORN_IMMUNE_FIRE   82   /**< Worn: immune to fire. */
+#define EF_WORN_IMMUNE_COLD   83   /**< Worn: immune to cold. */
+#define EF_WORN_IMMUNE_POISON 84   /**< Worn: immune to poison. */
+#define EF_WORN_REGEN         85   /**< Worn, pending: a worn effect has no tick. */
+#define EF_WORN_LIGHT         86   /**< Worn, pending: no light radius yet; power is the radius. */
+#define EF_COUNT              87
 
 /* Why an effect ended: EV_EFFECT_ENDED's p2 */
 #define EFFECT_END_EXPIRED  0   /**< Its time ran out, or effect_end(). */
@@ -214,6 +218,14 @@ void effect_end(nge_entity_id_t effect) NGE_BANKED;
  * @param cycles Firings left counting this one, as the dispatch got it.
  */
 void effects_on_timer(nge_entity_id_t effect, uint8_t cycles) NGE_BANKED;
+
+/**
+ * @brief The effects' reaction to an event (from the game's dispatch):
+ *        damage taken (EV_DAMAGED, p1 above 0) wakes an unconscious
+ *        target, ending its effects that grant STATUS_UNCONSCIOUS; a
+ *        paralysed one stays so. Others are ignored.
+ */
+void effects_on_event(const nge_event_t *e) NGE_BANKED;
 
 /**
  * @brief End target's active effects that grant any of statuses

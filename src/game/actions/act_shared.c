@@ -146,7 +146,12 @@ uint8_t act_find_feature(act_t *a, uint8_t can, uint8_t cant)
 
 uint8_t act_rooted(nge_entity_id_t id)
 {
-    return NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_STATS) && STATUS_HAS(id, STATUS_ROOTED);
+    return act_status(id, STATUS_ROOTED);
+}
+
+uint8_t act_status(nge_entity_id_t id, uint8_t s)
+{
+    return NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_STATS) && STATUS_HAS(id, s);
 }
 
 uint8_t act_fail(act_t *a, uint8_t reason)

@@ -448,6 +448,19 @@ uint8_t effect_cure(nge_entity_id_t target, uint8_t statuses) NGE_BANKED
     return cure(target, statuses);
 }
 
+/* A handler may apply effects (docs/effects.md R5): a cure here */
+void effects_on_event(const nge_event_t *e) NGE_BANKED
+{
+    nge_event_id_t id = e->id;            /* locals: see messages_on_event() */
+    nge_entity_id_t target = e->target;
+    uint8_t taken = e->p1;
+
+    if (id == EV_DAMAGED && taken != 0 && affectable(target) &&
+        NGE_ENTITY_HAS_COMPONENT(target, COMPONENT_STATS) && STATUS_HAS(target, STATUS_UNCONSCIOUS)) {
+        cure(target, STATUS_UNCONSCIOUS);
+    }
+}
+
 /* ---- Texts and saving throws ---- */
 
 void effect_text(uint8_t ef, uint8_t which, char *buf, uint8_t size) NGE_BANKED

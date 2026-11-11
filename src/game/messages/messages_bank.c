@@ -559,6 +559,12 @@ void messages_act_failed(const act_t *a) NGE_BANKED
     case ACT_R_SLOTS_FULL:
         screen_message("No room for more spells of that level.");
         break;
+    case ACT_R_AFRAID:
+        screen_message("You are too afraid.");
+        break;
+    case ACT_R_STUMBLED:
+        screen_message("You stumble.");
+        break;
     case ACT_R_CANT_OPERATE:
         say_named("You can't use the ", target, ".");
         break;

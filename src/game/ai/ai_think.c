@@ -42,9 +42,32 @@
 #include "game/components/health.h"
 #include "game/components/item.h"
 #include "game/components/kind.h"
+#include "game/components/stats.h"
 #include "game/effects/effects.h"
 #include "game/gen/gen.h"
+#include "game/level/level.h"
 #include "game/spells/spells.h"
+
+/*
+ * How far (x, y) is from (gx, gy), for fleeing: the larger axis, then the
+ * sum to break ties, in a byte (shifts: a multiply would link a routine
+ * into common memory)
+ */
+static uint8_t flee_score(uint8_t x, uint8_t y, uint8_t gx, uint8_t gy)
+{
+    uint8_t ax = (x > gx) ? (uint8_t)(x - gx) : (uint8_t)(gx - x);
+    uint8_t ay = (y > gy) ? (uint8_t)(y - gy) : (uint8_t)(gy - y);
+    uint8_t reach = (ax > ay) ? ax : ay;
+    uint8_t sum = (uint8_t)((ax > 7 || ay > 7) ? 7 : ax + ay);   /* no overflow in the sum */
+
+    if (reach > 30) {
+        reach = 30;   /* beyond sight: as far as it matters */
+    }
+    if (sum > 7) {
+        sum = 7;   /* 3 bits under the axis */
+    }
+    return (uint8_t)((reach << 3) + sum);
+}
 
 /* What opt_wield() readies: what it fights with, not what it wears */
 #define WIELD_SLOTS  (SLOT_BIT(SLOT_WEAPON) | SLOT_BIT(SLOT_RANGED) | SLOT_BIT(SLOT_AMMO))
@@ -212,6 +235,42 @@ static uint8_t opt_approach(ai_ctx_t *c)
     return used;
 }
 
+/*
+ * Frightened: a step to the free tile next to it that is furthest from
+ * its goal (where its target is, or was last seen), if one is further
+ * than where it stands (docs/effects_extensions.md R14). Distance: the
+ * larger axis first, then the sum, so of two steps that reach as far the
+ * one further on both axes wins
+ */
+static uint8_t opt_flee(const ai_ctx_t *c)
+{
+    nge_entity_id_t id = c->id;   /* the fields in locals (T-ZSDCC-1) */
+    uint8_t x = c->x;
+    uint8_t y = c->y;
+    uint8_t gx = c->gx;
+    uint8_t gy = c->gy;
+    uint8_t best = flee_score(x, y, gx, gy);
+    uint8_t best_d = AI_DIRS;
+    uint8_t score;
+    uint8_t d;
+    uint8_t nx;
+    uint8_t ny;
+
+    if (gx == NGE_MAP_X_INVALID) {
+        return 0;   /* nothing to flee from */
+    }
+    for (d = 0; d < AI_DIRS; d++) {
+        nx = (uint8_t)(x + ai_dir_x(d));
+        ny = (uint8_t)(y + ai_dir_y(d));
+        score = flee_score(nx, ny, gx, gy);
+        if (score > best && level_can_enter(id, nx, ny, NULL)) {
+            best = score;
+            best_d = d;
+        }
+    }
+    return best_d != AI_DIRS && ai_step(c, best_d, 0);
+}
+
 /* Pick up the first item here, if it can carry things and one is here */
 static uint8_t opt_pickup(const ai_ctx_t *c)
 {
@@ -267,6 +326,9 @@ static uint8_t think_idle(ai_ctx_t *c)
 
 static uint8_t think_hunt(ai_ctx_t *c)
 {
+    if (NGE_ENTITY_HAS_COMPONENT(c->id, COMPONENT_STATS) && STATUS_HAS(c->id, STATUS_FRIGHTENED)) {
+        return opt_flee(c);   /* nothing else while it is afraid: cornered, it waits */
+    }
     return opt_cast(c) || opt_attack(c) || opt_drink(c) || opt_shoot(c) || opt_approach(c);
 }
 
@@ -279,6 +341,11 @@ void ai_on_turn(nge_entity_id_t id) NGE_BANKED
     ai_stim_t stim;
 
     nge_util_assert(id < NGE_ENTITY_MAX && NGE_ENTITY_IS_ALIVE(id) && AI_IS(id));
+
+    /* 0. Unconscious or paralysed: the turn is lost, before it senses anything */
+    if (NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_STATS) && STATUS_HAS(id, STATUS_HELPLESS)) {
+        return;
+    }
 
     /* 1. Sense: what it noticed changes its state now */
     ai_sense(id, &c);

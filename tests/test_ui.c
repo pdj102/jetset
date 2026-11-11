@@ -487,6 +487,26 @@ int main(void)
     test_layer2_row(5, 28, 39, text);
     CHECK(strcmp(text, "Str      13 ") == 0);
     nge_event_flush();
+    /* The conditions: short tags, 3 a row, from row 17 (docs/effects_extensions.md D6) */
+    screen_show_status(0);
+    test_layer2_row(17, 28, 39, text);
+    CHECK(strcmp(text, "            ") == 0);
+    screen_show_status(STATUS_POISONED | STATUS_CONFUSED);
+    test_layer2_row(17, 28, 39, text);
+    CHECK(strcmp(text, "Psn Cnf     ") == 0);
+    screen_show_status(STATUS_CONDITIONS);
+    test_layer2_row(17, 28, 39, text);
+    CHECK(strcmp(text, "Psn Bln Slp ") == 0);
+    test_layer2_row(18, 28, 39, text);
+    CHECK(strcmp(text, "Rt  Cnf Frt ") == 0);
+    test_layer2_row(19, 28, 39, text);
+    CHECK(strcmp(text, "Par         ") == 0);
+    screen_show_status(STATUS_PARALYSED);
+    test_layer2_row(17, 28, 39, text);
+    CHECK(strcmp(text, "Par         ") == 0);
+    test_layer2_row(18, 28, 39, text);
+    CHECK(strcmp(text, "            ") == 0);
+    screen_show_status(0);
     /* MP follow their events */
     mana_spend(actor_player, 2);
     nge_event_process(player_on_event);
@@ -1278,6 +1298,12 @@ int main(void)
         a.reason = ACT_R_NO_SPELL;
         messages_act_failed(&a);
         CHECK(said("You don't know that spell."));
+        a.reason = ACT_R_AFRAID;
+        messages_act_failed(&a);
+        CHECK(said("You are too afraid."));
+        a.reason = ACT_R_STUMBLED;
+        messages_act_failed(&a);
+        CHECK(said("You stumble."));
     }
     messages_game_over(GAME_OVER_WON);
     CHECK(said("Press any key.") && shown("You escape with the crown. You win!"));

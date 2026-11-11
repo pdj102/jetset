@@ -669,6 +669,15 @@ void player_command(nge_key_event_t ev) NGE_BANKED
         /* Development: a delayed descent on the player, a level down in 15 turns (no turn used) */
         effect_apply(EF_DESCENT, 1, actor_player, NGE_ENTITY_INVALID);
         break;
+    case 'Z': {
+        /* Development: the next of confused, frightened, paralysed and asleep on the player (no turn used) */
+        static uint8_t next;
+
+        effect_apply((uint8_t)((next == 0) ? EF_CONFUSE : (next == 1) ? EF_FEAR : (next == 2) ? EF_PARALYSE : EF_SLEEP), 1,
+                     actor_player, NGE_ENTITY_INVALID);
+        next = (uint8_t)((next + 1) & 3);
+        break;
+    }
     case 'M':
         /* Development: spend 1 MP, or restore them all at 0, to see the stats follow (no turn used) */
         if (MANA_IS(actor_player)) {

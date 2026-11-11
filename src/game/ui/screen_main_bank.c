@@ -49,7 +49,9 @@ static const nge_panel_t panels[PANEL_COUNT] = {
 #define STATS_ROW_GOLD       13   /* ...of the gold */
 #define STATS_ROW_DEPTH      14   /* ...of the depth */
 #define STATS_ROW_TURN       15   /* ...of the turn count */
-#define STATS_ROW_STATUS     17   /* ...of the statuses */
+#define STATS_ROW_STATUS     17   /* ...of the statuses: STATUS_ROWS rows of tags */
+#define STATUS_ROWS          3    /* 7 conditions, 3 tags a row */
+#define STATUS_TAG_COLS      4    /* a tag and a space: 3 to the window's 12 columns */
 
 /* The abilities' names, by ABIL_* */
 static const char ability_names[ABIL_COUNT][4] = { "Str", "Dex", "Con", "Int", "Wis", "Cha" };
@@ -183,14 +185,46 @@ void screen_show_abilities(const uint8_t *scores) NGE_BANKED
     }
 }
 
+/*
+ * The next status tag, in red, if status has bit: side by side, 3 a row.
+ * *at counts the tags shown. Literals, not a table: a table's address in a
+ * banked page makes the assembler warn (docs/effects.md 4.10)
+ */
+static void tag(uint8_t status, uint8_t bit, const char *text, uint8_t *at)
+{
+    uint8_t n = *at;
+    uint8_t row = STATS_ROW_STATUS;
+
+    if (!(status & bit)) {
+        return;
+    }
+    while (n >= 3) {
+        n -= 3;
+        row++;
+    }
+    nge_text_at(row, (uint8_t)(n * STATUS_TAG_COLS), screen_stats);
+    nge_text_ink(NGE_INK_RED, screen_stats);
+    nge_puts(text, screen_stats);
+    (*at)++;
+}
+
 void screen_show_status(uint8_t status) NGE_BANKED
 {
-    nge_text_at(STATS_ROW_STATUS, 0, screen_stats);
-    nge_text_clreol(screen_stats);
-    if (status & STATUS_POISONED) {
-        nge_text_ink(NGE_INK_RED, screen_stats);
-        nge_puts("Poisoned", screen_stats);
+    uint8_t row;
+    uint8_t at = 0;
+
+    for (row = STATS_ROW_STATUS; row < STATS_ROW_STATUS + STATUS_ROWS; row++) {
+        nge_text_at(row, 0, screen_stats);
+        nge_text_clreol(screen_stats);
     }
+    /* Every condition, short (docs/effects_extensions.md D6) */
+    tag(status, STATUS_POISONED, "Psn", &at);
+    tag(status, STATUS_BLINDED, "Bln", &at);
+    tag(status, STATUS_UNCONSCIOUS, "Slp", &at);
+    tag(status, STATUS_ROOTED, "Rt", &at);
+    tag(status, STATUS_CONFUSED, "Cnf", &at);
+    tag(status, STATUS_FRIGHTENED, "Frt", &at);
+    tag(status, STATUS_PARALYSED, "Par", &at);
 }
 
 void screen_show_turn(uint16_t turn) NGE_BANKED

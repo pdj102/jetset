@@ -884,6 +884,92 @@ static void test_exchange(void)
     events();
 }
 
+/* Confused moves stray, frightened actors won't melee (docs/effects_extensions.md R13, R14) */
+static void test_statuses(void)
+{
+    nge_entity_id_t h;
+    nge_entity_id_t rat;
+    act_t a;
+    unsigned int seed;
+    int straight = 0;
+    int strayed = 0;
+    int stumbled = 0;
+    int ok = 1;
+    int r;
+    int d;
+    uint8_t x;
+    uint8_t y;
+
+    events();
+    nge_entity_init();
+    for (y = 0; y < 10; y++) {                                      /* walls round (5, 5), but to the east */
+        for (x = 0; x < 10; x++) {
+            NGE_MAP_TILE(x, y).tile_id = (x >= 4 && x <= 6 && y >= 4 && y <= 6 && !(x == 6 && y == 5)) ? WALL : FLOOR;
+        }
+    }
+    NGE_MAP_TILE(5, 5).tile_id = FLOOR;
+    h = creature(CR_BANDIT, 5, 5);
+    effects_set_base(h, ATTR_HP_MAX, 200);
+    health_hp[h] = 200;
+    effect_apply(EF_CONFUSE, 1, h, NGE_ENTITY_INVALID);
+    events();
+    CHECK(STATUS_HAS(h, STATUS_CONFUSED));
+    /*
+     * East, the one way out, with the same rand() draws as the action: 1 in
+     * 3 goes a random way of the 8, which only east lets through
+     */
+    for (seed = 1; seed <= 60 && ok; seed++) {
+        nge_location_set(h, 5, 5);
+        srand(seed);
+        r = rand();
+        d = -1;
+        if ((unsigned int)r % 3 == 0) {
+            d = (int)((unsigned int)rand() % 8);
+            d += (d >= 4) ? 1 : 0;
+        }
+        srand(seed);
+        a = move(h, 1, 0);
+        ok = act_move(&a, ACT_CHECK) == ACT_SUCCESS && a.used == 0;   /* a check rolls nothing */
+        ok = ok && rand() == r;
+        srand(seed);
+        a = move(h, 1, 0);
+        r = act_move(&a, ACT_DO);
+        if (d < 0) {
+            ok = ok && r == ACT_SUCCESS && at(h, 6, 5);
+            straight++;
+        } else if (d == 5) {                                     /* the stray way is east too */
+            ok = ok && r == ACT_SUCCESS && at(h, 6, 5) && a.dx == 1 && a.dy == 0;
+            strayed++;
+        } else {
+            ok = ok && r == ACT_FAIL && a.reason == ACT_R_STUMBLED && a.used == 1 && at(h, 5, 5) &&
+                 a.dx == d % 3 - 1 && a.dy == d / 3 - 1;
+            stumbled++;
+        }
+        events();
+    }
+    CHECK(ok && straight > 0 && stumbled > 0);
+    (void)strayed;
+    /* Not confused: always straight on */
+    effect_cure(h, STATUS_CONFUSED);
+    nge_location_set(h, 5, 5);
+    a = move(h, 1, 0);
+    CHECK(act_move(&a, ACT_DO) == ACT_SUCCESS && at(h, 6, 5));
+
+    /* Frightened: melee refused, the turn kept */
+    rat = creature(CR_RAT, 7, 5);
+    effect_apply(EF_FEAR, 1, h, NGE_ENTITY_INVALID);
+    events();
+    a = ctx(h);
+    a.target = rat;
+    CHECK(act_melee(&a, ACT_CHECK) == ACT_FAIL && a.reason == ACT_R_AFRAID && a.used == 0);
+    CHECK(act_melee(&a, ACT_DO) == ACT_FAIL && a.reason == ACT_R_AFRAID && a.used == 0 && events() == 0);
+    effect_cure(h, STATUS_FRIGHTENED);
+    a = ctx(h);
+    a.target = rat;
+    CHECK(act_melee(&a, ACT_CHECK) == ACT_SUCCESS);
+    events();
+}
+
 int main(void)
 {
     nge_entity_id_t sword;
@@ -1915,12 +2001,12 @@ int main(void)
     TEST_EXPECT_HALT(act_wait(&a, ACT_DO));
     CHECK(test_halt_count == 1);
 
-    /* ---- every reason is refused, but a miss, a struggle, a failed pick and a failed disarm ---- */
+    /* ---- every reason is refused, but a miss, a struggle, a failed pick and disarm, and a stumble ---- */
     ok = 1;
     for (r1 = 0; r1 < ACT_R_COUNT; r1++) {
         ok = ok && act_attempted((uint8_t)r1) == (r1 == ACT_R_MISSED || r1 == ACT_R_ROOTED ||
                                                   r1 == ACT_R_PICK_FAILED || r1 == ACT_R_DISARM_FAILED ||
-                                                  r1 == ACT_R_SET_OFF);   /* includes ACT_R_CANT_USE */
+                                                  r1 == ACT_R_SET_OFF || r1 == ACT_R_STUMBLED);   /* includes ACT_R_CANT_USE */
     }
     CHECK(ok);
 
@@ -2481,6 +2567,7 @@ int main(void)
     test_operate();
     test_container();
     test_traps();
+    test_statuses();
     test_search_disarm();
     test_trapdoor();
     test_learn();

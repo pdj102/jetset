@@ -11,6 +11,7 @@
 #include "game/attrs/attrs.h"
 #include "game/components/health.h"
 #include "game/components/mana.h"
+#include "game/components/stats.h"
 #include "game/events.h"
 #include "game/ui/screen_main.h"
 
@@ -23,8 +24,10 @@ void player_init(void)
 
 void player_on_turn(nge_entity_id_t id)
 {
-    (void)id;
     nge_util_assert(effects_check(id));   /* the derived values are up to date */
+    if (STATUS_HAS(id, STATUS_HELPLESS)) {
+        return;   /* asleep or paralysed: the turn passes, as a wait would, and no key is read */
+    }
     player_turn = 1;   /* until a command uses the turn */
 }
 

@@ -4,7 +4,7 @@ The steps that build what [effects_extensions.md](effects_extensions.md) specifi
 spec says what and why; this file says in what order, what changes, and how each step is
 checked.
 
-Status: step 1 done 2026-11-11, its CSpect checks passed. Step 2 done 2026-11-11, its CSpect checks passed. Step 3 done 2026-11-11: CSpect check 1 passed; check 2 (blinded by a gold snake) not run.
+Status: step 1 done 2026-11-11, its CSpect checks passed. Step 2 done 2026-11-11, its CSpect checks passed. Step 3 done 2026-11-11: CSpect check 1 passed; check 2 (blinded by a gold snake) not run. Step 4 done 2026-11-11, its CSpect checks passed.
 
 ## 1. How the steps work
 
@@ -159,3 +159,4 @@ R21, R22, D8, D12. E5.2, E5.3.
 | 1 | 4,257 | Page 120 +414; 121 +144; 114 +93 (the dev keys); 118 +37. 136 and `BANK_56` unchanged |
 | 2 | -1: 4,256, the fizzle flag | Page 120 +440; 121 +16; 114 +28 (the trap list a local); 102 +8 (`level_free_floor()` banked) |
 | 3 | 4,256 | Page 121 +1,854 (25 rows); 138 +264; 50 +150 and 139 +150 (the to-hit tables); 120 +95; 126 +27; 110 +19, 154 left; 104 -20 |
+| 4 | -27: 4,229 (lost turns, the waking call, 2 reasons, the Z key's counter) | Page 130 +368; 116 +246 (tags, help); `BANK_56` +240; 121 +218; 120 +80; 114 +64; 118 +59 |

@@ -890,6 +890,32 @@ int main(void)
     effect_apply(EF_HEROISM, 2, g, NGE_ENTITY_INVALID);
     CHECK(stats_to_hit[g] == 2 && health_hp_max[g] == 10 && health_hp[g] == 6);
 
+    /* ---- damage wakes the unconscious, not the paralysed (3.5) ---- */
+    reset();
+    g = goblin();
+    effect_apply(EF_SLEEP, 1, g, NGE_ENTITY_INVALID);
+    effect_apply(EF_PARALYSE, 1, g, NGE_ENTITY_INVALID);
+    events();
+    {
+        nge_event_t ev = { 0 };
+
+        ev.id = EV_DAMAGED;
+        ev.target = g;
+        ev.source = NGE_EVENT_NONE;
+        ev.p1 = 0;                                              /* nothing taken: still asleep */
+        effects_on_event(&ev);
+        CHECK(STATUS_HAS(g, STATUS_UNCONSCIOUS) && events() == 0);
+        ev.p1 = 2;
+        effects_on_event(&ev);
+        CHECK(!STATUS_HAS(g, STATUS_UNCONSCIOUS) && STATUS_HAS(g, STATUS_PARALYSED) &&
+              count_effects(g, EF_SLEEP) == 0 && count_effects(g, EF_PARALYSE) == 1);
+        CHECK(events() >= 1 && find_event(0, EV_EFFECT_ENDED) >= 0);   /* "You wake up." follows */
+        ev.id = EV_HEALED;                                      /* other events: nothing */
+        effect_apply(EF_SLEEP, 1, g, NGE_ENTITY_INVALID);
+        effects_on_event(&ev);
+        CHECK(STATUS_HAS(g, STATUS_UNCONSCIOUS));
+    }
+
     /* ---- the table's new rows (3.8): a few through their attributes and ops ---- */
     reset();
     g = goblin();

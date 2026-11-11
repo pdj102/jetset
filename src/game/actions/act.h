@@ -170,7 +170,9 @@ typedef struct act {
 #define ACT_R_KNOWN             48  /**< Refused: the actor knows the spell already. */
 #define ACT_R_BEYOND            49  /**< Refused: no slot at the spell's level yet. */
 #define ACT_R_SLOTS_FULL        50  /**< Refused: every slot at the spell's level is filled. */
-#define ACT_R_COUNT             51
+#define ACT_R_AFRAID            51  /**< Refused: the actor is too frightened to attack (STATUS_FRIGHTENED). */
+#define ACT_R_STUMBLED          52  /**< Attempted: confused, the actor lurched a random way, into something (the turn is used). */
+#define ACT_R_COUNT             53
 
 /**
  * @brief Move one tile.

@@ -75,6 +75,7 @@ void ai_sense(nge_entity_id_t id, ai_ctx_t *c)
     uint8_t ly;
     ai_stim_t stim = AI_STIM_NONE;
     uint8_t sees = 0;
+    uint8_t blind = NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_STATS) && STATUS_HAS(id, STATUS_BLINDED);
 
     nge_util_assert(AI_IS(id) && NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_LOCATION));
 
@@ -97,7 +98,7 @@ void ai_sense(nge_entity_id_t id, ai_ctx_t *c)
         if (present(look, area)) {
             lx = NGE_LOCATION_X(look);
             ly = NGE_LOCATION_Y(look);
-            if (ai_in_sight(area, x, y, lx, ly)) {
+            if (!blind && ai_in_sight(area, x, y, lx, ly)) {   /* blinded, it only follows what it hears */
                 target = look;
                 gx = lx;
                 gy = ly;

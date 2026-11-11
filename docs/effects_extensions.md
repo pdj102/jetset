@@ -1,7 +1,7 @@
 # Effects extensions: design specification
 
 Status: agreed (2026-11-11): D1 to D12 accepted as written. Covers to-do items E1 to E5 ([todo.md](todo.md)).
-Built in steps ([effects_extensions_plan.md](effects_extensions_plan.md)): steps 1 to 3 built 2026-11-11, their CSpect checks passed (step 3: the effect list; blindness covered by tests only).
+Built in steps ([effects_extensions_plan.md](effects_extensions_plan.md)): steps 1 to 4 built 2026-11-11, their CSpect checks passed (step 3: the effect list; blindness covered by tests only).
 
 This spec adds level teleport, the teleport and summon ops, the gaps in the effect table,
 four new statuses, and a to-hit attribute with the ops that go with it. It builds on
@@ -320,4 +320,27 @@ Differences from the design, by plan step.
   each kind in turn.
 - Tests: `test_act`'s blinded attacks apply `EF_BLIND` instead of setting the status
   bit.
+
+### Step 4: statuses, lost turns, waking, the tags
+
+- Waking is `effects_on_event()` in the effects module, which `game_on_event()` calls
+  for `EV_DAMAGED` only, not code in `game.c`: the effects module owns cures, the PC
+  tests can reach it, and common memory keeps the smaller call.
+- A lost turn: the player's timer fires but `player_turn` isn't set, so time runs on
+  with no key read; an AI's turn returns before it senses anything. `STATUS_HELPLESS`
+  names the two statuses.
+- The confused stray picks one of the 8 directions with `rand()`, so a stray east of an
+  actor going east moves it as normal. Blocked, the move fails with `ACT_R_STUMBLED`
+  (attempted, the turn used), whatever blocks it: a stray into a creature is no attack.
+  An AI strays too, silently.
+- `act_status()` (in `act_shared.c`) tests any status for an actor with stats;
+  `act_rooted()` uses it.
+- Fleeing scores a tile by its larger axis from the goal, then the sum, in a byte. A
+  frightened hunter only flees: no spell, potion or shot, and cornered it waits. The
+  directions are `ai_dir_x()` and `ai_dir_y()`, shared from `ai_act.c`.
+- Blinded: only `ai_sense()`'s look fails. `ai_sees()`, which the messages use for the
+  player's view, is unchanged (D5).
+- Tags: rows 17 to 19 of the stats window, 3 a row, in red.
+- The help screen's abilities say what Con, Wis and Cha now resist.
+- Dev aid: Z puts the next of confused, frightened, paralysed and asleep on the player.
 

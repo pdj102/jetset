@@ -21,7 +21,8 @@
  * player's feet, and a cracked statue holding one, and traps on the free
  * tiles around the player, all found but one, the runes among them
  * (level_dev_features(), game/player); G puts a teleport level parchment
- * at the player's feet, and J starts a delayed descent on the player
+ * at the player's feet, J starts a delayed descent on the player, and Z
+ * puts the next of confused, frightened, paralysed and asleep on them
  * (game/player);
  * V pans the view a pixel
  * at a time while a movement key is held, to check the pixel camera; M

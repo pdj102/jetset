@@ -81,6 +81,11 @@ void ai_stimulus(nge_entity_id_t id, ai_stim_t stim, nge_entity_id_t source) NGE
 void ai_sense(nge_entity_id_t id, ai_ctx_t *c);
 
 /* 1 if (x1, y1) is in sight from (x0, y0) in area: within AI_SIGHT, and no wall or closed door between */
+/* The 8 directions, 0 north, then clockwise: a step and its neighbours are one apart (ai_act.c) */
+#define AI_DIRS  8
+int8_t ai_dir_x(uint8_t d);
+int8_t ai_dir_y(uint8_t d);
+
 uint8_t ai_in_sight(nge_owner_t area, uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1);
 
 /*

@@ -13,6 +13,7 @@
 #include "ecs/components/nge_location.h"
 #include "game/components/attack.h"
 #include "game/components/health.h"
+#include "game/components/stats.h"
 #include "map/nge_map.h"
 
 uint8_t act_melee(act_t *a, uint8_t mode) NGE_BANKED
@@ -47,9 +48,12 @@ uint8_t act_melee(act_t *a, uint8_t mode) NGE_BANKED
     a->target = target;
     a->item = weapon;
 
-    /* 2. Validate: an attack, a target that can be damaged, within reach */
+    /* 2. Validate: an attack, a target that can be damaged, within reach, and the nerve to strike */
     if (!ATTACK_HAS(attacker, ATTACK_MELEE)) {
         return act_fail(a, ACT_R_NO_ATTACK);
+    }
+    if (act_status(actor, STATUS_FRIGHTENED)) {
+        return act_fail(a, ACT_R_AFRAID);
     }
     if (target == NGE_ENTITY_INVALID || target == actor) {
         return act_fail(a, ACT_R_NO_TARGET);

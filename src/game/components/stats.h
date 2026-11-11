@@ -75,12 +75,19 @@ typedef struct stats_kind {
 
 /* Statuses: bits of stats_status, granted by effects (game/effects/effects.h) */
 #define STATUS_POISONED     0x01
-#define STATUS_BLINDED      0x02   /**< No rule reads it: EF_BLIND's penalty to hit is a modifier (ATTR_TO_HIT). */
-#define STATUS_UNCONSCIOUS  0x04   /**< Granted, but no rule reads it yet (docs/attributes.md, "Not built yet"). */
+#define STATUS_BLINDED      0x02   /**< An AI can't see (ai_sense()); its -4 to hit is EF_BLIND's modifier (ATTR_TO_HIT). */
+#define STATUS_UNCONSCIOUS  0x04   /**< Loses its turns; damage wakes it (game_on_event()). */
 #define STATUS_ROOTED       0x08   /**< Can't leave its tile (act_move(), the stairs): for ever or for a while. */
+#define STATUS_CONFUSED     0x10   /**< A move may go a random way (act_move()). */
+#define STATUS_FRIGHTENED   0x20   /**< Can't melee (act_melee()); an AI moves away from its target. */
+#define STATUS_PARALYSED    0x40   /**< Loses its turns; damage doesn't end it. */
 
 /** The statuses that are conditions (impairments). */
-#define STATUS_CONDITIONS  (STATUS_POISONED | STATUS_BLINDED | STATUS_UNCONSCIOUS | STATUS_ROOTED)
+#define STATUS_CONDITIONS  (STATUS_POISONED | STATUS_BLINDED | STATUS_UNCONSCIOUS | STATUS_ROOTED | STATUS_CONFUSED | \
+                            STATUS_FRIGHTENED | STATUS_PARALYSED)
+
+/** The statuses that lose a creature its turns. */
+#define STATUS_HELPLESS  (STATUS_UNCONSCIOUS | STATUS_PARALYSED)
 
 /* Tables in slot 0 (stats_cdata.c): read-only for game code; meaningful only with COMPONENT_STATS */
 extern uint8_t stats_speed[NGE_ENTITY_MAX];                 /**< Ticks between turns: its timer's period. Derived (ATTR_SPEED). */

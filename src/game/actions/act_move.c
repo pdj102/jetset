@@ -9,16 +9,22 @@
 
 #include "game/actions/act_internal.h"
 
+#include <stdlib.h>
+
 #include "core/nge_util.h"
 #include "ecs/components/nge_block.h"
 #include "ecs/components/nge_location.h"
 #include "ecs/nge_owner.h"
 #include "event/nge_event.h"
 #include "game/components/item.h"
+#include "game/components/stats.h"
 #include "game/events.h"
 
 /* Items told about by one move: a pile has no limit but the inventory, and the queue has (docs/events.md, D13) */
 #define STOOD_ON_ITEMS_MAX  4
+
+/* A confused move goes a random way 1 time in this many (docs/effects_extensions.md R13) */
+#define CONFUSED_STRAY  3
 
 uint8_t act_move(act_t *a, uint8_t mode) NGE_BANKED
 {
@@ -28,6 +34,7 @@ uint8_t act_move(act_t *a, uint8_t mode) NGE_BANKED
     nge_entity_id_t blocker;
     nge_entity_id_t id;
     uint8_t items = 0;
+    uint8_t d;
     uint8_t x;
     uint8_t y;
 
@@ -54,9 +61,26 @@ uint8_t act_move(act_t *a, uint8_t mode) NGE_BANKED
         return act_checked(a);
     }
 
-    /* 3. Resolve: nothing to roll for a move, but a rooted actor only struggles */
+    /*
+     * 3. Resolve: a rooted actor only struggles, and a confused one goes a
+     * random way 1 time in 3, which must be validated again: blocked, it
+     * stumbles (never ACT_CHECK, which rolls nothing)
+     */
     if (act_rooted(actor)) {
         return act_fail(a, ACT_R_ROOTED);
+    }
+    if (act_status(actor, STATUS_CONFUSED) && (unsigned int)rand() % CONFUSED_STRAY == 0) {
+        d = (uint8_t)((unsigned int)rand() % 8);
+        if (d >= 4) {
+            d++;   /* 0-8 skipping 4, the tile itself: a 3 x 3 square's cells */
+        }
+        a->dx = (int8_t)((unsigned int)d % 3 - 1);
+        a->dy = (int8_t)((unsigned int)d / 3 - 1);
+        x = (uint8_t)(NGE_LOCATION_X(actor) + a->dx);
+        y = (uint8_t)(NGE_LOCATION_Y(actor) + a->dy);
+        if (!nge_block_can_enter(area, x, y, pass, actor, &blocker)) {
+            return act_fail(a, ACT_R_STUMBLED);
+        }
     }
 
     /* 4. Apply, then the events: what happened, for the systems to react to */

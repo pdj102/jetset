@@ -945,6 +945,62 @@ int main(void)
     ai_on_turn(gob2);
     CHECK(ai_get_state(gob2) == AI_STATE_IDLE && at(gob2, 7, 2));
 
+    /* ---- statuses (docs/effects_extensions.md 3.4, 3.5) ---- */
+    /* Paralysed, then asleep: the turn lost, before anything is sensed or rolled */
+    scene(0, 5);
+    goblin = hunter(CR_GOBLIN, 2, 5, 0, 5);
+    effect_apply(EF_PARALYSE, 1, goblin, NGE_ENTITY_INVALID);
+    events();
+    srand(9);
+    r = rand();
+    srand(9);
+    ai_on_turn(goblin);
+    CHECK(at(goblin, 2, 5) && rand() == r && events() == 0);
+    effect_cure(goblin, STATUS_PARALYSED);
+    effect_apply(EF_SLEEP, 1, goblin, NGE_ENTITY_INVALID);
+    events();
+    srand(9);
+    ai_on_turn(goblin);
+    CHECK(at(goblin, 2, 5) && rand() == r && events() == 0);
+    effect_cure(goblin, STATUS_UNCONSCIOUS);
+    events();
+    ai_on_turn(goblin);
+    CHECK(at(goblin, 1, 5));                                /* awake: it comes */
+    /* Frightened: away from its goal, never an attack; the step furthest on both axes */
+    scene(3, 5);
+    goblin = hunter(CR_GOBLIN, 4, 5, 3, 5);
+    hp = health_hp[actor_player];
+    effect_apply(EF_FEAR, 1, goblin, NGE_ENTITY_INVALID);
+    events();
+    ai_on_turn(goblin);
+    CHECK(health_hp[actor_player] == hp && (at(goblin, 5, 4) || at(goblin, 5, 6)));
+    events();
+    ai_on_turn(goblin);
+    CHECK(NGE_LOCATION_X(goblin) == 6 && health_hp[actor_player] == hp);
+    events();
+    /* Cornered: nowhere further, so it waits */
+    scene(8, 8);
+    goblin = hunter(CR_GOBLIN, 9, 9, 8, 8);
+    effect_apply(EF_FEAR, 1, goblin, NGE_ENTITY_INVALID);
+    events();
+    ai_on_turn(goblin);
+    CHECK(at(goblin, 9, 9) && health_hp[actor_player] == health_hp_max[actor_player]);
+    events();
+    /* Blinded: the player in plain sight isn't seen */
+    scene(0, 5);
+    goblin = creature(CR_GOBLIN, 5, 5);
+    ai_state[goblin] = AI_STATE_IDLE;
+    effect_apply(EF_BLIND, 1, goblin, NGE_ENTITY_INVALID);
+    events();
+    srand(seed_no_wander());
+    ai_on_turn(goblin);
+    CHECK(ai_get_state(goblin) == AI_STATE_IDLE && ai_target[goblin] == NGE_ENTITY_INVALID && at(goblin, 5, 5));
+    effect_cure(goblin, STATUS_BLINDED);
+    events();
+    ai_on_turn(goblin);
+    CHECK(ai_get_state(goblin) == AI_STATE_HUNT && at(goblin, 4, 5));
+    events();
+
     /* ---- asserts: a bad state, no AI ---- */
     ai_state[gob2] = AI_STATE_NONE;
     TEST_EXPECT_HALT(ai_on_turn(gob2));

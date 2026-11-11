@@ -65,6 +65,9 @@ uint8_t act_line(act_t *a, uint8_t range, uint8_t how);
 /* 1 if id can't leave its tile (STATUS_ROOTED): an actor without stats has no statuses */
 uint8_t act_rooted(nge_entity_id_t id);
 
+/* 1 if id has any of statuses s (STATUS_*): an actor without stats has none */
+uint8_t act_status(nge_entity_id_t id, uint8_t s);
+
 /*
  * Steps 1 and 2 of the feature actions: the feature a->target, or (with
  * a->target NGE_ENTITY_INVALID) the one in direction a->dx, a->dy, put in
