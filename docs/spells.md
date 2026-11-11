@@ -67,7 +67,7 @@ learned. Later ways of learning, such as a scroll or a shrine, call the same fun
 | Spell level | How powerful a spell is, 0 to 5. Not a character level, nor a depth |
 | Ability | A spell of level 0: it costs nothing |
 | Cost | The MP a cast takes, worked out from the spell level |
-| Shape | Who a spell reaches: `SPELL_SELF`, `SPELL_BOLT` or `SPELL_DIRECT` |
+| Shape | Who a spell reaches: `SPELL_SELF`, `SPELL_BOLT`, `SPELL_DIRECT` or `SPELL_TILE` |
 | Bolt | A spell sent along a line, stopping at the first creature (actions.md, D11) |
 | Direct | A spell sent along a line to the creature on the chosen tile, past any on the way (actions.md, 4.11) |
 | Known spells | The set of spells an entity can cast, in `COMPONENT_SPELLS` |
@@ -163,7 +163,7 @@ learned. Later ways of learning, such as a scroll or a shrine, call the same fun
 |---|---|
 | `name` | Shown in the list and in messages, 14 characters at most |
 | `level` | 0 to 5 |
-| `shape` | `SPELL_SELF`, `SPELL_BOLT` or `SPELL_DIRECT` |
+| `shape` | `SPELL_SELF`, `SPELL_BOLT`, `SPELL_DIRECT` or `SPELL_TILE` |
 | `ef`, `power` | The effect and its power |
 | `range` | A bolt's or direct spell's reach, through `nge_map_within()`; 0 for `SPELL_SELF` |
 | ~~`learn`~~ | Goes (S1, D18): spells are learned from books |
@@ -230,6 +230,7 @@ haven't the mana."
 | `SPELL_SELF` | The actor | Nobody |
 | `SPELL_BOLT` | The first creature on the line, from `act_line()` with `ACT_LINE_BOLT` (actions.md, 4.11) | `act_line()` |
 | `SPELL_DIRECT` | The creature on the chosen tile, past any on the way, from `act_line()` with `ACT_LINE_DIRECT` (actions.md, 4.11) | `act_line()` |
+| `SPELL_TILE` | The caster, sent to a free tile in range and line, never a creature's (`effect_apply_at()`, effects_extensions.md 3.6) | `act_line()`, then the effect |
 
 A wall or closed door stops either line. A bolt suits what flies, such as fire; direct suits
 what doesn't, such as a hold or a teleport of another (action_aim.md, D3). In section 4.12,
@@ -389,6 +390,7 @@ Only effects that work today, and one spell for each character level:
 | 8 | `SP_HASTE` | Haste | 4 | 6 | Self | | `EF_HASTE`, 3 | Never |
 | 9 | `SP_POWER_BOLT` | Power Bolt | 5 | 9 | Bolt | 8 | `EF_BOLT_MAGIC`, 16 | Target |
 | 10 | `SP_RENEWAL` | Renewal | 5 | 9 | Self | | `EF_RENEW`, 2 | Hurt |
+| - | `SP_BLINK` | Blink | 2 | 2 | Tile | 6 | `EF_BLINK`, 1 | Never (effects_extensions.md R22) |
 
 The powers follow the items: a wand of striking is 4, a wand of fire 6, a staff of power
 12, a healing draught 3 and a potion 6.
@@ -825,7 +827,7 @@ from the to-do list, with the reason.
 
   | Book | Kind | Spells | Depths | Rarity | Colourway |
   |---|---|---|---|---|---|
-  | basic spellbook | `IT_BOOK_BASIC` | Magic Bolt, Cure Wounds, Hold, Enfeeble | 1-5 | 4 | `BANK_BLUE` |
+  | basic spellbook | `IT_BOOK_BASIC` | Magic Bolt, Cure Wounds, Hold, Enfeeble, Blink (added with effects_extensions.md) | 1-5 | 4 | `BANK_BLUE` |
   | adept's spellbook | `IT_BOOK_ADEPT` | Fire Bolt, Frost Bolt, Stoneskin, Haste | 4-8 | 10 | `BANK_PURPLE` |
   | master's spellbook | `IT_BOOK_MASTER` | Power Bolt, Renewal | 8-10 | 10 | `BANK_GOLD` |
 

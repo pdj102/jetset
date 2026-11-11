@@ -4,7 +4,8 @@ The steps that build what [effects_extensions.md](effects_extensions.md) specifi
 spec says what and why; this file says in what order, what changes, and how each step is
 checked.
 
-Status: step 1 done 2026-11-11, its CSpect checks passed. Step 2 done 2026-11-11, its CSpect checks passed. Step 3 done 2026-11-11: CSpect check 1 passed; check 2 (blinded by a gold snake) not run. Step 4 done 2026-11-11, its CSpect checks passed. Step 5 done 2026-11-11, its CSpect check passed. Step 6 done 2026-11-11, its CSpect checks passed.
+Status: done 2026-11-11. Steps 1 to 6 passed their CSpect checks (step 3: check 1; its
+blindness, check 2, by the PC tests only). Step 7 closed the docs.
 
 ## 1. How the steps work
 

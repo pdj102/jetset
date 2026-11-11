@@ -7,7 +7,9 @@ The definitions are in
 [effects_pdata.c](../src/game/effects/effects_pdata.c) and the public interface
 is in [effects.h](../src/game/effects/effects.h). What an effect changes is
 specified in [attributes.md](attributes.md), and how items use effects in
-[items.md](items.md).
+[items.md](items.md). The ops, statuses and rows added later (level teleport,
+teleport, summon, detect, blink, the bonus to hit, four statuses) are specified in
+[effects_extensions.md](effects_extensions.md).
 
 ## 1. Overview
 
@@ -190,17 +192,20 @@ An op is a number, dispatched by a `switch` in `run_op()` (`effects_bank.c`):
 | `OP_NONE` | Nothing |
 | `OP_CURE` | Ends the target's effects granting statuses `arg`, except innate ones |
 | `OP_RAISE_BASE` | Adds the amount to attribute `arg`'s base, for good, kept within 0-255 (`effects_raise_base()`) |
-| `OP_DAMAGE` | Damage of type `arg`, through `health_damage()` |
-| `OP_HEAL` | Healing, through `health_heal()` |
-| `OP_MANA` | MP back, through `mana_restore()`; nothing without mana |
+| `OP_DAMAGE` | Damage of type `arg`, through `health_damage()`; nothing below 1 |
+| `OP_HEAL` | Healing, through `health_heal()`; nothing below 1 |
+| `OP_MANA` | MP back, through `mana_restore()`, or drained to 0 if the amount is negative (`mana_spend()`); nothing without mana |
 | `OP_UNCURSE` | Lifts the curse of everything the target has equipped (`ITEM_UNCURSED`) |
 | `OP_TELEPORT` | To random free floor on the level (`level_free_floor()`), with `EV_MOVED` and no step ([effects_extensions.md](effects_extensions.md)) |
 | `OP_SUMMON` | 1 random creature for the depth per power, at most 3, on free tiles around the target |
 | `OP_LEVEL_TELEPORT` | Up, down or a random way (`LT_*` in `arg`) by the amount in levels: the player by a request, a monster by `level_send()` |
+| `OP_DETECT` | `DETECT_TRAPS`: the hidden features within the amount in tiles (Chebyshev) are found by the target |
+| `OP_BLINK` | To the tile given to `effect_apply_at()`, if the target can still enter it |
 | The pending ops | Nothing yet (section 4.8) |
 
-An op that can do nothing (a summon with no room, a level teleport at the limit) posts
-`EV_FIZZLED`, and an instant effect whose op fizzled posts no `EV_EFFECT_STARTED`.
+An op that can do nothing (a summon with no room, a level teleport at the limit, a
+detect that finds nothing, a drain of no MP, a blink with no tile) posts `EV_FIZZLED`,
+and an instant effect whose op fizzled posts no `EV_EFFECT_STARTED`.
 
 An op's amount is scaled by the power and clamped to -127 to 127. Ops go through
 the components' own rules, so a healing effect can't bypass what `health_heal()`
@@ -357,6 +362,7 @@ The deepest chain of banked calls is an AI's hit that starts a timed effect:
 | Mechanic | What's there, what's missing |
 |---|---|
 | Start ops on timed effects | The code runs them, but no definition has one (`EF_DESCENT` and `EF_RECALL` use `on_end`) |
+| Items for the newer rows | No item uses the E3 rows, Bless, Bane, Heroism, Confuse, Fear, Paralyse or detect traps yet (effects_extensions.md D11) |
 | Aimed effects | An effect can be applied to any target, but no action reads the aim hook |
 | Worn effects that tick | A worn effect has no firings: `EF_WORN_REGEN` waits on this |
 | Hit and use effects as reactions | R5 allows it, and today they are direct calls (events.md, section 6) |
@@ -374,7 +380,10 @@ The deepest chain of banked calls is an AI's hit that starts a timed effect:
 - power: instant, worn and timed, including after the source has gone;
 - worn effects, and every attribute's clamps;
 - a target that dies, an entity without stats, and no free entity;
-- pending effects applying safely, the texts, and the asserts.
+- pending effects applying safely, the texts, and the asserts;
+- level teleport, descent and recall, the bonus to hit, mana drain, negative amounts,
+  the newer rows and waking (effects_extensions.md, section 5). Teleport and summon
+  are in `test_level`, blink and detect in `test_act`.
 
 `test_nge_effect` covers nge's side: creating (owner, tag, timer, payload),
 destroying, the iterator, no free entity and the target going. `test_nge_timer`
@@ -382,20 +391,17 @@ covers the payload.
 
 ## 8. Known risks
 
-- **Negative power on an op.** `run_op()` casts the scaled amount to
-  `uint8_t`, so a negative power on `OP_DAMAGE`, `OP_HEAL` or `OP_MANA` becomes a
-  large positive amount. Only `OP_RAISE_BASE` handles a negative amount. Negative
-  powers are only used on worn hooks today, which go through modifiers, so nothing
-  reaches this yet. Nothing checks it either.
+- **Negative power on an op: closed** (effects_extensions.md R23). `OP_DAMAGE` and
+  `OP_HEAL` do nothing below 1, and `OP_MANA` drains with a negative amount.
 - **`source` on a timed effect.** `effect_apply()`'s `source` is used only by instant
   effects. A timed effect's `on_start` gets the effect as its cause, whatever was
   passed. No timed effect has an `on_start` yet.
-- **`on_end` is untested,** as no definition has one.
-- **Entities.** Each active effect takes one of the 100 entities, so a timed effect can
+- **`on_end`** is used by `EF_DESCENT` and `EF_RECALL`, and tested through them.
+- **Entities.** Each active effect takes one of the 150 entities (`NGE_ENTITY_MAX`), so a timed effect can
   be refused when the game is busy, and the caller may not say so. For an innate
   effect that shows: the generator ignores the result, so a lichen made with no entity
   free would walk. Regeneration lost that way never mattered. Levels stay far below
-  100 entities, so this is accepted.
+  150 entities, so this is accepted.
 - **zsdcc.** `run_op()` and `effects_on_timer()` read struct fields in code that
   branches, so they copy them into locals first (T-ZSDCC-1). Scaling depends on
   promotion and sign, and the power is a payload byte cast to `int8_t`; the PC

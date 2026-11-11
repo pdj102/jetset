@@ -252,6 +252,11 @@ again to find the one rolled. It is a macro, expanded in the code page of the
 table it reads, so that page's data is mapped and nothing is copied (R20).
 Creatures use the same macro, and every class has the same `gen_where_t`.
 
+Kinds added after the catalogue are numbered at the end, so no number moves: the spell
+books (after `IT_QUEST`), then the stairway parchment (`EF_LEVEL_TELEPORT`), the
+levitation potion (`EF_LEVITATE`) and boots of levitation (`EF_WORN_FLY`), from
+[effects_extensions.md](effects_extensions.md). `IT_COUNT` is 166.
+
 ### 4.9 Names and messages
 
 Names are one string in the record. Kinds are named so that they read well after
@@ -326,8 +331,7 @@ mechanic is missing.
 | Hunger | `EF_NOURISH` (D11) |
 | Light | `EF_WORN_LIGHT`, with the radius as its power; a light's count as burn time |
 | Worn regeneration | `EF_WORN_REGEN`: a worn effect has no tick |
-| The pending ops | Teleport, mapping, identify, summon, enchant, light: used up with their message, but nothing happens |
-| Blindness and sleep | The statuses are granted, but no rule reads them |
+| The pending ops | Mapping, identify, enchant, light: used up with their message, but nothing happens. Teleport and summon work (effects_extensions.md) |
 | Gold | Treasure's count: it is carried as an item, not added to the PC's gold |
 
 Also outside this design: identification and shuffled appearances (a per-game

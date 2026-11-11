@@ -127,7 +127,8 @@ disarmed trap needs no saving. A revisited depth is a new level.
 - **R15 (New)** A creature that flies doesn't set off traps. A flier is one
   whose pass flags include `NGE_BLOCK_NO_FLOOR`, the flag for passing holes,
   so no new flag is needed. *(As built: no kind had it; the bat and the ghost
-  now do, section 12.)*
+  now do, section 12. A creature with `STATUS_FLYING`, from levitation, is one too,
+  and a trapdoor doesn't drop it: effects_extensions.md R19.)*
 - **R16 (New)** Every walking creature sets off traps, not only the player.
   Reason: one rule for every actor (creatures.md D4), and a monster lured
   onto a trap is a tactic. Monsters don't avoid traps (section 8).
@@ -458,9 +459,10 @@ All start hidden, block nothing, and can be disarmed unless noted.
 | fire rune | `TRAP`, `DISARM` | None | Hit: `EF_BOLT_FIRE` 6 | 14 | 4-10 | 3 | Fire resistance matters |
 | trapdoor | `TRAP`, `DISARM`, `DESCEND` | None | - | 12 | 2-9 | 2 | Down a level, at random, without the stairs |
 | spider web | `TRAP` (visible, can't be disarmed) | None | Hit: `EF_HOLD` 1 | - | 3-7 | 3 | 3 hp, weak to fire: cut it or burn it. Starts known |
-| sleeping gas | `TRAP`, `DISARM` | None | Hit: `EF_SLEEP` 1 | 13 | 3-10 | 0 | Pending: no rule reads sleep |
-| teleport rune | `TRAP`, `DISARM` | None | Hit: `EF_TELEPORT` 1 | 13 | 3-10 | 0 | Pending: `EF_TELEPORT` |
-| summoning rune | `TRAP`, `DISARM` | None | Hit: `EF_SUMMON` 1 | 15 | 5-10 | 0 | Pending: `EF_SUMMON` |
+| sleeping gas | `TRAP`, `DISARM` | None | Hit: `EF_SLEEP` 1 | 13 | 3-10 | 0 | Asleep: turns lost until a hit wakes it |
+| teleport rune | `TRAP`, `DISARM` | None | Hit: `EF_TELEPORT` 1 | 13 | 3-10 | 0 | Elsewhere on the level |
+| summoning rune | `TRAP`, `DISARM` | None | Hit: `EF_SUMMON` 1 | 15 | 5-10 | 0 | A creature for the depth beside the walker |
+| level teleport rune | `TRAP`, `DISARM` | None | Hit: `EF_LEVEL_TELEPORT` 1 | 15 | 4-10 | 0 | A level up or down (effects_extensions.md) |
 
 ### 5.4 Looks
 

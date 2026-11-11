@@ -43,83 +43,83 @@ D1 - Create a roadmap guide for game mechanic scaling `[spec]` [spec](difficulty
 Effects missing against classic D&D and roguelikes, from a review of
 `effects_pdata.c` ([effects.md](effects.md), [attributes.md](attributes.md)).
 
-### E1 Teleport to another level `[spec]` [spec](effects_extensions.md)
+### E1 Teleport to another level `[done]` (2026-11-11) [spec](effects_extensions.md), [plan](effects_extensions_plan.md)
 
 - E1.1 `OP_LEVEL_TELEPORT`, `arg` up, down or random: the player arrives
   anywhere on the new level. It asks for a level change rather than making
   it there and then (an effect can run inside an event handler), the way the
-  trapdoor (`FCAN_DESCEND`) does
+  trapdoor (`FCAN_DESCEND`) does `[done]`
 - E1.2 Limits: going up stops at depth 1, so it never ends the game
   (level_transitions.md R2); going down stops at the bottom depth. Going
   down while already at the bottom depth, or up while already at depth 1,
-  fizzles with a message
+  fizzles with a message `[done]`
 - E1.3 On a monster: it leaves the level for good (levels aren't kept).
-  Persistent entities (the boss, a quest object holder) are immune
+  Persistent entities (the boss, a quest object holder) are immune `[done]`
 - E1.4 Scroll of teleport level, and a level teleport trap beside the
-  teleport trap
+  teleport trap `[done]`
 - E1.5 Delayed descent: a timed effect with one firing, whose `on_end` is a
   level teleport down by one level times the effect's power (the first
-  effect to use `on_end`)
+  effect to use `on_end`) `[done]`
 - E1.6 Delayed ascent: a timed effect with one firing, whose `on_end` is a
   level teleport up by one level times the effect's power. A recall up to
-  depth 1 is one with a power high enough to reach the limit going up
+  depth 1 is one with a power high enough to reach the limit going up `[done]`
 
-### E2 Build the pending ops `[spec]` [spec](effects_extensions.md) (E2.1, E2.6; the rest later)
+### E2 Build the pending ops [spec](effects_extensions.md), [plan](effects_extensions_plan.md) (E2.1, E2.6 done; the rest later)
 
 Defined and used by items and traps, but they do nothing yet
 (effects.md, "Pending ops").
 
-- E2.1 Teleport (within the level; goes with E1)
+- E2.1 Teleport (within the level; goes with E1) `[done]`
 - E2.2 Light
 - E2.3 Map
 - E2.4 Identify (see S10)
 - E2.5 Enchant
-- E2.6 Summon
+- E2.6 Summon `[done]`
 
-### E3 Fill the gaps in the effect table (data only) `[spec]` [spec](effects_extensions.md)
+### E3 Fill the gaps in the effect table (data only) `[done]` (2026-11-11) [spec](effects_extensions.md), [plan](effects_extensions_plan.md)
 
 New rows in `effects_pdata.c` using attributes and ops that already work.
 
 - E3.1 Timed Dex, Con, Int, Wis buffs (Grace, Endurance, Insight, …): Might
-  is the only one
-- E3.2 `EF_WORN_CHA`: Str to Wis have worn versions, Cha doesn't
-- E3.3 Timed poison, acid and magic wards: only fire and cold have them
-- E3.4 Timed max HP (Aid, Heroism): `ATTR_HP_MAX` modifier
-- E3.5 Shield: timed AC without Stoneskin's speed penalty
+  is the only one `[done]`
+- E3.2 `EF_WORN_CHA`: Str to Wis have worn versions, Cha doesn't `[done]`
+- E3.3 Timed poison, acid and magic wards: only fire and cold have them `[done]`
+- E3.4 Timed max HP (Aid, Heroism): `ATTR_HP_MAX` modifier `[done]`
+- E3.5 Shield: timed AC without Stoneskin's speed penalty `[done]`
 - E3.6 Vulnerability hex (`ATTR_VULN`) and worn immunity (`ATTR_IMMUNE`):
-  both attributes exist, nothing grants them
+  both attributes exist, nothing grants them `[done]`
 - E3.7 Ability drain: a long timed ability penalty, from a monster's hit
   or a bad potion (a permanent drain with `OP_RAISE_BASE` -1 would need a
-  record of what was lost before a Restore could undo it)
+  record of what was lost before a Restore could undo it) `[done]`
 - E3.8 Damage over time beyond poison: burning (fire, Dex save), bleeding
-  (slash), corrosion (acid)
-- E3.9 Cure blindness: `OP_CURE` with `STATUS_BLINDED`
+  (slash), corrosion (acid) `[done]`
+- E3.9 Cure blindness: `OP_CURE` with `STATUS_BLINDED` `[done]`
 - E3.10 Tidy names: `EF_STRENGTH` beside `EF_RAISE_DEX` and the other
-  `EF_RAISE_*`
+  `EF_RAISE_*` `[done]`
 
-### E4 New statuses (4 of the 8 bits free) `[spec]` [spec](effects_extensions.md)
+### E4 New statuses (4 of the 8 bits free) [spec](effects_extensions.md), [plan](effects_extensions_plan.md) (E4.1 to E4.6 done)
 
-- E4.1 Confused: `act_move()` sometimes goes a random direction
-- E4.2 Frightened: no melee, the AI flees; a use for Cha (G1)
-- E4.3 Paralysed: like asleep, but damage doesn't end it (needs E4.5)
+- E4.1 Confused: `act_move()` sometimes goes a random direction `[done]`
+- E4.2 Frightened: no melee, the AI flees; a use for Cha (G1) `[done]`
+- E4.3 Paralysed: like asleep, but damage doesn't end it (needs E4.5) `[done]`
 - E4.4 Flying (levitation): potion or boots; fliers don't set off traps
-  (features.md R15)
-- E4.5 Asleep wakes when damaged (attributes.md, "Not built yet")
+  (features.md R15) `[done]`
+- E4.5 Asleep wakes when damaged (attributes.md, "Not built yet") `[done]`
 - E4.6 Unconscious and blinded read by the rules: an unconscious creature
-  loses its turns; the main screen shows every condition, not only poisoned
+  loses its turns; the main screen shows every condition, not only poisoned `[done]`
 - E4.7 Silenced: can't cast spells. Uses the last free bit if E4.1 to E4.4
   are all built (low)
 - E4.8 Invisible and see invisible: AI, targeting and drawing all change (low)
 
-### E5 New ops and attributes `[spec]` [spec](effects_extensions.md)
+### E5 New ops and attributes [spec](effects_extensions.md), [plan](effects_extensions_plan.md) (E5.1 to E5.4 done)
 
 - E5.1 `ATTR_TO_HIT`: Bless and Bane, Heroism's bonus, and the blinded
   penalty as a modifier rather than a special case in
-  `attack_actor_to_hit()`
-- E5.2 `OP_DETECT`: detect monsters, detect traps, beside `OP_MAP`
-- E5.3 Blink: a short teleport the caster aims, within line of sight
+  `attack_actor_to_hit()` `[done]`
+- E5.2 `OP_DETECT`: detect monsters, detect traps, beside `OP_MAP` `[done]` for traps; monsters later (needs fog of war)
+- E5.3 Blink: a short teleport the caster aims, within line of sight `[done]`
 - E5.4 Mana drain: `mana_restore()` takes a `uint8_t`, so it needs a drain
-  path or a signed amount
+  path or a signed amount `[done]`
 - E5.5 Life drain: damage that heals the caster; ops only know the target,
   so the source has to be passed in (low)
 - E5.6 Life saving: a worn reaction to lethal damage, a hook in

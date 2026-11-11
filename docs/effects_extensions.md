@@ -1,7 +1,9 @@
 # Effects extensions: design specification
 
-Status: agreed (2026-11-11): D1 to D12 accepted as written. Covers to-do items E1 to E5 ([todo.md](todo.md)).
-Built in steps ([effects_extensions_plan.md](effects_extensions_plan.md)): steps 1 to 6 built 2026-11-11, their CSpect checks passed (step 3: the effect list; blindness covered by tests only).
+Status: implemented 2026-11-11, CSpect checks passed (steps 1 to 6 of
+[effects_extensions_plan.md](effects_extensions_plan.md); step 3's blindness checked by the
+PC tests only). D1 to D12 agreed 2026-11-11. Covers to-do items E1 to E5
+([todo.md](todo.md)); what differs from the design is in section 7, "As built".
 
 This spec adds level teleport, the teleport and summon ops, the gaps in the effect table,
 four new statuses, and a to-hit attribute with the ops that go with it. It builds on

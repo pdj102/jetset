@@ -120,9 +120,11 @@ is a resource that damage and healing change. Hit points are a pool.
 | `ATTR_IMMUNE`, `ATTR_RESIST`, `ATTR_VULN` | health | ORed | Damage type masks |
 | `ATTR_STR` to `ATTR_CHA` | stats | Added | 1-30 |
 | `ATTR_MP_MAX` | mana | Added | 1-255; current MP kept within it, as hit points (spells.md, D11) |
+| `ATTR_TO_HIT` | stats | Added, signed | -20 to +20: added to the attacker's roll (`attack_actor_to_hit()`); base 0 at creation ([effects_extensions.md](effects_extensions.md) 3.7) |
 
 Each is only meaningful for an entity with its component. Modifiers can add bits
-to a mask but not remove them.
+to a mask but not remove them. A signed base keeps an `int8_t`'s bits in its `uint8_t`
+table, and a raise keeps it within -128 to 127.
 
 `ATTR_ABILITY(a)` gives an ability's attribute, as both lists are in the same
 order.
@@ -167,8 +169,9 @@ asserts and tests.
 The attributes module (`game/attrs/attrs_bank.c`, page 138) holds:
 
 - **`attrs_table[]`** (`attrs_internal.h`), one row per attribute: its base table,
-  the component that has it, and whether modifiers are ORed. `derive()` reads it
-  directly, and `base_of()` adds the assert for R7.
+  the component that has it, and how modifiers combine (`ATTRS_ADD`, `ATTRS_MASK`,
+  `ATTRS_SIGNED`). `derive()` reads it directly, and `base_of()` adds the assert for
+  R7.
 - **`store()`**, which keeps the special cases: the clamps, hit points within the
   maximum, and the timer period.
 
@@ -184,16 +187,22 @@ The status mask is `stats_status[]` in slot 0, with `STATUS_*`, `STATUS_CONDITIO
 and `STATUS_HAS()` in `stats.h`. It is derived like a value: the OR of the statuses
 of every active effect and every equipped item's worn effect.
 
-| Status | Condition | Granted by |
-|---|---|---|
-| `STATUS_POISONED` | Yes | Poison |
-| `STATUS_BLINDED` | Yes | Blindness |
-| `STATUS_UNCONSCIOUS` | Yes | Sleep |
-| `STATUS_ROOTED` | Yes | Roots (innate), a hold ([creatures.md](creatures.md)) |
+| Status | Condition | Granted by | Read by |
+|---|---|---|---|
+| `STATUS_POISONED` | Yes | Poison | |
+| `STATUS_BLINDED` | Yes | Blindness (with -4 to hit, `ATTR_TO_HIT`) | An AI can't see its target (`ai_sense()`) |
+| `STATUS_UNCONSCIOUS` | Yes | Sleep | Loses its turns; damage wakes it (`effects_on_event()`) |
+| `STATUS_ROOTED` | Yes | Roots (innate), a hold ([creatures.md](creatures.md)) | Can't leave its tile (`act_move()`, the stairs) |
+| `STATUS_CONFUSED` | Yes | Confusion | A move goes a random way 1 time in 3 (`act_move()`) |
+| `STATUS_FRIGHTENED` | Yes | Fear | Can't melee (`act_melee()`); an AI flees |
+| `STATUS_PARALYSED` | Yes | Paralysis | Loses its turns; damage doesn't end it |
+| `STATUS_FLYING` | No | Levitation, boots of levitation | Sets off no trap, doesn't fall through a trapdoor |
 
-A status that isn't a condition would be a beneficial one. The difference matters
-only where a rule acts on conditions as a group: a cure-all
-(`OP_CURE` with `STATUS_CONDITIONS`), and the PC screen's colours.
+A status that isn't a condition is a beneficial one (flying). The
+difference matters only where a rule acts on conditions as a group: a cure-all
+(`OP_CURE` with `STATUS_CONDITIONS`), the PC screen's colours, and the main screen's
+tags (Psn Bln Slp Rt Cnf Frt Par). All 8 bits are used
+([effects_extensions.md](effects_extensions.md) 3.4).
 
 ### 4.6 Saving throws
 
@@ -254,10 +263,10 @@ effect (`nge_effect_destroy()`) first, with a reason in `EV_EFFECT_ENDED`'s p2:
 
 | Mechanic | What's there, what's missing |
 |---|---|
-| Blinded and unconscious | Effects grant them and the PC screen shows them. Blinded gives -4 to hit (`attack_actor_to_hit()`), and nothing else reads it yet; no rule reads unconscious; the main screen shows only poisoned |
-| Other ways to avoid or end a condition | A saving throw when it is applied, waking when damaged, condition immunities (which could be a mask attribute) |
+| A blinded player | Keeps aiming, firing and casting (effects_extensions.md D5) |
+| Other ways to avoid or end a condition | A saving throw when it is applied, condition immunities (which could be a mask attribute) |
 | Messages by reason | The reason is in the event, but every ending uses the effect's one text |
-| More than 8 statuses | The mask and the definitions' `status` field would become `uint16_t` |
+| More than 8 statuses | All 8 are used; silenced and invisible need the mask and the definitions' `status` field to become `uint16_t` |
 | A table-driven `store()` | It keeps its special cases as code |
 
 ## 7. Tests
