@@ -43,7 +43,7 @@ D1 - Create a roadmap guide for game mechanic scaling `[spec]` [spec](difficulty
 Effects missing against classic D&D and roguelikes, from a review of
 `effects_pdata.c` ([effects.md](effects.md), [attributes.md](attributes.md)).
 
-### E1 Teleport to another level
+### E1 Teleport to another level `[spec]` [spec](effects_extensions.md)
 
 - E1.1 `OP_LEVEL_TELEPORT`, `arg` up, down or random: the player arrives
   anywhere on the new level. It asks for a level change rather than making
@@ -64,7 +64,7 @@ Effects missing against classic D&D and roguelikes, from a review of
   level teleport up by one level times the effect's power. A recall up to
   depth 1 is one with a power high enough to reach the limit going up
 
-### E2 Build the pending ops
+### E2 Build the pending ops `[spec]` [spec](effects_extensions.md) (E2.1, E2.6; the rest later)
 
 Defined and used by items and traps, but they do nothing yet
 (effects.md, "Pending ops").
@@ -76,7 +76,7 @@ Defined and used by items and traps, but they do nothing yet
 - E2.5 Enchant
 - E2.6 Summon
 
-### E3 Fill the gaps in the effect table (data only)
+### E3 Fill the gaps in the effect table (data only) `[spec]` [spec](effects_extensions.md)
 
 New rows in `effects_pdata.c` using attributes and ops that already work.
 
@@ -97,7 +97,7 @@ New rows in `effects_pdata.c` using attributes and ops that already work.
 - E3.10 Tidy names: `EF_STRENGTH` beside `EF_RAISE_DEX` and the other
   `EF_RAISE_*`
 
-### E4 New statuses (4 of the 8 bits free)
+### E4 New statuses (4 of the 8 bits free) `[spec]` [spec](effects_extensions.md)
 
 - E4.1 Confused: `act_move()` sometimes goes a random direction
 - E4.2 Frightened: no melee, the AI flees; a use for Cha (G1)
@@ -111,7 +111,7 @@ New rows in `effects_pdata.c` using attributes and ops that already work.
   are all built (low)
 - E4.8 Invisible and see invisible: AI, targeting and drawing all change (low)
 
-### E5 New ops and attributes
+### E5 New ops and attributes `[spec]` [spec](effects_extensions.md)
 
 - E5.1 `ATTR_TO_HIT`: Bless and Bane, Heroism's bonus, and the blinded
   penalty as a modifier rather than a special case in
