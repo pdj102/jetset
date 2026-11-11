@@ -116,10 +116,10 @@
 #define EF_LIGHT             34   /**< Instant, pending. */
 #define EF_IDENTIFY          35   /**< Instant, pending. */
 #define EF_MAP               36   /**< Instant, pending. */
-#define EF_TELEPORT          37   /**< Instant, pending. */
-#define EF_UNCURSE           38   /**< Instant, pending. */
+#define EF_TELEPORT          37   /**< Instant: to random free floor on the level. */
+#define EF_UNCURSE           38   /**< Instant: lifts the curse of everything the target has equipped. */
 #define EF_ENCHANT           39   /**< Instant, pending. */
-#define EF_SUMMON            40   /**< Instant, pending. */
+#define EF_SUMMON            40   /**< Instant: 1 random creature for the depth per power (at most 3) around the target. */
 #define EF_LEVEL_TELEPORT    41   /**< Instant: teleport a level up or down, at random, per power. */
 #define EF_WORN_HP           42   /**< Worn: +1 per power maximum hit points. */
 #define EF_WORN_AC           43   /**< Worn: AC +1 per power. */
@@ -160,7 +160,8 @@
  * @brief Apply effect ef (not EF_NONE) to target: an instant effect runs
  *        its on_start op; a timed one starts an active effect (its on_start op,
  *        recomputing the target) or refreshes the one there. Posts
- *        EV_EFFECT_STARTED. A worn effect can't be applied: its
+ *        EV_EFFECT_STARTED, except for an instant effect whose op
+ *        fizzled (EV_FIZZLED instead). A worn effect can't be applied: its
  *        modifiers count through equipment (asserts).
  * @param power  Multiplies its amounts: not 0.
  * @param source What caused it, for its on_start op's events (damage), or

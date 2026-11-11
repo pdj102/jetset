@@ -34,7 +34,8 @@
  * with level_generate(): never inside the action, timer or event handler
  * that asks for it.
  *
- * Banking: level_init(), level_generate() and level_redraw() are banked
+ * Banking: level_init(), level_generate(), level_redraw() and
+ * level_free_floor() are banked
  * (NGE_BANKED, page 102, with their data in page 103); level_send(),
  * level_park() and level_leave() too, in page 136 (level_travel.c): don't
  * call them while game code has its own page mapped in slot 6 or 7. level_can_enter(), level_holds(), the
@@ -153,6 +154,17 @@ uint8_t level_can_enter(nge_entity_id_t id, uint8_t x, uint8_t y, nge_entity_id_
 
 /** @brief 1 if entity id (in use) is on the current level: its owners lead to LEVEL_AREA. */
 uint8_t level_holds(nge_entity_id_t id);
+
+/**
+ * @brief Room floor for something placed after the random entities (a
+ *        parked entity, the player arriving anywhere, a teleport): a
+ *        random tile with nothing on it, else the first such tile in room
+ *        order, else the first with no feature on it, shared with an item
+ *        or a creature (docs/winning.md R10). Never in a locked room, so
+ *        what must be reached can be. Always finds one. Reads the current
+ *        level's rooms (page 103).
+ */
+void level_free_floor(uint8_t *x, uint8_t *y) NGE_BANKED;
 
 /**
  * @brief Ask for the player to go to depth, arriving as arrival

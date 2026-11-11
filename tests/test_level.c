@@ -32,6 +32,7 @@
 #include "game/components/pc.h"
 #include "game/components/stats.h"
 #include "game/effects/effects.h"
+#include "game/effects/effects_defs.h"
 #include "game/events.h"
 #include "game/gen/gen.h"
 #include "game/gen/gen_internal.h"   /* the feature kinds' bands, to check random features */
@@ -175,6 +176,64 @@ static int entities_at(uint8_t x, uint8_t y)
         n++;
     }
     return n;
+}
+
+/* Creatures on the 8 tiles around (x, y) */
+static int creatures_around(uint8_t x, uint8_t y)
+{
+    nge_entity_id_t id;
+    int dx;
+    int dy;
+    int n = 0;
+
+    for (dy = -1; dy <= 1; dy++) {
+        for (dx = -1; dx <= 1; dx++) {
+            if (dx != 0 || dy != 0) {
+                NGE_LOCATION_FOR_EACH_AT(id, LEVEL_AREA, (uint8_t)(x + dx), (uint8_t)(y + dy), 0) {
+                    n += KIND_IS(id, CLASS_CREATURE) ? 1 : 0;
+                }
+            }
+        }
+    }
+    return n;
+}
+
+/* Tiles around (x, y) that id could enter */
+static int open_around(nge_entity_id_t id, uint8_t x, uint8_t y)
+{
+    int dx;
+    int dy;
+    int n = 0;
+
+    for (dy = -1; dy <= 1; dy++) {
+        for (dx = -1; dx <= 1; dx++) {
+            if ((dx != 0 || dy != 0) && level_can_enter(id, (uint8_t)(x + dx), (uint8_t)(y + dy), NULL)) {
+                n++;
+            }
+        }
+    }
+    return n;
+}
+
+/* Index of the first event recorded with this id and target, or -1 */
+static int recorded(uint8_t ev, nge_entity_id_t target)
+{
+    int i;
+
+    for (i = 0; i < seen_count && i < (int)(sizeof(seen) / sizeof(seen[0])); i++) {
+        if (seen[i].id == ev && seen[i].target == target) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/* Handle the events posted since the last call, recording them, then the frame's clean-up */
+static void settle(void)
+{
+    seen_count = 0;
+    nge_event_process(record);
+    level_release_dying();
 }
 
 /* ---- Flood fill over open tiles from the player ---- */
@@ -1145,6 +1204,68 @@ int main(void)
         ok = room_of(d, arrival) == level_room_cells[1];
     }
     CHECK(ok);
+    go(4, LEVEL_ARRIVE_ANY);
+
+    /* ---- teleport (docs/effects_extensions.md R7): to free floor, alone, with no step ---- */
+    ok = 1;
+    for (n = 0; n < 20 && ok; n++) {
+        d = NGE_LOCATION_X(player);
+        arrival = NGE_LOCATION_Y(player);
+        settle();
+        ok = effect_apply(EF_TELEPORT, 1, player, NGE_ENTITY_INVALID) == 1;
+        settle();
+        ok = ok && is_floor(NGE_LOCATION_X(player), NGE_LOCATION_Y(player)) &&
+             entities_at(NGE_LOCATION_X(player), NGE_LOCATION_Y(player)) == 1 &&
+             (NGE_LOCATION_X(player) != d || NGE_LOCATION_Y(player) != arrival);
+        ok = ok && recorded(EV_MOVED, player) >= 0 && seen[recorded(EV_MOVED, player)].p1 == 0 &&
+             seen[recorded(EV_MOVED, player)].p2 == 0 && recorded(EV_EFFECT_STARTED, player) >= 0;
+    }
+    CHECK(ok);
+    /* A monster too */
+    monster = gen_creature(CR_GOBLIN, LEVEL_AREA);
+    level_free_floor(&d, &arrival);
+    nge_location_set(monster, d, arrival);
+    effect_apply(EF_TELEPORT, 1, monster, NGE_ENTITY_INVALID);
+    CHECK(is_floor(NGE_LOCATION_X(monster), NGE_LOCATION_Y(monster)) &&
+          (NGE_LOCATION_X(monster) != d || NGE_LOCATION_Y(monster) != arrival));
+    settle();
+    /* Off the map (held, parked): it fizzles, and the effect says nothing more */
+    nge_location_remove(monster);
+    effect_apply(EF_TELEPORT, 1, monster, NGE_ENTITY_INVALID);
+    settle();
+    CHECK(!NGE_ENTITY_HAS_COMPONENT(monster, NGE_COMPONENT_LOCATION) && recorded(EV_FIZZLED, monster) >= 0 &&
+          seen[recorded(EV_FIZZLED, monster)].p1 == OP_TELEPORT && recorded(EV_EFFECT_STARTED, monster) < 0);
+    nge_entity_destroy(monster);
+    settle();
+
+    /* ---- summon (R8): creatures for the depth next to the target, 1 per power, at most 3 ---- */
+    go(4, LEVEL_ARRIVE_ANY);
+    d = NGE_LOCATION_X(player);
+    arrival = NGE_LOCATION_Y(player);
+    n = creatures_around(d, arrival);
+    i = (uint8_t)open_around(player, d, arrival);
+    CHECK(i >= 1);
+    effect_apply(EF_SUMMON, 1, player, NGE_ENTITY_INVALID);
+    settle();
+    CHECK(creatures_around(d, arrival) == n + 1 && recorded(EV_EFFECT_STARTED, player) >= 0);
+    n = creatures_around(d, arrival);
+    i = (uint8_t)open_around(player, d, arrival);
+    effect_apply(EF_SUMMON, 5, player, NGE_ENTITY_INVALID);   /* at most 3, as many as there is room for */
+    settle();
+    CHECK(creatures_around(d, arrival) == n + ((i < 3) ? i : 3));
+    /* No room left: the creature made is destroyed, and it fizzles */
+    for (n = 0; n < 8 && open_around(player, d, arrival) > 0; n++) {
+        effect_apply(EF_SUMMON, 3, player, NGE_ENTITY_INVALID);
+        settle();
+    }
+    CHECK(open_around(player, d, arrival) == 0);
+    n = creatures_around(d, arrival);
+    free_before = nge_entity_free_count();
+    effect_apply(EF_SUMMON, 1, player, NGE_ENTITY_INVALID);
+    settle();
+    CHECK(creatures_around(d, arrival) == n && nge_entity_free_count() == free_before &&
+          recorded(EV_FIZZLED, player) >= 0 && seen[recorded(EV_FIZZLED, player)].p1 == OP_SUMMON &&
+          recorded(EV_EFFECT_STARTED, player) < 0);
     go(4, LEVEL_ARRIVE_ANY);
 
     /* ---- the dev kit's bandit: out of the player's sight, its bow and arrows at its feet ---- */

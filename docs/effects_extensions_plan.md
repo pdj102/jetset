@@ -4,7 +4,7 @@ The steps that build what [effects_extensions.md](effects_extensions.md) specifi
 spec says what and why; this file says in what order, what changes, and how each step is
 checked.
 
-Status: step 1 done 2026-11-11, its CSpect checks passed.
+Status: step 1 done 2026-11-11, its CSpect checks passed. Step 2 done 2026-11-11, its CSpect checks passed.
 
 ## 1. How the steps work
 
@@ -157,3 +157,4 @@ R21, R22, D8, D12. E5.2, E5.3.
 |---|---|---|
 | Start | 4,257 | Page 102 7,987; 104 7,600; 110 8,019; 114 5,469; 116 6,799; 118 6,384; 120 2,922; 121 2,339; 124 1,325; 130 5,805; 136 1,080; 139 1,950. `BANK_56` 14,436 |
 | 1 | 4,257 | Page 120 +414; 121 +144; 114 +93 (the dev keys); 118 +37. 136 and `BANK_56` unchanged |
+| 2 | -1: 4,256, the fizzle flag | Page 120 +440; 121 +16; 114 +28 (the trap list a local); 102 +8 (`level_free_floor()` banked) |

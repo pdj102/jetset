@@ -12,7 +12,7 @@
 #pragma constseg PAGE_121
 #endif
 
-#include "game/effects/effects_defs.h"
+#include "game/effects/effects_internal.h"
 
 #include "ecs/systems/nge_timer.h"
 #include "game/components/health.h"
@@ -354,4 +354,8 @@ const effect_def_t effect_defs[EF_COUNT] = {
     [EF_WORN_LIGHT] = {
         .duration = EFFECT_WORN,
     },
+};
+
+const int8_t effects_around[EFFECTS_AROUND][2] = {
+    { -1, -1 }, { 0, -1 }, { 1, -1 }, { 1, 0 }, { 1, 1 }, { 0, 1 }, { -1, 1 }, { -1, 0 },
 };

@@ -38,14 +38,14 @@
 #define OP_HEAL        4   /* heal amount, through health_heal() */
 #define OP_MANA        5   /* restore amount MP, through mana_restore(): nothing without mana */
 #define OP_UNCURSE     10  /* lift the curse of everything the target has equipped (ITEM_UNCURSED) */
+#define OP_TELEPORT    9   /* to random free floor on the level (level_free_floor()) */
+#define OP_SUMMON      12  /* amount random creatures for the depth (at most 3) around the target */
 #define OP_LEVEL_TELEPORT 13  /* go amount levels the way arg says (LT_*): the player by a request, a monster by level_send() */
 /* Pending: they do nothing until their mechanics are built (docs/effects.md, "Pending effects") */
 #define OP_LIGHT       6
 #define OP_IDENTIFY    7
 #define OP_MAP         8
-#define OP_TELEPORT    9
 #define OP_ENCHANT     11
-#define OP_SUMMON      12
 #define OP_COUNT       14
 
 /* OP_LEVEL_TELEPORT's arg: the way it goes */

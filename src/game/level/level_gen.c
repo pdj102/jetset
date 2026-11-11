@@ -460,7 +460,7 @@ static uint8_t scan_floor(nge_component_t c, uint8_t *x, uint8_t *y)
     return 0;
 }
 
-void level_free_floor(uint8_t *x, uint8_t *y)
+void level_free_floor(uint8_t *x, uint8_t *y) NGE_BANKED
 {
     uint8_t found;
 

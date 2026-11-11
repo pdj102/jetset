@@ -1,7 +1,7 @@
 # Effects extensions: design specification
 
 Status: agreed (2026-11-11): D1 to D12 accepted as written. Covers to-do items E1 to E5 ([todo.md](todo.md)).
-Built in steps ([effects_extensions_plan.md](effects_extensions_plan.md)): step 1 built 2026-11-11, CSpect checks passed.
+Built in steps ([effects_extensions_plan.md](effects_extensions_plan.md)): steps 1 and 2 built 2026-11-11, their CSpect checks passed.
 
 This spec adds level teleport, the teleport and summon ops, the gaps in the effect table,
 four new statuses, and a to-hit attribute with the ops that go with it. It builds on
@@ -275,4 +275,25 @@ Differences from the design, by plan step.
   G puts a stairway parchment at the player's feet, and J starts a delayed descent.
 - Tests: the generators' tests now link the level module, as the effects call it. The
   test support has a weak `screen_map_view` for the tests that don't define one.
+
+### Step 2: teleport and summon
+
+- The spec's `level_random_floor()` is the existing `level_free_floor()`, now banked and
+  public in `level.h`. Its last fallback can share a tile with an item or a creature,
+  when no floor is free.
+- The camera isn't moved by the op: it follows the player (`nge_render_follow()`), so
+  it centres on them where they land. `EV_MOVED` has (0, 0), so nothing slides.
+- Teleport fizzles for a target off the map (held or parked).
+- An instant effect whose op fizzled posts no `EV_EFFECT_STARTED`, so the player hears
+  "Nothing happens." and not the effect's start text as well. A flag in common memory
+  (1 byte) records the fizzle.
+- The 8 directions round a tile are a table in page 121 (`effects_around`): a table in
+  page 120 has the page in its address's high bits, which the assembler warns about.
+  For the same reason the dev trap list in `player_bank.c` (step 1) is now a local
+  array.
+- Bank depth: a summon from a monster's hit would reach 8, the most allowed:
+  `effect_apply()` at 4, `gen_creature_random()`, `effect_apply()` again for the new
+  creature's innate effects, then `nge_effect_create()` and its calls. No hit hook
+  summons; the rune's chain is 1 shallower.
+- Tests: in `test_level`, not `test_effects`, as teleport reads a generated level.
 

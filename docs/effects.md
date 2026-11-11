@@ -194,7 +194,13 @@ An op is a number, dispatched by a `switch` in `run_op()` (`effects_bank.c`):
 | `OP_HEAL` | Healing, through `health_heal()` |
 | `OP_MANA` | MP back, through `mana_restore()`; nothing without mana |
 | `OP_UNCURSE` | Lifts the curse of everything the target has equipped (`ITEM_UNCURSED`) |
+| `OP_TELEPORT` | To random free floor on the level (`level_free_floor()`), with `EV_MOVED` and no step ([effects_extensions.md](effects_extensions.md)) |
+| `OP_SUMMON` | 1 random creature for the depth per power, at most 3, on free tiles around the target |
+| `OP_LEVEL_TELEPORT` | Up, down or a random way (`LT_*` in `arg`) by the amount in levels: the player by a request, a monster by `level_send()` |
 | The pending ops | Nothing yet (section 4.8) |
+
+An op that can do nothing (a summon with no room, a level teleport at the limit) posts
+`EV_FIZZLED`, and an instant effect whose op fizzled posts no `EV_EFFECT_STARTED`.
 
 An op's amount is scaled by the power and clamped to -127 to 127. Ops go through
 the components' own rules, so a healing effect can't bypass what `health_heal()`
@@ -289,6 +295,7 @@ no rule reads yet. See [items.md](items.md), "Not built yet".
 | `EV_EFFECT_STARTED` | The entity affected | The active effect, or none if instant | p1: `EF_*` |
 | `EV_EFFECT_ENDED` | The entity affected | The effect (dying) | p1: `EF_*`, p2: `EFFECT_END_*` |
 | `EV_ATTRS_CHANGED` | The entity | None | Posted by a recompute that changed something |
+| `EV_FIZZLED` | The entity affected | None | p1: the op (`OP_*`) that could do nothing |
 
 `effect_text()` copies a definition's start text, end text or name into the caller's
 buffer, and `effect_save_of()` gives its saving throw. The messages module and the
@@ -349,11 +356,11 @@ The deepest chain of banked calls is an AI's hit that starts a timed effect:
 
 | Mechanic | What's there, what's missing |
 |---|---|
-| Start and end ops on timed effects | The code runs them, but no definition has one |
+| Start ops on timed effects | The code runs them, but no definition has one (`EF_DESCENT` and `EF_RECALL` use `on_end`) |
 | Aimed effects | An effect can be applied to any target, but no action reads the aim hook |
 | Worn effects that tick | A worn effect has no firings: `EF_WORN_REGEN` waits on this |
 | Hit and use effects as reactions | R5 allows it, and today they are direct calls (events.md, section 6) |
-| Pending ops | Teleport, mapping, identify, summon, enchant, light |
+| Pending ops | Mapping, identify, enchant, light |
 | Messages by end reason | See [attributes.md](attributes.md), "Not built yet" |
 
 ## 7. Tests

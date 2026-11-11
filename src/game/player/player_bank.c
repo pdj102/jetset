@@ -370,8 +370,9 @@ static void close_command(void)
  */
 static void dev_traps(void)
 {
-    static const uint8_t traps[] = { FT_DART_TRAP, FT_PIT, FT_FIRE_RUNE, FT_WEB, FT_TELEPORT_RUNE, FT_LEVEL_RUNE,
-                                     FT_SUMMON_RUNE, FT_TRAPDOOR };
+    /* A local, not a static table: this page's addresses carry the page above bit 15 (docs/effects.md 4.10) */
+    const uint8_t traps[] = { FT_DART_TRAP, FT_PIT, FT_FIRE_RUNE, FT_WEB, FT_TELEPORT_RUNE, FT_LEVEL_RUNE,
+                              FT_SUMMON_RUNE, FT_TRAPDOOR };
     nge_entity_id_t id;
     uint8_t k = 0;
     uint8_t x;
