@@ -209,8 +209,9 @@ void player_act(uint8_t action, act_t *a) NGE_BANKED
  * The move command, bump to attack and bump to open: a move blocked by
  * something that can be damaged attacks it instead, and one blocked by a
  * closed door opens it, or unlocks it with a key in the pack (act_move()'s
- * check mode finds the blocker). A move onto a known trap disarms it, or
- * strikes a web
+ * check mode finds the blocker). A move into a known web strikes it; a move
+ * onto any other known trap walks onto it, and it goes off unless the player
+ * flies: disarming is only the D command (features.md D12, changed)
  */
 /* A known trap at (x, y) of the player's area that can do `can` (FCAN_*), or NGE_ENTITY_INVALID */
 static nge_entity_id_t known_trap(uint8_t x, uint8_t y, uint8_t can)
@@ -235,16 +236,7 @@ static void move(int8_t dx, int8_t dy)
     a.actor = actor_player;
     a.dx = dx;
     a.dy = dy;
-    /*
-     * A step onto a known trap: one that can be disarmed is disarmed, as a
-     * step into a locked door unlocks it; one that can be broken (a web) is
-     * struck. Never walked onto by mistake (docs/features.md D12)
-     */
-    a.target = known_trap(x, y, FCAN_DISARM);
-    if (a.target != NGE_ENTITY_INVALID) {
-        player_act(ACT_DISARM, &a);
-        return;
-    }
+    /* A step into a known trap that can be broken (a web) strikes it */
     a.target = known_trap(x, y, 0);
     if (a.target != NGE_ENTITY_INVALID && NGE_ENTITY_HAS_COMPONENT(a.target, COMPONENT_HEALTH)) {
         player_act(ACT_MELEE, &a);

@@ -320,7 +320,7 @@ exceptions.
 | 16 | `ACT_EXCHANGE` | `act_equip.c` | [action_exchange.md](action_exchange.md) | `e`; `x` on the inventory screen | No |
 | 17 | `ACT_OPERATE` | `act_operate.c` | [action_operate.md](action_operate.md) | `o`, then a direction | No |
 | 18 | `ACT_SEARCH` | `act_disarm.c` | [action_search.md](action_search.md) | `s` | No |
-| 19 | `ACT_DISARM` | `act_disarm.c` | [action_disarm.md](action_disarm.md) | `D`; a step onto a known trap | No |
+| 19 | `ACT_DISARM` | `act_disarm.c` | [action_disarm.md](action_disarm.md) | `D` | No |
 | 20 | `ACT_LEARN` | `act_learn.c` | [action_learn.md](action_learn.md) | `b`; `b` on the inventory screen; then the book screen | No |
 | | `ACT_STEAL`, not built | | [action_steal.md](action_steal.md) | | The bandit |
 
@@ -334,8 +334,8 @@ exceptions.
 | Inventory screen | `ACT_CHECK` to list and offer; does drop, equip, unequip, use and exchange itself; returns aim, unlock and learn to `item_command()` | Doesn't offer it, or says why on its status line |
 | Spell list | `ACT_CHECK` for each spell | Says why it can't be cast |
 
-**Bumping** is the player's move command combining actions. A step onto a known trap that
-can be disarmed disarms it, and a step into a known web strikes it. Otherwise it checks the
+**Bumping** is the player's move command combining actions. A step into a known web strikes
+it; a step onto any other known trap walks onto it (only `D` disarms). Otherwise it checks the
 move, and if the blocker has health it melees, and if it is a closed door it opens it, or
 unlocks it if it is locked and a key in the pack fits. The AI makes the same choices for
 itself.
@@ -563,7 +563,7 @@ What needs no new action:
 | Reading a parchment, eating, drinking | `ACT_USE`, or `ACT_AIM` for aimed parchments |
 | Rest, running, travelling | A player command that repeats `ACT_WAIT` or `ACT_MOVE`, stopping when something happens |
 | Looking, the PC screen | They change nothing, so they use no turn ([targeting.md](targeting.md)) |
-| Bump to unlock, bump to disarm | A caller combining actions (R13) |
+| Bump to unlock, bump to strike a web | A caller combining actions (R13) |
 | Swapping weapons | `ACT_EXCHANGE`, one turn |
 | A chest | `ACT_OPEN`, and the chest spills in reaction to `EV_OPENED` ([features.md](features.md), 4.9) |
 | A trap going off | A reaction to `EV_STOOD_ON`, `act_spring()` ([features.md](features.md), 4.8) |

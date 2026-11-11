@@ -53,9 +53,9 @@ next depth.
 
 ## 4. Callers
 
-- **The player:** `D` disarms the known trap the player stands on, or asks a direction. A
-  step onto a known trap that can be disarmed is a disarm, as a bump into a locked door is an
-  unlock, so a known trap is never walked onto by mistake (features.md, D12).
+- **The player:** `D` disarms the known trap the player stands on, or asks a direction. It
+  is the only way: a step onto a known trap walks onto it (features.md, D12, changed
+  2026-11-11).
 - **The AI:** none.
 
 ## 5. Not built yet

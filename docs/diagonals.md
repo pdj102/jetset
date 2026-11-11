@@ -39,7 +39,7 @@ two of them, for example UP and RIGHT, should step up-right.
 
 - **R1** In play, holding direction keys on both axes moves the player
   diagonally, with everything a move does today: bump to attack, bump to
-  open or unlock a door, disarm a known trap, strike a web
+  open or unlock a door, strike a web
   (`move()` in [player_bank.c](../src/game/player/player_bank.c)).
 - **R2** The direction prompts (close, unlock, operate, disarm) take a
   diagonal answer the same way.

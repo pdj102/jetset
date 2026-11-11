@@ -317,9 +317,9 @@ the trap and not on it.
 modifier must reach it. A thief's bonus (player_character.md R16) adds to the
 roll later.
 
-**The player's moves.** A step onto a known trap with `FCAN_DISARM` becomes a
-disarm attempt, as a bump onto a locked door becomes an unlock (D12). A
-known trap without `FCAN_DISARM` (a web) can be walked into.
+**The player's moves.** A step onto a known trap walks onto it, and it goes
+off unless the player flies; only `D` disarms (D12, changed 2026-11-11). A
+step into a known web strikes it.
 
 ### 4.9 Containers
 
@@ -525,11 +525,12 @@ Spent and open looks share the ready look where a kind can't be used up.
   that it can't cut a path (R18), and anything that blocks nothing can go on
   any free floor. *Rejected:* a placement field per kind, a rule the data
   could get wrong.
-- **D12 A step onto a known trap is a disarm attempt.** It is the bump rule
-  that turns a step into a door into opening it, so the player never walks
-  onto a trap they can see by accident. *Rejected:* stepping on and firing it,
-  which punishes a slip of the key. *Rejected:* asking for confirmation, which
-  needs a prompt in the move command. Agreed (Q3).
+- **D12 A step onto a known trap walks onto it** (changed 2026-11-11). Disarming
+  is only ever the `D` command: the player chooses it, and a flier can cross a
+  trap it knows (effects_extensions.md R19). A slip of the key sets the trap off.
+  *Was:* a step onto a known trap was a disarm attempt, the bump rule that turns
+  a step into a door into opening it. *Rejected:* asking for confirmation, which
+  needs a prompt in the move command.
 - **D13 A disarmed trap is destroyed.** Its cell is redrawn as floor by
   clean-up, and its entity is freed. *Rejected:* a disarmed state with its own
   look, which costs a look and an entity for nothing.
@@ -641,8 +642,8 @@ CSpect checks:
   measures the peak.
 - **Q2 Should monsters set off traps? Answered: yes** (R16), with no
   avoidance, so luring them is a tactic.
-- **Q3 A step onto a known trap? Answered: a disarm attempt** (D12). A known
-  trapdoor can't be stepped onto on purpose, only disarmed.
+- **Q3 A step onto a known trap? Answered: a disarm attempt** (D12), changed
+  2026-11-11: the step walks onto it, and only `D` disarms.
 - **Q4 Locked chests? Answered: locked, with the key elsewhere** (4.9, D17).
   The locked side room's item stays an item.
 - **Q5 The catalogue? Answered: the kinds in section 5, with the fountain

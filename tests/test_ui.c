@@ -449,6 +449,7 @@ int main(void)
     nge_map_set_block('.', NGE_BLOCK_NONE);
     nge_map_set_block(LOOK_DOOR_SHUT, NGE_BLOCK_NONE);
     nge_map_set_block(LOOK_DOOR_OPEN, NGE_BLOCK_NONE);
+    nge_map_set_block(LOOK_TRAP, NGE_BLOCK_NONE);        /* as the level sets it: a found trap's tile is walked on */
     for (y = 0; y < LEVEL_HEIGHT; y++) {
         for (x = 0; x < LEVEL_WIDTH; x++) {
             NGE_MAP_TILE(x, y).tile_id = '.';
@@ -1117,7 +1118,7 @@ int main(void)
         nge_entity_destroy(pit);
     }
 
-    /* ---- known traps: a step onto one disarms it, a step into a web strikes it; s searches; D asks ---- */
+    /* ---- known traps: a step onto one walks onto it (only D disarms), a step into a web strikes it; s searches; D asks ---- */
     {
         nge_entity_id_t dart = gen_feature(FT_DART_TRAP, AREA);
         nge_entity_id_t web = gen_feature(FT_WEB, AREA);
@@ -1131,11 +1132,12 @@ int main(void)
         feature_place(web, (uint8_t)(px - 1), py);                 /* west */
         nge_event_flush();
         player_turn = 1;
-        player_command(EV(NGE_KEY_K));                             /* into the trap: a disarm, whatever the roll */
-        CHECK(NGE_LOCATION_Y(actor_player) == py && !player_turn);
+        player_command(EV(NGE_KEY_K));                             /* onto the trap: walked onto, never disarmed */
+        CHECK(NGE_LOCATION_Y(actor_player) == py - 1 && !player_turn && NGE_ENTITY_IS_ALIVE(dart));
         nge_event_process(messages_on_event);
-        CHECK(shown("You disarm the dart trap.") || shown("You fail to disarm the dart trap.") ||
-              shown("You set off a dart trap!"));
+        CHECK(!shown("You disarm the dart trap.") && !shown("You fail to disarm the dart trap."));
+        nge_location_set(actor_player, px, py);                    /* back: the tests below start here */
+        nge_event_flush();
         player_turn = 1;
         player_command(EV(NGE_KEY_H));                             /* into the web: struck, not walked into */
         CHECK(NGE_LOCATION_X(actor_player) == px && !player_turn);
