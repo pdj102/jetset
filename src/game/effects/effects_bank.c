@@ -34,6 +34,7 @@
 #include "ecs/nge_owner.h"
 #include "event/nge_event.h"
 #include "game/components/health.h"
+#include "game/components/feature.h"
 #include "game/components/item.h"
 #include "game/components/mana.h"
 #include "game/components/pc.h"
@@ -243,6 +244,63 @@ static void summon(nge_entity_id_t target, int8_t n)
     }
 }
 
+/*
+ * Hidden features within radius of target (Chebyshev) are found, by target,
+ * as a search finds them: feature_find() and EV_FOUND. None: it fizzles
+ */
+static void detect(nge_entity_id_t target, uint8_t what, int8_t radius)
+{
+    nge_entity_id_t id;
+    uint8_t i;
+    uint8_t tx;
+    uint8_t ty;
+    uint8_t dx;
+    uint8_t dy;
+    uint8_t found = 0;
+
+    nge_util_assert(what < DETECT_COUNT);
+    (void)what;   /* traps, the only one (docs/effects_extensions.md D12) */
+    if (radius > 0 && level_holds(target) && NGE_ENTITY_HAS_COMPONENT(target, NGE_COMPONENT_LOCATION)) {
+        tx = NGE_LOCATION_X(target);
+        ty = NGE_LOCATION_Y(target);
+        NGE_ENTITY_FOR_EACH_ALIVE(i, id) {
+            if (FEATURE_IS(id) && FEATURE_IS_HIDDEN(id) && NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_LOCATION) &&
+                NGE_OWNER_OF(id) == LEVEL_AREA) {
+                dx = (NGE_LOCATION_X(id) > tx) ? (uint8_t)(NGE_LOCATION_X(id) - tx) : (uint8_t)(tx - NGE_LOCATION_X(id));
+                dy = (NGE_LOCATION_Y(id) > ty) ? (uint8_t)(NGE_LOCATION_Y(id) - ty) : (uint8_t)(ty - NGE_LOCATION_Y(id));
+                if (dx <= (uint8_t)radius && dy <= (uint8_t)radius) {
+                    feature_find(id);
+                    nge_event_post(id, EV_FOUND, target, 0, 0);
+                    found++;
+                }
+            }
+        }
+    }
+    if (found == 0) {
+        fizzle(target, OP_DETECT);
+    }
+}
+
+/* The tile effect_apply_at() was given, while its effect runs (blink_given 1; uninitialised data, so 0 means none) */
+static uint8_t blink_given;
+static uint8_t blink_x;
+static uint8_t blink_y;
+
+/* To the tile given (blink_x, blink_y), if target can still enter it: else it fizzles. EV_MOVED with no step */
+static void blink(nge_entity_id_t target)
+{
+    uint8_t x = blink_x;
+    uint8_t y = blink_y;
+
+    if (!blink_given || !level_holds(target) || !NGE_ENTITY_HAS_COMPONENT(target, NGE_COMPONENT_LOCATION) ||
+        !level_can_enter(target, x, y, NULL)) {
+        fizzle(target, OP_BLINK);
+        return;
+    }
+    nge_location_set(target, x, y);
+    nge_event_post(target, EV_MOVED, NGE_EVENT_NONE, 0, 0);
+}
+
 static void end(nge_entity_id_t effect, uint8_t reason);
 
 /* See effect_cure(): a plain call for this page's ops */
@@ -300,6 +358,12 @@ static void run_op(const effect_op_t *op, int8_t power, nge_entity_id_t target, 
         break;
     case OP_LEVEL_TELEPORT:
         level_teleport(target, arg, amount);
+        break;
+    case OP_DETECT:
+        detect(target, arg, amount);
+        break;
+    case OP_BLINK:
+        blink(target);
         break;
     case OP_TELEPORT:
         teleport(target);
@@ -436,6 +500,19 @@ uint8_t effect_apply(uint8_t ef, int8_t power, nge_entity_id_t target, nge_entit
     }
     started(e, target, ef, power);
     return 1;
+}
+
+uint8_t effect_apply_at(uint8_t ef, int8_t power, nge_entity_id_t target, nge_entity_id_t source, uint8_t x,
+                        uint8_t y) NGE_BANKED
+{
+    uint8_t r;
+
+    blink_given = 1;   /* kept for the op (D8): not passed through every run_op() */
+    blink_x = x;
+    blink_y = y;
+    r = effect_apply(ef, power, target, source);
+    blink_given = 0;
+    return r;
 }
 
 void effect_end(nge_entity_id_t effect) NGE_BANKED

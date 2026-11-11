@@ -196,7 +196,7 @@ int main(void)
         spell_learn(b, sp);
     }
     CHECK(known(b) == (BIT(SPELL_COUNT) - 2) && events() == SPELL_COUNT - 2);
-    CHECK(spell_known[b][0] == 0xFE && spell_known[b][1] == 0x07 && spell_known[b][2] == 0 && spell_known[b][3] == 0);
+    CHECK(spell_known[b][0] == 0xFE && spell_known[b][1] == 0x0F && spell_known[b][2] == 0 && spell_known[b][3] == 0);
     CHECK(known(a) == (BIT(SP_HASTE) | BIT(SP_HOLD)));               /* another caster's set untouched */
 
     /* ---- next: wrapping round to itself, filtered by when the AI casts it; none known ---- */
@@ -329,10 +329,11 @@ int main(void)
 
     /* ---- spell_book() and spell_in_book() ---- */
     memset(list, 0xAA, sizeof(list));
-    CHECK(spell_book(SPELL_BOOK_BASIC, list) == 4);
-    CHECK(list[0] == SP_MAGIC_BOLT && list[1] == SP_CURE_WOUNDS && list[2] == SP_HOLD && list[3] == SP_ENFEEBLE);
+    CHECK(spell_book(SPELL_BOOK_BASIC, list) == 5);
+    CHECK(list[0] == SP_MAGIC_BOLT && list[1] == SP_CURE_WOUNDS && list[2] == SP_HOLD && list[3] == SP_ENFEEBLE &&
+          list[4] == SP_BLINK);
     ok = 1;
-    for (i = 4; i < SPELL_BOOK_MAX; i++) {
+    for (i = 5; i < SPELL_BOOK_MAX; i++) {
         ok = ok && list[i] == SP_NONE;
     }
     CHECK(ok && spell_book(SPELL_BOOK_MASTER, list) == 2 && list[1] == SP_RENEWAL && list[2] == SP_NONE);

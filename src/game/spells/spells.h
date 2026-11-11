@@ -47,13 +47,15 @@
 #define SP_HASTE        8    /**< Level 4, self: faster. */
 #define SP_POWER_BOLT   9    /**< Level 5 bolt: more magic damage. */
 #define SP_RENEWAL      10   /**< Level 5, self: heals over time. */
-#define SPELL_COUNT     11
+#define SP_BLINK        11   /**< Level 2, tile: the caster to a free tile in sight. */
+#define SPELL_COUNT     12
 
 /* Shapes: who a spell reaches */
 #define SPELL_SELF    0   /**< The caster. */
 #define SPELL_BOLT    1   /**< The first creature on the line to a tile (ACT_LINE_BOLT). */
 #define SPELL_DIRECT  2   /**< The creature on the chosen tile, past any on the way (ACT_LINE_DIRECT). */
-#define SPELL_SHAPE_COUNT  3
+#define SPELL_TILE    3   /**< A free tile in range and line, never a creature: its effect on the caster, there (effect_apply_at()). */
+#define SPELL_SHAPE_COUNT  4
 
 /* When the AI casts a spell */
 #define SPELL_AI_NEVER   0   /**< Never: the AI can't use it well. */

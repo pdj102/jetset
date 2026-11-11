@@ -26,6 +26,7 @@
 #include "game/components/pc.h"
 #include "game/components/stats.h"
 #include "game/effects/effects.h"
+#include "game/effects/effects_defs.h"
 #include "game/events.h"
 #include "game/gen/gen.h"
 #include "game/level/level.h"
@@ -1004,6 +1005,71 @@ static void test_statuses(void)
     a.target = rat;
     CHECK(act_melee(&a, ACT_CHECK) == ACT_SUCCESS);
     events();
+}
+
+/* Blink (a SPELL_TILE spell, effect_apply_at()) and detect traps (docs/effects_extensions.md R21, R22) */
+static void test_blink_detect(void)
+{
+    nge_entity_id_t pc;
+    nge_entity_id_t rat;
+    nge_entity_id_t near;
+    nge_entity_id_t far;
+    uint8_t mp;
+    uint8_t x;
+    uint8_t y;
+
+    events();
+    nge_entity_init();
+    for (y = 0; y < 10; y++) {
+        for (x = 0; x < 10; x++) {
+            NGE_MAP_TILE(x, y).tile_id = FLOOR;
+        }
+    }
+    NGE_MAP_TILE(2, 5).tile_id = WALL;
+    level_clear_request();
+    CHECK(level_depth == 0 && LEVEL_AREA == AREA);
+    pc = creature(CR_PLAYER, 2, 2);
+    spell_learn(pc, SP_BLINK);
+    rat = creature(CR_RAT, 4, 2);
+    events();
+    mp = mana_mp[pc];
+
+    /* Refused: its own tile, out of range, no line, a creature there; a check moves nothing */
+    CHECK(cast(pc, SP_BLINK, 2, 2, ACT_CHECK) == ACT_FAIL && last.reason == ACT_R_NO_TARGET);
+    CHECK(cast(pc, SP_BLINK, 9, 2, ACT_DO) == ACT_FAIL && last.reason == ACT_R_OUT_OF_RANGE);
+    CHECK(cast(pc, SP_BLINK, 2, 7, ACT_DO) == ACT_FAIL && last.reason == ACT_R_NO_LINE);
+    CHECK(cast(pc, SP_BLINK, 4, 2, ACT_DO) == ACT_FAIL && last.reason == ACT_R_BLOCKED_ENTITY && last.target == rat);
+    CHECK(cast(pc, SP_BLINK, 6, 2, ACT_CHECK) == ACT_SUCCESS && at(pc, 2, 2) && mana_mp[pc] == mp && events() == 0);
+    /* Cast: past the rat to the tile chosen, 2 MP, EV_CAST at the caster, then the move */
+    CHECK(cast(pc, SP_BLINK, 6, 2, ACT_DO) == ACT_SUCCESS && last.target == pc && at(pc, 6, 2) &&
+          mana_mp[pc] == mp - 2);
+    CHECK(events() >= 3 && is(0, pc, EV_CAST, pc) && seen_at(pc, EV_MOVED) >= 0 &&
+          seen[seen_at(pc, EV_MOVED)].p1 == 0 && seen[seen_at(pc, EV_MOVED)].p2 == 0);
+    /* Applied with no tile (not effect_apply_at()), or to a tile it can't enter: it fizzles */
+    effect_apply(EF_BLINK, 1, pc, NGE_ENTITY_INVALID);
+    CHECK(at(pc, 6, 2) && events() == 1 && is(0, pc, EV_FIZZLED, NGE_EVENT_NONE) && seen[0].p1 == OP_BLINK);
+    effect_apply_at(EF_BLINK, 1, pc, NGE_ENTITY_INVALID, 4, 2);   /* the rat's */
+    CHECK(at(pc, 6, 2) && events() == 1 && is(0, pc, EV_FIZZLED, NGE_EVENT_NONE));
+    effect_apply_at(EF_BLINK, 1, pc, NGE_ENTITY_INVALID, 2, 5);   /* the wall */
+    CHECK(at(pc, 6, 2) && events() == 1 && is(0, pc, EV_FIZZLED, NGE_EVENT_NONE));
+    effect_apply_at(EF_BLINK, 1, pc, NGE_ENTITY_INVALID, 7, 7);
+    CHECK(at(pc, 7, 7));
+    events();
+
+    /* Detect traps: hidden features within 1 tile a power (Chebyshev), found by the target */
+    near = gen_feature(FT_DART_TRAP, AREA);
+    feature_place(near, 5, 5);                                      /* 2 away */
+    far = gen_feature(FT_PIT, AREA);
+    feature_place(far, 7, 3);                                       /* 4 away */
+    events();
+    CHECK(FEATURE_IS_HIDDEN(near) && FEATURE_IS_HIDDEN(far));
+    effect_apply(EF_DETECT_TRAPS, 1, pc, NGE_ENTITY_INVALID);     /* none within 1 */
+    CHECK(FEATURE_IS_HIDDEN(near) && events() == 1 && is(0, pc, EV_FIZZLED, NGE_EVENT_NONE) && seen[0].p1 == OP_DETECT);
+    effect_apply(EF_DETECT_TRAPS, 2, pc, NGE_ENTITY_INVALID);
+    CHECK(!FEATURE_IS_HIDDEN(near) && FEATURE_IS_HIDDEN(far));
+    CHECK(events() == 2 && is(0, near, EV_FOUND, pc) && is(1, pc, EV_EFFECT_STARTED, NGE_EVENT_NONE));
+    effect_apply(EF_DETECT_TRAPS, 4, pc, NGE_ENTITY_INVALID);     /* found already: only the pit */
+    CHECK(!FEATURE_IS_HIDDEN(far) && events() == 2 && is(0, far, EV_FOUND, pc));
 }
 
 int main(void)
@@ -2604,6 +2670,7 @@ int main(void)
     test_container();
     test_traps();
     test_statuses();
+    test_blink_detect();
     test_search_disarm();
     test_trapdoor();
     test_learn();

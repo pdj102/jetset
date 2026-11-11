@@ -119,6 +119,8 @@ static const uint8_t anim_ef_fx[EF_COUNT] = {
     [EF_ENCHANT]     = BUFF,
     [EF_SUMMON]      = BANK_PURPLE | FX_GLOWS,
     [EF_LEVEL_TELEPORT] = BANK_PURPLE | FX_GLOWS,
+    [EF_DETECT_TRAPS] = BANK_BLUE | FX_GLOWS,
+    [EF_BLINK]       = BANK_PURPLE | FX_GLOWS,
 };
 
 /* On the current level, with a place: where a VFX can show it. A dying entity counts (its stand-in) */

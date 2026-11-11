@@ -4,7 +4,7 @@ The steps that build what [effects_extensions.md](effects_extensions.md) specifi
 spec says what and why; this file says in what order, what changes, and how each step is
 checked.
 
-Status: step 1 done 2026-11-11, its CSpect checks passed. Step 2 done 2026-11-11, its CSpect checks passed. Step 3 done 2026-11-11: CSpect check 1 passed; check 2 (blinded by a gold snake) not run. Step 4 done 2026-11-11, its CSpect checks passed. Step 5 done 2026-11-11, its CSpect check passed.
+Status: step 1 done 2026-11-11, its CSpect checks passed. Step 2 done 2026-11-11, its CSpect checks passed. Step 3 done 2026-11-11: CSpect check 1 passed; check 2 (blinded by a gold snake) not run. Step 4 done 2026-11-11, its CSpect checks passed. Step 5 done 2026-11-11, its CSpect check passed. Step 6 done 2026-11-11, its CSpect checks passed.
 
 ## 1. How the steps work
 
@@ -161,3 +161,4 @@ R21, R22, D8, D12. E5.2, E5.3.
 | 3 | 4,256 | Page 121 +1,854 (25 rows); 138 +264; 50 +150 and 139 +150 (the to-hit tables); 120 +95; 126 +27; 110 +19, 154 left; 104 -20 |
 | 4 | -27: 4,229 (lost turns, the waking call, 2 reasons, the Z key's counter) | Page 130 +368; 116 +246 (tags, help); `BANK_56` +240; 121 +218; 120 +80; 114 +64; 118 +59 |
 | 5 | 4,229 | Page 121 +108; 114 +57 (the G key); `BANK_56` +17; 126 +2; 109 6,508 with the two items |
+| 6 | -3: 4,226 (the blink tile) | Page 120 +636; `BANK_56` +254; 121 +52; 124 +19; 114 -21 (the bump-disarm gone, the Y key) |

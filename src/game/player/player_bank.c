@@ -453,7 +453,8 @@ static void cast_command(void)
         return;
     }
     spell_get(a.spell, &def);
-    if (def.shape != SPELL_SELF && !choose_tile(TARGET_CAST, def.range, &a)) {
+    if (def.shape != SPELL_SELF &&
+        !choose_tile((def.shape == SPELL_TILE) ? TARGET_CAST_TILE : TARGET_CAST, def.range, &a)) {
         return;
     }
     player_act(ACT_CAST, &a);
@@ -662,6 +663,10 @@ void player_command(nge_key_event_t ev) NGE_BANKED
     case 'J':
         /* Development: a delayed descent on the player, a level down in 15 turns (no turn used) */
         effect_apply(EF_DESCENT, 1, actor_player, NGE_ENTITY_INVALID);
+        break;
+    case 'Y':
+        /* Development: detect traps around the player, 5 tiles (no turn used) */
+        effect_apply(EF_DETECT_TRAPS, 5, actor_player, NGE_ENTITY_INVALID);
         break;
     case 'Z': {
         /* Development: the next of confused, frightened, paralysed and asleep on the player (no turn used) */

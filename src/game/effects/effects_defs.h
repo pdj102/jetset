@@ -41,18 +41,24 @@
 #define OP_TELEPORT    9   /* to random free floor on the level (level_free_floor()) */
 #define OP_SUMMON      12  /* amount random creatures for the depth (at most 3) around the target */
 #define OP_LEVEL_TELEPORT 13  /* go amount levels the way arg says (LT_*): the player by a request, a monster by level_send() */
+#define OP_DETECT      14  /* find what arg says (DETECT_*) within amount tiles of the target (Chebyshev) */
+#define OP_BLINK       15  /* to the tile given to effect_apply_at(), if it can still be entered */
 /* Pending: they do nothing until their mechanics are built (docs/effects.md, "Pending effects") */
 #define OP_LIGHT       6
 #define OP_IDENTIFY    7
 #define OP_MAP         8
 #define OP_ENCHANT     11
-#define OP_COUNT       14
+#define OP_COUNT       16
 
 /* OP_LEVEL_TELEPORT's arg: the way it goes */
 #define LT_UP      0
 #define LT_DOWN    1
 #define LT_RANDOM  2   /* up or down, 50/50; the other way if that one is closed */
 #define LT_COUNT   3
+
+/* OP_DETECT's arg: what it finds */
+#define DETECT_TRAPS  0   /* hidden features: found (feature_find()), as a search finds them */
+#define DETECT_COUNT  1
 
 typedef struct effect_op {
     uint8_t op;       /* OP_* */

@@ -1,7 +1,7 @@
 # Effects extensions: design specification
 
 Status: agreed (2026-11-11): D1 to D12 accepted as written. Covers to-do items E1 to E5 ([todo.md](todo.md)).
-Built in steps ([effects_extensions_plan.md](effects_extensions_plan.md)): steps 1 to 5 built 2026-11-11, their CSpect checks passed (step 3: the effect list; blindness covered by tests only).
+Built in steps ([effects_extensions_plan.md](effects_extensions_plan.md)): steps 1 to 6 built 2026-11-11, their CSpect checks passed (step 3: the effect list; blindness covered by tests only).
 
 This spec adds level teleport, the teleport and summon ops, the gaps in the effect table,
 four new statuses, and a to-hit attribute with the ops that go with it. It builds on
@@ -359,4 +359,26 @@ Differences from the design, by plan step.
 - Dev aid: G also drops a levitation potion.
 - Tests: in `test_act` (`test_traps()` and `test_trapdoor()`), where the trap tests are,
   not `test_feature`.
+
+### Step 6: detect traps and blink
+
+- What marks an effect as needing a tile is the spell's shape, `SPELL_TILE`, not a flag
+  on the effect. Only the cast path calls `effect_apply_at()`: no item's effect needs a
+  tile, so `act_aim()` is unchanged. An item that blinks would add it there.
+- The tile `effect_apply_at()` keeps is 3 bytes in common memory (the tile and a flag
+  that it was given), not page data: uninitialised data starts at 0, so no tile is the
+  default. `EF_BLINK` applied with `effect_apply()` fizzles.
+- `SPELL_TILE` validation in `act_cast()`: its own tile is `ACT_R_NO_TARGET`, out of
+  range and no line as for a bolt, a creature on the tile `ACT_R_BLOCKED_ENTITY` (its
+  name said), and anything else that blocks it (a boulder) `ACT_R_BLOCKED_ENTITY` or
+  `ACT_R_BLOCKED`. The effect is the caster's, and `EV_CAST` targets the caster.
+- Blink lands without `EV_STOOD_ON`, as teleport does: a known trap on the tile chosen
+  doesn't go off.
+- `SP_BLINK` is in the basic book, after Enfeeble. The targeting module has a purpose of
+  its own, `TARGET_CAST_TILE`: "Cast to where?".
+- `EF_DETECT_TRAPS` (instant, 1 tile per power) finds features in `LEVEL_AREA` that are
+  hidden and placed. Nothing in play uses it yet (D11); dev aid: Y applies it at power
+  5 to the player.
+- Tests: `test_act` (`test_blink_detect()`), `test_spell` (the book), `test_ui` (the
+  book screen's fifth row), `test_target` (the prompt).
 

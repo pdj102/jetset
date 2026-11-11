@@ -15,6 +15,7 @@
 #include "game/components/mana.h"
 #include "game/effects/effects.h"
 #include "game/events.h"
+#include "game/level/level.h"
 #include "game/spells/spells.h"
 
 uint8_t act_cast(act_t *a, uint8_t mode) NGE_BANKED
@@ -28,6 +29,8 @@ uint8_t act_cast(act_t *a, uint8_t mode) NGE_BANKED
     uint8_t range;
     uint8_t cost;
     uint8_t reason;
+    uint8_t tx = a->x;   /* the tile chosen, in locals (T-ZSDCC-1) */
+    uint8_t ty = a->y;
 
     /* 1. Context: the row's fields in locals (T-ZSDCC-1) */
     nge_util_assert(actor < NGE_ENTITY_MAX && NGE_ENTITY_IS_ALIVE(actor));
@@ -49,6 +52,19 @@ uint8_t act_cast(act_t *a, uint8_t mode) NGE_BANKED
     }
     if (shape == SPELL_SELF) {
         a->target = actor;
+    } else if (shape == SPELL_TILE) {
+        /* A free tile in range and line: a creature there is in the way; the effect is the caster's */
+        reason = act_line(a, range, ACT_LINE_DIRECT);
+        if (reason == ACT_R_NONE) {
+            return act_fail(a, ACT_R_BLOCKED_ENTITY);   /* a->target: the creature */
+        }
+        if (reason != ACT_R_NO_TARGET || (tx == NGE_LOCATION_X(actor) && ty == NGE_LOCATION_Y(actor))) {
+            return act_fail(a, reason);   /* out of range, no line, or its own tile */
+        }
+        if (!level_can_enter(actor, tx, ty, &a->target)) {
+            return act_fail(a, (a->target != NGE_ENTITY_INVALID) ? ACT_R_BLOCKED_ENTITY : ACT_R_BLOCKED);
+        }
+        a->target = actor;
     } else {
         /* The actor's own tile is ACT_R_NO_TARGET: a check there asks whether it can cast at all */
         reason = act_line(a, range, shape == SPELL_DIRECT ? ACT_LINE_DIRECT : ACT_LINE_BOLT);
@@ -67,6 +83,10 @@ uint8_t act_cast(act_t *a, uint8_t mode) NGE_BANKED
     if (cost != 0) {
         mana_spend(actor, cost);
     }
-    effect_apply(ef, power, a->target, actor);
+    if (shape == SPELL_TILE) {
+        effect_apply_at(ef, power, actor, actor, tx, ty);
+    } else {
+        effect_apply(ef, power, a->target, actor);
+    }
     return act_succeed(a);
 }

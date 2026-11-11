@@ -44,7 +44,8 @@
 #define TARGET_FIRE           1   /**< Fire at a tile (ACT_FIRE). */
 #define TARGET_AIM            2   /**< Aim an item at a tile (ACT_AIM). */
 #define TARGET_CAST           3   /**< Cast a spell at a tile (ACT_CAST). */
-#define TARGET_PURPOSE_COUNT  4
+#define TARGET_CAST_TILE      4   /**< Cast a spell that takes the caster to a tile (SPELL_TILE). */
+#define TARGET_PURPOSE_COUNT  5
 
 /* target_key()'s answers */
 #define TARGET_STEP_MOVING     0   /**< Still targeting: the cursor moved, or a choice was refused. */

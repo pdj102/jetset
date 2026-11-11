@@ -275,6 +275,10 @@ int main(void)
     t.purpose = TARGET_CAST;
     script = cancel;
     CHECK(target_choose(&t) == 0 && !out_of_keys && said(1, "Cast at what?"));
+    context(&t, 30, 20, 6);
+    t.purpose = TARGET_CAST_TILE;                           /* blink: where to, not at what */
+    script = cancel;
+    CHECK(target_choose(&t) == 0 && !out_of_keys && said(1, "Cast to where?"));
     script = NULL;
 
     /* ---- asserts: a start off the map, an unknown purpose ---- */

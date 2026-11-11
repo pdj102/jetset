@@ -149,27 +149,29 @@
 #define EF_ENCHANT            66   /**< Instant, pending. */
 #define EF_SUMMON             67   /**< Instant: 1 random creature for the depth per power (at most 3) around the target. */
 #define EF_LEVEL_TELEPORT     68   /**< Instant: teleport a level up or down, at random, per power. */
-#define EF_WORN_HP            69   /**< Worn: +1 per power maximum hit points. */
-#define EF_WORN_AC            70   /**< Worn: AC +1 per power. */
-#define EF_WORN_SPEED         71   /**< Worn: speed -1 per power (lower is faster). */
-#define EF_WORN_STR           72   /**< Worn: Str +1 per power. */
-#define EF_WORN_DEX           73   /**< Worn: Dex +1 per power. */
-#define EF_WORN_CON           74   /**< Worn: Con +1 per power. */
-#define EF_WORN_INT           75   /**< Worn: Int +1 per power. */
-#define EF_WORN_WIS           76   /**< Worn: Wis +1 per power. */
-#define EF_WORN_CHA           77   /**< Worn: Cha +1 per power. */
-#define EF_WORN_RES_FIRE      78   /**< Worn: resist fire. */
-#define EF_WORN_RES_COLD      79   /**< Worn: resist cold. */
-#define EF_WORN_RES_POISON    80   /**< Worn: resist poison. */
-#define EF_WORN_RES_ACID      81   /**< Worn: resist acid. */
-#define EF_WORN_RES_MAGIC     82   /**< Worn: resist magic. */
-#define EF_WORN_IMMUNE_FIRE   83   /**< Worn: immune to fire. */
-#define EF_WORN_IMMUNE_COLD   84   /**< Worn: immune to cold. */
-#define EF_WORN_IMMUNE_POISON 85   /**< Worn: immune to poison. */
-#define EF_WORN_FLY           86   /**< Worn: flying. */
-#define EF_WORN_REGEN         87   /**< Worn, pending: a worn effect has no tick. */
-#define EF_WORN_LIGHT         88   /**< Worn, pending: no light radius yet; power is the radius. */
-#define EF_COUNT              89
+#define EF_DETECT_TRAPS       69   /**< Instant: finds the hidden features within 1 tile per power. */
+#define EF_BLINK              70   /**< Instant: to the tile given to effect_apply_at(). */
+#define EF_WORN_HP            71   /**< Worn: +1 per power maximum hit points. */
+#define EF_WORN_AC            72   /**< Worn: AC +1 per power. */
+#define EF_WORN_SPEED         73   /**< Worn: speed -1 per power (lower is faster). */
+#define EF_WORN_STR           74   /**< Worn: Str +1 per power. */
+#define EF_WORN_DEX           75   /**< Worn: Dex +1 per power. */
+#define EF_WORN_CON           76   /**< Worn: Con +1 per power. */
+#define EF_WORN_INT           77   /**< Worn: Int +1 per power. */
+#define EF_WORN_WIS           78   /**< Worn: Wis +1 per power. */
+#define EF_WORN_CHA           79   /**< Worn: Cha +1 per power. */
+#define EF_WORN_RES_FIRE      80   /**< Worn: resist fire. */
+#define EF_WORN_RES_COLD      81   /**< Worn: resist cold. */
+#define EF_WORN_RES_POISON    82   /**< Worn: resist poison. */
+#define EF_WORN_RES_ACID      83   /**< Worn: resist acid. */
+#define EF_WORN_RES_MAGIC     84   /**< Worn: resist magic. */
+#define EF_WORN_IMMUNE_FIRE   85   /**< Worn: immune to fire. */
+#define EF_WORN_IMMUNE_COLD   86   /**< Worn: immune to cold. */
+#define EF_WORN_IMMUNE_POISON 87   /**< Worn: immune to poison. */
+#define EF_WORN_FLY           88   /**< Worn: flying. */
+#define EF_WORN_REGEN         89   /**< Worn, pending: a worn effect has no tick. */
+#define EF_WORN_LIGHT         90   /**< Worn, pending: no light radius yet; power is the radius. */
+#define EF_COUNT              91
 
 /* Why an effect ended: EV_EFFECT_ENDED's p2 */
 #define EFFECT_END_EXPIRED  0   /**< Its time ran out, or effect_end(). */
@@ -203,6 +205,15 @@
  *         at 0 hp, or no entity is free for an active effect.
  */
 uint8_t effect_apply(uint8_t ef, int8_t power, nge_entity_id_t target, nge_entity_id_t source) NGE_BANKED;
+
+/**
+ * @brief effect_apply(), for an effect that needs a tile (EF_BLINK, the
+ *        caster aiming where to go): (x, y) is kept for its op while it
+ *        runs, then forgotten. An op that needs a tile and was given none
+ *        fizzles.
+ */
+uint8_t effect_apply_at(uint8_t ef, int8_t power, nge_entity_id_t target, nge_entity_id_t source, uint8_t x,
+                        uint8_t y) NGE_BANKED;
 
 /**
  * @brief End an active effect: destroy it, run its on_end op, recompute its

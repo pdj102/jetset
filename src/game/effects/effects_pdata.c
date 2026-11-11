@@ -549,6 +549,14 @@ const effect_def_t effect_defs[EF_COUNT] = {
         .duration = EFFECT_INSTANT,
         .on_start = { OP_LEVEL_TELEPORT, LT_RANDOM, 1 },   /* the arrival or the fizzle says what happened */
     },
+    [EF_DETECT_TRAPS] = {
+        .duration = EFFECT_INSTANT,
+        .on_start = { OP_DETECT, DETECT_TRAPS, 1 },   /* each find, or the fizzle, says what happened */
+    },
+    [EF_BLINK] = {
+        .duration = EFFECT_INSTANT,
+        .on_start = { OP_BLINK, 0, 1 },
+    },
     [EF_WORN_HP] = {
         .duration = EFFECT_WORN,
         .mod = { { ATTR_HP_MAX, 1 } },

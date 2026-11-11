@@ -26,6 +26,7 @@ const spell_def_t spell_defs[SPELL_COUNT] = {
     [SP_HASTE]       = { "Haste",       4, SPELL_SELF,   EF_HASTE,      3,  0, SPELL_AI_NEVER },
     [SP_POWER_BOLT]  = { "Power Bolt",  5, SPELL_BOLT,   EF_BOLT_MAGIC, 16, 8, SPELL_AI_TARGET },
     [SP_RENEWAL]     = { "Renewal",     5, SPELL_SELF,   EF_RENEW,      2,  0, SPELL_AI_HURT },
+    [SP_BLINK]       = { "Blink",       2, SPELL_TILE,   EF_BLINK,      1,  6, SPELL_AI_NEVER },
 };
 
 /* MP by spell level (docs/spells.md, 4.2): rising with every level above 0, an ability's */
@@ -50,7 +51,7 @@ const uint8_t spell_slots_table[PC_CLASS_COUNT][PC_LEVEL_MAX][SPELL_LEVEL_MAX] =
 
 /* Each book's spells (docs/spells.md, D28): basic levels 1 and 2, adept 3 and 4, master 5 (R43) */
 const uint8_t spell_books[SPELL_BOOK_COUNT][SPELL_BOOK_MAX] = {
-    [SPELL_BOOK_BASIC]  = { SP_MAGIC_BOLT, SP_CURE_WOUNDS, SP_HOLD, SP_ENFEEBLE },
+    [SPELL_BOOK_BASIC]  = { SP_MAGIC_BOLT, SP_CURE_WOUNDS, SP_HOLD, SP_ENFEEBLE, SP_BLINK },
     [SPELL_BOOK_ADEPT]  = { SP_FIRE_BOLT, SP_FROST_BOLT, SP_STONE_SKIN, SP_HASTE },
     [SPELL_BOOK_MASTER] = { SP_POWER_BOLT, SP_RENEWAL },
 };

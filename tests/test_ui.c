@@ -1497,7 +1497,8 @@ int main(void)
         CHECK(starts(OVER_ROW(3), " a) Magic Bolt") && INK(3, 4) == L2_CYAN);
         CHECK(starts(OVER_ROW(4), " b) Cure Wounds") && INK(4, 4) == L2_WHITE);
         CHECK(starts(OVER_ROW(5), " c) Hold") && INK(5, 4) == L2_RED && starts(seen_cols(1, 5, 20, 28), "    2   2"));
-        CHECK(starts(OVER_ROW(6), " d) Enfeeble") && INK(6, 4) == L2_RED && strcmp(OVER_ROW(7), BLANK) == 0);
+        CHECK(starts(OVER_ROW(6), " d) Enfeeble") && INK(6, 4) == L2_RED);
+        CHECK(starts(OVER_ROW(7), " e) Blink") && INK(7, 4) == L2_RED && strcmp(OVER_ROW(8), BLANK) == 0);
         CHECK(starts(OVER_ROW(25), " cyan: known  red: can't learn yet") && INK(25, 1) == L2_CYAN && INK(25, 14) == L2_RED);
         CHECK(starts(OVER_ROW(26), " Free slots  L1:1 L2:0 L3:0 L4:0 L5:0"));
         CHECK(starts(STATUS(), "That spell is beyond you for now."));
