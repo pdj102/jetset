@@ -113,6 +113,9 @@ and ammo put on. The PC screen shows the ranged attack (ranged_ai_components.md 
 
 - **Ammo that lands or breaks** (D1), and **seeking ammo** (D3): options for later, with no
   item that needs them yet.
+- **Critical hit damage** A natural 20 always hits but does normal damage. Double the damage. 
+- **Sleeping  target bonus** Attacks on a sleeping target receive a bonus
+- **Unseen target penalty** Attacks on invisible targets receive a penalty (easier to implement as AC+)
 
 ## 7. Tests
 
