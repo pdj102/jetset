@@ -38,6 +38,7 @@
 #define OP_HEAL        4   /* heal amount, through health_heal() */
 #define OP_MANA        5   /* restore amount MP, through mana_restore(): nothing without mana */
 #define OP_UNCURSE     10  /* lift the curse of everything the target has equipped (ITEM_UNCURSED) */
+#define OP_LEVEL_TELEPORT 13  /* go amount levels the way arg says (LT_*): the player by a request, a monster by level_send() */
 /* Pending: they do nothing until their mechanics are built (docs/effects.md, "Pending effects") */
 #define OP_LIGHT       6
 #define OP_IDENTIFY    7
@@ -45,7 +46,13 @@
 #define OP_TELEPORT    9
 #define OP_ENCHANT     11
 #define OP_SUMMON      12
-#define OP_COUNT       13
+#define OP_COUNT       14
+
+/* OP_LEVEL_TELEPORT's arg: the way it goes */
+#define LT_UP      0
+#define LT_DOWN    1
+#define LT_RANDOM  2   /* up or down, 50/50; the other way if that one is closed */
+#define LT_COUNT   3
 
 typedef struct effect_op {
     uint8_t op;       /* OP_* */

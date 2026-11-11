@@ -24,6 +24,7 @@
 #include "game/components/health.h"
 #include "game/components/stats.h"
 #include "game/dev.h"
+#include "game/effects/effects.h"
 #include "game/events.h"
 #include "game/components/inventory.h"
 #include "game/components/item.h"
@@ -362,13 +363,15 @@ static void close_command(void)
 #if GAME_DEV_KIT
 /*
  * Development (the T key, with level_dev_features()): a dart trap, a pit, a
- * fire rune and a web on the free tiles around the player, found, to be
- * stepped on, and a trapdoor on the next free tile, hidden
- * (docs/features.md, step 5)
+ * fire rune, a web, a teleport rune, a level teleport rune and a summoning
+ * rune on the free tiles around the player, found, to be stepped on, and a
+ * trapdoor on the next free tile, hidden (docs/features.md, step 5;
+ * docs/effects_extensions_plan.md, steps 1 and 2)
  */
 static void dev_traps(void)
 {
-    static const uint8_t traps[] = { FT_DART_TRAP, FT_PIT, FT_FIRE_RUNE, FT_WEB, FT_TRAPDOOR };
+    static const uint8_t traps[] = { FT_DART_TRAP, FT_PIT, FT_FIRE_RUNE, FT_WEB, FT_TELEPORT_RUNE, FT_LEVEL_RUNE,
+                                     FT_SUMMON_RUNE, FT_TRAPDOOR };
     nge_entity_id_t id;
     uint8_t k = 0;
     uint8_t x;
@@ -655,6 +658,15 @@ void player_command(nge_key_event_t ev) NGE_BANKED
     case 'T':
         level_dev_features(actor_player);   /* development: features to check, near the player (no turn used) */
         dev_traps();
+        break;
+    case 'G':
+        /* Development: a teleport level parchment at the player's feet (no turn used) */
+        nge_location_set(gen_item(IT_SP_LEVEL_TELEPORT, LEVEL_AREA), NGE_LOCATION_X(actor_player),
+                         NGE_LOCATION_Y(actor_player));
+        break;
+    case 'J':
+        /* Development: a delayed descent on the player, a level down in 15 turns (no turn used) */
+        effect_apply(EF_DESCENT, 1, actor_player, NGE_ENTITY_INVALID);
         break;
     case 'M':
         /* Development: spend 1 MP, or restore them all at 0, to see the stats follow (no turn used) */

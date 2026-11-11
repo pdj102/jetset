@@ -415,6 +415,11 @@ void messages_on_event(const nge_event_t *e) NGE_BANKED
             say_effect(p1, EFFECT_TEXT_END);
         }
         break;
+    case EV_FIZZLED:
+        if (target == actor_player) {
+            screen_message("Nothing happens.");
+        }
+        break;
     case EV_ARRIVED:
         say_arrived(p1, p2);
         break;

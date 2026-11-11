@@ -34,6 +34,7 @@
 #include "game/game.h"
 #include "game/effects/effects.h"
 #include "game/gen/gen.h"
+#include "game/effects/effects_defs.h"
 #include "game/events.h"
 #include "game/level/level.h"
 #include "game/messages/messages.h"
@@ -1217,6 +1218,14 @@ int main(void)
     nge_event_post(door, EV_LEFT_LEVEL, NGE_EVENT_NONE, 1, 0);       /* anything named: the door will do */
     nge_event_process(messages_on_event);
     CHECK(said("The door goes down and away."));
+    /* An effect's op that did nothing: said only to the player (docs/effects_extensions.md D2) */
+    screen_message("-");
+    nge_event_post(door, EV_FIZZLED, NGE_EVENT_NONE, OP_LEVEL_TELEPORT, 0);
+    nge_event_process(messages_on_event);
+    CHECK(said("-"));
+    nge_event_post(actor_player, EV_FIZZLED, NGE_EVENT_NONE, OP_LEVEL_TELEPORT, 0);
+    nge_event_process(messages_on_event);
+    CHECK(said("Nothing happens."));
 
     /* ---- the quest item: found once, needed to leave, the win (docs/winning.md) ---- */
     quest = gen_item(IT_QUEST, actor_player);

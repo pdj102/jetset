@@ -207,3 +207,13 @@ void test_init(void)
     /* Unexpected assert messages appear in the test output */
     nge_util_set_debug_stream(nge_stream_alloc(stdout_put, NULL, NULL));
 }
+
+/* ---- Game stand-ins ---- */
+
+/*
+ * The main screen's map view (game/ui/screen_main.h), which the level
+ * module reads: weak, so a test's own definition, or the main screen's in
+ * the tests that link it, wins. The generators' tests link the level
+ * module (the effects send creatures to other levels) without either
+ */
+__attribute__((weak)) const nge_rect_t screen_map_view = { .x1 = 0, .x2 = 27, .y1 = 0, .y2 = 25 };

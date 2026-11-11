@@ -1,7 +1,7 @@
 # Effects extensions: design specification
 
 Status: agreed (2026-11-11): D1 to D12 accepted as written. Covers to-do items E1 to E5 ([todo.md](todo.md)).
-Built in steps: [effects_extensions_plan.md](effects_extensions_plan.md).
+Built in steps ([effects_extensions_plan.md](effects_extensions_plan.md)): step 1 built 2026-11-11, CSpect checks passed.
 
 This spec adds level teleport, the teleport and summon ops, the gaps in the effect table,
 four new statuses, and a to-hit attribute with the ops that go with it. It builds on
@@ -255,4 +255,24 @@ against the 8 allowed.
 6. Levitate over a known trap: it doesn't go off.
 7. Blink to a tile in sight.
 8. The main screen shows two conditions at once.
+
+## 7. As built
+
+Differences from the design, by plan step.
+
+### Step 1: level teleport
+
+- The parchment is the "stairway parchment": "teleport level parchment" is longer than an
+  item name's 19 characters. It is red, a bank no other parchment uses, depth 3 to the
+  bottom, rarity 3. The rune is `FT_LEVEL_RUNE`, "level teleport rune", DC 15, depth 4 to
+  the bottom, rarity 0 like the other runes.
+- A monster not owned by the level's area directly (one held by another entity) fizzles,
+  as `level_send()` can't send it alone. An amount below 1 fizzles too.
+- Persistent means `NGE_ENTITY_PERSISTENT`: the boss is immune, but a monster carrying
+  the quest item isn't. It leaves, and the item, which is persistent, drops where it was
+  (`level_send()`).
+- Dev aids: the T key's traps include the teleport, level teleport and summoning runes;
+  G puts a stairway parchment at the player's feet, and J starts a delayed descent.
+- Tests: the generators' tests now link the level module, as the effects call it. The
+  test support has a weak `screen_map_view` for the tests that don't define one.
 

@@ -201,7 +201,8 @@
 #define IT_BOOK_BASIC        160   /* spell books (docs/spells.md 10.5.3): after IT_QUEST, so no number moves */
 #define IT_BOOK_ADEPT        161
 #define IT_BOOK_MASTER       162
-#define IT_COUNT             163
+#define IT_SP_LEVEL_TELEPORT 163   /* docs/effects_extensions.md: added at the end, so no number moves */
+#define IT_COUNT             164
 
 /* Features (CLASS_FEATURE) */
 #define FT_DOOR         0
@@ -226,7 +227,8 @@
 #define FT_TELEPORT_RUNE 19
 #define FT_SUMMON_RUNE  20
 #define FT_TRAPDOOR     21
-#define FT_COUNT        22
+#define FT_LEVEL_RUNE   22
+#define FT_COUNT        23
 
 /* Item subclasses, in each item's kind record */
 #define ITEM_POTION     0

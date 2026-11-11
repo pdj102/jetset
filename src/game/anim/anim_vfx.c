@@ -67,6 +67,8 @@ static const uint8_t anim_ef_fx[EF_COUNT] = {
     [EF_BLIND]       = CURSE,
     [EF_SLEEP]       = CURSE,
     [EF_HOLD]        = CURSE,
+    [EF_DESCENT]     = BANK_PURPLE | FX_GLOWS,
+    [EF_RECALL]      = BANK_PURPLE | FX_GLOWS,
     [EF_HEALING]     = HEAL,
     [EF_CURE]        = HEAL,
     [EF_CURE_ALL]    = HEAL,
@@ -89,6 +91,7 @@ static const uint8_t anim_ef_fx[EF_COUNT] = {
     [EF_UNCURSE]     = BUFF,
     [EF_ENCHANT]     = BUFF,
     [EF_SUMMON]      = BANK_PURPLE | FX_GLOWS,
+    [EF_LEVEL_TELEPORT] = BANK_PURPLE | FX_GLOWS,
 };
 
 /* On the current level, with a place: where a VFX can show it. A dying entity counts (its stand-in) */

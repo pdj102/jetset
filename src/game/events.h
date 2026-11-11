@@ -32,6 +32,7 @@
  * | EV_FOUND          | the hidden feature  | finder, or NGE_EVENT_NONE if it went off | - |
  * | EV_DISARMED       | the trap (dying)    | disarmer | -        |
  * | EV_SEARCHED       | the searcher        | -        | p1: how many found |
+ * | EV_FIZZLED        | the entity affected | -        | p1: the op that did nothing (OP_*, game/effects/effects_defs.h) |
  * | EV_EFFECT_ENDED   | the entity affected | the effect (dying) | p1: EF_*, p2: EFFECT_END_* |
  * | EV_ATTRS_CHANGED  | the entity          | -        | -        |
  * | EV_OPENED         | the feature         | opener   | -        |
@@ -85,5 +86,6 @@
 #define EV_FOUND          (NGE_EVENT_USER + 33)    /**< A hidden feature was found by the source, or went off (NGE_EVENT_NONE). */
 #define EV_DISARMED       (NGE_EVENT_USER + 34)    /**< Disarmed by the source (act_disarm()): destroyed. */
 #define EV_SEARCHED       (NGE_EVENT_USER + 35)    /**< Searched around itself, finding p1 hidden features (act_search()). */
+#define EV_FIZZLED        (NGE_EVENT_USER + 36)    /**< An effect's op p1 could do nothing to the target (game/effects). */
 
 #endif

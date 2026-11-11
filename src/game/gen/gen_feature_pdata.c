@@ -261,6 +261,19 @@ const gen_feature_kind_t gen_features[FT_COUNT] = {
         .hooks = { [GEN_HOOK_HIT] = { EF_SUMMON, 1 } },
         .where = { .depth = 5, .depth_max = 10, .rarity = 0 },
     },
+    [FT_LEVEL_RUNE] = {
+        .name = "level teleport rune",
+        .info = {
+            .look = { { LOOK_TRAP, LOOK_TRAP_BANK }, { LOOK_TRAP, LOOK_TRAP_BANK } },
+            .can = FCAN_TRAP | FCAN_DISARM,
+            .block_shut = NGE_BLOCK_NONE,
+        },
+        .state = FEAT_HIDDEN,
+        .verb = FVERB_STEP,
+        .dc = 15,
+        .hooks = { [GEN_HOOK_HIT] = { EF_LEVEL_TELEPORT, 1 } },
+        .where = { .depth = 4, .depth_max = 10, .rarity = 0 },
+    },
     /* A trap that leads down (docs/features.md 4.8, step 7): what it fires at falls to the next depth */
     [FT_TRAPDOOR] = {
         .name = "trapdoor",

@@ -19,7 +19,10 @@
  * with an iron lock (game/player); T puts features to check
  * near the player: a locked chest holding two items with its key at the
  * player's feet, and a cracked statue holding one, and traps on the free
- * tiles around the player, all found but one (level_dev_features(), game/player);
+ * tiles around the player, all found but one, the runes among them
+ * (level_dev_features(), game/player); G puts a teleport level parchment
+ * at the player's feet, and J starts a delayed descent on the player
+ * (game/player);
  * V pans the view a pixel
  * at a time while a movement key is held, to check the pixel camera; M
  * spends 1 of the player's MP, or restores them all at 0, to check the

@@ -61,8 +61,9 @@ LEVEL_GAME_SRCS := $(addprefix $(GAMEDIR)/,level/level.c level/level_bank.c leve
 DATADIR := ../src/data
 LEVEL_ONLY_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(LEVEL_GAME_SRCS)) \
                    $(BUILD)/data/tile_rules_data.o
-GEN_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(GEN_GAME_SRCS))
-LEVEL_GAME_OBJS := $(LEVEL_ONLY_OBJS) $(GEN_GAME_OBJS)
+# The effects send creatures to other levels (a level teleport): the generators' tests link the level module too
+GEN_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(GEN_GAME_SRCS)) $(LEVEL_ONLY_OBJS)
+LEVEL_GAME_OBJS := $(GEN_GAME_OBJS)
 # The stairs actions send entities between levels: the actions need the level module
 ACT_GAME_SRCS := $(wildcard $(GAMEDIR)/actions/*.c) $(addprefix $(GAMEDIR)/ai/,ai_act.c ai_sense.c ai_think.c) \
                  $(GAMEDIR)/components/feature_event.c

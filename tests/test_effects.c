@@ -19,6 +19,7 @@
 #include "game/effects/effects_internal.h"
 #include "game/events.h"
 #include "game/gen/gen.h"
+#include "game/level/level.h"
 #include "game/timers.h"
 
 #define AREA  NGE_OWNER_AREA(0)
@@ -79,6 +80,18 @@ static void fire(int n)
     int steps = 0;
 
     while (fired < want && steps++ < 1000) {
+        nge_timer_advance(dispatch);
+    }
+}
+
+static nge_entity_id_t effect_on(nge_entity_id_t target, uint8_t ef);
+
+/* Move time on until target has no effect of kind ef, or 1000 steps: other effects may fire meanwhile */
+static void run_out(nge_entity_id_t target, uint8_t ef)
+{
+    int steps = 0;
+
+    while (effect_on(target, ef) != NGE_ENTITY_INVALID && steps++ < 1000) {
         nge_timer_advance(dispatch);
     }
 }
@@ -752,6 +765,100 @@ int main(void)
     e = effect_on(g, EF_REGEN);
     effect_apply(EF_REGEN, 2, g, NGE_ENTITY_INVALID);
     CHECK(count_effects(g, EF_REGEN) == 2 && EFFECT_POWER_OF(e) == 1);
+
+    /* ---- level teleport (docs/effects_extensions.md 3.2) ---- */
+    /* The player at depth 1: never up (R3), so always a request for depth 2, anywhere */
+    reset();
+    level_clear_request();
+    level_depth = 1;
+    player = gen_creature(CR_PLAYER, LEVEL_AREA);
+    ok = 1;
+    for (k = 0; k < 20 && ok; k++) {
+        uint8_t depth;
+        uint8_t arrival;
+
+        ok = effect_apply(EF_LEVEL_TELEPORT, 1, player, NGE_ENTITY_INVALID) == 1 && level_pending();
+        events();
+        if (ok) {
+            level_take_request(&depth, &arrival);
+            ok = depth == 2 && arrival == LEVEL_ARRIVE_ANY;
+        }
+    }
+    CHECK(ok);
+    /* At the bottom: always up */
+    level_depth = LEVEL_DEPTH_BOTTOM;
+    nge_owner_set(player, LEVEL_AREA);   /* the player goes with the level */
+    ok = 1;
+    for (k = 0; k < 20 && ok; k++) {
+        uint8_t depth;
+        uint8_t arrival;
+
+        ok = effect_apply(EF_LEVEL_TELEPORT, 1, player, NGE_ENTITY_INVALID) == 1 && level_pending();
+        events();
+        if (ok) {
+            level_take_request(&depth, &arrival);
+            ok = depth == LEVEL_DEPTH_BOTTOM - 1;
+        }
+    }
+    CHECK(ok);
+    /* Delayed descent at the bottom: it fires once, after 15 turns, and fizzles */
+    events();
+    CHECK(effect_apply(EF_DESCENT, 1, player, NGE_ENTITY_INVALID) == 1);
+    e = effect_on(player, EF_DESCENT);
+    CHECK(e != NGE_ENTITY_INVALID && nge_timer_period[e] == 150 && nge_timer_cycles[e] == 1);
+    run_out(player, EF_DESCENT);
+    CHECK(!level_pending() && effect_on(player, EF_DESCENT) == NGE_ENTITY_INVALID);
+    events();
+    r = find_event(0, EV_FIZZLED);
+    CHECK(r >= 0 && is(r, player, EV_FIZZLED, NGE_EVENT_NONE, OP_LEVEL_TELEPORT) &&
+          find_event(r, EV_EFFECT_ENDED) > r);   /* the op, then the ending */
+    /* Recall at power 10 from the middle: depth 1, never 0 (R6) */
+    level_depth = 5;
+    nge_owner_set(player, LEVEL_AREA);
+    effect_apply(EF_RECALL, 10, player, NGE_ENTITY_INVALID);
+    run_out(player, EF_RECALL);
+    {
+        uint8_t depth = 0;
+        uint8_t arrival = 0;
+
+        CHECK(level_pending());
+        level_take_request(&depth, &arrival);
+        CHECK(depth == 1 && arrival == LEVEL_ARRIVE_ANY);
+    }
+    /* Delayed descent at power 2 from the middle: two down */
+    effect_apply(EF_DESCENT, 2, player, NGE_ENTITY_INVALID);
+    run_out(player, EF_DESCENT);
+    {
+        uint8_t depth = 0;
+        uint8_t arrival = 0;
+
+        CHECK(level_pending());
+        level_take_request(&depth, &arrival);
+        CHECK(depth == 7);
+    }
+    /* A monster leaves the level, up or down one (R4) */
+    g = gen_creature(CR_GOBLIN, LEVEL_AREA);
+    events();
+    CHECK(effect_apply(EF_LEVEL_TELEPORT, 1, g, NGE_ENTITY_INVALID) == 1 && !NGE_ENTITY_IS_ALIVE(g) && !level_pending());
+    events();
+    r = find_event(0, EV_LEFT_LEVEL);
+    CHECK(r >= 0 && seen[r].target == g && (seen[r].p1 == 4 || seen[r].p1 == 6) && find_event(0, EV_FIZZLED) < 0);
+    /* A persistent one is immune: it fizzles and stays */
+    g = gen_creature(CR_GOBLIN, LEVEL_AREA);
+    nge_entity_set_flags(g, NGE_ENTITY_PERSISTENT);
+    events();
+    CHECK(effect_apply(EF_LEVEL_TELEPORT, 1, g, NGE_ENTITY_INVALID) == 1 && NGE_ENTITY_IS_ALIVE(g) && level_holds(g));
+    events();
+    r = find_event(0, EV_FIZZLED);
+    CHECK(r >= 0 && is(r, g, EV_FIZZLED, NGE_EVENT_NONE, OP_LEVEL_TELEPORT) && find_event(0, EV_LEFT_LEVEL) < 0);
+    /* Parked with a delayed descent: it ends, and its on_end does nothing off the level (D3) */
+    effect_apply(EF_DESCENT, 1, g, NGE_ENTITY_INVALID);
+    events();
+    level_park(g, NGE_OWNER_AREA(6));
+    CHECK(effect_on(g, EF_DESCENT) == NGE_ENTITY_INVALID && NGE_ENTITY_IS_ALIVE(g) && !level_pending());
+    events();
+    CHECK(find_event(0, EV_FIZZLED) < 0 && find_event(0, EV_LEFT_LEVEL) < 0 && find_event(0, EV_EFFECT_ENDED) >= 0);
+    level_depth = 0;   /* AREA again, for what follows */
 
     /* ---- asserts ---- */
     reset();

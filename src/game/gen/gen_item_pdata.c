@@ -853,6 +853,13 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .hook = { GEN_HOOK_USE, EF_UNCURSE, 1 },
         .where = { .depth = 2, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 3 },
     },
+    [IT_SP_LEVEL_TELEPORT] = {
+        .name = "stairway parchment",
+        .render = ITEM_RENDER(SPRITE_PARCHMENT, BANK_RED),
+        .subclass = ITEM_PARCHMENT,
+        .hook = { GEN_HOOK_USE, EF_LEVEL_TELEPORT, 1 },
+        .where = { .depth = 3, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 3 },
+    },
     [IT_SP_ENCHANT] = {
         .name = "enchant parchment",
         .render = ITEM_RENDER(SPRITE_PARCHMENT, BANK_GREEN),

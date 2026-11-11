@@ -12,7 +12,8 @@
  * Banked calls nest deepest from an AI's hit that starts a timed effect:
  * nge_timer_advance(), ai_on_turn(), act_melee(), effect_apply(), then
  * nge_effect_create() and its calls, or effects_recompute() and
- * gen_hook_of(): 6 of the 8 allowed (T-STACK-2).
+ * gen_hook_of(): 6 of the 8 allowed (T-STACK-2). A level teleport on a hit
+ * calls level_send() from the same place: 5.
  */
 #ifdef __SDCC
 #pragma codeseg PAGE_120
@@ -30,8 +31,10 @@
 #include "game/components/health.h"
 #include "game/components/item.h"
 #include "game/components/mana.h"
+#include "game/components/pc.h"
 #include "game/components/stats.h"
 #include "game/events.h"
+#include "game/level/level.h"
 #include "game/timers.h"
 
 typedef char effects_flags_check[!(EFFECT_STACK & EFFECT_INNATE) ? 1 : -1];
@@ -91,6 +94,50 @@ static void uncurse(nge_entity_id_t id)
     }
 }
 
+/* Op what could do nothing to target: the messages module says so (D2) */
+static void fizzle(nge_entity_id_t target, uint8_t what)
+{
+    nge_event_post(target, EV_FIZZLED, NGE_EVENT_NONE, what, 0);
+}
+
+/*
+ * Up or down (LT_*) by levels, clamped to 1 to LEVEL_DEPTH_BOTTOM: never
+ * up out of the dungeon (level_transitions.md R2). The player asks for the
+ * change (G-FLOW-1: an op may run in a handler or a timer); a monster
+ * leaves now, unless it is persistent. Off the level (an effect ending as
+ * its target is parked), nothing (D3)
+ */
+static void level_teleport(nge_entity_id_t target, uint8_t way, int8_t levels)
+{
+    int16_t depth = level_depth;
+
+    nge_util_assert(way < LT_COUNT);
+    if (!level_holds(target)) {
+        return;
+    }
+    if (way == LT_RANDOM) {
+        way = (rand() & 1) ? LT_UP : LT_DOWN;
+        if ((way == LT_UP && depth <= 1) || (way == LT_DOWN && depth >= LEVEL_DEPTH_BOTTOM)) {
+            way = (way == LT_UP) ? LT_DOWN : LT_UP;   /* that way is closed: the other */
+        }
+    }
+    depth += (way == LT_UP) ? -(int16_t)levels : (int16_t)levels;
+    if (depth < 1) {
+        depth = 1;
+    } else if (depth > LEVEL_DEPTH_BOTTOM) {
+        depth = LEVEL_DEPTH_BOTTOM;
+    }
+    if (depth == level_depth || levels <= 0) {
+        fizzle(target, OP_LEVEL_TELEPORT);
+    } else if (PC_IS(target)) {
+        level_request((uint8_t)depth, LEVEL_ARRIVE_ANY);
+    } else if ((nge_entity_flags[target] & NGE_ENTITY_PERSISTENT) || !NGE_OWNER_IS_AREA(NGE_OWNER_OF(target))) {
+        fizzle(target, OP_LEVEL_TELEPORT);   /* the boss stays (R4); one held by another can't go alone */
+    } else {
+        level_send(target, (uint8_t)depth);
+    }
+}
+
 static void end(nge_entity_id_t effect, uint8_t reason);
 
 /* See effect_cure(): a plain call for this page's ops */
@@ -143,6 +190,9 @@ static void run_op(const effect_op_t *op, int8_t power, nge_entity_id_t target, 
         break;
     case OP_UNCURSE:
         uncurse(target);
+        break;
+    case OP_LEVEL_TELEPORT:
+        level_teleport(target, arg, amount);
         break;
     case OP_LIGHT:
     case OP_IDENTIFY:

@@ -161,6 +161,23 @@ const effect_def_t effect_defs[EF_COUNT] = {
         .cycles = 0,             /* for ever */
         .on_tick = { OP_MANA, 0, 1 },
     },
+    /* One firing, then on_end: no status, so no cure ends them early; they go with the player down the stairs */
+    [EF_DESCENT] = {
+        .name = "Descent",
+        .start_text = "The floor pulls at you.",
+        .duration = EFFECT_TIMED,
+        .period = TURNS(15),
+        .cycles = 1,
+        .on_end = { OP_LEVEL_TELEPORT, LT_DOWN, 1 },
+    },
+    [EF_RECALL] = {
+        .name = "Recall",
+        .start_text = "You feel a tug from above.",
+        .duration = EFFECT_TIMED,
+        .period = TURNS(15),
+        .cycles = 1,
+        .on_end = { OP_LEVEL_TELEPORT, LT_UP, 1 },   /* power 10: depth 1 from anywhere */
+    },
     [EF_HEALING] = {
         .duration = EFFECT_INSTANT,
         .start_text = "You feel much better.",
@@ -274,6 +291,10 @@ const effect_def_t effect_defs[EF_COUNT] = {
         .duration = EFFECT_INSTANT,
         .start_text = "Something answers the call!",
         .on_start = { OP_SUMMON, 0, 1 },
+    },
+    [EF_LEVEL_TELEPORT] = {
+        .duration = EFFECT_INSTANT,
+        .on_start = { OP_LEVEL_TELEPORT, LT_RANDOM, 1 },   /* the arrival or the fizzle says what happened */
     },
     [EF_WORN_HP] = {
         .duration = EFFECT_WORN,
