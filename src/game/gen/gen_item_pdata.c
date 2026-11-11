@@ -527,6 +527,14 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .hook = { GEN_HOOK_WORN, EF_WORN_SPEED, 2 },
         .where = { .depth = 7, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 1 },
     },
+    [IT_BOOTS_LEVITATE] = {
+        .name = "boots of levitation",
+        .render = ITEM_RENDER(SPRITE_BOOTS, BANK_GOLD),
+        .subclass = ITEM_ARMOUR,
+        .fits = SLOT_BIT(SLOT_FEET),
+        .hook = { GEN_HOOK_WORN, EF_WORN_FLY, 1 },
+        .where = { .depth = 6, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 1 },
+    },
     [IT_CLOAK] = {
         .name = "cloak",
         .render = ITEM_RENDER(SPRITE_CLOAK, BANK_EARTH),
@@ -739,6 +747,13 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .subclass = ITEM_POTION,
         .hook = { GEN_HOOK_USE, EF_RAISE_CHA, 1 },
         .where = { .depth = 5, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 1 },
+    },
+    [IT_POTION_LEVITATE] = {
+        .name = "levitation potion",
+        .render = ITEM_RENDER(SPRITE_POTION, BANK_GREEN),
+        .subclass = ITEM_POTION,
+        .hook = { GEN_HOOK_USE, EF_LEVITATE, 1 },
+        .where = { .depth = 3, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 2 },
     },
     [IT_POTION_HASTE] = {
         .name = "potion of haste",

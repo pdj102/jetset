@@ -14,6 +14,7 @@
 #include "game/actions/act.h"
 #include "game/components/inventory.h"
 #include "game/components/kind.h"
+#include "game/components/stats.h"
 #include "game/events.h"
 #include "game/gen/gen.h"
 
@@ -34,9 +35,13 @@ void feature_on_event(const nge_event_t *e) NGE_BANKED
         }
     } else if (id == EV_STOOD_ON && (info.can & FCAN_TRAP) && source < NGE_ENTITY_MAX &&
                NGE_ENTITY_IS_ALIVE(source)) {
-        /* A trap fires at a walker: one that flies (it passes holes) passes over it (R15) */
-        if (!NGE_ENTITY_HAS_COMPONENT(source, NGE_COMPONENT_BLOCK) ||
-            !(NGE_BLOCK_PASS(source) & NGE_BLOCK_NO_FLOOR)) {
+        /*
+         * A trap fires at a walker: one that flies passes over it (R15), by
+         * kind (it passes holes) or for a while (STATUS_FLYING: levitation)
+         */
+        if ((!NGE_ENTITY_HAS_COMPONENT(source, NGE_COMPONENT_BLOCK) ||
+             !(NGE_BLOCK_PASS(source) & NGE_BLOCK_NO_FLOOR)) &&
+            !(NGE_ENTITY_HAS_COMPONENT(source, COMPONENT_STATS) && STATUS_HAS(source, STATUS_FLYING))) {
             act_spring(target, source);
         }
     }

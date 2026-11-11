@@ -21,6 +21,7 @@
 #include "game/events.h"
 #include "game/components/kind.h"
 #include "game/components/pc.h"
+#include "game/components/stats.h"
 #include "game/gen/gen.h"
 #include "game/level/level.h"
 
@@ -59,11 +60,12 @@ void act_spring(nge_entity_id_t trap, nge_entity_id_t victim) NGE_BANKED
     /*
      * 5. A trap that leads down drops what it left alive, and not held, to
      * the next depth, anywhere on it: the player at the end of the frame
-     * (a request, G-FLOW-1), anyone else now. Not from the bottom level
+     * (a request, G-FLOW-1), anyone else now. Not from the bottom level,
+     * and not a flier (a failed disarm sets it off at one)
      */
     gen_feature_info(kind_index[trap], &info);
     if ((info.can & FCAN_DESCEND) && NGE_ENTITY_IS_ALIVE(victim) && health_hp[victim] != 0 && !act_rooted(victim) &&
-        level_depth < LEVEL_DEPTH_BOTTOM) {
+        !act_status(victim, STATUS_FLYING) && level_depth < LEVEL_DEPTH_BOTTOM) {
         if (PC_IS(victim)) {
             level_request((uint8_t)(level_depth + 1), LEVEL_ARRIVE_ANY);
         } else {

@@ -94,6 +94,7 @@ static const uint8_t anim_ef_fx[EF_COUNT] = {
     [EF_CONFUSE]     = CURSE,
     [EF_FEAR]        = CURSE,
     [EF_PARALYSE]    = CURSE,
+    [EF_LEVITATE]    = BUFF,
     [EF_HEALING]     = HEAL,
     [EF_CURE]        = HEAL,
     [EF_CURE_ALL]    = HEAL,

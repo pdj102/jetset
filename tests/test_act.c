@@ -547,6 +547,34 @@ static void test_traps(void)
         feature_on_event(&seen[i]);
     }
     CHECK(events() == 0);
+    /* ...nor at one levitating (STATUS_FLYING), which the fire rune's tile shows (docs/effects_extensions.md R19) */
+    effect_apply(EF_LEVITATE, 1, h, NGE_ENTITY_INVALID);
+    nge_location_set(h, 4, 5);
+    events();
+    hp = health_hp[h];
+    a = move(h, 0, 1);
+    CHECK(STATUS_HAS(h, STATUS_FLYING) && act_move(&a, ACT_DO) == ACT_SUCCESS && at(h, 4, 6));
+    n = events();
+    for (i = 0; i < n; i++) {
+        feature_on_event(&seen[i]);
+    }
+    CHECK(events() == 0 && health_hp[h] == hp);
+    /* Not a condition: curing them all leaves it; worn boots of levitation do the same */
+    effect_apply(EF_CURE_ALL, 1, h, NGE_ENTITY_INVALID);
+    CHECK(STATUS_HAS(h, STATUS_FLYING));
+    effect_cure(h, STATUS_FLYING);
+    CHECK(!STATUS_HAS(h, STATUS_FLYING));
+    wear(h, gen_item(IT_BOOTS_LEVITATE, h), SLOT_FEET);
+    events();
+    CHECK(STATUS_HAS(h, STATUS_FLYING));
+    nge_location_set(h, 4, 5);
+    a = move(h, 0, 1);
+    CHECK(act_move(&a, ACT_DO) == ACT_SUCCESS);
+    n = events();
+    for (i = 0; i < n; i++) {
+        feature_on_event(&seen[i]);
+    }
+    CHECK(events() == 0 && health_hp[h] == hp);
 }
 
 /* Search and disarm (docs/features.md 4.6): a bandit at (2, 2), Wisdom and Dexterity 10 (no modifier) */
@@ -702,6 +730,14 @@ static void test_trapdoor(void)
     act_spring(td, pc);
     CHECK(!level_pending());
     effect_cure(pc, STATUS_ROOTED);
+    events();
+
+    /* Levitating: a failed disarm sets it off at a flier, which doesn't fall (docs/effects_extensions.md R19) */
+    effect_apply(EF_LEVITATE, 1, pc, NGE_ENTITY_INVALID);
+    events();
+    act_spring(td, pc);
+    CHECK(!level_pending());
+    effect_cure(pc, STATUS_FLYING);
     events();
 
     /* From the bottom level, nowhere to fall */

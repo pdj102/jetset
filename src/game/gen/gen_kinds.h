@@ -202,7 +202,9 @@
 #define IT_BOOK_ADEPT        161
 #define IT_BOOK_MASTER       162
 #define IT_SP_LEVEL_TELEPORT 163   /* docs/effects_extensions.md: added at the end, so no number moves */
-#define IT_COUNT             164
+#define IT_POTION_LEVITATE   164
+#define IT_BOOTS_LEVITATE    165
+#define IT_COUNT             166
 
 /* Features (CLASS_FEATURE) */
 #define FT_DOOR         0

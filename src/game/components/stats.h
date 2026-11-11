@@ -81,6 +81,7 @@ typedef struct stats_kind {
 #define STATUS_CONFUSED     0x10   /**< A move may go a random way (act_move()). */
 #define STATUS_FRIGHTENED   0x20   /**< Can't melee (act_melee()); an AI moves away from its target. */
 #define STATUS_PARALYSED    0x40   /**< Loses its turns; damage doesn't end it. */
+#define STATUS_FLYING       0x80   /**< Not a condition: sets off no trap, and doesn't fall through a trapdoor (feature_on_event(), act_spring()). */
 
 /** The statuses that are conditions (impairments). */
 #define STATUS_CONDITIONS  (STATUS_POISONED | STATUS_BLINDED | STATUS_UNCONSCIOUS | STATUS_ROOTED | STATUS_CONFUSED | \

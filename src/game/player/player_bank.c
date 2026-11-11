@@ -653,8 +653,10 @@ void player_command(nge_key_event_t ev) NGE_BANKED
         dev_traps();
         break;
     case 'G':
-        /* Development: a teleport level parchment at the player's feet (no turn used) */
+        /* Development: a stairway parchment and a levitation potion at the player's feet (no turn used) */
         nge_location_set(gen_item(IT_SP_LEVEL_TELEPORT, LEVEL_AREA), NGE_LOCATION_X(actor_player),
+                         NGE_LOCATION_Y(actor_player));
+        nge_location_set(gen_item(IT_POTION_LEVITATE, LEVEL_AREA), NGE_LOCATION_X(actor_player),
                          NGE_LOCATION_Y(actor_player));
         break;
     case 'J':

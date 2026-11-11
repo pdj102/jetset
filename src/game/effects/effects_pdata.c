@@ -417,6 +417,15 @@ const effect_def_t effect_defs[EF_COUNT] = {
         .period = TURNS(1),
         .cycles = 3,
     },
+    [EF_LEVITATE] = {
+        .name = "Levitation",
+        .start_text = "You float into the air.",
+        .end_text = "You drift back down.",
+        .duration = EFFECT_TIMED,
+        .status = STATUS_FLYING,
+        .period = TURNS(10),
+        .cycles = 3,
+    },
     [EF_HEALING] = {
         .duration = EFFECT_INSTANT,
         .start_text = "You feel much better.",
@@ -607,6 +616,10 @@ const effect_def_t effect_defs[EF_COUNT] = {
     [EF_WORN_IMMUNE_POISON] = {
         .duration = EFFECT_WORN,
         .mod = { { ATTR_IMMUNE, DMG_BIT(DMG_POISON) } },
+    },
+    [EF_WORN_FLY] = {
+        .duration = EFFECT_WORN,
+        .status = STATUS_FLYING,
     },
     [EF_WORN_REGEN] = {
         .duration = EFFECT_WORN,

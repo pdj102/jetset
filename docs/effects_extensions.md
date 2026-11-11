@@ -1,7 +1,7 @@
 # Effects extensions: design specification
 
 Status: agreed (2026-11-11): D1 to D12 accepted as written. Covers to-do items E1 to E5 ([todo.md](todo.md)).
-Built in steps ([effects_extensions_plan.md](effects_extensions_plan.md)): steps 1 to 4 built 2026-11-11, their CSpect checks passed (step 3: the effect list; blindness covered by tests only).
+Built in steps ([effects_extensions_plan.md](effects_extensions_plan.md)): steps 1 to 5 built 2026-11-11, their CSpect checks passed (step 3: the effect list; blindness covered by tests only).
 
 This spec adds level teleport, the teleport and summon ops, the gaps in the effect table,
 four new statuses, and a to-hit attribute with the ops that go with it. It builds on
@@ -343,4 +343,20 @@ Differences from the design, by plan step.
 - Tags: rows 17 to 19 of the stats window, 3 a row, in red.
 - The help screen's abilities say what Con, Wis and Cha now resist.
 - Dev aid: Z puts the next of confused, frightened, paralysed and asleep on the player.
+
+### Step 5: flying
+
+- The items are the "levitation potion" ("potion of levitation" is longer than 19
+  characters), green, depth 3 to the bottom, rarity 2; and "boots of levitation", gold,
+  feet, no AC, depth 6 to the bottom, rarity 1. Numbers 164 and 165, at the end.
+- `feature_on_event()` already passed over fliers by kind (a block pass with
+  `NGE_BLOCK_NO_FLOOR`, the bat); it now also passes over `STATUS_FLYING`. The trapdoor's
+  drop in `act_spring()` skips a flier too, for a failed disarm, which sets the trap off
+  without `feature_on_event()`.
+- `STATUS_FLYING` isn't in `STATUS_CONDITIONS`, so a cure-all leaves it, but
+  `effect_cure()` with `STATUS_FLYING` would end `EF_LEVITATE`: no item or op does.
+- No tag on the main screen: the tags are conditions (D6).
+- Dev aid: G also drops a levitation potion.
+- Tests: in `test_act` (`test_traps()` and `test_trapdoor()`), where the trap tests are,
+  not `test_feature`.
 
