@@ -15,10 +15,12 @@ detail goes in a spec when an item is picked up.
 - Status after each line: blank = idea, `[spec]` spec written,
   `[plan]` plan written, `[wip]` building, `[done]` built (date).
 - Link the spec beside the status once it exists, e.g. `[spec](help_screen.md)`.
+- `(low)` after a line marks a lower priority: it needs a significant change
+  (a wider mask, a new system) for what it adds.
 - To pick one up, ask: *"Write a spec for U1"* (whole objective) or
   *"Write a spec and plan for U1.3"* (one feature).
 
-Topic codes: `C` Character creation, `G` Game rules, `U` UI, `V` Visual effects.
+Topic codes: `C` Character creation, `E` Effects, `G` Game rules, `U` UI, `V` Visual effects.
 
 ---
 
@@ -35,6 +37,99 @@ Topic codes: `C` Character creation, `G` Game rules, `U` UI, `V` Visual effects.
 D1 - Create a roadmap guide for game mechanic scaling `[spec]` [spec](difficulty.md)
 - D1.1 Define key parameters that are key inputs to  scaling game mechanics e.g. maximum dungeon depth, maximum character level
 - D1.2 Define key principles e.g. player character should on average gain 1 level per dungeon depth fully cleared - when going down
+
+## E — Effects
+
+Effects missing against classic D&D and roguelikes, from a review of
+`effects_pdata.c` ([effects.md](effects.md), [attributes.md](attributes.md)).
+
+### E1 Teleport to another level
+
+- E1.1 `OP_LEVEL_TELEPORT`, `arg` up, down or random: the player arrives
+  anywhere on the new level. It asks for a level change rather than making
+  it there and then (an effect can run inside an event handler), the way the
+  trapdoor (`FCAN_DESCEND`) does
+- E1.2 Limits: going up stops at depth 1, so it never ends the game
+  (level_transitions.md R2); going down stops at the bottom depth. Going
+  down while already at the bottom depth, or up while already at depth 1,
+  fizzles with a message
+- E1.3 On a monster: it leaves the level for good (levels aren't kept).
+  Persistent entities (the boss, a quest object holder) are immune
+- E1.4 Scroll of teleport level, and a level teleport trap beside the
+  teleport trap
+- E1.5 Delayed descent: a timed effect with one firing, whose `on_end` is a
+  level teleport down by one level times the effect's power (the first
+  effect to use `on_end`)
+- E1.6 Delayed ascent: a timed effect with one firing, whose `on_end` is a
+  level teleport up by one level times the effect's power. A recall up to
+  depth 1 is one with a power high enough to reach the limit going up
+
+### E2 Build the pending ops
+
+Defined and used by items and traps, but they do nothing yet
+(effects.md, "Pending ops").
+
+- E2.1 Teleport (within the level; goes with E1)
+- E2.2 Light
+- E2.3 Map
+- E2.4 Identify (see S10)
+- E2.5 Enchant
+- E2.6 Summon
+
+### E3 Fill the gaps in the effect table (data only)
+
+New rows in `effects_pdata.c` using attributes and ops that already work.
+
+- E3.1 Timed Dex, Con, Int, Wis buffs (Grace, Endurance, Insight, …): Might
+  is the only one
+- E3.2 `EF_WORN_CHA`: Str to Wis have worn versions, Cha doesn't
+- E3.3 Timed poison, acid and magic wards: only fire and cold have them
+- E3.4 Timed max HP (Aid, Heroism): `ATTR_HP_MAX` modifier
+- E3.5 Shield: timed AC without Stoneskin's speed penalty
+- E3.6 Vulnerability hex (`ATTR_VULN`) and worn immunity (`ATTR_IMMUNE`):
+  both attributes exist, nothing grants them
+- E3.7 Ability drain: a long timed ability penalty, from a monster's hit
+  or a bad potion (a permanent drain with `OP_RAISE_BASE` -1 would need a
+  record of what was lost before a Restore could undo it)
+- E3.8 Damage over time beyond poison: burning (fire, Dex save), bleeding
+  (slash), corrosion (acid)
+- E3.9 Cure blindness: `OP_CURE` with `STATUS_BLINDED`
+- E3.10 Tidy names: `EF_STRENGTH` beside `EF_RAISE_DEX` and the other
+  `EF_RAISE_*`
+
+### E4 New statuses (4 of the 8 bits free)
+
+- E4.1 Confused: `act_move()` sometimes goes a random direction
+- E4.2 Frightened: no melee, the AI flees; a use for Cha (G1)
+- E4.3 Paralysed: like asleep, but damage doesn't end it (needs E4.5)
+- E4.4 Flying (levitation): potion or boots; fliers don't set off traps
+  (features.md R15)
+- E4.5 Asleep wakes when damaged (attributes.md, "Not built yet")
+- E4.6 Unconscious and blinded read by the rules: an unconscious creature
+  loses its turns; the main screen shows every condition, not only poisoned
+- E4.7 Silenced: can't cast spells. Uses the last free bit if E4.1 to E4.4
+  are all built (low)
+- E4.8 Invisible and see invisible: AI, targeting and drawing all change (low)
+
+### E5 New ops and attributes
+
+- E5.1 `ATTR_TO_HIT`: Bless and Bane, Heroism's bonus, and the blinded
+  penalty as a modifier rather than a special case in
+  `attack_actor_to_hit()`
+- E5.2 `OP_DETECT`: detect monsters, detect traps, beside `OP_MAP`
+- E5.3 Blink: a short teleport the caster aims, within line of sight
+- E5.4 Mana drain: `mana_restore()` takes a `uint8_t`, so it needs a drain
+  path or a signed amount
+- E5.5 Life drain: damage that heals the caster; ops only know the target,
+  so the source has to be passed in (low)
+- E5.6 Life saving: a worn reaction to lethal damage, a hook in
+  `health_damage()` (low)
+- E5.7 Lightning, necrotic and radiant damage: all 8 damage-type bits are
+  used, so the immune, resist and vulnerable masks become `uint16_t` (low)
+- E5.8 More than 8 statuses: the status mask and the definitions' `status`
+  field become `uint16_t` (low)
+- E5.9 Condition immunities (free action, poison immunity): a status mask
+  attribute that blocks conditions (low)
 ## G — Game rules
 
 ### G1 Abilities in attacks
