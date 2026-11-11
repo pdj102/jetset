@@ -29,7 +29,7 @@ Status: built. Code: [act_melee.c](../src/game/actions/act_melee.c), with the st
    `ACT_CHECK` stops here.
 3. **Resolve and apply:** `act_strike()` with the attacker, `ATTACK_MELEE`, the attacker's
    hit hook, and the actor's own bonuses: to hit from `attack_actor_to_hit()` (its Strength
-   modifier, and `ATTACK_BLINDED_TO_HIT`, -4, if it is blinded) and to damage from
+   modifier, plus its bonus to hit, `ATTR_TO_HIT`: -4 while blinded, `EF_BLIND`'s modifier) and to damage from
    `attack_actor_to_damage()` (its Strength modifier), both 0 without stats (actions.md,
    4.12). The attack's own to-hit and to-damage still apply: these add to them. A hit posts `EV_HIT` (p1 the roll, p2 the
    weapon), damages the target, and applies the hit hook of the weapon, or of the actor if

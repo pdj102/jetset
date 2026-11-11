@@ -67,7 +67,8 @@
 #define ATTR_WIS     10
 #define ATTR_CHA     11  /**< ...stats_ability[ABIL_CHA]. */
 #define ATTR_MP_MAX  12  /**< mana: mana_mp_max, mana_mp_max_base; 1-255. */
-#define ATTR_COUNT   13
+#define ATTR_TO_HIT  13  /**< stats: stats_to_hit, stats_to_hit_base; signed, -20 to +20, added to the attacker's roll. */
+#define ATTR_COUNT   14
 
 /** The attribute of ability a (ABIL_*, game/components/stats.h): in the same order. */
 #define ATTR_ABILITY(a)  ((uint8_t)(ATTR_STR + (a)))
@@ -91,10 +92,10 @@ uint8_t effects_check(nge_entity_id_t id) NGE_BANKED;
 /** @brief Set attribute attr's base for good, then recompute (an alive entity with health and the attribute's component). */
 void effects_set_base(nge_entity_id_t id, uint8_t attr, uint8_t value) NGE_BANKED;
 
-/** @brief Add amount (maybe negative) to attribute attr's base, kept within 0-255, then recompute (as effects_set_base()). */
+/** @brief Add amount (maybe negative) to attribute attr's base, kept within 0-255 (-128 to 127 for a signed one), then recompute (as effects_set_base()). */
 void effects_raise_base(nge_entity_id_t id, uint8_t attr, int8_t amount) NGE_BANKED;
 
-/** @brief Attribute attr's base for id, which has the attribute's component (asserted). */
+/** @brief Attribute attr's base for id, which has the attribute's component (asserted); a signed one's as its uint8_t bits. */
 uint8_t effects_base(nge_entity_id_t id, uint8_t attr) NGE_BANKED;
 
 /**

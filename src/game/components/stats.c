@@ -29,8 +29,10 @@ void stats_add(nge_entity_id_t id, const stats_kind_t *k) NGE_BANKED
 
     stats_speed[id] = k->speed;
     stats_status[id] = 0;
+    stats_to_hit[id] = 0;
     NGE_ENTITY_ADD_COMPONENT(id, COMPONENT_STATS);   /* first: effects_put_base() asserts it */
     effects_put_base(id, ATTR_SPEED, k->speed);
+    effects_put_base(id, ATTR_TO_HIT, 0);
     for (a = 0; a < ABIL_COUNT; a++) {
         score = k->ability[a];
         nge_util_assert(score >= STATS_ABILITY_MIN && score <= STATS_ABILITY_MAX);

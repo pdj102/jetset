@@ -519,7 +519,7 @@ Spells waiting for a place in the list, or a rule:
 | Fire Ward, Frost Ward | `EF_RESIST_FIRE`, `EF_RESIST_COLD` | The same |
 | Might | `EF_MIGHT` | The same |
 | Sleep | `EF_SLEEP` | A rule that reads `STATUS_UNCONSCIOUS` (attributes.md, "Not built yet") |
-| Blind | `EF_BLIND` | Nothing: a level-up slot, or scrolls (blinded is -4 to hit, `attack_actor_to_hit()`) |
+| Blind | `EF_BLIND` | Nothing: a level-up slot, or scrolls (blinded is -4 to hit, `EF_BLIND`'s `ATTR_TO_HIT` modifier) |
 | Teleport, Light, Magic Map, Identify, Summon, Enchant | Their rows | Their pending ops (effects.md, 4.8) |
 
 ## 7. Tests

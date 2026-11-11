@@ -23,12 +23,19 @@ extern uint8_t health_ac_base[NGE_ENTITY_MAX];
 extern uint8_t stats_speed_base[NGE_ENTITY_MAX];
 extern uint8_t stats_ability_base[ABIL_COUNT][NGE_ENTITY_MAX];
 extern uint8_t mana_mp_max_base[NGE_ENTITY_MAX];
+extern uint8_t stats_to_hit_base[NGE_ENTITY_MAX];   /* an int8_t's bits (ATTRS_SIGNED) */
+
+/* How an attribute's modifiers combine with its base */
+#define ATTRS_ADD     0   /* added to an unsigned base */
+#define ATTRS_MASK    1   /* ORed */
+#define ATTRS_SIGNED  2   /* added to a signed base, its bits kept in the uint8_t table */
+#define ATTRS_COMBINE_COUNT  3
 
 /* Where each attribute's base is, and how its modifiers combine */
 typedef struct attrs_attr {
     uint8_t         *base;        /* the attribute's base table, [NGE_ENTITY_MAX], in page 139 */
     nge_component_t  component;   /* an entity has the attribute only with it */
-    uint8_t          is_mask;     /* modifiers ORed (1) or added (0) */
+    uint8_t          combine;     /* ATTRS_* */
 } attrs_attr_t;
 
 /* One row per attribute (ATTR_*), constant in page 138 */

@@ -1,7 +1,7 @@
 # Effects extensions: design specification
 
 Status: agreed (2026-11-11): D1 to D12 accepted as written. Covers to-do items E1 to E5 ([todo.md](todo.md)).
-Built in steps ([effects_extensions_plan.md](effects_extensions_plan.md)): steps 1 and 2 built 2026-11-11, their CSpect checks passed.
+Built in steps ([effects_extensions_plan.md](effects_extensions_plan.md)): steps 1 to 3 built 2026-11-11, their CSpect checks passed (step 3: the effect list; blindness covered by tests only).
 
 This spec adds level teleport, the teleport and summon ops, the gaps in the effect table,
 four new statuses, and a to-hit attribute with the ops that go with it. It builds on
@@ -296,4 +296,28 @@ Differences from the design, by plan step.
   creature's innate effects, then `nge_effect_create()` and its calls. No hit hook
   summons; the rune's chain is 1 shallower.
 - Tests: in `test_level`, not `test_effects`, as teleport reads a generated level.
+
+### Step 3: `ATTR_TO_HIT`, the table's rows, mana drain
+
+- `stats_to_hit[]` and `stats_to_hit_base[]` cost 150 bytes each, not 100:
+  `NGE_ENTITY_MAX` is 150.
+- The attribute table's `is_mask` became `combine`: `ATTRS_ADD`, `ATTRS_MASK` or
+  `ATTRS_SIGNED`. A signed base keeps an `int8_t`'s bits in its `uint8_t` table, and
+  `effects_raise_base()` keeps it within -128 to 127. `effects_base()` returns the bits.
+- There is no `mana_drain()`: `OP_MANA` with a negative amount clamps it to the MP the
+  target has and calls `mana_spend()`, which posts `EV_MANA_SPENT`. Page 110 has 154
+  bytes left. A drain of nothing (no MP left) fizzles.
+- `STATUS_BLINDED` is read by no rule until step 4; its -4 is `EF_BLIND`'s modifier.
+- Timings the spec left open: Bane 5 turns × 4, like Weakness. The rows' names, for the
+  PC screen: "Grace", "Endurance", "Insight", "Intuition", "Poison ward", "Acid ward",
+  "Magic ward", "Aid", "Shield", "Hex", "Str drained" to "Cha drained", "Burning",
+  "Bleeding", "Corrosion", "Blessed", "Bane", "Heroism".
+- Placement: `EF_CURE_BLIND` follows `EF_CURE_ALL`, `EF_WORN_CHA` follows `EF_WORN_WIS`,
+  and the worn immunities follow `EF_WORN_RES_MAGIC`. `EF_TIMED_COUNT` is 40 and
+  `EF_COUNT` 84.
+- The PC screen's effect list counted instances in two arrays of `EF_TIMED_COUNT`
+  entries on the stack: 120 bytes at 40 kinds, over T-STACK-1's 64. It now looks for
+  each kind in turn.
+- Tests: `test_act`'s blinded attacks apply `EF_BLIND` instead of setting the status
+  bit.
 

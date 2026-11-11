@@ -25,7 +25,7 @@ int main(void)
     test_init();
 
     CHECK(ABIL_COUNT == 6 && ATTR_ABILITY(ABIL_STR) == ATTR_STR && ATTR_ABILITY(ABIL_CHA) == ATTR_CHA &&
-          ATTR_CHA + 1 == ATTR_MP_MAX && ATTR_MP_MAX + 1 == ATTR_COUNT);
+          ATTR_CHA + 1 == ATTR_MP_MAX && ATTR_MP_MAX + 1 == ATTR_TO_HIT && ATTR_TO_HIT + 1 == ATTR_COUNT);
 
     /* ---- modifiers: every score ---- */
     ok = 1;

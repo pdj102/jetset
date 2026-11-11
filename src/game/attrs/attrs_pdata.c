@@ -19,3 +19,4 @@ uint8_t health_ac_base[NGE_ENTITY_MAX];
 uint8_t stats_speed_base[NGE_ENTITY_MAX];
 uint8_t stats_ability_base[ABIL_COUNT][NGE_ENTITY_MAX];
 uint8_t mana_mp_max_base[NGE_ENTITY_MAX];
+uint8_t stats_to_hit_base[NGE_ENTITY_MAX];

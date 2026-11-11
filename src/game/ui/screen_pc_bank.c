@@ -349,28 +349,43 @@ static void draw_effect(uint8_t y, uint8_t ef, uint8_t count, uint16_t turns, NG
     }
 }
 
-/* The active effects, one row per kind (instances counted), in EF_* order; "and n more" past the rows */
-static void draw_effects(NGE_FILE *s)
+/* The player's active effects of kind ef: how many, and in *turns the longest left of them */
+static uint8_t effects_of(uint8_t ef, uint16_t *turns)
 {
-    uint8_t count[EF_TIMED_COUNT];    /* only timed effects are active: EF_COUNT would be too much for the stack */
-    uint16_t turns[EF_TIMED_COUNT];   /* the longest left, by kind */
     nge_entity_id_t id;
     uint16_t t;
+    uint8_t i;
+    uint8_t n = 0;
+
+    *turns = 0;
+    NGE_EFFECT_FOR_EACH(i, id, actor_player) {
+        if (EFFECT_KIND_OF(id) == ef) {
+            n++;
+            t = turns_left(id);
+            if (t > *turns) {
+                *turns = t;
+            }
+        }
+    }
+    return n;
+}
+
+/*
+ * The active effects, one row per kind (instances counted), in EF_* order;
+ * "and n more" past the rows. Each kind is looked for in turn: a count per
+ * kind would be too much for the stack (T-STACK-1)
+ */
+static void draw_effects(NGE_FILE *s)
+{
+    uint16_t turns;
     uint8_t kinds = 0;
     uint8_t ef;
-    uint8_t i;
+    uint8_t n;
     uint8_t y = ROW_EFFECTS;
 
-    memset(count, 0, sizeof(count));
-    NGE_EFFECT_FOR_EACH(i, id, actor_player) {
-        ef = EFFECT_KIND_OF(id);
-        nge_util_assert(ef < EF_TIMED_COUNT);
-        t = turns_left(id);
-        if (count[ef]++ == 0) {
+    for (ef = 1; ef < EF_TIMED_COUNT; ef++) {   /* only timed effects are active */
+        if (effects_of(ef, &turns) != 0) {
             kinds++;
-            turns[ef] = t;
-        } else if (t > turns[ef]) {
-            turns[ef] = t;
         }
     }
 
@@ -379,8 +394,9 @@ static void draw_effects(NGE_FILE *s)
         puts_at(y, 0, "None", NGE_INK_WHITE, s);
         return;
     }
-    for (ef = 0; ef < EF_TIMED_COUNT; ef++) {
-        if (count[ef] == 0) {
+    for (ef = 1; ef < EF_TIMED_COUNT; ef++) {
+        n = effects_of(ef, &turns);
+        if (n == 0) {
             continue;
         }
         if (y == ROW_EFFECTS + EFFECT_ROWS - 1 && kinds > 1) {
@@ -389,7 +405,7 @@ static void draw_effects(NGE_FILE *s)
             nge_puts(" more", s);
             return;
         }
-        draw_effect(y++, ef, count[ef], turns[ef], s);
+        draw_effect(y++, ef, n, turns, s);
         kinds--;
     }
 }

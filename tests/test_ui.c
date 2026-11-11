@@ -482,7 +482,7 @@ int main(void)
     CHECK(strcmp(text, "XP        0 ") == 0);
     test_layer2_row(13, 28, 39, text);
     CHECK(strcmp(text, "Gold      0 ") == 0);
-    effect_apply(EF_STRENGTH, 1, actor_player, NGE_ENTITY_INVALID);
+    effect_apply(EF_RAISE_STR, 1, actor_player, NGE_ENTITY_INVALID);
     player_show_stats();
     test_layer2_row(5, 28, 39, text);
     CHECK(strcmp(text, "Str      13 ") == 0);

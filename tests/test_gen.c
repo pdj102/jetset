@@ -400,7 +400,7 @@ int main(void)
     CHECK(ok);
     CHECK(GEN_HOOK_EF(gen_item_hook(IT_HEAL_POTION, GEN_HOOK_USE)) == EF_HEALING && GEN_HOOK_EF(gen_item_hook(IT_RING_HEALTH_2, GEN_HOOK_WORN)) == EF_WORN_HP &&
           GEN_HOOK_EF(gen_item_hook(IT_ANTIDOTE, GEN_HOOK_USE)) == EF_CURE && GEN_HOOK_EF(gen_item_hook(IT_DEAD_RAT, GEN_HOOK_USE)) == EF_POISON &&
-          GEN_HOOK_EF(gen_item_hook(IT_ELIXIR, GEN_HOOK_USE)) == EF_VITALITY && GEN_HOOK_EF(gen_item_hook(IT_POTION_STR, GEN_HOOK_USE)) == EF_STRENGTH && GEN_HOOK_EF(gen_item_hook(IT_SWORD, GEN_HOOK_HIT)) == EF_NONE);
+          GEN_HOOK_EF(gen_item_hook(IT_ELIXIR, GEN_HOOK_USE)) == EF_VITALITY && GEN_HOOK_EF(gen_item_hook(IT_POTION_STR, GEN_HOOK_USE)) == EF_RAISE_STR && GEN_HOOK_EF(gen_item_hook(IT_SWORD, GEN_HOOK_HIT)) == EF_NONE);
     CHECK(gen_item_group(IT_SHORT_BOW) == GROUP_ARROW && gen_item_group(IT_DARTS) == GROUP_THROWN &&
           gen_item_group(IT_SWORD) == GROUP_NONE);
     CHECK(gen_item_flags(IT_QUARTERSTAFF) == ITEMF_TWO_HANDS && gen_item_flags(IT_RUSTY_SWORD) == ITEMF_CURSED &&

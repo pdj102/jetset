@@ -60,6 +60,10 @@
 #define STATS_ABILITY_MIN  1
 #define STATS_ABILITY_MAX  30
 
+/* The bonus to hit (ATTR_TO_HIT), signed */
+#define STATS_TO_HIT_MIN  (-20)
+#define STATS_TO_HIT_MAX  20
+
 /** An ability score's modifier: (score - 10) / 2 rounded down (an arithmetic shift). */
 #define STATS_MOD(score)  ((int8_t)(((int16_t)(score) - 10) >> 1))
 
@@ -71,7 +75,7 @@ typedef struct stats_kind {
 
 /* Statuses: bits of stats_status, granted by effects (game/effects/effects.h) */
 #define STATUS_POISONED     0x01
-#define STATUS_BLINDED      0x02   /**< A penalty to hit (attack_actor_to_hit()). */
+#define STATUS_BLINDED      0x02   /**< No rule reads it: EF_BLIND's penalty to hit is a modifier (ATTR_TO_HIT). */
 #define STATUS_UNCONSCIOUS  0x04   /**< Granted, but no rule reads it yet (docs/attributes.md, "Not built yet"). */
 #define STATUS_ROOTED       0x08   /**< Can't leave its tile (act_move(), the stairs): for ever or for a while. */
 
@@ -82,6 +86,7 @@ typedef struct stats_kind {
 extern uint8_t stats_speed[NGE_ENTITY_MAX];                 /**< Ticks between turns: its timer's period. Derived (ATTR_SPEED). */
 extern uint8_t stats_ability[ABIL_COUNT][NGE_ENTITY_MAX];   /**< Scores by ABIL_*, 1-30. Derived (ATTR_ABILITY()). */
 extern uint8_t stats_status[NGE_ENTITY_MAX];                /**< STATUS_* granted by its effects. Derived. */
+extern int8_t stats_to_hit[NGE_ENTITY_MAX];                 /**< Added to its attack rolls, -20 to +20. Derived (ATTR_TO_HIT). */
 
 /** Creature id (with stats) has any of statuses s. */
 #define STATUS_HAS(id, s)  ((stats_status[id] & (s)) != 0)
@@ -89,7 +94,7 @@ extern uint8_t stats_status[NGE_ENTITY_MAX];                /**< STATUS_* grante
 /**
  * @brief Give an entity in use the stats component from kind stats: the
  *        kind values of its speed and abilities, as their attributes'
- *        bases and values; no statuses.
+ *        bases and values; no statuses, and no bonus to hit.
  * @param k In common memory (a copy on the stack): the call maps page 110
  *          over slots 6 and 7.
  */

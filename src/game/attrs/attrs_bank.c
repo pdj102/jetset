@@ -33,19 +33,20 @@
 #include "hw/nge_mmu.h"
 
 const attrs_attr_t attrs_table[ATTR_COUNT] = {
-    [ATTR_HP_MAX] = { health_hp_max_base,               COMPONENT_HEALTH, 0 },
-    [ATTR_AC]     = { health_ac_base,                   COMPONENT_HEALTH, 0 },
-    [ATTR_SPEED]  = { stats_speed_base,                 COMPONENT_STATS,  0 },
-    [ATTR_IMMUNE] = { health_immune_base,               COMPONENT_HEALTH, 1 },
-    [ATTR_RESIST] = { health_resist_base,               COMPONENT_HEALTH, 1 },
-    [ATTR_VULN]   = { health_vuln_base,                 COMPONENT_HEALTH, 1 },
-    [ATTR_STR]    = { &stats_ability_base[ABIL_STR][0], COMPONENT_STATS,  0 },
-    [ATTR_DEX]    = { &stats_ability_base[ABIL_DEX][0], COMPONENT_STATS,  0 },
-    [ATTR_CON]    = { &stats_ability_base[ABIL_CON][0], COMPONENT_STATS,  0 },
-    [ATTR_INT]    = { &stats_ability_base[ABIL_INT][0], COMPONENT_STATS,  0 },
-    [ATTR_WIS]    = { &stats_ability_base[ABIL_WIS][0], COMPONENT_STATS,  0 },
-    [ATTR_CHA]    = { &stats_ability_base[ABIL_CHA][0], COMPONENT_STATS,  0 },
-    [ATTR_MP_MAX] = { mana_mp_max_base,                 COMPONENT_MANA,   0 },
+    [ATTR_HP_MAX] = { health_hp_max_base,               COMPONENT_HEALTH, ATTRS_ADD },
+    [ATTR_AC]     = { health_ac_base,                   COMPONENT_HEALTH, ATTRS_ADD },
+    [ATTR_SPEED]  = { stats_speed_base,                 COMPONENT_STATS,  ATTRS_ADD },
+    [ATTR_IMMUNE] = { health_immune_base,               COMPONENT_HEALTH, ATTRS_MASK },
+    [ATTR_RESIST] = { health_resist_base,               COMPONENT_HEALTH, ATTRS_MASK },
+    [ATTR_VULN]   = { health_vuln_base,                 COMPONENT_HEALTH, ATTRS_MASK },
+    [ATTR_STR]    = { &stats_ability_base[ABIL_STR][0], COMPONENT_STATS,  ATTRS_ADD },
+    [ATTR_DEX]    = { &stats_ability_base[ABIL_DEX][0], COMPONENT_STATS,  ATTRS_ADD },
+    [ATTR_CON]    = { &stats_ability_base[ABIL_CON][0], COMPONENT_STATS,  ATTRS_ADD },
+    [ATTR_INT]    = { &stats_ability_base[ABIL_INT][0], COMPONENT_STATS,  ATTRS_ADD },
+    [ATTR_WIS]    = { &stats_ability_base[ABIL_WIS][0], COMPONENT_STATS,  ATTRS_ADD },
+    [ATTR_CHA]    = { &stats_ability_base[ABIL_CHA][0], COMPONENT_STATS,  ATTRS_ADD },
+    [ATTR_MP_MAX] = { mana_mp_max_base,                 COMPONENT_MANA,   ATTRS_ADD },
+    [ATTR_TO_HIT] = { stats_to_hit_base,                COMPONENT_STATS,  ATTRS_SIGNED },
 };
 
 /* Values worked out, before clamping */
@@ -107,7 +108,7 @@ static void add(derived_t *d, uint8_t ef, int8_t power)
         attr = mod[i].attr;
         amount = mod[i].amount;
         nge_util_assert(attr < ATTR_COUNT);
-        if (attrs_table[attr].is_mask) {
+        if (attrs_table[attr].combine == ATTRS_MASK) {
             d->value[attr] |= (uint8_t)amount;
         } else {
             d->value[attr] += times(amount, power);
@@ -133,6 +134,7 @@ static void derive(nge_entity_id_t id, derived_t *d)
     nge_component_t component;
     uint16_t hook;
     uint8_t *base;
+    uint8_t combine;
     uint8_t a;
     uint8_t i;
 
@@ -140,7 +142,14 @@ static void derive(nge_entity_id_t id, derived_t *d)
         /* The fields in locals (T-ZSDCC-1) */
         base = attrs_table[a].base;
         component = attrs_table[a].component;
-        d->value[a] = NGE_ENTITY_HAS_COMPONENT(id, component) ? base[id] : 0;
+        combine = attrs_table[a].combine;
+        if (!NGE_ENTITY_HAS_COMPONENT(id, component)) {
+            d->value[a] = 0;
+        } else if (combine == ATTRS_SIGNED) {
+            d->value[a] = (int8_t)base[id];
+        } else {
+            d->value[a] = base[id];
+        }
     }
     d->status = 0;
     NGE_OWNER_FOR_EACH_OWNED(i, owned, id) {
@@ -169,6 +178,15 @@ static uint8_t clamp_ability(int16_t v)
         return STATS_ABILITY_MIN;
     }
     return (v > STATS_ABILITY_MAX) ? STATS_ABILITY_MAX : (uint8_t)v;
+}
+
+/* The bonus to hit within its range */
+static int8_t clamp_to_hit(int16_t v)
+{
+    if (v < STATS_TO_HIT_MIN) {
+        return STATS_TO_HIT_MIN;
+    }
+    return (v > STATS_TO_HIT_MAX) ? STATS_TO_HIT_MAX : (int8_t)v;
 }
 
 /* Set *p to v if write: 1 if it differs */
@@ -223,6 +241,7 @@ static uint8_t store(nge_entity_id_t id, const derived_t *d, uint8_t write)
         for (a = 0; a < ABIL_COUNT; a++) {
             changed |= set(&stats_ability[a][id], clamp_ability(d->value[ATTR_ABILITY(a)]), write);
         }
+        changed |= set((uint8_t *)&stats_to_hit[id], (uint8_t)clamp_to_hit(d->value[ATTR_TO_HIT]), write);
     }
     return changed;
 }
@@ -271,14 +290,21 @@ void effects_set_base(nge_entity_id_t id, uint8_t attr, uint8_t value) NGE_BANKE
 void effects_raise_base(nge_entity_id_t id, uint8_t attr, int8_t amount) NGE_BANKED
 {
     uint8_t *base;
+    uint8_t combine;
     int16_t v;
 
     nge_util_assert(id < NGE_ENTITY_MAX && NGE_ENTITY_IS_ALIVE(id));
     nge_util_assert(has_attrs(id));
 
     base = base_of(id, attr);
-    v = (int16_t)base[id] + amount;   /* a base stays within 0-255 */
-    base[id] = (v < 0) ? 0 : (v > 255) ? 255 : (uint8_t)v;
+    combine = attrs_table[attr].combine;   /* a local before the branch (T-ZSDCC-1) */
+    if (combine == ATTRS_SIGNED) {
+        v = (int16_t)(int8_t)base[id] + amount;   /* within -128 to 127 */
+        base[id] = (uint8_t)((v < -128) ? -128 : (v > 127) ? 127 : v);
+    } else {
+        v = (int16_t)base[id] + amount;   /* a base stays within 0-255 */
+        base[id] = (v < 0) ? 0 : (v > 255) ? 255 : (uint8_t)v;
+    }
     recompute(id);
 }
 

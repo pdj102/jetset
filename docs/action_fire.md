@@ -50,7 +50,7 @@ player gets `ACT_R_NO_ATTACK`.
    source the actor, p1 the item), then `act_strike()` with the attacker, `ATTACK_RANGED`,
    the hit hook of the shot (or of the attacker if there is no shot), and the bonuses: the
    ammo's plus the actor's own: to hit from `attack_actor_to_hit()` (its Dexterity modifier,
-   and `ATTACK_BLINDED_TO_HIT`, -4, if it is blinded) and to damage from
+   plus its bonus to hit, `ATTR_TO_HIT`: -4 while blinded, `EF_BLIND`'s modifier) and to damage from
    `attack_actor_to_damage()` (its Dexterity modifier), both 0 without stats. The action adds
    them up into its to_hit and to_damage before `act_strike()` (actions.md, 4.12). The attacker's own to-hit and
    to-damage still apply: these add to them. A thrown item takes Dexterity too, and so do

@@ -1366,9 +1366,10 @@ int main(void)
     CHECK(ok);
     effects_set_base(player, ATTR_ABILITY(ABIL_STR), 10);
     events();
-    /* Blinded: -4 to hit (a 15 misses, a 16 hits: roll + 1 - 4 >= 13), the damage as ever */
-    stats_status[player] |= STATUS_BLINDED;
-    CHECK(attack_actor_to_hit(player, ATTACK_MELEE) == ATTACK_BLINDED_TO_HIT &&
+    /* Blinded: -4 to hit, EF_BLIND's modifier (a 15 misses, a 16 hits: roll + 1 - 4 >= 13), the damage as ever */
+    effect_apply(EF_BLIND, 1, player, NGE_ENTITY_INVALID);
+    events();
+    CHECK(attack_actor_to_hit(player, ATTACK_MELEE) == -4 &&
           attack_actor_to_damage(player, ATTACK_MELEE) == 0);
     srand(seed_for_roll(15));
     a = ctx(player);
@@ -1378,7 +1379,8 @@ int main(void)
     a = ctx(player);
     a.target = gob;
     CHECK(act_melee(&a, ACT_DO) == ACT_SUCCESS && a.amount >= 1 && a.amount <= 8);
-    stats_status[player] &= (uint8_t)~STATUS_BLINDED;
+    effect_cure(player, STATUS_BLINDED);
+    events();
     events();
     health_hp[gob] = 200;
     /* Its own attack without a weapon: fists, blunt, which the goblin resists */
@@ -2144,14 +2146,16 @@ int main(void)
     /* Dexterity 14 and blinded: +2 - 4 to hit (a 12 misses, a 13 hits), +2 damage */
     effects_set_base(player, ATTR_ABILITY(ABIL_DEX), 14);
     events();
-    stats_status[player] |= STATUS_BLINDED;
-    CHECK(attack_actor_to_hit(player, ATTACK_RANGED) == 2 + ATTACK_BLINDED_TO_HIT &&
+    effect_apply(EF_BLIND, 1, player, NGE_ENTITY_INVALID);
+    events();
+    CHECK(attack_actor_to_hit(player, ATTACK_RANGED) == 2 + -4 &&
           attack_actor_to_damage(player, ATTACK_RANGED) == 2);
     srand(seed_for_roll(12));
     CHECK(fire(player, 3, 2, ACT_DO) == ACT_FAIL && last.reason == ACT_R_MISSED);
     srand(seed_for_roll(13));
     CHECK(fire(player, 3, 2, ACT_DO) == ACT_SUCCESS && last.amount >= 3 && last.amount <= 8);
-    stats_status[player] &= (uint8_t)~STATUS_BLINDED;
+    effect_cure(player, STATUS_BLINDED);
+    events();
     health_hp[rat] = 200;
     effects_set_base(player, ATTR_ABILITY(ABIL_DEX), 10);
     events();

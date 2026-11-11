@@ -702,7 +702,7 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .name = "potion of strength",
         .render = ITEM_RENDER(SPRITE_POTION, BANK_ORANGE),
         .subclass = ITEM_POTION,
-        .hook = { GEN_HOOK_USE, EF_STRENGTH, 1 },
+        .hook = { GEN_HOOK_USE, EF_RAISE_STR, 1 },
         .where = { .depth = 3, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 1 },
     },
     [IT_POTION_DEX] = {

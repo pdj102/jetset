@@ -201,8 +201,8 @@ int main(void)
                  !has_mods && d->status == 0 && d->flags == 0 && d->period == 0 && d->cycles == 0 &&
                  d->end_text == NULL;
             break;
-        case EFFECT_TIMED:
-            ok = ok && d->period != 0;
+        case EFFECT_TIMED:   /* named on the PC screen */
+            ok = ok && d->period != 0 && d->name != NULL && strlen(d->name) <= EFFECT_NAME_MAX;
             break;
         default:               /* worn: modifiers and statuses only */
             ok = ok && d->on_start.op == OP_NONE && d->on_tick.op == OP_NONE && d->on_end.op == OP_NONE &&
@@ -469,14 +469,14 @@ int main(void)
     effects_set_base(g, ATTR_CHA, 8);
     /* A potion of strength: +1 base strength, for good */
     events();
-    CHECK(effect_apply(EF_STRENGTH, 1, g, NGE_ENTITY_INVALID) == 1);
+    CHECK(effect_apply(EF_RAISE_STR, 1, g, NGE_ENTITY_INVALID) == 1);
     CHECK(stats_ability_base[ABIL_STR][g] == 9 && stats_ability[ABIL_STR][g] == 9 && stats_ability[ABIL_DEX][g] == 14);
     CHECK(events() == 2 && is(0, g, EV_ATTRS_CHANGED, NGE_EVENT_NONE, 0) &&
-          is(1, g, EV_EFFECT_STARTED, NGE_EVENT_NONE, EF_STRENGTH));
-    effect_text(EF_STRENGTH, EFFECT_TEXT_START, text, sizeof(text));
+          is(1, g, EV_EFFECT_STARTED, NGE_EVENT_NONE, EF_RAISE_STR));
+    effect_text(EF_RAISE_STR, EFFECT_TEXT_START, text, sizeof(text));
     CHECK_STR(text, "You feel strong!");
     stats_ability_base[ABIL_STR][g] = 30;
-    effect_apply(EF_STRENGTH, 1, g, NGE_ENTITY_INVALID);
+    effect_apply(EF_RAISE_STR, 1, g, NGE_ENTITY_INVALID);
     CHECK(stats_ability_base[ABIL_STR][g] == 31 && stats_ability[ABIL_STR][g] == 30);   /* the base may pass 30, the score can't */
     effects_set_base(g, ATTR_STR, 9);
     /* effects_check() notices every derived value out of step */
@@ -510,7 +510,8 @@ int main(void)
     ok = 1;
     for (i = 0; i < ATTR_COUNT; i++) {
         ok = ok && attrs_table[i].base != NULL && attrs_table[i].component != 0 &&
-             attrs_table[i].is_mask == (i == ATTR_IMMUNE || i == ATTR_RESIST || i == ATTR_VULN);
+             (attrs_table[i].combine == ATTRS_MASK) == (i == ATTR_IMMUNE || i == ATTR_RESIST || i == ATTR_VULN) &&
+             (attrs_table[i].combine == ATTRS_SIGNED) == (i == ATTR_TO_HIT);
     }
     CHECK(ok);
     CHECK(attrs_table[ATTR_HP_MAX].base == health_hp_max_base &&
@@ -572,7 +573,7 @@ int main(void)
     CHECK(health_hp[g] == 5 && stats_status[g] == 0 && effects_check(g));   /* damaged; no status stored */
     TEST_EXPECT_HALT(effects_set_base(g, ATTR_STR, 1));
     CHECK(test_halt_count == 1);
-    TEST_EXPECT_HALT(effect_apply(EF_STRENGTH, 1, g, NGE_ENTITY_INVALID));    /* raising a base it hasn't */
+    TEST_EXPECT_HALT(effect_apply(EF_RAISE_STR, 1, g, NGE_ENTITY_INVALID));    /* raising a base it hasn't */
     CHECK(test_halt_count == 1);
 
     /* ---- the player: their innate regeneration, then mana regeneration (a rule: they have mana) ---- */
@@ -859,6 +860,84 @@ int main(void)
     events();
     CHECK(find_event(0, EV_FIZZLED) < 0 && find_event(0, EV_LEFT_LEVEL) < 0 && find_event(0, EV_EFFECT_ENDED) >= 0);
     level_depth = 0;   /* AREA again, for what follows */
+
+    /* ---- the bonus to hit (docs/effects_extensions.md 3.7): signed, 0 at creation, -20 to +20 ---- */
+    reset();
+    g = goblin();
+    CHECK(stats_to_hit[g] == 0 && effects_base(g, ATTR_TO_HIT) == 0);
+    effect_apply(EF_BLESS, 3, g, NGE_ENTITY_INVALID);
+    CHECK(stats_to_hit[g] == 3 && effects_check(g));
+    effect_apply(EF_BANE, 5, g, NGE_ENTITY_INVALID);
+    CHECK(stats_to_hit[g] == -2 && effects_check(g));
+    effects_set_base(g, ATTR_TO_HIT, 25);                       /* +25 - 2: kept to +20 */
+    CHECK(stats_to_hit[g] == 20);
+    effects_set_base(g, ATTR_TO_HIT, (uint8_t)-30);             /* a signed base: -30 - 2, kept to -20 */
+    CHECK(stats_to_hit[g] == -20 && (int8_t)effects_base(g, ATTR_TO_HIT) == -30);
+    effects_raise_base(g, ATTR_TO_HIT, -100);                   /* a signed base stays within -128 to 127 */
+    CHECK((int8_t)effects_base(g, ATTR_TO_HIT) == -128 && stats_to_hit[g] == -20);
+    effects_raise_base(g, ATTR_TO_HIT, 127);
+    effects_raise_base(g, ATTR_TO_HIT, 127);
+    effects_raise_base(g, ATTR_TO_HIT, 127);                    /* -128 + 3 x 127: kept to 127 */
+    CHECK((int8_t)effects_base(g, ATTR_TO_HIT) == 127 && stats_to_hit[g] == 20);
+    /* Blinded: -4, a modifier of EF_BLIND, gone when cured; EF_CURE_BLIND cures it */
+    reset();
+    g = goblin();
+    effect_apply(EF_BLIND, 1, g, NGE_ENTITY_INVALID);
+    CHECK(stats_to_hit[g] == -4 && STATUS_HAS(g, STATUS_BLINDED));
+    effect_apply(EF_CURE_BLIND, 1, g, NGE_ENTITY_INVALID);
+    CHECK(stats_to_hit[g] == 0 && !STATUS_HAS(g, STATUS_BLINDED) && count_effects(g, EF_BLIND) == 0);
+    /* Heroism: to hit and maximum hit points */
+    effect_apply(EF_HEROISM, 2, g, NGE_ENTITY_INVALID);
+    CHECK(stats_to_hit[g] == 2 && health_hp_max[g] == 10 && health_hp[g] == 6);
+
+    /* ---- the table's new rows (3.8): a few through their attributes and ops ---- */
+    reset();
+    g = goblin();
+    effect_apply(EF_DRAIN_STR, 2, g, NGE_ENTITY_INVALID);
+    effect_apply(EF_GRACE, 3, g, NGE_ENTITY_INVALID);
+    CHECK(stats_ability[ABIL_STR][g] == effects_base(g, ATTR_STR) - 2 &&
+          stats_ability[ABIL_DEX][g] == effects_base(g, ATTR_DEX) + 3);
+    effect_apply(EF_SHIELD, 2, g, NGE_ENTITY_INVALID);
+    CHECK(health_ac[g] == 15);
+    effect_apply(EF_HEX, 1, g, NGE_ENTITY_INVALID);
+    effect_apply(EF_RESIST_POISON, 1, g, NGE_ENTITY_INVALID);
+    CHECK((health_vuln[g] & DMG_BIT(DMG_MAGIC)) && (health_resist[g] & DMG_BIT(DMG_POISON)));
+    health_hp_max_base[g] = 200;
+    effects_recompute(g);
+    health_heal(g, 200);
+    events();
+    effect_apply(EF_CORROSION, 3, g, NGE_ENTITY_INVALID);     /* 3 acid every 2 turns, no saving throw */
+    e = effect_on(g, EF_CORROSION);
+    fire(1);
+    CHECK(health_hp[g] == 197 && nge_timer_period[e] == 20);
+    run_out(g, EF_CORROSION);
+    CHECK(health_hp[g] == 188);                                 /* 4 firings */
+
+    /* ---- a negative amount: damage and healing do nothing; MP drain to 0 (R23) ---- */
+    reset();
+    g = goblin();
+    health_damage(g, NGE_ENTITY_INVALID, 2, DMG_SLASH);
+    events();
+    CHECK(health_hp[g] == 4);
+    effect_apply(EF_BOLT_FIRE, -3, g, NGE_ENTITY_INVALID);
+    effect_apply(EF_HEALING, -3, g, NGE_ENTITY_INVALID);
+    CHECK(health_hp[g] == 4);
+    events();
+    CHECK(find_event(0, EV_DAMAGED) < 0 && find_event(0, EV_HEALED) < 0);
+    effect_apply(EF_MANA, -3, g, NGE_ENTITY_INVALID);         /* no mana: nothing */
+    CHECK(events() == 1 && is(0, g, EV_EFFECT_STARTED, NGE_EVENT_NONE, EF_MANA));
+    player = gen_creature(CR_PLAYER, AREA);
+    effects_set_base(player, ATTR_MP_MAX, 9);
+    mana_mp[player] = 5;
+    events();
+    effect_apply(EF_MANA, -3, player, NGE_ENTITY_INVALID);
+    CHECK(mana_mp[player] == 2 && events() == 2 && is(0, player, EV_MANA_SPENT, NGE_EVENT_NONE, 3));
+    effect_apply(EF_MANA, -5, player, NGE_ENTITY_INVALID);    /* stops at 0 */
+    CHECK(mana_mp[player] == 0 && events() == 2 && is(0, player, EV_MANA_SPENT, NGE_EVENT_NONE, 2));
+    effect_apply(EF_MANA, -1, player, NGE_ENTITY_INVALID);    /* none left: it fizzles */
+    CHECK(mana_mp[player] == 0 && events() == 1 && is(0, player, EV_FIZZLED, NGE_EVENT_NONE, OP_MANA));
+    effect_apply(EF_MANA, 4, player, NGE_ENTITY_INVALID);     /* positive: restored as ever */
+    CHECK(mana_mp[player] == 4);
 
     /* ---- asserts ---- */
     reset();

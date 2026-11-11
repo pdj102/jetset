@@ -45,9 +45,6 @@
 #define ATTACK_ROLL_HIT   20
 #define ATTACK_ROLL_MISS  1
 
-/** To hit for an attacker that is blinded (STATUS_BLINDED), melee or ranged. */
-#define ATTACK_BLINDED_TO_HIT  (-4)
-
 /** Kind attack: the attack part of a creature's (melee) or an item's kind record (its range says melee or ranged). */
 typedef struct attack_kind {
     int8_t  to_hit;    /**< Added to the d20 roll. */
@@ -103,8 +100,9 @@ uint8_t attack_damage(nge_entity_id_t id, uint8_t use, int8_t to_damage) NGE_BAN
  * @brief What creature actor adds to the roll with an attack of this use,
  *        whoever's attack component it makes (its weapon's, launcher's,
  *        thrown item's or its own): its ability modifier (STATS_MOD()), of
- *        Strength for melee, of Dexterity for ranged, plus its conditions'
- *        penalties (ATTACK_BLINDED_TO_HIT); 0 without stats (COMPONENT_STATS).
+ *        Strength for melee, of Dexterity for ranged, plus its bonus to hit
+ *        (stats_to_hit, ATTR_TO_HIT: blessings, curses, blindness); 0
+ *        without stats (COMPONENT_STATS).
  */
 int8_t attack_actor_to_hit(nge_entity_id_t actor, uint8_t use) NGE_BANKED;
 

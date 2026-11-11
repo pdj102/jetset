@@ -115,10 +115,7 @@ int8_t attack_actor_to_hit(nge_entity_id_t actor, uint8_t use) NGE_BANKED
         return 0;
     }
     to_hit = ability_mod(actor, use);
-    if (STATUS_HAS(actor, STATUS_BLINDED)) {
-        to_hit = (int8_t)(to_hit + ATTACK_BLINDED_TO_HIT);
-    }
-    return to_hit;
+    return (int8_t)(to_hit + stats_to_hit[actor]);   /* -5 to +10 and -20 to +20: no overflow */
 }
 
 int8_t attack_actor_to_damage(nge_entity_id_t actor, uint8_t use) NGE_BANKED

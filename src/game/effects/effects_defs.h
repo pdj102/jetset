@@ -34,9 +34,9 @@
 #define OP_NONE        0
 #define OP_CURE        1   /* end the target's effects granting statuses arg (effect_cure()) */
 #define OP_RAISE_BASE  2   /* add amount (maybe negative) to attribute arg's base, for good */
-#define OP_DAMAGE      3   /* amount damage of type arg (DMG_*), through health_damage() */
-#define OP_HEAL        4   /* heal amount, through health_heal() */
-#define OP_MANA        5   /* restore amount MP, through mana_restore(): nothing without mana */
+#define OP_DAMAGE      3   /* amount damage of type arg (DMG_*), through health_damage(); nothing below 1 */
+#define OP_HEAL        4   /* heal amount, through health_heal(); nothing below 1 */
+#define OP_MANA        5   /* restore amount MP (mana_restore()), or drain them to 0 if negative (mana_spend()): nothing without mana */
 #define OP_UNCURSE     10  /* lift the curse of everything the target has equipped (ITEM_UNCURSED) */
 #define OP_TELEPORT    9   /* to random free floor on the level (level_free_floor()) */
 #define OP_SUMMON      12  /* amount random creatures for the depth (at most 3) around the target */

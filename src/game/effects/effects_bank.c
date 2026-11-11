@@ -149,6 +149,31 @@ static void level_teleport(nge_entity_id_t target, uint8_t way, int8_t levels)
     }
 }
 
+/* MP back (amount above 0), or drained down to 0 (below 0): nothing without mana, and a drain of none fizzles */
+static void change_mana(nge_entity_id_t target, int8_t amount)
+{
+    uint8_t mp;
+    uint8_t drain;
+
+    if (!MANA_IS(target)) {
+        return;
+    }
+    if (amount > 0) {
+        mana_restore(target, (uint8_t)amount);
+        return;
+    }
+    mp = mana_mp[target];
+    drain = (uint8_t)-amount;
+    if (drain > mp) {
+        drain = mp;   /* stops at 0 */
+    }
+    if (drain == 0) {
+        fizzle(target, OP_MANA);
+    } else {
+        mana_spend(target, drain);
+    }
+}
+
 /*
  * To random free floor on the level (level_free_floor()). EV_MOVED with no
  * step: nothing slides, and the camera, which follows the player
@@ -258,15 +283,17 @@ static void run_op(const effect_op_t *op, int8_t power, nge_entity_id_t target, 
         effects_raise_base(target, arg, amount);
         break;
     case OP_DAMAGE:
-        health_damage(target, source, (uint8_t)amount, arg);
+        if (amount > 0) {   /* a negative power heals no one (docs/effects.md, "Negative power on an op") */
+            health_damage(target, source, (uint8_t)amount, arg);
+        }
         break;
     case OP_HEAL:
-        health_heal(target, (uint8_t)amount);
+        if (amount > 0) {
+            health_heal(target, (uint8_t)amount);
+        }
         break;
     case OP_MANA:
-        if (MANA_IS(target)) {
-            mana_restore(target, (uint8_t)amount);
-        }
+        change_mana(target, amount);
         break;
     case OP_UNCURSE:
         uncurse(target);
