@@ -15,6 +15,7 @@
 #include "game/components/item.h"
 #include "game/components/kind.h"
 #include "game/effects/effects.h"
+#include "game/spells/spells.h"
 #include "game/events.h"
 #include "game/gen/gen.h"
 
@@ -22,14 +23,14 @@ uint8_t act_aim(act_t *a, uint8_t mode) NGE_BANKED
 {
     nge_entity_id_t actor = a->actor;
     nge_entity_id_t item = a->item;
-    nge_entity_id_t target = actor;
+    act_shape_t s;
     uint16_t hook;
     uint8_t ef;
     uint8_t wand;
-    uint8_t how;
+    uint8_t shape;
     uint8_t reason;
 
-    /* 1. Context */
+    /* 1. Context: the item's shape, from its kind */
     nge_util_assert(actor < NGE_ENTITY_MAX && NGE_ENTITY_IS_ALIVE(actor));
     nge_util_assert(NGE_ENTITY_HAS_COMPONENT(actor, NGE_COMPONENT_LOCATION));
     nge_util_assert(item < NGE_ENTITY_MAX);
@@ -51,15 +52,16 @@ uint8_t act_aim(act_t *a, uint8_t mode) NGE_BANKED
         return act_fail(a, ACT_R_NO_CHARGES);
     }
     a->effect = ef;
-    if (a->x == NGE_LOCATION_X(actor) && a->y == NGE_LOCATION_Y(actor)) {
+    shape = gen_item_shape(kind_index[item]);
+    s.shape = shape;
+    if ((shape == SPELL_BOLT || shape == SPELL_DIRECT) && a->x == NGE_LOCATION_X(actor) &&
+        a->y == NGE_LOCATION_Y(actor)) {
         a->target = actor;   /* only aim does this: a staff of healing can heal its holder */
     } else {
-        how = (gen_item_flags(kind_index[item]) & ITEMF_DIRECT) ? ACT_LINE_DIRECT : ACT_LINE_BOLT;
-        reason = act_line(a, ACT_AIM_RANGE, how);
+        reason = act_shape_find(a, &s, ACT_AIM_RANGE);
         if (reason != ACT_R_NONE) {
             return act_fail(a, reason);
         }
-        target = a->target;
     }
     if (mode == ACT_CHECK) {
         return act_checked(a);
@@ -68,12 +70,12 @@ uint8_t act_aim(act_t *a, uint8_t mode) NGE_BANKED
     /* 3. Resolve: nothing to roll: the effect's own saving throw decides what it does */
 
     /* 4. Apply: a charge used, or a parchment used up, then the effect, with the actor as its source */
-    nge_event_post(target, EV_AIMED, actor, item, 0);
+    nge_event_post(a->target, EV_AIMED, actor, item, 0);
     if (wand) {
         item_count[item]--;
     } else {
         nge_entity_destroy(item);
     }
-    effect_apply(ef, GEN_HOOK_POWER(hook), target, actor);
+    act_shape_apply(a, &s, ef, GEN_HOOK_POWER(hook));
     return act_succeed(a);
 }

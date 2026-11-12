@@ -24,6 +24,8 @@
 #include "game/effects/effects.h"
 #include "game/events.h"
 #include "game/gen/gen.h"
+#include "game/level/level.h"
+#include "game/spells/spells.h"
 #include "map/nge_map.h"
 
 /* What a line of fire passes: everything solid or outside the map stops it, and pits don't */
@@ -101,6 +103,55 @@ uint8_t act_line(act_t *a, uint8_t range, uint8_t how)
         }
     }
     return ACT_R_NO_TARGET;
+}
+
+uint8_t act_shape_find(act_t *a, act_shape_t *s, uint8_t range)
+{
+    nge_entity_id_t actor = a->actor;
+    uint8_t shape = s->shape;
+    uint8_t tx = a->x;   /* in locals (T-ZSDCC-1) */
+    uint8_t ty = a->y;
+    uint8_t reason;
+
+    nge_util_assert(shape < SPELL_SHAPE_COUNT);
+
+    s->count = 0;
+    if (shape == SPELL_SELF) {
+        a->target = actor;
+        return ACT_R_NONE;
+    }
+    if (shape == SPELL_TILE) {
+        /* A free tile in range and line: a creature there is in the way; the effect is the actor's */
+        reason = act_line(a, range, ACT_LINE_DIRECT);
+        if (reason == ACT_R_NONE) {
+            return ACT_R_BLOCKED_ENTITY;   /* a->target: the creature */
+        }
+        if (reason != ACT_R_NO_TARGET || (tx == NGE_LOCATION_X(actor) && ty == NGE_LOCATION_Y(actor))) {
+            return reason;   /* out of range, no line, or its own tile */
+        }
+        if (!level_can_enter(actor, tx, ty, &a->target)) {
+            return (a->target != NGE_ENTITY_INVALID) ? ACT_R_BLOCKED_ENTITY : ACT_R_BLOCKED;
+        }
+        a->target = actor;
+        s->cx = tx;
+        s->cy = ty;
+        return ACT_R_NONE;
+    }
+    nge_util_assert(shape == SPELL_BOLT || shape == SPELL_DIRECT);   /* ball and burst: not yet */
+
+    /* The actor's own tile is ACT_R_NO_TARGET: a check there asks whether it can act at all */
+    return act_line(a, range, (shape == SPELL_DIRECT) ? ACT_LINE_DIRECT : ACT_LINE_BOLT);
+}
+
+void act_shape_apply(act_t *a, const act_shape_t *s, uint8_t ef, int8_t power)
+{
+    nge_entity_id_t actor = a->actor;
+    /* The shape is valid: act_shape_find() asserted it */
+    if (s->shape == SPELL_TILE) {
+        effect_apply_at(ef, power, actor, actor, s->cx, s->cy);
+    } else {
+        effect_apply(ef, power, a->target, actor);   /* self, bolt, direct */
+    }
 }
 
 uint8_t act_find_feature(act_t *a, uint8_t can, uint8_t cant)

@@ -50,12 +50,14 @@
 #define SP_BLINK        11   /**< Level 2, tile: the caster to a free tile in sight. */
 #define SPELL_COUNT     12
 
-/* Shapes: who a spell reaches */
+/* Shapes: who a spell or an aimed item reaches (an item's: gen_item_shape()) */
 #define SPELL_SELF    0   /**< The caster. */
 #define SPELL_BOLT    1   /**< The first creature on the line to a tile (ACT_LINE_BOLT). */
 #define SPELL_DIRECT  2   /**< The creature on the chosen tile, past any on the way (ACT_LINE_DIRECT). */
 #define SPELL_TILE    3   /**< A free tile in range and line, never a creature: its effect on the caster, there (effect_apply_at()). */
-#define SPELL_SHAPE_COUNT  4
+#define SPELL_BALL    4   /**< Every creature within ACT_BALL_RADIUS of the chosen tile, the caster too (ACT_LINE_DIRECT). */
+#define SPELL_BURST   5   /**< Every creature within ACT_BURST_RADIUS of the caster, not the caster. */
+#define SPELL_SHAPE_COUNT  6
 
 /* When the AI casts a spell */
 #define SPELL_AI_NEVER   0   /**< Never: the AI can't use it well. */

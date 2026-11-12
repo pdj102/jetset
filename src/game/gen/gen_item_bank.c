@@ -114,6 +114,20 @@ uint8_t gen_item_flags(uint8_t kind) NGE_BANKED
     return gen_items[kind].flags;
 }
 
+/* The shapes by (flags & ITEMF_SHAPE) >> 2: the field's five valid values */
+static const uint8_t shapes[] = {SPELL_BOLT, SPELL_DIRECT, SPELL_TILE, SPELL_BALL, SPELL_BURST};
+
+uint8_t gen_item_shape(uint8_t kind) NGE_BANKED
+{
+    uint8_t i;
+
+    nge_util_assert(kind < IT_COUNT);
+
+    i = (uint8_t)((uint8_t)(gen_items[kind].flags & ITEMF_SHAPE) >> 2);   /* unsigned (T-INT-2) */
+    nge_util_assert(i < sizeof(shapes) / sizeof(shapes[0]));   /* 0x14 to 0x1C are invalid */
+    return shapes[i];
+}
+
 void gen_item_attack(uint8_t kind, attack_kind_t *attack) NGE_BANKED
 {
     nge_util_assert(kind < IT_COUNT);

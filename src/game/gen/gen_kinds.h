@@ -301,7 +301,17 @@
 /* Item flags, in each item's kind record: their rules are in the inventory component */
 #define ITEMF_TWO_HANDS  0x01   /* fills SLOT_SHIELD too */
 #define ITEMF_CURSED     0x02   /* can't be taken off, until uncursed (ITEM_UNCURSED) */
-#define ITEMF_DIRECT     0x04   /* aimed past creatures to the chosen tile (ACT_LINE_DIRECT) */
+
+/*
+ * An aimed item's shape (SPELL_*): a field of three bits in the flags, not
+ * flags, so a kind has one. A row sets one value; none is SPELL_BOLT, and
+ * 0x14 to 0x1C are invalid. Read it with gen_item_shape()
+ */
+#define ITEMF_SHAPE      0x1C   /* the field's mask */
+#define ITEMF_DIRECT     0x04   /* SPELL_DIRECT: past creatures to the chosen tile (ACT_LINE_DIRECT) */
+#define ITEMF_TILE       0x08   /* SPELL_TILE: its user, to a free tile */
+#define ITEMF_BALL       0x0C   /* SPELL_BALL: every creature around the chosen tile, the user too */
+#define ITEMF_BURST      0x10   /* SPELL_BURST: every creature around the user, not the user */
 
 /* An ammo group: what ammo works with what launcher (GROUP_*) */
 #define GROUP_NONE    0

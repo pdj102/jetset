@@ -62,6 +62,30 @@ uint8_t act_strike(act_t *a, nge_entity_id_t attacker, uint8_t use, nge_entity_i
  */
 uint8_t act_line(act_t *a, uint8_t range, uint8_t how);
 
+/*
+ * Who a shape (SPELL_*) reaches, for act_aim() and act_cast(): found by
+ * act_shape_find() in validation, then applied by act_shape_apply(). On the
+ * action's stack. See docs/items_aimed.md, section 4.3
+ */
+typedef struct act_shape {
+    uint8_t shape;                       /* in: SPELL_* */
+    uint8_t cx, cy;                      /* out: a tile's or an area's centre */
+    uint8_t count;                       /* out: the creatures in ids[] */
+    nge_entity_id_t ids[ACT_AREA_MAX];   /* out: an area's creatures, nearest first */
+} act_shape_t;
+
+/*
+ * Validate: who s->shape reaches from a->actor towards (a->x, a->y) within
+ * range. Sets a->target (the actor for self and tile) and s's outputs. No
+ * random numbers, so a check gets the same answer. Returns ACT_R_NONE, or
+ * why not: act_line()'s reasons; for a tile, ACT_R_BLOCKED_ENTITY (a->target:
+ * the creature) or ACT_R_BLOCKED, and ACT_R_NO_TARGET for the actor's own tile
+ */
+uint8_t act_shape_find(act_t *a, act_shape_t *s, uint8_t range);
+
+/* Apply: effect ef at power to whom act_shape_find() found, with the actor as its source */
+void act_shape_apply(act_t *a, const act_shape_t *s, uint8_t ef, int8_t power);
+
 /* 1 if id can't leave its tile (STATUS_ROOTED): an actor without stats has no statuses */
 uint8_t act_rooted(nge_entity_id_t id);
 

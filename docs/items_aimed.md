@@ -483,3 +483,18 @@ CSpect checks are in the plan.
 - **zsdcc.** The shape lookup shifts a flags byte: unsigned, and the asm read once
   (toolchain.md T-ZSDCC-3). The helper reads `a->x`, `a->y` and the struct's fields into
   locals (T-ZSDCC-1).
+
+## As built
+
+### Step 1: shapes and the helper
+
+- **Memory.** In the hardware build (`-DNDEBUG`) the step costs what the plan says:
+  `BANK_56` grows by 14 bytes (the helper +456, `act_cast.c` -408, `act_aim.c` -34) and
+  page 108 by 46. The CSpect build keeps its asserts, each with its expression and the
+  file's name as strings in its own page: there `BANK_56` grows by 318 bytes, to 15,265 of
+  16,384 (1,119 free), and page 108 by 179. R21's "about 2.7K free" is not the CSpect
+  build's figure: steps 3 and 4 must be measured against the 1,119 bytes, with few asserts
+  in the area code.
+- **`act_shape_apply()` asserts nothing:** `act_shape_find()` has checked the shape.
+- **`test_gen`'s direct-kinds loop** compares the whole field to `ITEMF_DIRECT`, not the
+  bit: `ITEMF_BALL` (0x0C) has bit 2 set too. It checks the same 11 kinds.

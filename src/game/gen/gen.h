@@ -200,6 +200,13 @@ uint8_t gen_item_armour_ac(uint8_t kind) NGE_BANKED;
 uint8_t gen_item_flags(uint8_t kind) NGE_BANKED;
 
 /**
+ * @brief An aimed item kind's shape (SPELL_*), from its ITEMF_SHAPE field:
+ *        SPELL_BOLT if the field is empty, as for a kind with no aim hook.
+ *        Asserts an invalid value. Banked with the item table (page 108).
+ */
+uint8_t gen_item_shape(uint8_t kind) NGE_BANKED;
+
+/**
  * @brief Copy an item kind's attack part into *attack (in common memory: on
  *        the caller's stack): dice 0 for none, as ammo that only adds its
  *        bonuses has. Banked with the item table (page 108).

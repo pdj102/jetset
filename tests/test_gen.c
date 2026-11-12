@@ -446,16 +446,35 @@ int main(void)
           gen_item_pick_bonus(IT_FINE_LOCK_PICK) == 3 && gen_item_pick_bonus(IT_KEY_GOLD) == 0);
     CHECK(gen_item_flags(IT_QUARTERSTAFF) == ITEMF_TWO_HANDS && gen_item_flags(IT_RUSTY_SWORD) == ITEMF_CURSED &&
           gen_item_flags(IT_SWORD) == 0);
-    /* Direct items: exactly those that don't fly (docs/action_aim.md, docs/items_extensions.md) */
+    /*
+     * The shape field holds a valid value (docs/items_aimed.md 4.2), and
+     * direct items are exactly those that don't fly (docs/action_aim.md,
+     * docs/items_extensions.md)
+     */
     ok = 1;
     for (kind = 0; kind < IT_COUNT; kind++) {
-        ok = ok && ((gen_item_flags(kind) & ITEMF_DIRECT) != 0) ==
+        ok = ok && (gen_item_flags(kind) & ITEMF_SHAPE) <= ITEMF_BURST;
+    }
+    CHECK(ok);
+    ok = 1;
+    for (kind = 0; kind < IT_COUNT; kind++) {
+        ok = ok && ((gen_item_flags(kind) & ITEMF_SHAPE) == ITEMF_DIRECT) ==
                        (kind == IT_SP_SLEEP || kind == IT_WAND_SLOW || kind == IT_WAND_SLEEP ||
                         kind == IT_WAND_TELEPORT || kind == IT_STAFF_HEALING ||
                         kind == IT_SP_TERROR || kind == IT_SP_CONFUSE || kind == IT_SP_HOLD ||
                         kind == IT_SP_HEX || kind == IT_SP_BANE || kind == IT_WAND_WEAKNESS);
     }
     CHECK(ok);
+    /* gen_item_shape(): SPELL_DIRECT for exactly the direct kinds, SPELL_BOLT for the other aim kinds */
+    ok = 1;
+    for (kind = 0; kind < IT_COUNT; kind++) {
+        if (GEN_HOOK_EF(gen_item_hook(kind, GEN_HOOK_AIM)) != EF_NONE) {
+            ok = ok && gen_item_shape(kind) ==
+                           (((gen_item_flags(kind) & ITEMF_SHAPE) == ITEMF_DIRECT) ? SPELL_DIRECT : SPELL_BOLT);
+        }
+    }
+    CHECK(ok && gen_item_shape(IT_WAND_SLEEP) == SPELL_DIRECT && gen_item_shape(IT_WAND_FIRE) == SPELL_BOLT &&
+          gen_item_shape(IT_SWORD) == SPELL_BOLT);
     /*
      * Every effect is made by some item kind (docs/items_extensions.md R1),
      * but for those meant for monsters and innate ones, and blink, which needs

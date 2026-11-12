@@ -118,6 +118,13 @@ typedef struct act {
 /** How far an aimed item reaches (nge_map_within()): a kind has no range of its own. */
 #define ACT_AIM_RANGE  8
 
+/** How far an area reaches from its centre (nge_map_within()): SPELL_BALL's and SPELL_BURST's. */
+#define ACT_BALL_RADIUS   1   /**< 9 tiles. */
+#define ACT_BURST_RADIUS  2   /**< 21 tiles. */
+
+/** Creatures an area reaches, at most: the nearest, so one action's events fit the queue. */
+#define ACT_AREA_MAX  8
+
 /* Reasons (refused or attempted: the table in act.c) */
 #define ACT_R_NONE              0   /**< Succeeded. */
 #define ACT_R_BLOCKED           1   /**< Refused: the map blocks the way (a wall, the edge). */
@@ -414,15 +421,18 @@ uint8_t act_fire(act_t *a, uint8_t mode) NGE_BANKED;
 /**
  * @brief Send an item's aim hook (GEN_HOOK_AIM) at the first creature on
  *        the line towards the tile (a->x, a->y), within ACT_AIM_RANGE, or
- *        at the actor if it is the actor's own tile. An ITEMF_DIRECT kind
- *        passes creatures on the way, to the one on the tile. A wand or
- *        staff uses a charge and is kept at 0; a parchment is destroyed.
+ *        at the actor if it is the actor's own tile. The kind's shape
+ *        (gen_item_shape()) says who: SPELL_DIRECT passes creatures on the
+ *        way, to the one on the tile; SPELL_TILE sends the actor to a free
+ *        tile. A wand or staff uses a charge and is kept at 0; a parchment
+ *        is destroyed.
  *
  * Inputs: actor (alive, placed), item, x, y. Outputs: target; effect, the
  * effect. Posts EV_AIMED, then the effect's events, with the actor as
  * their source, so a kill earns its XP. Refused with ACT_R_NOT_CARRIED,
  * ACT_R_EQUIPPED, ACT_R_CANT_AIM, ACT_R_NO_CHARGES, ACT_R_OUT_OF_RANGE,
- * ACT_R_NO_LINE or ACT_R_NO_TARGET.
+ * ACT_R_NO_LINE or ACT_R_NO_TARGET, and for a tile ACT_R_BLOCKED or
+ * ACT_R_BLOCKED_ENTITY.
  *
  * A check on the actor's own tile asks about the item alone.
  */
