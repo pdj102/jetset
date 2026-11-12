@@ -108,9 +108,11 @@ dataseg = $(shell sed -n '1,5s|^/\* *nge-dataseg: *\(PAGE_[0-9]*\) *\*/.*|-Cs--d
 # own page, out of common memory. See "Assert messages" in docs/memory_map.md.
 assert_paged = $(if $(shell grep -l '^ *\#pragma codeseg' $(1)),,-DNGE_UTIL_ASSERT_PAGED)
 
+# The compile fails on zsdcc warning 147, which means bytes laid out wrong
+# (scripts/zcc-checked.sh).
 $(OBJDIR)/%.o: src/%.c | $(TILE_DATA) $(SPRITE_DATA)
 	@mkdir -p $(dir $@)
-	$(ZCC) -c +zxn -clib=sdcc_iy $(INCLUDES) $(NGE_CONFIG) $(CFLAGS) $(call assert_paged,$<) $(call dataseg,$<) $< -o $@
+	scripts/zcc-checked.sh $(ZCC) -c +zxn -clib=sdcc_iy $(INCLUDES) $(NGE_CONFIG) $(CFLAGS) $(call assert_paged,$<) $(call dataseg,$<) $< -o $@
 	@$(HOSTCC) $(DEPFLAGS) $(INCLUDES) $(NGE_CONFIG) $(CFLAGS) $<
 
 $(OBJDIR)/%.o: src/%.asm
