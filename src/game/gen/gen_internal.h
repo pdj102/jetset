@@ -111,11 +111,25 @@ typedef struct gen_item_hook {
     int8_t  power;   /* not 0 if ef is set */
 } gen_item_hook_t;
 
+/*
+ * The kind record's byte whose meaning depends on the subclass, read only by
+ * its meaning's reader in page 108 (docs/items.md 4.7). Named, not anonymous:
+ * zsdcc miscompiles an anonymous union's initialisers (D19). A subclass with
+ * no meaning leaves it 0.
+ */
+typedef union gen_item_data {
+    uint8_t ammo_group;      /* ITEM_RANGED, ITEM_AMMO: GROUP_* */
+    uint8_t key_lock_group;  /* ITEM_KEY: KEY_* */
+    uint8_t pick_bonus;      /* ITEM_TOOL: the lock pick's bonus */
+    uint8_t book_spells;     /* ITEM_BOOK: SPELL_BOOK_* */
+    uint8_t armour_ac;       /* ITEM_ARMOUR: its AC */
+} gen_item_data_t;
+
 typedef struct gen_item_kind {
     const char     *name;      /* in the table's page: 19 characters at most */
     gen_item_render_t render;
     uint8_t         subclass;  /* ITEM_POTION, ITEM_WEAPON... (gen_kinds.h) */
-    uint8_t         group;     /* GROUP_* or KEY_*, or a lock pick's bonus */
+    gen_item_data_t data;      /* by subclass: see gen_item_data_t */
     uint8_t         flags;     /* ITEMF_* */
     uint8_t         count;     /* item_count[] when made */
     uint16_t        fits;      /* the slots it can be equipped in (SLOT_BIT() mask), 0 for none */

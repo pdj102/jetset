@@ -176,8 +176,25 @@ uint16_t gen_hook_of(nge_entity_id_t id, uint8_t hook);
 /** @brief An item kind's (IT_*) subclass (ITEM_POTION...). Banked with the item table (page 108). */
 uint8_t gen_item_subclass(uint8_t kind) NGE_BANKED;
 
-/** @brief An item kind's group: GROUP_*, KEY_*, or a lock pick's bonus. Banked with the item table (page 108). */
-uint8_t gen_item_group(uint8_t kind) NGE_BANKED;
+/*
+ * The readers of an item kind's subclass-dependent data (docs/items.md 4.7),
+ * banked with the item table (page 108). Each checks the subclass.
+ */
+
+/** @brief A launcher's or ammo's GROUP_*: they must share one. GROUP_NONE for another subclass. */
+uint8_t gen_item_ammo_group(uint8_t kind) NGE_BANKED;
+
+/** @brief The KEY_* of the locks a key opens (KEY_ANY: all). KEY_NONE for another subclass. */
+uint8_t gen_item_key_lock_group(uint8_t kind) NGE_BANKED;
+
+/** @brief A lock pick's (ITEM_TOOL) bonus to its roll. 0 for another subclass. */
+uint8_t gen_item_pick_bonus(uint8_t kind) NGE_BANKED;
+
+/** @brief A book's SPELL_BOOK_*: its list of spells. Asserts the kind is a book (0 is a list). */
+uint8_t gen_item_book_spells(uint8_t kind) NGE_BANKED;
+
+/** @brief Armour's AC (docs/items.md 4.11). 0 for another subclass. */
+uint8_t gen_item_armour_ac(uint8_t kind) NGE_BANKED;
 
 /** @brief An item kind's ITEMF_* flags. Banked with the item table (page 108). */
 uint8_t gen_item_flags(uint8_t kind) NGE_BANKED;

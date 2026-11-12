@@ -291,7 +291,7 @@
 #define ITEM_KEY        13
 #define ITEM_TOOL       14
 #define ITEM_TREASURE   15
-#define ITEM_BOOK       16   /* a spell book: group is a SPELL_BOOK_* (docs/spells.md 10.5.3) */
+#define ITEM_BOOK       16   /* a spell book: its data is a SPELL_BOOK_* (docs/spells.md 10.5.3) */
 #define ITEM_COUNT      17
 
 /* Item flags, in each item's kind record: their rules are in the inventory component */
@@ -299,7 +299,7 @@
 #define ITEMF_CURSED     0x02   /* can't be taken off, until uncursed (ITEM_UNCURSED) */
 #define ITEMF_DIRECT     0x04   /* aimed past creatures to the chosen tile (ACT_LINE_DIRECT) */
 
-/* An item kind's group: what ammo works with what launcher (GROUP_*) */
+/* An ammo group: what ammo works with what launcher (GROUP_*) */
 #define GROUP_NONE    0
 #define GROUP_ARROW   1
 #define GROUP_BOLT    2
@@ -307,7 +307,8 @@
 #define GROUP_THROWN  4   /* needs no launcher */
 #define GROUP_COUNT   5
 
-/* ...or which locks a key opens (KEY_*); a lock pick's group is its bonus */
+/* Which locks a key opens (KEY_*) */
+#define KEY_NONE    0   /* not a key: opens no lock */
 #define KEY_IRON    1
 #define KEY_BRASS   2
 #define KEY_SILVER  3

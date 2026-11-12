@@ -20,7 +20,7 @@
  * Slots and books (docs/spells.md section 10): the player has spell slots
  * at each spell level, by class and character level (spell_slots()); each
  * known spell fills one of its level. The player learns only from a spell
- * book, an item whose kind's group is a SPELL_BOOK_* list (spell_book()),
+ * book, an item whose kind's data is a SPELL_BOOK_* list (spell_book()),
  * into a free slot (spell_free()): ACT_LEARN, which ends in spell_learn().
  * Monsters have no slots and know their kind's list.
  *
@@ -67,7 +67,7 @@
 /* Spell levels: 0 is an ability, which costs nothing */
 #define SPELL_LEVEL_MAX  5
 
-/* Spell books (docs/spells.md 10.5.3): an ITEM_BOOK kind's group, a row of spell_books[] */
+/* Spell books (docs/spells.md 10.5.3): an ITEM_BOOK kind's data.book_spells, a row of spell_books[] */
 #define SPELL_BOOK_BASIC   0   /**< Spells of levels 1 and 2. */
 #define SPELL_BOOK_ADEPT   1   /**< Levels 3 and 4. */
 #define SPELL_BOOK_MASTER  2   /**< Level 5. */

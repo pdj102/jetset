@@ -36,14 +36,14 @@ static uint8_t find_shooter(nge_entity_id_t actor, nge_entity_id_t *attacker, ng
         ammo = inv_equipped(actor, SLOT_AMMO);
         launcher = inv_equipped(actor, SLOT_RANGED);
     }
-    if (ammo != NGE_ENTITY_INVALID && gen_item_group(kind_index[ammo]) == GROUP_THROWN) {
+    if (ammo != NGE_ENTITY_INVALID && gen_item_ammo_group(kind_index[ammo]) == GROUP_THROWN) {
         who = ammo;
         *shot = ammo;
     } else if (launcher != NGE_ENTITY_INVALID) {
         if (ammo == NGE_ENTITY_INVALID) {
             return ACT_R_NO_AMMO;
         }
-        if (gen_item_group(kind_index[ammo]) != gen_item_group(kind_index[launcher])) {
+        if (gen_item_ammo_group(kind_index[ammo]) != gen_item_ammo_group(kind_index[launcher])) {
             return ACT_R_WRONG_AMMO;
         }
         who = launcher;

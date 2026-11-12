@@ -159,6 +159,29 @@ static int attack_ok(nge_entity_id_t id, const attack_kind_t *a)
            attack_dice[ATTACK_RANGED][id] == a->dice && attack_type[ATTACK_RANGED][id] == a->type;
 }
 
+/*
+ * Each reader of the record's data (docs/items.md 4.7, R30) gives its member
+ * for its subclasses and its "another subclass" value for the rest, and a
+ * subclass with no meaning leaves the byte 0
+ */
+static int data_readers_ok(uint8_t kind)
+{
+    const gen_item_kind_t *k = &gen_items[kind];
+    uint8_t sub = k->subclass;
+    uint8_t ammo = (sub == ITEM_RANGED || sub == ITEM_AMMO);
+
+    if (gen_item_ammo_group(kind) != (ammo ? k->data.ammo_group : GROUP_NONE) ||
+        gen_item_key_lock_group(kind) != (sub == ITEM_KEY ? k->data.key_lock_group : KEY_NONE) ||
+        gen_item_pick_bonus(kind) != (sub == ITEM_TOOL ? k->data.pick_bonus : 0) ||
+        gen_item_armour_ac(kind) != (sub == ITEM_ARMOUR ? k->data.armour_ac : 0)) {
+        return 0;
+    }
+    if (sub == ITEM_BOOK) {   /* its reader asserts on any other subclass */
+        return gen_item_book_spells(kind) == k->data.book_spells;
+    }
+    return ammo || sub == ITEM_KEY || sub == ITEM_TOOL || sub == ITEM_ARMOUR || k->data.armour_ac == 0;
+}
+
 /* An item kind's record is well formed for its subclass */
 static int kind_ok(uint8_t kind)
 {
@@ -176,16 +199,17 @@ static int kind_ok(uint8_t kind)
         return h->hook == GEN_HOOK_AIM && h->ef != EF_NONE && k->fits == 0 && k->count != 0;
     case ITEM_RANGED:
         return k->fits == SLOT_BIT(SLOT_RANGED) && k->attack.range >= 2 && k->attack.dice != 0 &&
-               k->group != GROUP_NONE && k->group != GROUP_THROWN && k->group < GROUP_COUNT;
+               k->data.ammo_group != GROUP_NONE && k->data.ammo_group != GROUP_THROWN && k->data.ammo_group < GROUP_COUNT;
     case ITEM_AMMO:
-        if (k->fits != SLOT_BIT(SLOT_AMMO) || k->count == 0 || k->group == GROUP_NONE || k->group >= GROUP_COUNT) {
+        if (k->fits != SLOT_BIT(SLOT_AMMO) || k->count == 0 || k->data.ammo_group == GROUP_NONE ||
+            k->data.ammo_group >= GROUP_COUNT) {
             return 0;
         }
-        return (k->group == GROUP_THROWN) ? k->attack.dice != 0 && k->attack.range >= 2 : k->attack.dice == 0;
+        return (k->data.ammo_group == GROUP_THROWN) ? k->attack.dice != 0 && k->attack.range >= 2 : k->attack.dice == 0;
     case ITEM_KEY:
-        return k->group >= KEY_IRON && k->group < KEY_COUNT;
+        return k->data.key_lock_group >= KEY_IRON && k->data.key_lock_group < KEY_COUNT;
     case ITEM_BOOK:   /* a list of spells, never used, worn or aimed (docs/spells.md R40) */
-        return k->group < SPELL_BOOK_COUNT && h->ef == EF_NONE && k->fits == 0 &&
+        return k->data.book_spells < SPELL_BOOK_COUNT && h->ef == EF_NONE && k->fits == 0 &&
                k->attack.dice == 0 && k->count == 0;
     case ITEM_WEAPON:
         return k->fits == SLOT_BIT(SLOT_WEAPON) && k->attack.dice != 0 && k->attack.range == 1;
@@ -337,7 +361,8 @@ int main(void)
         attack_kind_t attack;
 
         ok = ok && gen_item_subclass(kind) == gen_items[kind].subclass;
-        ok = ok && gen_item_group(kind) == gen_items[kind].group && gen_item_flags(kind) == gen_items[kind].flags;
+        ok = ok && gen_item_flags(kind) == gen_items[kind].flags;
+        ok = ok && data_readers_ok(kind);
         gen_item_attack(kind, &attack);
         ok = ok && memcmp(&attack, &gen_items[kind].attack, sizeof(attack)) == 0;
         for (i = 0; i < GEN_HOOK_COUNT; i++) {
@@ -404,8 +429,10 @@ int main(void)
     CHECK(GEN_HOOK_EF(gen_item_hook(IT_HEAL_POTION, GEN_HOOK_USE)) == EF_HEALING && GEN_HOOK_EF(gen_item_hook(IT_RING_HEALTH_2, GEN_HOOK_WORN)) == EF_WORN_HP &&
           GEN_HOOK_EF(gen_item_hook(IT_ANTIDOTE, GEN_HOOK_USE)) == EF_CURE && GEN_HOOK_EF(gen_item_hook(IT_DEAD_RAT, GEN_HOOK_USE)) == EF_POISON &&
           GEN_HOOK_EF(gen_item_hook(IT_ELIXIR, GEN_HOOK_USE)) == EF_VITALITY && GEN_HOOK_EF(gen_item_hook(IT_POTION_STR, GEN_HOOK_USE)) == EF_RAISE_STR && GEN_HOOK_EF(gen_item_hook(IT_SWORD, GEN_HOOK_HIT)) == EF_NONE);
-    CHECK(gen_item_group(IT_SHORT_BOW) == GROUP_ARROW && gen_item_group(IT_DARTS) == GROUP_THROWN &&
-          gen_item_group(IT_SWORD) == GROUP_NONE);
+    CHECK(gen_item_ammo_group(IT_SHORT_BOW) == GROUP_ARROW && gen_item_ammo_group(IT_DARTS) == GROUP_THROWN &&
+          gen_item_ammo_group(IT_SWORD) == GROUP_NONE);
+    CHECK(gen_item_key_lock_group(IT_KEY_SKELETON) == KEY_ANY && gen_item_key_lock_group(IT_DARTS) == KEY_NONE &&
+          gen_item_pick_bonus(IT_FINE_LOCK_PICK) == 3 && gen_item_pick_bonus(IT_KEY_GOLD) == 0);
     CHECK(gen_item_flags(IT_QUARTERSTAFF) == ITEMF_TWO_HANDS && gen_item_flags(IT_RUSTY_SWORD) == ITEMF_CURSED &&
           gen_item_flags(IT_SWORD) == 0);
     /* Direct items: exactly those that don't fly (docs/action_aim.md, docs/items_extensions.md) */
@@ -664,9 +691,9 @@ int main(void)
     }
     CHECK(ok);
     /* The spell books: each names its own list (docs/spells.md 10.5.3), and is made as an item */
-    CHECK(gen_item_subclass(IT_BOOK_BASIC) == ITEM_BOOK && gen_item_group(IT_BOOK_BASIC) == SPELL_BOOK_BASIC);
-    CHECK(gen_item_subclass(IT_BOOK_ADEPT) == ITEM_BOOK && gen_item_group(IT_BOOK_ADEPT) == SPELL_BOOK_ADEPT);
-    CHECK(gen_item_subclass(IT_BOOK_MASTER) == ITEM_BOOK && gen_item_group(IT_BOOK_MASTER) == SPELL_BOOK_MASTER);
+    CHECK(gen_item_subclass(IT_BOOK_BASIC) == ITEM_BOOK && gen_item_book_spells(IT_BOOK_BASIC) == SPELL_BOOK_BASIC);
+    CHECK(gen_item_subclass(IT_BOOK_ADEPT) == ITEM_BOOK && gen_item_book_spells(IT_BOOK_ADEPT) == SPELL_BOOK_ADEPT);
+    CHECK(gen_item_subclass(IT_BOOK_MASTER) == ITEM_BOOK && gen_item_book_spells(IT_BOOK_MASTER) == SPELL_BOOK_MASTER);
     ok = 1;
     for (kind = 0; kind < IT_COUNT; kind++) {
         ok = ok && (gen_items[kind].subclass == ITEM_BOOK) == (kind >= IT_BOOK_BASIC && kind <= IT_BOOK_MASTER);

@@ -266,7 +266,7 @@ static int key_outside(uint8_t lock)
 
     NGE_OWNER_FOR_EACH_OWNED(i, id, LEVEL_AREA) {
         if (ITEM_IS(id) && NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_LOCATION) &&
-            gen_item_subclass(kind_index[id]) == ITEM_KEY && gen_item_group(kind_index[id]) == lock &&
+            gen_item_subclass(kind_index[id]) == ITEM_KEY && gen_item_key_lock_group(kind_index[id]) == lock &&
             !LEVEL_CELL_LOCKED(room_of(NGE_LOCATION_X(id), NGE_LOCATION_Y(id)))) {
             return 1;
         }
@@ -292,7 +292,7 @@ static int keys_have_locks(void)
         NGE_ENTITY_FOR_EACH_ALIVE(j, f) {
             if (FEATURE_IS(f) && FEATURE_IS_LOCKED(f) && top_owner(f) == LEVEL_AREA) {
                 lock = (uint8_t)((feature_state[f] & FEAT_KEY_MASK) >> FEAT_KEY_SHIFT);
-                found = found || lock == gen_item_group(kind_index[id]);
+                found = found || lock == gen_item_key_lock_group(kind_index[id]);
             }
         }
         if (!found) {
@@ -395,7 +395,7 @@ static int check_locks(int depth, int *locks)
         doorways = 0;
         NGE_OWNER_FOR_EACH_OWNED(i, id, LEVEL_AREA) {
             if (ITEM_IS(id) && NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_LOCATION) &&
-                gen_item_subclass(kind_index[id]) == ITEM_KEY && gen_item_group(kind_index[id]) == lock &&
+                gen_item_subclass(kind_index[id]) == ITEM_KEY && gen_item_key_lock_group(kind_index[id]) == lock &&
                 !LEVEL_CELL_LOCKED(room_of(NGE_LOCATION_X(id), NGE_LOCATION_Y(id)))) {
                 doorways = 1;
             }

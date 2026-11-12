@@ -353,7 +353,7 @@ uint8_t screen_book_run(nge_entity_id_t book) NGE_BANKED
     uint8_t n;
 
     nge_util_assert(book < NGE_ENTITY_MAX && NGE_ENTITY_IS_ALIVE(book));
-    n = spell_book(gen_item_group(kind_index[book]), w.spells);   /* the book's order; SP_NONE after the last */
+    n = spell_book(gen_item_book_spells(kind_index[book]), w.spells);   /* the book's order; SP_NONE after the last */
     nge_util_assert(n != 0);
     w.book = book;
     w.learned = 0;

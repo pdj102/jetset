@@ -67,11 +67,44 @@ uint8_t gen_item_subclass(uint8_t kind) NGE_BANKED
     return gen_items[kind].subclass;
 }
 
-uint8_t gen_item_group(uint8_t kind) NGE_BANKED
+/* The readers of the record's data (docs/items.md 4.7): each checks the subclass */
+uint8_t gen_item_ammo_group(uint8_t kind) NGE_BANKED
+{
+    uint8_t subclass;
+
+    nge_util_assert(kind < IT_COUNT);
+
+    subclass = gen_items[kind].subclass;
+    return (subclass == ITEM_RANGED || subclass == ITEM_AMMO) ? gen_items[kind].data.ammo_group : GROUP_NONE;
+}
+
+uint8_t gen_item_key_lock_group(uint8_t kind) NGE_BANKED
 {
     nge_util_assert(kind < IT_COUNT);
 
-    return gen_items[kind].group;
+    return (gen_items[kind].subclass == ITEM_KEY) ? gen_items[kind].data.key_lock_group : KEY_NONE;
+}
+
+uint8_t gen_item_pick_bonus(uint8_t kind) NGE_BANKED
+{
+    nge_util_assert(kind < IT_COUNT);
+
+    return (gen_items[kind].subclass == ITEM_TOOL) ? gen_items[kind].data.pick_bonus : 0;
+}
+
+uint8_t gen_item_book_spells(uint8_t kind) NGE_BANKED
+{
+    nge_util_assert(kind < IT_COUNT);
+    nge_util_assert(gen_items[kind].subclass == ITEM_BOOK);   /* 0 is a list, so no "none" to return */
+
+    return gen_items[kind].data.book_spells;
+}
+
+uint8_t gen_item_armour_ac(uint8_t kind) NGE_BANKED
+{
+    nge_util_assert(kind < IT_COUNT);
+
+    return (gen_items[kind].subclass == ITEM_ARMOUR) ? gen_items[kind].data.armour_ac : 0;
 }
 
 uint8_t gen_item_flags(uint8_t kind) NGE_BANKED

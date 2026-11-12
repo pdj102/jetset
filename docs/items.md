@@ -369,6 +369,16 @@ name. Each adds 22 bytes and its name: 154 bytes of page 109 for the four.
 `gen_item_armour_ac()` when it isn't 0, else from an `EF_WORN_AC` hook (the ring of
 armour, the amulet of guarding). A property isn't shown: the name says it.
 
+**As built.**
+
+- *Step 1 (the data union, 2026-11-12).* Page 109 came out byte for byte the
+  same. 30 rows set a member (the plan said 32). Page 108 grew by 516 bytes in
+  the debug build, not the 60 or so the plan expected. Each reader is about 110
+  bytes, about 45 of them for the assert's file and expression strings: zsdcc
+  keeps one copy per function. Page 108 still has 6.2K free. The callers and
+  common memory stayed the same size. A key reader's "another subclass" value
+  is named `KEY_NONE` (0) in `gen_kinds.h`. `feature_key_fits()` keeps its own
+  subclass check, because an unlocked door's key bits are also 0.
 
 ## 5. Decisions
 

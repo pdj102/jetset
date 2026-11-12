@@ -141,7 +141,7 @@ uint8_t feature_key_fits(nge_entity_id_t id, nge_entity_id_t item) NGE_BANKED
     if (gen_item_subclass(kind) != ITEM_KEY) {
         return 0;
     }
-    key = gen_item_group(kind);
+    key = gen_item_key_lock_group(kind);
     return key == KEY_ANY || key == (uint8_t)((feature_state[id] & FEAT_KEY_MASK) >> FEAT_KEY_SHIFT);
 }
 
@@ -191,7 +191,7 @@ int8_t feature_disarm_margin(nge_entity_id_t actor, nge_entity_id_t id, uint8_t 
 
 uint8_t feature_pick_works(nge_entity_id_t actor, nge_entity_id_t pick, uint8_t roll) NGE_BANKED
 {
-    int16_t total = (int16_t)roll + gen_item_group(kind_index[pick]);
+    int16_t total = (int16_t)roll + gen_item_pick_bonus(kind_index[pick]);
 
     if (NGE_ENTITY_HAS_COMPONENT(actor, COMPONENT_STATS)) {
         total += STATS_MOD(stats_ability[ABIL_DEX][actor]);

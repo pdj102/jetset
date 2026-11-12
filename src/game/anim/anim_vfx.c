@@ -179,7 +179,7 @@ static void fly_shot(nge_entity_id_t from, nge_entity_id_t to, nge_entity_id_t i
     uint8_t group = GROUP_NONE;
 
     if (item < NGE_ENTITY_MAX && NGE_ENTITY_STATE(item) != NGE_ENTITY_FREE && KIND_IS(item, CLASS_ITEM)) {
-        group = gen_item_group(kind_index[item]);
+        group = gen_item_ammo_group(kind_index[item]);
     }
     if (group == GROUP_ARROW || group == GROUP_BOLT) {
         fx_look(&look, SPRITE_FX_ARROW, 1, ANIM_FX_RATE, BANK_RED);   /* the fletching's colour */
