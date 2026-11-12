@@ -61,9 +61,10 @@ Section 4 gives the reasons.
   green within range and red outside it. Range is measured from the origin,
   not the start, with `nge_map_within()` (section 2), so the range is a
   circle. With `TARGET_RANGE_ANY`, every tile is within range.
-  I3 (proposed, [items_aimed.md](items_aimed.md) R14): with a radius in the context
+  I3 (built, [items_aimed.md](items_aimed.md) R14): with a radius in the context
   (`target_t.radius`, a ball's area), a tile in range within that radius of the origin is
   amber (`BANK_ORANGE`): aimed there, the player would be caught. ENTER still chooses it.
+  `target_cursor_bank()` gives the colour.
 - **R5a** **New:** every range and distance test in the game uses
   `nge_map_within()`, so a range means the same tiles everywhere. That
   covers ranged attacks, spells, and later a monster's reach and sight

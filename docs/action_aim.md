@@ -4,9 +4,9 @@
 aimed parchment. The pattern every action follows is in [actions.md](actions.md), and the
 line of fire and its modes are in its section 4.11.
 
-Status: built. Code: [act_aim.c](../src/game/actions/act_aim.c). I3 (proposed 2026-11-12,
+Status: built. Code: [act_aim.c](../src/game/actions/act_aim.c). I3 (built 2026-11-12,
 [items_aimed.md](items_aimed.md)): items aimed at a tile or an area, through a helper shared
-with `ACT_CAST`; section 8 summarises what changes here.
+with `ACT_CAST`; section 8 summarises what changed here.
 
 ## 1. Inputs and outputs
 
@@ -103,7 +103,7 @@ a creature reaching the one chosen, and a wand of fire on the same line hitting 
 one, with the check giving the same target. `test_gen`: `ITEMF_DIRECT` is on exactly the
 kinds in the table. `test_ui` has the keys.
 
-## 8. Shapes (I3, proposed)
+## 8. Shapes (I3, built)
 
 From [items_aimed.md](items_aimed.md), which specifies them:
 

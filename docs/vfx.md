@@ -131,9 +131,10 @@ What is shown:
   enough to add a velocity burst kind.
 - **R20 (later)** Area effects (a fireball's radius), a cast gesture for
   the caster, a breath cone, a beam that stays drawn the whole line.
-  I3 proposes balls ([items_aimed.md](items_aimed.md) 4.8): `EV_AREA` flies
+  I3 built balls ([items_aimed.md](items_aimed.md) 4.8): `EV_AREA` flies
   a bolt to the centre and bursts there, and the creatures' impacts wait
-  for it.
+  for it. On a change of level and a new game, `anim_vfx_clear()` clears
+  the VFX and forgets the centre (R14).
 - **R21 (later)** Floating damage numbers.
 
 ## 4. Decisions

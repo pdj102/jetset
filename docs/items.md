@@ -33,7 +33,7 @@ therefore lives in the kind, and one effect serves many items.
 is then free for a property, so a mail can give AC and resist fire, as a
 weapon's bonus is in its attack and its effect in its hook.
 
-**An aimed item has a shape** (section 4.12, proposed for I3), the spells'
+**An aimed item has a shape** (section 4.12, built for I3), the spells'
 `SPELL_*`: a bolt, direct, a tile it sends its user to, a ball or a burst. The
 shape is in the kind's flags, so a wand of fireballs is a row like any other.
 
@@ -150,7 +150,7 @@ the records, so adding one should change code and leave the data alone.
 - **R30** Each meaning has its own reader, which checks the subclass, so a
   reader never returns another meaning's number (a key's lock group as AC).
 
-### Aimed shapes (I3, proposed)
+### Aimed shapes (I3)
 
 Specified in [items_aimed.md](items_aimed.md), whose R1 to R22 they summarise.
 
@@ -304,8 +304,8 @@ The data is laid out for firing, which isn't built:
   two's rules are in the inventory component, and an item's lifted curse is an entity flag,
   `ITEM_UNCURSED`. The shape is a 3-bit field, `ITEMF_SHAPE` (0x1C): 0 is a bolt, and
   `ITEMF_DIRECT` (0x04) makes an aimed item pass creatures on the way to the chosen tile
-  ([actions.md](actions.md), section 4.11, and [action_aim.md](action_aim.md)). I3 adds
-  `ITEMF_TILE`, `ITEMF_BALL` and `ITEMF_BURST` (4.12, proposed).
+  ([actions.md](actions.md), section 4.11, and [action_aim.md](action_aim.md)). I3 added
+  `ITEMF_TILE`, `ITEMF_BALL` and `ITEMF_BURST` (4.12).
 
 ### 4.8 Generation
 
@@ -320,8 +320,7 @@ books (after `IT_QUEST`), then the stairway parchment (`EF_LEVEL_TELEPORT`), the
 levitation potion (`EF_LEVITATE`) and boots of levitation (`EF_WORN_FLY`), from
 [effects_extensions.md](effects_extensions.md), then I1's 42 kinds (166 to 207,
 [items_extensions.md](items_extensions.md)), then I2's four armour kinds (208 to
-211, section 4.11). `IT_COUNT` is 212. I3's six kinds are to be 212 to 217
-(4.12, proposed), making it 218.
+211, section 4.11), then I3's six (212 to 217, 4.12). `IT_COUNT` is 218.
 
 ### 4.9 Names and messages
 
@@ -411,7 +410,7 @@ armour, the amulet of guarding). A property isn't shown: the name says it.
   action_learn.md and action_unlock.md now name the readers in place of the
   kind's "group". spells_plan.md is a finished plan and keeps `.group`.
 
-### 4.12 Aimed shapes (I3, proposed)
+### 4.12 Aimed shapes (I3)
 
 Specified in [items_aimed.md](items_aimed.md); this is the items' side.
 
@@ -439,7 +438,8 @@ returns the `SPELL_*` shape from the flags:
 
 A burst item has an aim hook, not a use hook: a use hook reaches its user
 (4.4). "scare monsters parchment" would be over R19's 19 characters, so it is
-the panic parchment. About 240 bytes of page 109 for the six.
+the panic parchment. The six took 239 bytes of page 109 (78 for the tile
+kinds, 161 for the area kinds), leaving 196.
 
 ## 5. Decisions
 
@@ -580,8 +580,8 @@ The PC tests enforce the rules that the data could break:
   so the mix can be seen in play. Until those mechanics exist, many finds do
   nothing.
 - **Page 109 is below R17's 10%.** 589 bytes free (7.2%) after I1, 435 (5.3%)
-  after I2's four kinds (7,757 bytes used); about 195 (2.4%) after I3's six,
-  if built (items_aimed.md section 8). A later kind needs room made first:
+  after I2's four kinds (7,757 bytes used), 196 (2.4%) after I3's six (7,996
+  used; items_aimed.md, "As built"). The next kind needs room made first:
   the names could move to page 108, the generator's, which has about 6.1K free.
 - **Treasure takes pack slots** until gold is picked up as gold.
 - **Row letters.** In the choosing lists, letters run past "z" after 26 rows

@@ -3,7 +3,7 @@
 I3 in [todo.md](todo.md): items that blink their user to a tile, and items whose effect
 reaches every creature in an area. The plan is [items_aimed_plan.md](items_aimed_plan.md).
 
-Status: proposed 2026-11-12, for review.
+Status: built 2026-11-12 (the plan's steps 1 to 5; what differed is in "As built" at the end).
 
 What exists is specified elsewhere and not repeated here: the aim action in
 [action_aim.md](action_aim.md), the cast action in [action_cast.md](action_cast.md), the
@@ -553,3 +553,9 @@ CSpect checks are in the plan.
 - **Memory.** Page 126 grows by 486 bytes in both builds (the code has no asserts), not
   the plan's 150: zsdcc's code for the new cases. The page has about 5K free. Page 127
   grows by 6.
+
+### Step 5: closing docs
+
+- **Not checked on CSpect:** check 4's third item, a ball over 9 or more creatures (the
+  VFX pool running out). `test_act` checks that such a ball reaches 8 and that its events
+  fit the queue; that nothing hangs when the pool is full is untested in the emulator.

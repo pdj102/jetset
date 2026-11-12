@@ -7,9 +7,10 @@ line of fire is in its section 4.11. What spells there are, who knows them and w
 cost are in [spells.md](spells.md), whose requirements R12 to R18 this action meets. Mana is
 in [mana.md](mana.md).
 
-Status: built. Code: [act_cast.c](../src/game/actions/act_cast.c). I3 (proposed 2026-11-12,
-[items_aimed.md](items_aimed.md)) moves the shape code into a helper shared with `ACT_AIM`,
-and adds the area shapes `SPELL_BALL` and `SPELL_BURST`, which no spell uses yet.
+Status: built. Code: [act_cast.c](../src/game/actions/act_cast.c). I3 (built 2026-11-12,
+[items_aimed.md](items_aimed.md)) moved the shape code into a helper shared with `ACT_AIM`
+(`act_shape_find()`, `act_shape_apply()`), and added the area shapes `SPELL_BALL` and
+`SPELL_BURST`, which no spell uses yet.
 
 ## 1. Inputs and outputs
 
@@ -28,8 +29,8 @@ and adds the area shapes `SPELL_BALL` and `SPELL_BURST`, which no spell uses yet
   | `SPELL_BOLT` | The first creature on the line | `ACT_LINE_BOLT` |
   | `SPELL_DIRECT` | The creature on the chosen tile, past any on the way | `ACT_LINE_DIRECT` |
   | `SPELL_TILE` | The caster, sent to a free tile in range and line | `ACT_LINE_DIRECT` |
-  | `SPELL_BALL` (I3, proposed) | Every creature within 1 of the chosen tile, the caster too | `ACT_LINE_DIRECT` |
-  | `SPELL_BURST` (I3, proposed) | Every creature within 2 of the caster, not the caster | None |
+  | `SPELL_BALL` (I3) | Every creature within 1 of the chosen tile, the caster too | `ACT_LINE_DIRECT` |
+  | `SPELL_BURST` (I3) | Every creature within 2 of the caster, not the caster | None |
 
 - **R3** A bolt or direct spell can't target the caster. A spell that helps the caster is
   `SPELL_SELF`, so the player gets no prompt.
@@ -109,7 +110,7 @@ creature counts as attacking it: `ai_on_event()` reacts to `EV_CAST` as to a hit
 
 From [spells.md](spells.md), section 6, the parts that touch the action:
 
-- **Area spells and breath:** decided and proposed by I3 ([items_aimed.md](items_aimed.md)):
+- **Area spells and breath:** built by I3 ([items_aimed.md](items_aimed.md)):
   `SPELL_BALL` and `SPELL_BURST` through the shared helper, at most 8 targets for the queue
   of 32, a ball catching its caster. Only the rows are missing, and an AI rule for when a
   monster would catch itself.

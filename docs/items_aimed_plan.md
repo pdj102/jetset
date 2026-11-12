@@ -4,7 +4,8 @@ The steps that build I3 ([todo.md](todo.md)) as [items_aimed.md](items_aimed.md)
 specifies it. The spec says what and why; this file says in what order, what changes, and
 how each step is checked.
 
-Status: proposed 2026-11-12, waiting for the spec's review.
+Status: done 2026-11-12 (steps 1 to 5; as built in items_aimed.md, "As built"). CSpect check 4's
+third item, a ball over 9 or more creatures, wasn't run.
 
 ## 1. How the steps work
 
