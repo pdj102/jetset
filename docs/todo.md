@@ -132,11 +132,15 @@ New rows in `effects_pdata.c` using attributes and ops that already work.
   attribute that blocks conditions (low)
 ## G — Game rules
 
-### G1 Abilities in attacks
+### G1 Abilities in attacks [done] 
 
 - Str to melee hit and damage, Dex to ranged hit, and a use for Cha. The
   help screen's Abilities page (`screen_guide_pdata.c`) changes with it
 
+## H — 
+## I — 
+## J — 
+## K — 
 ## L — Look around
 ### L1 Look around line of sight
 - L1.1 Look checks for line of sight of sight
@@ -201,6 +205,18 @@ T1 - Selecting previous target
 
 ### U2 Main stats panel
 - Stats are coloured to show delta from base - cyan for better, red for worse
+- 
+ ### U3 Update keyboard controls
+- sU3.1 Remove **hjkl** as diirection keys
+- U3.2 Change key r **r**emove to t **t**akeoff
+- U3.3 Implement key **r**ead scrolls 
+- U3.4 Implement key q **q**uaff potions
+- U3.5 Implement key l **l**ook around
+- U3.6 Change key o  **o**perate to A **A**ctivate feature  e.g. shrine, trap 
+- U3.7 Implement o **o**pen
+- U3.8 Implement key E **E**at  
+- U3.9 Change key e **e**xchange to x e**x**change
+
 
 ## V — Visual effects
 
