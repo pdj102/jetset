@@ -158,6 +158,9 @@ that is refused, followed by a melee.
 - **R26** The mode comes from what is used, not from the action: `ACT_FIRE` is always a
   bolt, `ACT_AIM` reads the item kind's `ITEMF_DIRECT`, and `ACT_CAST` reads the spell's
   shape.
+  I3 (proposed, [items_aimed.md](items_aimed.md)): `ACT_AIM` reads the item's shape, a
+  field in its flags of which `ITEMF_DIRECT` is one value, and aim and cast share one helper,
+  `act_shape_find()`, which also handles tiles and areas.
 - **R27** The actor's own tile is unchanged by the mode: aim picks the actor, and fire and
   cast refuse it.
 

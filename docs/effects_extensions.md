@@ -367,7 +367,9 @@ Differences from the design, by plan step.
 
 - What marks an effect as needing a tile is the spell's shape, `SPELL_TILE`, not a flag
   on the effect. Only the cast path calls `effect_apply_at()`: no item's effect needs a
-  tile, so `act_aim()` is unchanged. An item that blinks would add it there.
+  tile, so `act_aim()` is unchanged. An item that blinks would add it there. (I3,
+  proposed: [items_aimed.md](items_aimed.md) adds it, for the blink parchment and the
+  staff of blinking, through a helper aim and cast share.)
 - The tile `effect_apply_at()` keeps is 3 bytes in common memory (the tile and a flag
   that it was given), not page data: uninitialised data starts at 0, so no tile is the
   default. `EF_BLINK` applied with `effect_apply()` fizzles.

@@ -33,6 +33,10 @@ therefore lives in the kind, and one effect serves many items.
 is then free for a property, so a mail can give AC and resist fire, as a
 weapon's bonus is in its attack and its effect in its hook.
 
+**An aimed item has a shape** (section 4.12, proposed for I3), the spells'
+`SPELL_*`: a bolt, direct, a tile it sends its user to, a ball or a burst. The
+shape is in the kind's flags, so a wand of fireballs is a row like any other.
+
 ```text
  kind records (gen_items[], in the item generator's data page)
       |  picked by depth and rarity, or asked for by kind
@@ -73,6 +77,7 @@ the records, so adding one should change code and leave the data alone.
 | Group | What a kind matches: ammo with its launcher (`GROUP_*`), a key with its lock (`KEY_*`) |
 | Armour's AC | The AC an armour kind gives while equipped, from its record (section 4.11) |
 | Property | An armour kind's worn effect beside its AC: a resistance, an ability... |
+| Shape | Who an aimed item reaches, `SPELL_*`, from the kind's flags (4.12) |
 | Pending effect | An effect defined as data whose mechanic isn't built, so it does nothing |
 
 ## 3. Requirements
@@ -145,6 +150,17 @@ the records, so adding one should change code and leave the data alone.
 - **R30** Each meaning has its own reader, which checks the subclass, so a
   reader never returns another meaning's number (a key's lock group as AC).
 
+### Aimed shapes (I3, proposed)
+
+Specified in [items_aimed.md](items_aimed.md), whose R1 to R22 they summarise.
+
+- **R31** An aimed item has a shape, shared with spells: `SPELL_BOLT`,
+  `SPELL_DIRECT`, `SPELL_TILE`, `SPELL_BALL` or `SPELL_BURST`.
+- **R32** The shape is a field in the kind's flags byte; the record gains no
+  bytes, and `ITEMF_DIRECT` keeps its bit and meaning.
+- **R33** Only tile items have an effect that needs a tile (`EF_BLINK`).
+- **R34** Six kinds use the new shapes (4.12), data only.
+
 ### Constraints
 
 - **R17** The table and its names fit their 8K page with at least 10% free.
@@ -215,7 +231,7 @@ wider mask.
 | `GEN_HOOK_HIT` | Weapons, ammo, creatures | A hit that leaves its target alive | The target |
 | `GEN_HOOK_WORN` | Jewellery, lights, armour's property | Counts while equipped | The wearer |
 | `GEN_HOOK_INNATE` | Creatures | When generated: only `EFFECT_INNATE` effects | Itself |
-| `GEN_HOOK_AIM` | Wands, staves, parchments | At a chosen target; no action reads it yet | The target |
+| `GEN_HOOK_AIM` | Wands, staves, parchments | Aimed (`ACT_AIM`, [action_aim.md](action_aim.md)), as its shape says (4.12) | The target, the user (a tile item) or each creature in an area |
 
 `gen_hook_of()` answers for any class, with the effect and power packed in 16
 bits, read with `GEN_HOOK_EF()` and `GEN_HOOK_POWER()`. An item has one hook;
@@ -284,10 +300,12 @@ The data is laid out for firing, which isn't built:
   meaning leaves `data` 0. `gen_item_group()` goes: its callers (firing, the
   shot's look, keys, picks, learning, the spell screen) each call their
   meaning's reader.
-- **`flags`** hold `ITEMF_TWO_HANDS`, `ITEMF_CURSED` and `ITEMF_DIRECT`. The first two's
-  rules are in the inventory component, and an item's lifted curse is an entity flag,
-  `ITEM_UNCURSED`. `ITEMF_DIRECT` makes an aimed item pass creatures on the way to the
-  chosen tile ([actions.md](actions.md), section 4.11, and [action_aim.md](action_aim.md)).
+- **`flags`** hold `ITEMF_TWO_HANDS`, `ITEMF_CURSED` and an aimed item's shape. The first
+  two's rules are in the inventory component, and an item's lifted curse is an entity flag,
+  `ITEM_UNCURSED`. The shape is a 3-bit field, `ITEMF_SHAPE` (0x1C): 0 is a bolt, and
+  `ITEMF_DIRECT` (0x04) makes an aimed item pass creatures on the way to the chosen tile
+  ([actions.md](actions.md), section 4.11, and [action_aim.md](action_aim.md)). I3 adds
+  `ITEMF_TILE`, `ITEMF_BALL` and `ITEMF_BURST` (4.12, proposed).
 
 ### 4.8 Generation
 
@@ -302,7 +320,8 @@ books (after `IT_QUEST`), then the stairway parchment (`EF_LEVEL_TELEPORT`), the
 levitation potion (`EF_LEVITATE`) and boots of levitation (`EF_WORN_FLY`), from
 [effects_extensions.md](effects_extensions.md), then I1's 42 kinds (166 to 207,
 [items_extensions.md](items_extensions.md)), then I2's four armour kinds (208 to
-211, section 4.11). `IT_COUNT` is 212.
+211, section 4.11). `IT_COUNT` is 212. I3's six kinds are to be 212 to 217
+(4.12, proposed), making it 218.
 
 ### 4.9 Names and messages
 
@@ -392,6 +411,36 @@ armour, the amulet of guarding). A property isn't shown: the name says it.
   action_learn.md and action_unlock.md now name the readers in place of the
   kind's "group". spells_plan.md is a finished plan and keeps `.group`.
 
+### 4.12 Aimed shapes (I3, proposed)
+
+Specified in [items_aimed.md](items_aimed.md); this is the items' side.
+
+**The field.** `gen_item_shape(kind)`, in page 108 with the other readers,
+returns the `SPELL_*` shape from the flags:
+
+| Flags & `ITEMF_SHAPE` | Name | Shape | Reaches |
+|---|---|---|---|
+| 0x00 | (none) | `SPELL_BOLT` | The first creature on the line |
+| 0x04 | `ITEMF_DIRECT` | `SPELL_DIRECT` | The creature on the chosen tile |
+| 0x08 | `ITEMF_TILE` | `SPELL_TILE` | The user, sent to a free tile |
+| 0x0C | `ITEMF_BALL` | `SPELL_BALL` | Every creature within 1 of the chosen tile, the user too (a direct line) |
+| 0x10 | `ITEMF_BURST` | `SPELL_BURST` | Every creature within 2 of the user, not the user; no tile |
+
+**The kinds**, numbered at the end, data only:
+
+| ID | Name | Look | Count | Flags | Hook | Band, rarity |
+|---|---|---|---|---|---|---|
+| `IT_SP_BLINK` 212 | blink parchment | parchment, `BANK_BLUE` | - | `ITEMF_TILE` | aim `EF_BLINK` 1 | 2-B, 3 |
+| `IT_STAFF_BLINK` 213 | staff of blinking | staff, `BANK_BLUE` | 6 | `ITEMF_TILE` | aim `EF_BLINK` 1 | 5-B, 1 |
+| `IT_WAND_FIREBALL` 214 | wand of fireballs | wand, `BANK_RED` | 4 | `ITEMF_BALL` | aim `EF_BOLT_FIRE` 4 | 6-B, 1 |
+| `IT_WAND_FROSTBALL` 215 | wand of frost balls | wand, `BANK_BLUE` | 4 | `ITEMF_BALL` | aim `EF_BOLT_COLD` 4 | 6-B, 1 |
+| `IT_SP_FIREBALL` 216 | fireball parchment | parchment, `BANK_ORANGE` | - | `ITEMF_BALL` | aim `EF_BOLT_FIRE` 5 | 4-B, 2 |
+| `IT_SP_PANIC` 217 | panic parchment | parchment, `BANK_RED` | - | `ITEMF_BURST` | aim `EF_FEAR` 1 | 3-B, 2 |
+
+A burst item has an aim hook, not a use hook: a use hook reaches its user
+(4.4). "scare monsters parchment" would be over R19's 19 characters, so it is
+the panic parchment. About 240 bytes of page 109 for the six.
+
 ## 5. Decisions
 
 - **D1 One kind per variation.** "ring of health +1" and "+2" are separate
@@ -471,6 +520,11 @@ armour, the amulet of guarding). A property isn't shown: the name says it.
   two properties; enchantment rolled per entity would need a byte per entity
   and names built at run time (D1).
 
+- **D20 An aimed item's shape is the spells' shape, in a flags field**
+  (items_aimed.md D1, D2). No byte per kind, and the 16 direct kinds keep their
+  bit. *Rejected:* a shape byte in the record (212 bytes); separate flags for
+  each shape, which would allow two at once.
+
 ## 6. Not built yet
 
 Each item below is generated and carried. The data is in place, and only the
@@ -501,7 +555,9 @@ The PC tests enforce the rules that the data could break:
   on its hook (D14); each `data` reader returns its member for its subclasses
   and its "another subclass" value for every other kind (R30); the table's
   bytes match the members set (a guard against D19's miscompile, for the
-  copy the Next runs: read the asm of `gen_item_pdata.c` once).
+  copy the Next runs: read the asm of `gen_item_pdata.c` once). I3: the shape
+  field holds 0 to 4 only, and `EF_BLINK` is on tile items alone
+  (items_aimed.md section 7).
 - **`test_effects`:** scaling for instant, worn and timed effects, negative
   powers, masks, refreshes, clamps, the numbering (D12), and that pending ops run
   safely.
@@ -524,7 +580,8 @@ The PC tests enforce the rules that the data could break:
   so the mix can be seen in play. Until those mechanics exist, many finds do
   nothing.
 - **Page 109 is below R17's 10%.** 589 bytes free (7.2%) after I1, 435 (5.3%)
-  after I2's four kinds (7,757 bytes used). A later kind needs room made first:
+  after I2's four kinds (7,757 bytes used); about 195 (2.4%) after I3's six,
+  if built (items_aimed.md section 8). A later kind needs room made first:
   the names could move to page 108, the generator's, which has about 6.1K free.
 - **Treasure takes pack slots** until gold is picked up as gold.
 - **Row letters.** In the choosing lists, letters run past "z" after 26 rows

@@ -231,6 +231,10 @@ haven't the mana."
 | `SPELL_BOLT` | The first creature on the line, from `act_line()` with `ACT_LINE_BOLT` (actions.md, 4.11) | `act_line()` |
 | `SPELL_DIRECT` | The creature on the chosen tile, past any on the way, from `act_line()` with `ACT_LINE_DIRECT` (actions.md, 4.11) | `act_line()` |
 | `SPELL_TILE` | The caster, sent to a free tile in range and line, never a creature's (`effect_apply_at()`, effects_extensions.md 3.6) | `act_line()`, then the effect |
+| `SPELL_BALL` (I3, proposed) | Every creature within 1 of the chosen tile, the caster too, from `act_line()` with `ACT_LINE_DIRECT` ([items_aimed.md](items_aimed.md)) | `act_line()`, then the area walk |
+| `SPELL_BURST` (I3, proposed) | Every creature within 2 of the caster, not the caster | Nobody |
+
+Items share these shapes (I3): an aimed item's shape is in its kind's flags (items.md 4.12).
 
 A wall or closed door stops either line. A bolt suits what flies, such as fire; direct suits
 what doesn't, such as a hold or a teleport of another (action_aim.md, D3). In section 4.12,
@@ -495,7 +499,7 @@ Made when this is built:
 
 | Item | What's there, what's missing |
 |---|---|
-| Area spells | Needs `SPELL_BALL` and a walk in `act_cast()`: each target's events, about 3 each, against a queue of 32. How it picks targets, and whether it hits the caster, needs deciding |
+| Area spells | `SPELL_BALL` and `SPELL_BURST` proposed by I3 ([items_aimed.md](items_aimed.md)): a shared walk, at most 8 targets, a ball catching its caster. Needs rows, and an AI rule for catching itself |
 | Abilities in the creature table | The rule is here. A floating eye's gaze is a row. Level 0 is free, so the AI needs a rate, or it uses one every turn |
 | A dragon's breath | A bolt ability works now. Real breath needs an area |
 | A shriek | A self-targeted effect with an op that wakes the level |

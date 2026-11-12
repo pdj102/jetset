@@ -222,15 +222,17 @@ their bonus is in their attack, their effect in the hook.
 - I2.4 Enchantment rolled when generated, not fixed +1 and +2 rows: fewer
   kinds for more variety (low)
 
-### I3 Items aimed at a tile or an area
+### I3 Items aimed at a tile or an area `[plan]` [spec](items_aimed.md), [plan](items_aimed_plan.md)
 
 `act_aim()` needs a creature in line (action_aim.md); spells have shapes
 (`SPELL_SHAPE_*`), items don't.
 
 - I3.1 Aim at a tile: blink parchment and staff of blinking (`EF_BLINK`,
-  only a spell today)
+  only a spell today) `[plan]`
 - I3.2 Area items with the spells' shapes: wand of fireballs, parchment of
-  scare monsters (`EF_FEAR` on every monster around)
+  scare monsters (`EF_FEAR` on every monster around) `[plan]`. Spells get
+  the ball and burst shapes too, with no rows yet; the scare parchment is
+  the panic parchment (19-character names)
 
 ### I4 Thrown potions
 

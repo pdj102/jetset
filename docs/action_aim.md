@@ -4,7 +4,9 @@
 aimed parchment. The pattern every action follows is in [actions.md](actions.md), and the
 line of fire and its modes are in its section 4.11.
 
-Status: built. Code: [act_aim.c](../src/game/actions/act_aim.c).
+Status: built. Code: [act_aim.c](../src/game/actions/act_aim.c). I3 (proposed 2026-11-12,
+[items_aimed.md](items_aimed.md)): items aimed at a tile or an area, through a helper shared
+with `ACT_CAST`; section 8 summarises what changes here.
 
 ## 1. Inputs and outputs
 
@@ -100,3 +102,28 @@ own tile; range 8 exactly; the actor as source, so a kill names it; a wand of te
 a creature reaching the one chosen, and a wand of fire on the same line hitting the nearer
 one, with the check giving the same target. `test_gen`: `ITEMF_DIRECT` is on exactly the
 kinds in the table. `test_ui` has the keys.
+
+## 8. Shapes (I3, proposed)
+
+From [items_aimed.md](items_aimed.md), which specifies them:
+
+- **The mode becomes a shape.** `gen_item_shape()` reads the kind's flags field
+  (`ITEMF_SHAPE`): bolt, direct (`ITEMF_DIRECT`, as now), tile, ball or burst, the spells'
+  `SPELL_*` constants. R2 and D3 stand: the item says which, not the effect.
+- **Validate:** a bolt or direct item on the actor's own tile picks the actor, as now (R3).
+  Anything else goes to `act_shape_find()`, shared with `act_cast()`, at `ACT_AIM_RANGE`.
+- **Tile:** the user goes to a free tile in range and line (`effect_apply_at()`), as Blink
+  does; a creature there is `ACT_R_BLOCKED_ENTITY`, a tile it can't enter `ACT_R_BLOCKED`,
+  its own tile `ACT_R_NO_TARGET`.
+- **Ball:** a direct line; the centre is the chosen tile; every creature within 1 of it
+  with a clear line from it, the user too. **Burst:** no
+  tile; every creature within 2 of the user, not the user. At most 8 creatures, nearest
+  first. An area with nobody but the user, or a ball at the user's own tile, is
+  `ACT_R_NO_TARGET`.
+- **Apply:** `EV_AIMED` has no target for a ball or burst; `EV_AREA` (the centre) follows,
+  then each creature's effect.
+- **The player:** a tile item's prompt is "Aim to where?" (`TARGET_AIM_TILE`); a ball's
+  cursor is amber where the user would be caught; a burst item asks for no tile. The
+  inventory screen's check accepts `ACT_R_NO_TARGET` on the player's own tile.
+- **Kinds:** blink parchment, staff of blinking (tile); wands of fireballs and frost balls,
+  fireball parchment (ball); panic parchment (burst).
