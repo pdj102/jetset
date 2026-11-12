@@ -20,7 +20,7 @@ detail goes in a spec when an item is picked up.
 - To pick one up, ask: *"Write a spec for U1"* (whole objective) or
   *"Write a spec and plan for U1.3"* (one feature).
 
-Topic codes: `C` Character creation, `E` Effects, `G` Game rules, `U` UI, `V` Visual effects.
+Topic codes: `C` Character creation, `E` Effects, `G` Game rules, `I` Items, `U` UI, `V` Visual effects.
 
 ---
 
@@ -137,8 +137,147 @@ New rows in `effects_pdata.c` using attributes and ops that already work.
 - Str to melee hit and damage, Dex to ranged hit, and a use for Cha. The
   help screen's Abilities page (`screen_guide_pdata.c`) changes with it
 
+### G2 Hunger
+
+Food heals today (`EF_NOURISH`) and nothing makes the player eat. A hunger
+clock gives food its purpose and a cost to farming new levels on the stairs
+(level_transitions.md D7).
+
+- G2.1 A satiety count in the player character, lowered every few turns
+  (a timer, as regeneration is)
+- G2.2 Stages: fed, hungry, weak (an ability penalty), fainting (turns
+  lost), starving (damage). Shown on the main screen; a message as each
+  stage starts. A pc variable, not a status: the status bits are nearly
+  full (E5.8)
+- G2.3 Eating restores satiety by the food's power; whether food still
+  heals is for the spec
+- G2.4 Food rarity and depth bands checked against the clock, so a careful
+  player doesn't starve (D1 difficulty)
+
 ## H — 
-## I — 
+## I — Items
+
+From a review (2026-11-12) of the 166 kinds in `gen_item_pdata.c` against
+`effects_pdata.c`. The item table has about 1.8K left in its page
+(memory_map.md: 6.2K of 8K), room for about 50 more kinds. New kinds reuse
+an existing sprite with another palette bank where they can.
+
+Effects no item uses but that belong elsewhere: the drains (`EF_DRAIN_*`)
+suit monster hit hooks (a shadow, a wraith); `EF_REGEN`, `EF_ROOT`,
+`EF_MANA_REGEN` and `EF_HOLD` are innate or monster effects already.
+
+### I1 Items for the unused effects (data only)
+
+New rows using effects that work today; no new code. Before I3, every item
+can only aim at a creature.
+
+- I1.1 Potions of the timed ability buffs: grace (`EF_GRACE`), endurance
+  (`EF_ENDURANCE`), insight (`EF_INSIGHT`), intuition (`EF_INTUITION`).
+  Names must not clash with the permanent ones (potion of vigour, wisdom, …)
+- I1.2 Ward potions for poison, acid and magic (`EF_RESIST_POISON`,
+  `_ACID`, `_MAGIC`): only fire and cold have them
+- I1.3 Potions of heroism (`EF_HEROISM`) and aid (`EF_AID`); eye drops
+  (`EF_CURE_BLIND`)
+- I1.4 Bad potions: confusion (`EF_CONFUSE`), dread (`EF_FEAR`), paralysis
+  (`EF_PARALYSE`), beside poison, sleep and blindness. Not waiting for S10
+  (answered 2026-11-12)
+- I1.5 Parchments read on oneself: detect traps (`EF_DETECT_TRAPS`),
+  shield (`EF_SHIELD`), blessing (`EF_BLESS`), deep descent
+  (`EF_DESCENT`), recall (`EF_RECALL`, power enough to reach depth 1)
+- I1.6 Aimed parchments and wands: terror (`EF_FEAR`), confusion
+  (`EF_CONFUSE`), hold monster (`EF_PARALYSE`), hex (`EF_HEX`), bane
+  (`EF_BANE`); a wand of acid (`EF_BOLT_ACID`: only a parchment today) and
+  a wand of weakness (`EF_WEAKNESS`)
+- I1.7 Weapons with a hit hook: serrated sword or barbed spear
+  (`EF_BLEEDING`), acid blade (`EF_CORROSION`), fire brand (`EF_BURNING`).
+  A +1 weapon with one of these is already possible: its bonus is in its
+  attack (`to_hit`, `to_damage`), the effect in its hook
+- I1.11 The flask of oil sets the creature hit burning (`EF_BURNING`)
+  instead of one fire bolt, at the same damage a turn (power 4) (answered
+  2026-11-12)
+- I1.8 Ammo with a hit hook: barbed arrows (`EF_BLEEDING`), fire arrows
+  (`EF_BURNING`), poisoned darts (`EF_POISON`), sleep darts (`EF_SLEEP`),
+  flask of acid (`EF_CORROSION`)
+- I1.9 Worn: ring of presence (`EF_WORN_CHA`); rare deep amulets of fire,
+  cold and poison immunity (`EF_WORN_IMMUNE_*`)
+- I1.10 Food with effects: mushrooms, one kind per effect (healing,
+  confusion, poison); elven waybread (`EF_HEROISM`)
+
+### I2 Armour with a property
+
+Each kind has one hook, and armour spends it on its AC (`EF_WORN_AC`), so
+armour can't give AC and a resistance. Weapons don't have the problem:
+their bonus is in their attack, their effect in the hook.
+
+- I2.1 Armour's AC in a field of its own in the kind record, as a weapon's
+  attack is, counted while it is worn; the hook is then free for a
+  property. Proposed over a second hook: 1 byte a kind (166 bytes) against
+  3 (about 500), and it follows D&D, where armour has a base AC and magic on
+  top. `screen_inv_bank.c`'s special case for `EF_WORN_AC` reads the field
+  instead
+- I2.2 Ego armour with it: armour of fire resistance, dragon scale mail (AC
+  and fire immunity), elven cloak, shield of warding
+- I2.3 A second hook, only if a kind needs two properties (a ring of fire
+  and frost ward) (low)
+- I2.4 Enchantment rolled when generated, not fixed +1 and +2 rows: fewer
+  kinds for more variety (low)
+
+### I3 Items aimed at a tile or an area
+
+`act_aim()` needs a creature in line (action_aim.md); spells have shapes
+(`SPELL_SHAPE_*`), items don't.
+
+- I3.1 Aim at a tile: blink parchment and staff of blinking (`EF_BLINK`,
+  only a spell today)
+- I3.2 Area items with the spells' shapes: wand of fireballs, parchment of
+  scare monsters (`EF_FEAR` on every monster around)
+
+### I4 Thrown potions
+
+- I4.1 A thrown potion breaks and gives the creature hit its use effect:
+  bad potions become weapons, and a potion can't be thrown by mistake as a
+  drink
+
+### I5 Charges
+
+- I5.1 Recharging parchment: a new op adding charges to a wand (action_aim.md
+  D2 keeps empty wands for this), with a chance to destroy it
+- I5.2 Rods: charges come back over time, a timer on the item (low)
+
+### I6 Restoring and gaining
+
+- I6.1 Potion of restoration: ends drain effects (`EF_DRAIN_*`). Needs an op
+  that ends effects by kind, or the drains to share a status (the status
+  bits are nearly full, E5.8)
+- I6.2 Potion of experience: an op that adds XP or a level
+
+### I7 Light and fuel (with E2.2)
+
+- I7.1 Torches burn down (an item's count can be burn time, items.md); a
+  flask of oil refills a lantern
+- I7.2 Light radius matters: needs fog of war, as E5.2 does for monsters
+
+### I8 Weapons against a kind of creature (low)
+
+- I8.1 Creature families (undead, demon, beast), and weapons and ammo that
+  do more to one: a mace of disruption, silver arrows, holy water thrown at
+  undead
+
+### I9 Digging (low)
+
+- I9.1 Pick-axe and wand of digging: rock or wall becomes corridor and is
+  drawn again (`level_decorate_around()`)
+
+### I10 Uses for gold (low)
+
+- I10.1 Gold and gems are only picked up today: shops, or shrines that take
+  an offering
+
+Items in other objectives: amulet of life saving (E5.6), ring of free action
+(E5.9), invisibility and see invisible (E4.8), a vampiric weapon (E5.5),
+lightning wands and weapons (E5.7), telepathy (E5.2), identify (S10), light,
+mapping and enchanting (E2).
+
 ## J — 
 ## K — 
 ## L — Look around
