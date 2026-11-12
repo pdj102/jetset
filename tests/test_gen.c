@@ -14,6 +14,7 @@
 #include "game/components/inventory_internal.h"
 #include "game/components/attack_internal.h"
 #include "game/attrs/attrs_internal.h"
+#include "game/actors.h"
 #include "game/ai/ai_internal.h"
 #include "game/effects/effects_defs.h"
 #include "game/gen/gen_internal.h"
@@ -248,7 +249,9 @@ static int feature_kind_ok(uint8_t kind)
 
 static int item_ok(nge_entity_id_t id, nge_owner_t owner, uint8_t kind)
 {
-    return made(id, owner, CLASS_ITEM, kind) && render_is(id, &gen_items[kind].render) &&
+    gen_render_t r = { gen_items[kind].render.pattern, 1, 0, gen_items[kind].render.flags, LAYER_OBJECTS };
+
+    return made(id, owner, CLASS_ITEM, kind) && render_is(id, &r) &&
            ITEM_IS(id) && item_slot[id] == SLOT_NONE && attack_ok(id, &gen_items[kind].attack) && item_count[id] == gen_items[kind].count &&
            !NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_BLOCK) && !NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_STATS) &&
            !NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_TIMER) && !NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_INVENTORY) &&

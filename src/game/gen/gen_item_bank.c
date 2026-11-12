@@ -12,16 +12,23 @@
 #include <stdlib.h>
 
 #include "core/nge_util.h"
+#include "game/actors.h"
 
 static nge_entity_id_t create(uint8_t kind, nge_owner_t owner)
 {
     /* Copies on the stack: the calls below map other pages */
-    gen_render_t render = gen_items[kind].render;
+    gen_item_render_t look = gen_items[kind].render;
+    gen_render_t render;
     attack_kind_t attack = gen_items[kind].attack;
     uint8_t count = gen_items[kind].count;
     nge_entity_id_t id = gen_begin(CLASS_ITEM, kind, owner);
 
     if (id != NGE_ENTITY_INVALID) {
+        render.pattern = look.pattern;   /* a still sprite on the objects' layer */
+        render.anim_count = 1;
+        render.anim_rate = 0;
+        render.flags = look.flags;
+        render.layer = LAYER_OBJECTS;
         gen_render(id, &render);   /* items block nothing: no block component */
         item_add(id, count);
         if (ATTACK_KIND_HAS(&attack)) {

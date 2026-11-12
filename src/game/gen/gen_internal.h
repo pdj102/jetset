@@ -94,6 +94,16 @@ typedef struct gen_creature_kind {
     gen_where_t  where;
 } gen_creature_kind_t;
 
+/*
+ * An item's sprite: one still pattern in a palette bank. The item generator
+ * makes the rest of gen_render_t (a still sprite on LAYER_OBJECTS), so a
+ * kind takes 2 bytes, not 5 (docs/items_extensions.md D1)
+ */
+typedef struct gen_item_render {
+    uint8_t pattern;   /* the pattern */
+    uint8_t flags;     /* NGE_SPRITE_PALETTE(BANK_*) */
+} gen_item_render_t;
+
 /* An item kind's one hook: when, what and how strong; ef EF_NONE for none */
 typedef struct gen_item_hook {
     uint8_t hook;    /* GEN_HOOK_* */
@@ -103,7 +113,7 @@ typedef struct gen_item_hook {
 
 typedef struct gen_item_kind {
     const char     *name;      /* in the table's page: 19 characters at most */
-    gen_render_t    render;
+    gen_item_render_t render;
     uint8_t         subclass;  /* ITEM_POTION, ITEM_WEAPON... (gen_kinds.h) */
     uint8_t         group;     /* GROUP_* or KEY_*, or a lock pick's bonus */
     uint8_t         flags;     /* ITEMF_* */

@@ -17,8 +17,8 @@
 #include "game/spells/spells.h"
 #include "sprite/nge_sprite.h"
 
-/* An item's sprite: one still pattern in a bank */
-#define ITEM_RENDER(sprite, bank)  { (sprite), 1, 0, NGE_SPRITE_PALETTE(bank), LAYER_OBJECTS }
+/* An item's sprite: one still pattern in a bank (the generator adds the rest) */
+#define ITEM_RENDER(sprite, bank)  { (sprite), NGE_SPRITE_PALETTE(bank) }
 
 const gen_item_kind_t gen_items[IT_COUNT] = {
     /* ---- Melee ---- */
