@@ -1424,6 +1424,40 @@ int main(void)
             nge_location_set(actor_player, x, y);
             player_turn = 1;
         }
+        /*
+         * A panic parchment goes as soon as it is chosen, with no prompt; a
+         * wand of fireballs is offered with nobody near, and asks for a tile
+         * (docs/items_aimed.md R13, R15)
+         */
+        {
+            nge_entity_id_t sp = gen_item(IT_SP_PANIC, actor_player);
+            nge_entity_id_t rat = gen_creature(CR_RAT, AREA);
+            nge_entity_id_t wand;
+            uint8_t charges;
+
+            nge_location_set(rat, (uint8_t)(NGE_LOCATION_X(actor_player) - 2), NGE_LOCATION_Y(actor_player));
+            nge_event_flush();
+            fresh();
+            player_turn = 1;
+            press(EV(NGE_KEY_A));
+            press(EV(NGE_KEY_SPACE));
+            player_command(EV(NGE_KEY_A));
+            CHECK(!player_turn && !NGE_ENTITY_IS_ALIVE(sp));
+            nge_entity_destroy(rat);
+            nge_event_flush();
+            wand = gen_item(IT_WAND_FIREBALL, actor_player);
+            charges = item_count[wand];
+            fresh();
+            player_turn = 1;
+            press(EV(NGE_KEY_A));
+            press(EV(NGE_KEY_SPACE));
+            press(EV(NGE_KEY_Q));                                  /* the cursor ran: cancelled */
+            player_command(EV(NGE_KEY_A));
+            CHECK(player_turn && item_count[wand] == charges && said("Never mind."));
+            nge_entity_destroy(wand);
+            nge_event_flush();
+            player_turn = 1;
+        }
     }
 
     /* ---- cast: m lists the spells known, then a bolt asks for a tile; backing out uses no turn ---- */

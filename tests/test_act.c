@@ -1125,6 +1125,169 @@ static void test_aim_tile(void)
     events();
 }
 
+/* A rat at (x, y) with 200 HP, so an area's damage shows and kills nothing */
+static nge_entity_id_t tough_rat(uint8_t x, uint8_t y)
+{
+    nge_entity_id_t id = creature(CR_RAT, x, y);
+
+    effects_set_base(id, ATTR_HP_MAX, 200);
+    health_hp[id] = 200;
+    return id;
+}
+
+/* Balls and bursts: every creature in the area, ring by ring (docs/items_aimed.md R4 to R10) */
+static void test_aim_area(void)
+{
+    nge_entity_id_t pc;
+    nge_entity_id_t wand;
+    nge_entity_id_t sp;
+    nge_entity_id_t centre;
+    nge_entity_id_t east;
+    nge_entity_id_t diag;
+    nge_entity_id_t far;
+    nge_entity_id_t near;
+    nge_entity_id_t rats[9];
+    uint8_t charges;
+    uint8_t hp;
+    uint8_t x;
+    uint8_t y;
+    int n;
+    int ok;
+
+    events();
+    nge_entity_init();
+    for (y = 0; y < 10; y++) {
+        for (x = 0; x < 10; x++) {
+            NGE_MAP_TILE(x, y).tile_id = FLOOR;
+        }
+    }
+    level_clear_request();
+    pc = creature(CR_PLAYER, 0, 4);
+    effects_set_base(pc, ATTR_HP_MAX, 200);
+    health_hp[pc] = 200;
+    wand = gen_item(IT_WAND_FIREBALL, pc);
+    charges = item_count[wand];
+    events();
+
+    /* ---- ball: refused at its own tile, with only the user in the area, through a wall, out of range ---- */
+    CHECK(aim(pc, wand, 0, 4, ACT_CHECK) == ACT_FAIL && last.reason == ACT_R_NO_TARGET);
+    CHECK(aim(pc, wand, 0, 4, ACT_DO) == ACT_FAIL && last.reason == ACT_R_NO_TARGET && last.used == 0);
+    CHECK(aim(pc, wand, 1, 4, ACT_DO) == ACT_FAIL && last.reason == ACT_R_NO_TARGET);   /* the user caught, alone */
+    CHECK(aim(pc, wand, 5, 4, ACT_DO) == ACT_FAIL && last.reason == ACT_R_NO_TARGET);   /* nobody there */
+    CHECK(aim(pc, wand, 9, 4, ACT_DO) == ACT_FAIL && last.reason == ACT_R_OUT_OF_RANGE);
+    centre = tough_rat(5, 4);
+    events();
+    NGE_MAP_TILE(3, 4).tile_id = WALL;
+    CHECK(aim(pc, wand, 5, 4, ACT_CHECK) == ACT_FAIL && last.reason == ACT_R_NO_LINE);
+    NGE_MAP_TILE(3, 4).tile_id = FLOOR;
+    CHECK(item_count[wand] == charges && health_hp[pc] == 200 && events() == 0);
+
+    /* ---- ball: at the chosen tile; one on the way passed over; within 1 reached, at 2 not ---- */
+    near = tough_rat(2, 4);     /* on the line */
+    east = tough_rat(6, 4);
+    diag = tough_rat(4, 5);
+    far = tough_rat(7, 4);
+    events();
+    CHECK(aim(pc, wand, 5, 4, ACT_CHECK) == ACT_SUCCESS && last.target == centre && events() == 0);
+    CHECK(health_hp[centre] == 200 && item_count[wand] == charges);
+    CHECK(aim(pc, wand, 5, 4, ACT_DO) == ACT_SUCCESS && last.used == 1 && last.target == centre);
+    CHECK(item_count[wand] == charges - 1);
+    CHECK(health_hp[centre] < 200 && health_hp[east] < 200 && health_hp[diag] < 200);
+    CHECK(health_hp[near] == 200 && health_hp[far] == 200 && health_hp[pc] == 200);
+    n = events();
+    CHECK(is(0, NGE_EVENT_NONE, EV_AIMED, pc) && seen[0].p1 == wand);
+    CHECK(is(1, NGE_EVENT_NONE, EV_AREA, pc) && seen[1].p1 == 5 && seen[1].p2 == 4);
+    CHECK(n >= 5 && is(2, centre, EV_DAMAGED, pc));   /* the centre's first */
+    /* An empty tile next to creatures: it bursts there all the same, reaching those within 1 of it */
+    hp = health_hp[centre];
+    charges = health_hp[diag];
+    CHECK(aim(pc, wand, 5, 3, ACT_CHECK) == ACT_SUCCESS && last.target == centre);
+    CHECK(aim(pc, wand, 5, 3, ACT_DO) == ACT_SUCCESS && health_hp[centre] < hp && health_hp[diag] == charges);
+    events();
+
+    /* ---- ball: the user next to the centre is caught (D4) ---- */
+    hp = health_hp[near];
+    CHECK(aim(pc, wand, 1, 4, ACT_CHECK) == ACT_SUCCESS && last.target == near);
+    CHECK(aim(pc, wand, 1, 4, ACT_DO) == ACT_SUCCESS && health_hp[pc] < 200 && health_hp[near] < hp);
+    CHECK(events() >= 4 && seen_at(pc, EV_DAMAGED) >= 0);
+    nge_entity_destroy(centre);
+    nge_entity_destroy(east);
+    nge_entity_destroy(diag);
+    nge_entity_destroy(far);
+    nge_entity_destroy(near);
+    events();
+
+    /* ---- the cap: 9 creatures around the centre, 8 reached, the centre's first; the events fit ---- */
+    n = 0;
+    for (y = 3; y <= 5; y++) {
+        for (x = 4; x <= 6; x++) {
+            rats[n] = creature(CR_RAT, x, y);
+            health_hp[rats[n]] = 1;   /* each killed: the most events */
+            n++;
+        }
+    }
+    item_count[wand] = 4;
+    CHECK(aim(pc, wand, 5, 4, ACT_DO) == ACT_SUCCESS && last.target == rats[4]);
+    ok = 1;
+    for (n = 0; n < 9; n++) {
+        ok = ok && (health_hp[rats[n]] == 0) == (n != 8);   /* the last in ring 1 left out */
+    }
+    CHECK(ok);
+    n = events();
+    /* 26 of the queue's 32: the aim, the area, 3 for each kill. More per creature: lower ACT_AREA_MAX */
+    CHECK(n == 26 && n <= NGE_EVENT_QUEUE && is(2, rats[4], EV_DAMAGED, pc));
+    for (n = 0; n < 9; n++) {
+        nge_entity_destroy(rats[n]);
+    }
+    events();
+
+    /* ---- burst: within 2 of the user, not the user, not through a wall; x and y not read ---- */
+    nge_location_set(pc, 5, 5);
+    sp = gen_item(IT_SP_PANIC, pc);
+    CHECK(aim(pc, sp, 5, 5, ACT_DO) == ACT_FAIL && last.reason == ACT_R_NO_TARGET && NGE_ENTITY_IS_ALIVE(sp));
+    near = tough_rat(5, 7);     /* at 2 */
+    far = tough_rat(5, 8);      /* at 3 */
+    east = tough_rat(7, 5);     /* at 2, behind a wall */
+    NGE_MAP_TILE(6, 5).tile_id = WALL;
+    events();
+    CHECK(aim(pc, sp, 0, 0, ACT_CHECK) == ACT_SUCCESS && last.target == near && events() == 0);
+    CHECK(aim(pc, sp, 0, 0, ACT_DO) == ACT_SUCCESS && last.target == near && !NGE_ENTITY_IS_ALIVE(sp));
+    events();
+    CHECK(is(0, NGE_EVENT_NONE, EV_AIMED, pc) && is(1, NGE_EVENT_NONE, EV_AREA, pc) && seen[1].p1 == 5 &&
+          seen[1].p2 == 5);
+    CHECK(seen_at(near, EV_EFFECT_STARTED) >= 0 || seen_at(near, EV_RESISTED) >= 0);   /* its own save */
+    CHECK(seen_at(far, EV_EFFECT_STARTED) < 0 && seen_at(far, EV_RESISTED) < 0);
+    CHECK(seen_at(east, EV_EFFECT_STARTED) < 0 && seen_at(east, EV_RESISTED) < 0);
+    CHECK(seen_at(pc, EV_EFFECT_STARTED) < 0 && seen_at(pc, EV_RESISTED) < 0);
+    NGE_MAP_TILE(6, 5).tile_id = FLOOR;
+    nge_entity_destroy(near);
+    nge_entity_destroy(far);
+    nge_entity_destroy(east);
+    events();
+
+    /* ---- the areas are nge_map_within()'s circles: one rat on each tile around (the user's too), checked ---- */
+    sp = gen_item(IT_SP_PANIC, pc);
+    near = tough_rat(0, 0);
+    events();
+    ok = 1;
+    for (y = 2; y <= 8; y++) {
+        for (x = 2; x <= 8; x++) {
+            nge_location_set(near, x, y);
+            ok = ok && (aim(pc, sp, 0, 0, ACT_CHECK) == ACT_SUCCESS) == nge_map_within(5, 5, x, y, ACT_BURST_RADIUS);
+        }
+    }
+    CHECK(ok);
+    nge_location_set(pc, 5, 1);
+    ok = 1;
+    for (y = 3; y <= 7; y++) {
+        for (x = 3; x <= 7; x++) {
+            nge_location_set(near, x, y);
+            ok = ok && (aim(pc, wand, 5, 5, ACT_CHECK) == ACT_SUCCESS) == nge_map_within(5, 5, x, y, ACT_BALL_RADIUS);
+        }
+    }
+    CHECK(ok && events() == 0);
+}
+
 int main(void)
 {
     nge_entity_id_t sword;
@@ -2726,6 +2889,7 @@ int main(void)
     test_statuses();
     test_blink_detect();
     test_aim_tile();
+    test_aim_area();
     test_search_disarm();
     test_trapdoor();
     test_learn();

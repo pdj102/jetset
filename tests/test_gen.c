@@ -440,7 +440,7 @@ int main(void)
           gen_item_armour_ac(IT_DRAGON_MAIL) == 6 && GEN_HOOK_EF(gen_item_hook(IT_DRAGON_MAIL, GEN_HOOK_WORN)) == EF_WORN_IMMUNE_FIRE &&
           gen_item_armour_ac(IT_ELVEN_CLOAK) == 1 && GEN_HOOK_EF(gen_item_hook(IT_ELVEN_CLOAK, GEN_HOOK_WORN)) == EF_WORN_DEX &&
           gen_item_armour_ac(IT_SHIELD_WARDING) == 2 && GEN_HOOK_EF(gen_item_hook(IT_SHIELD_WARDING, GEN_HOOK_WORN)) == EF_WORN_RES_MAGIC);
-    CHECK(IT_COUNT == IT_STAFF_BLINK + 1 && gen_item_fits(IT_DRAGON_MAIL) == SLOT_BIT(SLOT_BODY) &&
+    CHECK(IT_COUNT == IT_SP_PANIC + 1 && gen_item_fits(IT_DRAGON_MAIL) == SLOT_BIT(SLOT_BODY) &&
           gen_item_fits(IT_ELVEN_CLOAK) == SLOT_BIT(SLOT_CLOAK) && gen_item_fits(IT_SHIELD_WARDING) == SLOT_BIT(SLOT_SHIELD));
     CHECK(gen_item_key_lock_group(IT_KEY_SKELETON) == KEY_ANY && gen_item_key_lock_group(IT_DARTS) == KEY_NONE &&
           gen_item_pick_bonus(IT_FINE_LOCK_PICK) == 3 && gen_item_pick_bonus(IT_KEY_GOLD) == 0);
@@ -497,6 +497,24 @@ int main(void)
           strcmp(gen_items[IT_SP_BLINK].name, "blink parchment") == 0);
     CHECK(gen_item_subclass(IT_STAFF_BLINK) == ITEM_WAND && gen_items[IT_STAFF_BLINK].count == 6 &&
           strcmp(gen_items[IT_STAFF_BLINK].name, "staff of blinking") == 0);
+    /* Every ball and burst kind is aimed; the four of docs/items_aimed.md 4.10 */
+    ok = 1;
+    for (kind = 0; kind < IT_COUNT; kind++) {
+        uint8_t field = gen_items[kind].flags & ITEMF_SHAPE;
+
+        ok = ok && ((field != ITEMF_BALL && field != ITEMF_BURST) || gen_items[kind].hook.hook == GEN_HOOK_AIM);
+    }
+    CHECK(ok);
+    CHECK(gen_item_shape(IT_WAND_FIREBALL) == SPELL_BALL && gen_item_shape(IT_WAND_FROSTBALL) == SPELL_BALL &&
+          gen_item_shape(IT_SP_FIREBALL) == SPELL_BALL && gen_item_shape(IT_SP_PANIC) == SPELL_BURST);
+    CHECK(GEN_HOOK_EF(gen_item_hook(IT_WAND_FIREBALL, GEN_HOOK_AIM)) == EF_BOLT_FIRE &&
+          GEN_HOOK_POWER(gen_item_hook(IT_WAND_FIREBALL, GEN_HOOK_AIM)) == 4 && gen_items[IT_WAND_FIREBALL].count == 4);
+    CHECK(GEN_HOOK_EF(gen_item_hook(IT_WAND_FROSTBALL, GEN_HOOK_AIM)) == EF_BOLT_COLD &&
+          strcmp(gen_items[IT_WAND_FROSTBALL].name, "wand of frost balls") == 0);
+    CHECK(GEN_HOOK_POWER(gen_item_hook(IT_SP_FIREBALL, GEN_HOOK_AIM)) == 5 &&
+          gen_item_subclass(IT_SP_FIREBALL) == ITEM_PARCHMENT);
+    CHECK(GEN_HOOK_EF(gen_item_hook(IT_SP_PANIC, GEN_HOOK_AIM)) == EF_FEAR &&
+          strcmp(gen_items[IT_SP_PANIC].name, "panic parchment") == 0);
     /*
      * Every effect is made by some item kind (docs/items_extensions.md R1),
      * but for those meant for monsters and innate ones

@@ -283,13 +283,13 @@ void anim_vfx_event(nge_event_id_t ev, nge_entity_id_t target, nge_entity_id_t s
         fly_shot(source, target, p1);
         break;
     case EV_CAST:
-        if (target != source && p1 < SPELL_COUNT) {
+        if (target != source && target != NGE_EVENT_NONE && p1 < SPELL_COUNT) {   /* an area flies nothing here */
             spell_get(p1, &def);
             fly_effect(source, target, def.ef);
         }
         break;
     case EV_AIMED:
-        if (target != source && p1 < NGE_ENTITY_MAX) {
+        if (target != source && target != NGE_EVENT_NONE && p1 < NGE_ENTITY_MAX) {   /* an area flies nothing here */
             fly_effect(source, target, GEN_HOOK_EF(gen_hook_of(p1, GEN_HOOK_AIM)));
         }
         break;

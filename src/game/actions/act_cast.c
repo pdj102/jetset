@@ -56,7 +56,8 @@ uint8_t act_cast(act_t *a, uint8_t mode) NGE_BANKED
     /* 3. Resolve: nothing to roll: a valid cast always happens, and a save is the effect's */
 
     /* 4. Apply: the cast, the MP, then the effect with the actor as its source (a kill earns its XP) */
-    nge_event_post(a->target, EV_CAST, actor, sp, 0);
+    nge_event_post(SPELL_IS_AREA(s.shape) ? NGE_EVENT_NONE : a->target, EV_CAST, actor, sp,
+                   0);   /* an area's creatures are its own events' */
     if (cost != 0) {
         mana_spend(actor, cost);
     }

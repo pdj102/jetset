@@ -23,9 +23,9 @@
  * | EV_HIT            | the entity hit      | attacker | p1: d20 roll, p2: weapon or NGE_EVENT_NONE |
  * | EV_MISSED         | the entity missed   | attacker | p1: d20 roll, p2: weapon or NGE_EVENT_NONE |
  * | EV_FIRED          | the entity aimed at | shooter  | p1: launcher, thrown item or NGE_EVENT_NONE |
- * | EV_AIMED          | the entity aimed at | aimer    | p1: the item |
+ * | EV_AIMED          | the entity aimed at, or NGE_EVENT_NONE for an area | aimer | p1: the item |
  * | EV_UNLOCKED       | the feature         | unlocker | -        |
- * | EV_CAST           | the entity aimed at, or the caster | the caster | p1: SP_* |
+ * | EV_CAST           | the entity aimed at, the caster, or NGE_EVENT_NONE for an area | the caster | p1: SP_* |
  * | EV_SPELL_LEARNED  | the entity          | -        | p1: SP_* |
  * | EV_OPERATED       | the feature         | operator | p1: EF_* |
  * | EV_TRIGGERED      | the trap            | the creature it fires at | - |
@@ -47,6 +47,7 @@
  * | EV_QUEST_FOUND    | the quest item      | the player | -      |
  * | EV_AI_CHANGED     | the AI entity       | the cause, or NGE_EVENT_NONE | p1: old state, p2: new state (AI_STATE_*) |
  * | EV_RESISTED       | the entity          | the cause, or NGE_EVENT_NONE | p1: EF_* |
+ * | EV_AREA           | NGE_EVENT_NONE      | the user | p1, p2: the centre's x, y |
  */
 
 #include "event/nge_event.h"
@@ -89,5 +90,6 @@
 #define EV_SEARCHED       (NGE_EVENT_USER + 35)    /**< Searched around itself, finding p1 hidden features (act_search()). */
 #define EV_FIZZLED        (NGE_EVENT_USER + 36)    /**< An effect's op p1 could do nothing to the target (game/effects). */
 #define EV_RESISTED       (NGE_EVENT_USER + 37)    /**< Effect p1 was resisted by the target's saving throw when applied (game/effects). */
+#define EV_AREA           (NGE_EVENT_USER + 38)    /**< An area around (p1, p2) by the source (act_aim(), act_cast()); each creature's effect events follow. */
 
 #endif

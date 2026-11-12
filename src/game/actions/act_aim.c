@@ -70,7 +70,8 @@ uint8_t act_aim(act_t *a, uint8_t mode) NGE_BANKED
     /* 3. Resolve: nothing to roll: the effect's own saving throw decides what it does */
 
     /* 4. Apply: a charge used, or a parchment used up, then the effect, with the actor as its source */
-    nge_event_post(a->target, EV_AIMED, actor, item, 0);
+    nge_event_post(SPELL_IS_AREA(shape) ? NGE_EVENT_NONE : a->target, EV_AIMED, actor, item,
+                   0);   /* an area's creatures are its own events' */
     if (wand) {
         item_count[item]--;
     } else {

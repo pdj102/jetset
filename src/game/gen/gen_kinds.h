@@ -252,7 +252,11 @@
 #define IT_SHIELD_WARDING    211
 #define IT_SP_BLINK          212   /* aimed at a tile or an area (docs/items_aimed.md 4.10) */
 #define IT_STAFF_BLINK       213
-#define IT_COUNT             214
+#define IT_WAND_FIREBALL     214
+#define IT_WAND_FROSTBALL    215
+#define IT_SP_FIREBALL       216
+#define IT_SP_PANIC          217
+#define IT_COUNT             218
 
 /* Features (CLASS_FEATURE) */
 #define FT_DOOR         0

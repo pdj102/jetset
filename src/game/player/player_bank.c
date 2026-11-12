@@ -288,6 +288,7 @@ static void look(void)
     t.origin_x = NGE_LOCATION_X(actor_player);
     t.origin_y = NGE_LOCATION_Y(actor_player);
     t.range = TARGET_RANGE_ANY;
+    t.radius = 0;
     t.x = t.origin_x;
     t.y = t.origin_y;
     if (target_choose(&t)) {
@@ -295,8 +296,11 @@ static void look(void)
     }
 }
 
-/* Choose a tile from the player's, within range, for an action: 1 with it in a->x, a->y */
-static uint8_t choose_tile(uint8_t purpose, uint8_t range, act_t *a)
+/*
+ * Choose a tile from the player's, within range, for an action, an area's
+ * radius around it warned of (0 for none): 1 with it in a->x, a->y
+ */
+static uint8_t choose_tile(uint8_t purpose, uint8_t range, uint8_t radius, act_t *a)
 {
     target_t t;
 
@@ -304,6 +308,7 @@ static uint8_t choose_tile(uint8_t purpose, uint8_t range, act_t *a)
     t.origin_x = NGE_LOCATION_X(actor_player);
     t.origin_y = NGE_LOCATION_Y(actor_player);
     t.range = range;
+    t.radius = radius;
     t.x = t.origin_x;
     t.y = t.origin_y;
     if (!target_choose(&t)) {
@@ -312,6 +317,22 @@ static uint8_t choose_tile(uint8_t purpose, uint8_t range, act_t *a)
     a->x = t.x;
     a->y = t.y;
     return 1;
+}
+
+/*
+ * The tile an aimed item (aim 1) or a spell of shape asks for, within range
+ * (docs/items_aimed.md 4.7): none for self and a burst, a ball's radius
+ * warned of. 1 with it in a->x, a->y, or if it asks for none
+ */
+static uint8_t choose_for_shape(uint8_t shape, uint8_t aim, uint8_t range, act_t *a)
+{
+    if (shape == SPELL_SELF || shape == SPELL_BURST) {
+        return 1;
+    }
+    if (shape == SPELL_TILE) {
+        return choose_tile(aim ? TARGET_AIM_TILE : TARGET_CAST_TILE, range, 0, a);
+    }
+    return choose_tile(aim ? TARGET_AIM : TARGET_CAST, range, (shape == SPELL_BALL) ? ACT_BALL_RADIUS : 0, a);
 }
 
 /*
@@ -331,9 +352,7 @@ static void item_command(uint8_t mode)
     if (action == SCREEN_INV_BACK) {
         return;
     }
-    if (action == ACT_AIM &&
-        !choose_tile((gen_item_shape(kind_index[a.item]) == SPELL_TILE) ? TARGET_AIM_TILE : TARGET_AIM, ACT_AIM_RANGE,
-                     &a)) {
+    if (action == ACT_AIM && !choose_for_shape(gen_item_shape(kind_index[a.item]), 1, ACT_AIM_RANGE, &a)) {
         return;
     }
     if (action == ACT_LEARN) {
@@ -445,14 +464,14 @@ static void fire_command(void)
         messages_act_failed(&a);
         return;
     }
-    if (choose_tile(TARGET_FIRE, a.amount, &a)) {
+    if (choose_tile(TARGET_FIRE, a.amount, 0, &a)) {
         player_act(ACT_FIRE, &a);
     }
 }
 
 /*
  * Cast: choose a spell from the list, which says why one can't be cast.
- * A bolt or a direct spell then asks for a tile within its range.
+ * Then a tile within its range, as its shape asks (choose_for_shape()).
  * Backing out of either uses no turn
  */
 static void cast_command(void)
@@ -464,8 +483,7 @@ static void cast_command(void)
         return;
     }
     spell_get(a.spell, &def);
-    if (def.shape != SPELL_SELF &&
-        !choose_tile((def.shape == SPELL_TILE) ? TARGET_CAST_TILE : TARGET_CAST, def.range, &a)) {
+    if (!choose_for_shape(def.shape, 0, def.range, &a)) {
         return;
     }
     player_act(ACT_CAST, &a);

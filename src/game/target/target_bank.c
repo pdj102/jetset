@@ -47,6 +47,18 @@ uint8_t target_in_range(const target_t *t) NGE_BANKED
     return nge_map_within(t->origin_x, t->origin_y, t->x, t->y, t->range);
 }
 
+uint8_t target_cursor_bank(const target_t *t) NGE_BANKED
+{
+    uint8_t ox = t->origin_x;   /* in locals (T-ZSDCC-1) */
+    uint8_t oy = t->origin_y;
+    uint8_t radius = t->radius;
+
+    if (!target_in_range(t)) {
+        return BANK_RED;
+    }
+    return (radius != 0 && nge_map_within(ox, oy, t->x, t->y, radius)) ? BANK_ORANGE : BANK_GREEN;
+}
+
 /*
  * Scroll the view one tile towards the cursor if it is within the margin of
  * an edge. nge_map_move_camera() stops at the map's edges, so there the
@@ -105,8 +117,8 @@ uint8_t target_key(target_t *t, nge_key_event_t ev) NGE_BANKED
     return TARGET_STEP_CANCELLED;
 }
 
-/* The cursor (an overlay sprite) on the cursor's tile, through the camera: one pattern, green in
-   range, red out of it */
+/* The cursor (an overlay sprite) on the cursor's tile, through the camera: one pattern, its bank
+   target_cursor_bank() */
 static void place(const target_t *t)
 {
     uint16_t sx;
@@ -114,7 +126,7 @@ static void place(const target_t *t)
 
     nge_map_to_screen((uint16_t)t->x * NGE_MAP_TILE_PIXELS, (uint16_t)t->y * NGE_MAP_TILE_PIXELS, &sx, &sy);
     screen_overlay_set(SCREEN_OVERLAY_CURSOR, sx, sy, SPRITE_CURSOR,
-                       NGE_SPRITE_PALETTE(target_in_range(t) ? BANK_GREEN : BANK_RED));
+                       NGE_SPRITE_PALETTE(target_cursor_bank(t)));
 }
 
 uint8_t target_choose(target_t *t) NGE_BANKED

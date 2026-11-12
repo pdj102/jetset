@@ -13,6 +13,7 @@
 #include "map/nge_map.h"
 
 #include "game/actions/act.h"
+#include "game/actors.h"
 #include "game/components/health.h"
 #include "game/components/item.h"
 #include "game/game.h"
@@ -131,6 +132,7 @@ static void context(target_t *t, uint8_t x, uint8_t y, uint8_t range)
     t->origin_x = x;
     t->origin_y = y;
     t->range = range;
+    t->radius = 0;
     t->x = x;
     t->y = y;
 }
@@ -284,6 +286,29 @@ int main(void)
     script = cancel;
     CHECK(target_choose(&t) == 0 && !out_of_keys && said(1, "Aim to where?"));
     script = NULL;
+
+    /* ---- the cursor's bank: red out of range; amber within a radius of the origin, green beyond (R14) ---- */
+    context(&t, 30, 20, 8);
+    CHECK(target_cursor_bank(&t) == BANK_GREEN);           /* radius 0: green everywhere in range */
+    t.x = 31;
+    CHECK(target_cursor_bank(&t) == BANK_GREEN);
+    t.x = 39;
+    CHECK(target_cursor_bank(&t) == BANK_RED);
+    t.radius = 1;
+    CHECK(target_cursor_bank(&t) == BANK_RED);
+    t.x = 30;
+    CHECK(target_cursor_bank(&t) == BANK_ORANGE);          /* the origin: the player caught */
+    t.x = 31;
+    t.y = 21;
+    CHECK(target_cursor_bank(&t) == BANK_ORANGE);
+    t.x = 32;
+    t.y = 20;
+    CHECK(target_cursor_bank(&t) == BANK_GREEN);
+    t.x = 38;
+    CHECK(target_cursor_bank(&t) == BANK_GREEN);
+    t.radius = 2;
+    t.x = 32;
+    CHECK(target_cursor_bank(&t) == BANK_ORANGE);
 
     /* ---- asserts: a start off the map, an unknown purpose ---- */
     context(&t, 30, 20, TARGET_RANGE_ANY);

@@ -59,6 +59,9 @@
 #define SPELL_BURST   5   /**< Every creature within ACT_BURST_RADIUS of the caster, not the caster. */
 #define SPELL_SHAPE_COUNT  6
 
+/** 1 if shape s reaches an area (SPELL_BALL, SPELL_BURST): the last shapes, so one compare. */
+#define SPELL_IS_AREA(s)  ((s) >= SPELL_BALL)
+
 /* When the AI casts a spell */
 #define SPELL_AI_NEVER   0   /**< Never: the AI can't use it well. */
 #define SPELL_AI_HURT    1   /**< When hurt: on itself. */

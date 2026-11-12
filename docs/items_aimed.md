@@ -507,3 +507,34 @@ CSpect checks are in the plan.
   cost 19 bytes in page 116 (the inventory screen), 18 in page 124 (targeting) and 31 in
   page 114 (the player's commands). Common memory and `BANK_56` are unchanged.
 - **`test_gen`** no longer exempts `EF_BLINK` from "every effect is made by some item".
+
+### Step 3: balls and bursts (I3.2)
+
+- **`act_area()` reads a table, not the rings.** The 21 offsets within radius 2, ring by
+  ring (9 within 1), are a const table in `act_shared.c`: one loop of 9 or 21 tiles, with no
+  distance test. The ring walk of section 4.3, `nge_map_within()` at d and d - 1 on each
+  tile of the square at each ring, was 634 bytes in the hardware build; the table and its
+  loop are 448. A check typedef ties the table to `ACT_BALL_RADIUS` 1 and
+  `ACT_BURST_RADIUS` 2, and `test_act` checks it against `nge_map_within()` tile by tile,
+  so the areas are still the circles of every range.
+- **The line from the centre is `nge_block_line(..., NGE_BLOCK_SOLID)`,** not a block
+  walk: the same tiles and the same test (walls, closed doors and the edge block;
+  creatures don't), in one call. It doesn't test the ends, which changes nothing: the
+  centre was tested by `act_line()` or is the user's tile, and a creature's tile is never
+  solid.
+- **`SPELL_IS_AREA(s)`** (spells.h) is `s >= SPELL_BALL`: ball and burst are the last
+  shapes. One compare where the actions choose `EV_AIMED`'s and `EV_CAST`'s target.
+- **`choose_for_shape()`** in `player_bank.c` holds section 4.7's table for both
+  `item_command()` and `cast_command()`.
+- **What is said (R17, 4.9).** A player caught in its own ball is told "You take 4 fire
+  damage.", the text of all fire damage, not "You are burned!". Killed by itself it is told
+  "You die...", as by anything: the death message doesn't read the killer, and
+  `player_on_pc_event()` gives no XP for the player's own death. Nothing changed.
+- **The queue.** A full ball where every creature dies posts 26 events, as section 8
+  says; `test_act` checks that figure, so an effect that posts more fails it.
+- **Memory.** Page 109 grows by 161 bytes, to 196 free. In the hardware build `BANK_56`
+  grows by about 764 bytes (`act_shared.c` +724, `act_aim.c` +61, `act_cast.c` -21), not
+  the plan's 400: zsdcc's code for the area's loop and banked calls. In the CSpect build
+  `BANK_56` is 15,989 of 16,384: **395 bytes free**. Page 114 (the player's commands) grows
+  by 118, page 124 (targeting) by 106, and pages 126/127 by 22 (the VFX guard). Common
+  memory is unchanged.

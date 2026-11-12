@@ -105,6 +105,74 @@ uint8_t act_line(act_t *a, uint8_t range, uint8_t how)
     return ACT_R_NO_TARGET;
 }
 
+/*
+ * The tiles of an area, ring by ring from the centre: nge_map_within()'s
+ * circle (dx*dx + dy*dy <= r*r + r) as offsets, the first AREA_TILES_1
+ * within 1, all AREA_TILES_2 within 2. A table, not the test on every tile
+ * of the square at each ring: half the code. test_act checks it against
+ * nge_map_within()
+ */
+#define AREA_TILES_1  9
+#define AREA_TILES_2  21
+
+/* The table holds the radii act.h names */
+typedef char act_area_radius_check[(ACT_BALL_RADIUS == 1 && ACT_BURST_RADIUS == 2) ? 1 : -1];
+
+static const int8_t area_dx[AREA_TILES_2] = {
+    0,
+    -1, 0, 1, -1, 1, -1, 0, 1,
+    -1, 0, 1, -2, 2, -2, 2, -2, 2, -1, 0, 1,
+};
+static const int8_t area_dy[AREA_TILES_2] = {
+    0,
+    -1, -1, -1, 0, 0, 1, 1, 1,
+    -2, -2, -2, -1, -1, 0, 0, 1, 1, 2, 2, 2,
+};
+
+/*
+ * The creatures of an area: within radius of (s->cx, s->cy), ring by ring
+ * from it, each in a clear line from the centre (act_line()'s test, by
+ * nge_block_line(): the centre was tested by act_line(), or is the actor's,
+ * and a tile with a creature on it is never solid), into s->ids[] up to
+ * ACT_AREA_MAX, the actor only if with_actor. Sets a->target to the first
+ * that isn't the actor. Returns ACT_R_NONE, or ACT_R_NO_TARGET with none but
+ * the actor. See docs/items_aimed.md 4.3
+ */
+static uint8_t act_area(act_t *a, act_shape_t *s, uint8_t radius, uint8_t with_actor)
+{
+    nge_entity_id_t actor = a->actor;
+    nge_entity_id_t first = NGE_ENTITY_INVALID;
+    nge_entity_id_t id;
+    nge_owner_t area = NGE_OWNER_OF(actor);
+    uint8_t cx = s->cx;   /* in locals (T-ZSDCC-1) */
+    uint8_t cy = s->cy;
+    uint8_t tiles = (radius == ACT_BALL_RADIUS) ? AREA_TILES_1 : AREA_TILES_2;
+    uint8_t count = 0;
+    uint8_t i;
+    uint8_t x;
+    uint8_t y;
+
+    for (i = 0; i < tiles; i++) {
+        x = (uint8_t)(cx + area_dx[i]);   /* off the map's left or top edge: 254 or 255, off the map */
+        y = (uint8_t)(cy + area_dy[i]);
+        if (x >= nge_map.width || y >= nge_map.height || !nge_block_line(area, cx, cy, x, y, NGE_BLOCK_SOLID)) {
+            continue;
+        }
+        NGE_LOCATION_FOR_EACH_AT(id, area, x, y, COMPONENT_HEALTH) {
+            if (count < ACT_AREA_MAX && NGE_ENTITY_IS_ALIVE(id) && health_hp[id] != 0 && (id != actor || with_actor)) {
+                s->ids[count] = id;
+                count++;
+                if (id != actor && first == NGE_ENTITY_INVALID) {
+                    first = id;
+                }
+            }
+        }
+    }
+    s->count = count;
+    a->target = first;   /* for the AI's check */
+    return (first == NGE_ENTITY_INVALID) ? ACT_R_NO_TARGET : ACT_R_NONE;
+}
+
 uint8_t act_shape_find(act_t *a, act_shape_t *s, uint8_t range)
 {
     nge_entity_id_t actor = a->actor;
@@ -120,35 +188,59 @@ uint8_t act_shape_find(act_t *a, act_shape_t *s, uint8_t range)
         a->target = actor;
         return ACT_R_NONE;
     }
-    if (shape == SPELL_TILE) {
-        /* A free tile in range and line: a creature there is in the way; the effect is the actor's */
+    if (shape == SPELL_BURST) {
+        /* Around the actor, not the actor: no tile is read */
+        s->cx = NGE_LOCATION_X(actor);
+        s->cy = NGE_LOCATION_Y(actor);
+        return act_area(a, s, ACT_BURST_RADIUS, 0);
+    }
+    if (shape == SPELL_TILE || shape == SPELL_BALL) {
+        /* A direct line reaches the tile with a creature on it or with none, but not the actor's own */
         reason = act_line(a, range, ACT_LINE_DIRECT);
+        if (reason != ACT_R_NONE &&
+            (reason != ACT_R_NO_TARGET || (tx == NGE_LOCATION_X(actor) && ty == NGE_LOCATION_Y(actor)))) {
+            return reason;   /* out of range, no line, or its own tile */
+        }
+        s->cx = tx;
+        s->cy = ty;
+        if (shape == SPELL_BALL) {
+            return act_area(a, s, ACT_BALL_RADIUS, 1);   /* it catches the actor (D4) */
+        }
+        /* A tile: free, or a creature is in the way; the effect is the actor's */
         if (reason == ACT_R_NONE) {
             return ACT_R_BLOCKED_ENTITY;   /* a->target: the creature */
-        }
-        if (reason != ACT_R_NO_TARGET || (tx == NGE_LOCATION_X(actor) && ty == NGE_LOCATION_Y(actor))) {
-            return reason;   /* out of range, no line, or its own tile */
         }
         if (!level_can_enter(actor, tx, ty, &a->target)) {
             return (a->target != NGE_ENTITY_INVALID) ? ACT_R_BLOCKED_ENTITY : ACT_R_BLOCKED;
         }
         a->target = actor;
-        s->cx = tx;
-        s->cy = ty;
         return ACT_R_NONE;
     }
-    nge_util_assert(shape == SPELL_BOLT || shape == SPELL_DIRECT);   /* ball and burst: not yet */
 
-    /* The actor's own tile is ACT_R_NO_TARGET: a check there asks whether it can act at all */
+    /* Self is done; bolt and direct. The actor's own tile is ACT_R_NO_TARGET: a check there asks whether it can act at all */
     return act_line(a, range, (shape == SPELL_DIRECT) ? ACT_LINE_DIRECT : ACT_LINE_BOLT);
 }
 
 void act_shape_apply(act_t *a, const act_shape_t *s, uint8_t ef, int8_t power)
 {
     nge_entity_id_t actor = a->actor;
+    nge_entity_id_t id;
+    uint8_t shape = s->shape;   /* in locals (T-ZSDCC-1); the loop's bound too */
+    uint8_t count = s->count;
+    uint8_t i;
+
     /* The shape is valid: act_shape_find() asserted it */
-    if (s->shape == SPELL_TILE) {
+    if (shape == SPELL_TILE) {
         effect_apply_at(ef, power, actor, actor, s->cx, s->cy);
+    } else if (SPELL_IS_AREA(shape)) {
+        /* The area, then each creature found, if an effect before hasn't killed it (D13) */
+        nge_event_post(NGE_EVENT_NONE, EV_AREA, actor, s->cx, s->cy);
+        for (i = 0; i < count; i++) {
+            id = s->ids[i];
+            if (NGE_ENTITY_IS_ALIVE(id)) {
+                effect_apply(ef, power, id, actor);
+            }
+        }
     } else {
         effect_apply(ef, power, a->target, actor);   /* self, bolt, direct */
     }
