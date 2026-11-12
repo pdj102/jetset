@@ -440,7 +440,7 @@ int main(void)
           gen_item_armour_ac(IT_DRAGON_MAIL) == 6 && GEN_HOOK_EF(gen_item_hook(IT_DRAGON_MAIL, GEN_HOOK_WORN)) == EF_WORN_IMMUNE_FIRE &&
           gen_item_armour_ac(IT_ELVEN_CLOAK) == 1 && GEN_HOOK_EF(gen_item_hook(IT_ELVEN_CLOAK, GEN_HOOK_WORN)) == EF_WORN_DEX &&
           gen_item_armour_ac(IT_SHIELD_WARDING) == 2 && GEN_HOOK_EF(gen_item_hook(IT_SHIELD_WARDING, GEN_HOOK_WORN)) == EF_WORN_RES_MAGIC);
-    CHECK(IT_COUNT == IT_SHIELD_WARDING + 1 && gen_item_fits(IT_DRAGON_MAIL) == SLOT_BIT(SLOT_BODY) &&
+    CHECK(IT_COUNT == IT_STAFF_BLINK + 1 && gen_item_fits(IT_DRAGON_MAIL) == SLOT_BIT(SLOT_BODY) &&
           gen_item_fits(IT_ELVEN_CLOAK) == SLOT_BIT(SLOT_CLOAK) && gen_item_fits(IT_SHIELD_WARDING) == SLOT_BIT(SLOT_SHIELD));
     CHECK(gen_item_key_lock_group(IT_KEY_SKELETON) == KEY_ANY && gen_item_key_lock_group(IT_DARTS) == KEY_NONE &&
           gen_item_pick_bonus(IT_FINE_LOCK_PICK) == 3 && gen_item_pick_bonus(IT_KEY_GOLD) == 0);
@@ -465,24 +465,45 @@ int main(void)
                         kind == IT_SP_HEX || kind == IT_SP_BANE || kind == IT_WAND_WEAKNESS);
     }
     CHECK(ok);
-    /* gen_item_shape(): SPELL_DIRECT for exactly the direct kinds, SPELL_BOLT for the other aim kinds */
+    /* gen_item_shape(): the field's value as a SPELL_*, for every aim kind */
     ok = 1;
     for (kind = 0; kind < IT_COUNT; kind++) {
         if (GEN_HOOK_EF(gen_item_hook(kind, GEN_HOOK_AIM)) != EF_NONE) {
-            ok = ok && gen_item_shape(kind) ==
-                           (((gen_item_flags(kind) & ITEMF_SHAPE) == ITEMF_DIRECT) ? SPELL_DIRECT : SPELL_BOLT);
+            uint8_t field = gen_item_flags(kind) & ITEMF_SHAPE;
+
+            ok = ok && gen_item_shape(kind) == ((field == ITEMF_DIRECT) ? SPELL_DIRECT :
+                                                (field == ITEMF_TILE)   ? SPELL_TILE :
+                                                (field == ITEMF_BALL)   ? SPELL_BALL :
+                                                (field == ITEMF_BURST)  ? SPELL_BURST : SPELL_BOLT);
         }
     }
     CHECK(ok && gen_item_shape(IT_WAND_SLEEP) == SPELL_DIRECT && gen_item_shape(IT_WAND_FIRE) == SPELL_BOLT &&
-          gen_item_shape(IT_SWORD) == SPELL_BOLT);
+          gen_item_shape(IT_SWORD) == SPELL_BOLT && gen_item_shape(IT_SP_BLINK) == SPELL_TILE &&
+          gen_item_shape(IT_STAFF_BLINK) == SPELL_TILE);
+    /*
+     * Only tile items have an effect that needs a tile (EF_BLINK), every one
+     * has one, and it is aimed (docs/items_aimed.md R20)
+     */
+    ok = 1;
+    for (kind = 0; kind < IT_COUNT; kind++) {
+        const gen_item_hook_t *h = &gen_items[kind].hook;
+        int tile = (gen_items[kind].flags & ITEMF_SHAPE) == ITEMF_TILE;
+
+        ok = ok && (h->ef == EF_BLINK) == tile && (!tile || h->hook == GEN_HOOK_AIM);
+    }
+    CHECK(ok);
+    /* The tile items (docs/items_aimed.md 4.10) */
+    CHECK(gen_item_subclass(IT_SP_BLINK) == ITEM_PARCHMENT && gen_items[IT_SP_BLINK].count == 0 &&
+          strcmp(gen_items[IT_SP_BLINK].name, "blink parchment") == 0);
+    CHECK(gen_item_subclass(IT_STAFF_BLINK) == ITEM_WAND && gen_items[IT_STAFF_BLINK].count == 6 &&
+          strcmp(gen_items[IT_STAFF_BLINK].name, "staff of blinking") == 0);
     /*
      * Every effect is made by some item kind (docs/items_extensions.md R1),
-     * but for those meant for monsters and innate ones, and blink, which needs
-     * an item aimed at a tile (todo I3)
+     * but for those meant for monsters and innate ones
      */
     ok = 1;
     for (i = 1; i < EF_COUNT; i++) {
-        int used = i == EF_REGEN || i == EF_ROOT || i == EF_HOLD || i == EF_MANA_REGEN || i == EF_BLINK ||
+        int used = i == EF_REGEN || i == EF_ROOT || i == EF_HOLD || i == EF_MANA_REGEN ||
                    (i >= EF_DRAIN_STR && i <= EF_DRAIN_CHA);
 
         for (kind = 0; kind < IT_COUNT && !used; kind++) {

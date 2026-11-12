@@ -498,3 +498,12 @@ CSpect checks are in the plan.
 - **`act_shape_apply()` asserts nothing:** `act_shape_find()` has checked the shape.
 - **`test_gen`'s direct-kinds loop** compares the whole field to `ITEMF_DIRECT`, not the
   bit: `ITEMF_BALL` (0x0C) has bit 2 set too. It checks the same 11 kinds.
+
+### Step 2: tile items (I3.1)
+
+- **As planned:** `act_aim()` needed no change, and a tile item's refusals give Blink's
+  texts, as `messages_act_failed()` reads only the reason.
+- **Memory:** page 109 grows by 78 bytes, to 357 free. The prompt and the shape check
+  cost 19 bytes in page 116 (the inventory screen), 18 in page 124 (targeting) and 31 in
+  page 114 (the player's commands). Common memory and `BANK_56` are unchanged.
+- **`test_gen`** no longer exempts `EF_BLINK` from "every effect is made by some item".

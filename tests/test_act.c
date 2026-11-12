@@ -1073,6 +1073,58 @@ static void test_blink_detect(void)
     CHECK(!FEATURE_IS_HIDDEN(far) && events() == 2 && is(0, far, EV_FOUND, pc));
 }
 
+/* Tile items: aimed, they send their user to a free tile, as the Blink spell does (docs/items_aimed.md R3) */
+static void test_aim_tile(void)
+{
+    nge_entity_id_t pc;
+    nge_entity_id_t rat;
+    nge_entity_id_t sp;
+    nge_entity_id_t staff;
+    uint8_t charges;
+    uint8_t x;
+    uint8_t y;
+
+    events();
+    nge_entity_init();
+    for (y = 0; y < 10; y++) {
+        for (x = 0; x < 10; x++) {
+            NGE_MAP_TILE(x, y).tile_id = FLOOR;
+        }
+    }
+    NGE_MAP_TILE(0, 5).tile_id = WALL;
+    level_clear_request();
+    pc = creature(CR_PLAYER, 0, 2);
+    rat = creature(CR_RAT, 3, 2);
+    sp = gen_item(IT_SP_BLINK, pc);
+    events();
+
+    /* Refused: its own tile, a creature there, no line, out of range; the parchment kept */
+    CHECK(aim(pc, sp, 0, 2, ACT_CHECK) == ACT_FAIL && last.reason == ACT_R_NO_TARGET);
+    CHECK(aim(pc, sp, 0, 2, ACT_DO) == ACT_FAIL && last.reason == ACT_R_NO_TARGET && last.used == 0);
+    CHECK(aim(pc, sp, 3, 2, ACT_CHECK) == ACT_FAIL && last.reason == ACT_R_BLOCKED_ENTITY && last.target == rat);
+    CHECK(aim(pc, sp, 3, 2, ACT_DO) == ACT_FAIL && last.reason == ACT_R_BLOCKED_ENTITY && last.target == rat);
+    CHECK(aim(pc, sp, 0, 7, ACT_DO) == ACT_FAIL && last.reason == ACT_R_NO_LINE);
+    CHECK(aim(pc, sp, 9, 2, ACT_DO) == ACT_FAIL && last.reason == ACT_R_OUT_OF_RANGE);
+    CHECK(NGE_ENTITY_IS_ALIVE(sp) && at(pc, 0, 2) && events() == 0);
+    /* A check moves nothing; done, past the rat to the tile, EV_AIMED at the user, the parchment used up */
+    CHECK(aim(pc, sp, 5, 2, ACT_CHECK) == ACT_SUCCESS && last.target == pc && at(pc, 0, 2) && events() == 0);
+    CHECK(aim(pc, sp, 5, 2, ACT_DO) == ACT_SUCCESS && last.used == 1 && last.target == pc && at(pc, 5, 2));
+    CHECK(!NGE_ENTITY_IS_ALIVE(sp));
+    CHECK(events() >= 2 && is(0, pc, EV_AIMED, pc) && seen[0].p1 == sp && seen_at(pc, EV_MOVED) >= 0);
+
+    /* The staff: refused without using a charge; at ACT_AIM_RANGE exactly, a charge used */
+    nge_location_set(pc, 0, 2);
+    staff = gen_item(IT_STAFF_BLINK, pc);
+    charges = item_count[staff];
+    events();
+    CHECK(aim(pc, staff, 3, 2, ACT_DO) == ACT_FAIL && last.reason == ACT_R_BLOCKED_ENTITY && last.used == 0);
+    CHECK(aim(pc, staff, 0, 2, ACT_DO) == ACT_FAIL && last.reason == ACT_R_NO_TARGET);
+    CHECK(item_count[staff] == charges && events() == 0);
+    CHECK(aim(pc, staff, 8, 2, ACT_DO) == ACT_SUCCESS && at(pc, 8, 2) && item_count[staff] == charges - 1);
+    CHECK(stowed(staff, pc));
+    events();
+}
+
 int main(void)
 {
     nge_entity_id_t sword;
@@ -2673,6 +2725,7 @@ int main(void)
     test_traps();
     test_statuses();
     test_blink_detect();
+    test_aim_tile();
     test_search_disarm();
     test_trapdoor();
     test_learn();

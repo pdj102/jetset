@@ -250,7 +250,9 @@
 #define IT_DRAGON_MAIL       209
 #define IT_ELVEN_CLOAK       210
 #define IT_SHIELD_WARDING    211
-#define IT_COUNT             212
+#define IT_SP_BLINK          212   /* aimed at a tile or an area (docs/items_aimed.md 4.10) */
+#define IT_STAFF_BLINK       213
+#define IT_COUNT             214
 
 /* Features (CLASS_FEATURE) */
 #define FT_DOOR         0

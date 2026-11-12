@@ -1241,6 +1241,14 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .hook = { GEN_HOOK_AIM, EF_HEX, 1 },
         .where = { .depth = 3, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 2 },
     },
+    [IT_SP_BLINK] = {
+        .name = "blink parchment",
+        .render = ITEM_RENDER(SPRITE_PARCHMENT, BANK_BLUE),
+        .subclass = ITEM_PARCHMENT,
+        .flags = ITEMF_TILE,
+        .hook = { GEN_HOOK_AIM, EF_BLINK, 1 },
+        .where = { .depth = 2, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 3 },
+    },
     [IT_SP_BANE] = {
         .name = "bane parchment",
         .render = ITEM_RENDER(SPRITE_PARCHMENT, BANK_EARTH),
@@ -1325,6 +1333,15 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .count = 5,
         .hook = { GEN_HOOK_AIM, EF_BOLT_ACID, 6 },
         .where = { .depth = 4, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 2 },
+    },
+    [IT_STAFF_BLINK] = {
+        .name = "staff of blinking",
+        .render = ITEM_RENDER(SPRITE_STAFF, BANK_BLUE),
+        .subclass = ITEM_WAND,
+        .count = 6,
+        .flags = ITEMF_TILE,
+        .hook = { GEN_HOOK_AIM, EF_BLINK, 1 },
+        .where = { .depth = 5, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 1 },
     },
     [IT_WAND_WEAKNESS] = {
         .name = "wand of weakness",

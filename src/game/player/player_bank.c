@@ -63,7 +63,7 @@
 
 #if GAME_DEV_KIT
 #define DEV_ITEMS       6                   /* items G puts down at a time */
-#define DEV_ITEM_FIRST  IT_MAIL_FIRE_WARD   /* the first kind G puts down: the newest kinds, to check them */
+#define DEV_ITEM_FIRST  IT_SP_BLINK         /* the first kind G puts down: the newest kinds, to check them */
 static uint8_t dev_item;   /* the next of the kinds G puts down, from DEV_ITEM_FIRST: in common BSS */
 #endif
 
@@ -328,7 +328,12 @@ static void item_command(uint8_t mode)
     if (used) {
         player_turn = 0;   /* actions done in the screen: one turn for them all, and for what follows */
     }
-    if (action == SCREEN_INV_BACK || (action == ACT_AIM && !choose_tile(TARGET_AIM, ACT_AIM_RANGE, &a))) {
+    if (action == SCREEN_INV_BACK) {
+        return;
+    }
+    if (action == ACT_AIM &&
+        !choose_tile((gen_item_shape(kind_index[a.item]) == SPELL_TILE) ? TARGET_AIM_TILE : TARGET_AIM, ACT_AIM_RANGE,
+                     &a)) {
         return;
     }
     if (action == ACT_LEARN) {

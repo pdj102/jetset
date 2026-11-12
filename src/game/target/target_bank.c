@@ -39,6 +39,7 @@ static const target_purpose_t purposes[TARGET_PURPOSE_COUNT] = {
     [TARGET_AIM]  = { "Aim at what?", "Arrows: move  ENTER: aim  Other: back" },
     [TARGET_CAST] = { "Cast at what?", "Arrows: move  ENTER: cast  Other: back" },
     [TARGET_CAST_TILE] = { "Cast to where?", "Arrows: move  ENTER: cast  Other: back" },
+    [TARGET_AIM_TILE] = { "Aim to where?", "Arrows: move  ENTER: aim  Other: back" },
 };
 
 uint8_t target_in_range(const target_t *t) NGE_BANKED

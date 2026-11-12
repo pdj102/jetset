@@ -248,6 +248,9 @@ static uint8_t allowed(uint8_t action, uint8_t say)
     if (act_do(action, &a, ACT_CHECK) == ACT_SUCCESS) {
         return 1;
     }
+    if (action == ACT_AIM && a.reason == ACT_R_NO_TARGET) {
+        return 1;   /* a tile item refuses its own tile: the tile is chosen after the item (as for a spell) */
+    }
     if (say) {
         screen_message_to(screen_inv_streams[SCREEN_INV_STATUS]);
         messages_act_failed(&a);

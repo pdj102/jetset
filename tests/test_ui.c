@@ -1404,6 +1404,26 @@ int main(void)
             nge_event_flush();
             player_turn = 1;
         }
+        /* A blink parchment is offered with nobody near, and asks where to (docs/items_aimed.md R13, R15) */
+        {
+            nge_entity_id_t sp = gen_item(IT_SP_BLINK, actor_player);
+            uint8_t x = NGE_LOCATION_X(actor_player);
+            uint8_t y = NGE_LOCATION_Y(actor_player);
+
+            nge_event_flush();
+            fresh();
+            player_turn = 1;
+            press(EV(NGE_KEY_A));
+            press(EV(NGE_KEY_SPACE));
+            press(EV(NGE_KEY_LEFT));
+            press(EV(NGE_KEY_ENTER));
+            player_command(EV(NGE_KEY_A));
+            CHECK(!player_turn && !NGE_ENTITY_IS_ALIVE(sp) && NGE_LOCATION_X(actor_player) == x - 1 &&
+                  NGE_LOCATION_Y(actor_player) == y);
+            nge_event_flush();
+            nge_location_set(actor_player, x, y);
+            player_turn = 1;
+        }
     }
 
     /* ---- cast: m lists the spells known, then a bolt asks for a tile; backing out uses no turn ---- */

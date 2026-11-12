@@ -279,6 +279,10 @@ int main(void)
     t.purpose = TARGET_CAST_TILE;                           /* blink: where to, not at what */
     script = cancel;
     CHECK(target_choose(&t) == 0 && !out_of_keys && said(1, "Cast to where?"));
+    context(&t, 30, 20, 8);
+    t.purpose = TARGET_AIM_TILE;                            /* a blink item: the same, for aiming */
+    script = cancel;
+    CHECK(target_choose(&t) == 0 && !out_of_keys && said(1, "Aim to where?"));
     script = NULL;
 
     /* ---- asserts: a start off the map, an unknown purpose ---- */
