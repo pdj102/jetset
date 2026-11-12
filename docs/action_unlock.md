@@ -22,9 +22,9 @@ lock rules in [feature.c](../src/game/components/feature.c); the placement in
 - **R1** Doors and chests can be locked. Keys and lock picks unlock them.
 - **R2** Unlocking leaves the feature closed: opening it is another action, and another
   turn (D1).
-- **R3** A key fits if its group is the lock's kind, or it is a skeleton key (`KEY_ANY`).
+- **R3** A key fits if its lock group (`gen_item_key_lock_group()`) is the lock's kind, or it is a skeleton key (`KEY_ANY`).
   It always works and is kept.
-- **R4** A lock pick (any `ITEM_TOOL`) rolls d20 + its group (its bonus) + the actor's
+- **R4** A lock pick (any `ITEM_TOOL`) rolls d20 + its bonus (`gen_item_pick_bonus()`) + the actor's
   Dexterity modifier against `FEAT_PICK_DC`, 15, one number for every lock. Each try uses one
   of its count, win or lose, and it is destroyed at 0. Failing is `ACT_R_PICK_FAILED`,
   attempted.

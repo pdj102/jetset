@@ -62,7 +62,8 @@ player gets `ACT_R_NO_ATTACK`.
 **The data.** `attack_hits()` and `attack_damage()` read one entity's row, and ammo with
 dice 0 has no attack component, so its bonus is in its kind. They take a bonus, which keeps
 the rule in the component (actions.md R12), and `gen_item_attack()` reads it, banked with
-the item table. `gen_item_group()` is in the same place.
+the item table. `gen_item_ammo_group()`, which says which ammo a launcher shoots, is in
+the same place ([items.md](items.md), section 4.7).
 
 | Reason | Kind | When | The player is told |
 |---|---|---|---|

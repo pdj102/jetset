@@ -32,7 +32,7 @@ Status: built. Code: [act_learn.c](../src/game/actions/act_learn.c).
    | It is a book (`ITEM_BOOK`) | `ACT_R_NOT_BOOK` | "That isn't a spell book." |
    | The actor is the player, with mana and spells (R1) | `ACT_R_CANT_LEARN` | "The spells mean nothing to you." |
    | `spell` is `SP_NONE`: success in check mode; an assert in do mode (D2) | | |
-   | The spell is in the book (`spell_in_book()` with the kind's group) | `ACT_R_NOT_IN_BOOK` | "That spell isn't in the book." |
+   | The spell is in the book (`spell_in_book()` with `gen_item_book_spells()`) | `ACT_R_NOT_IN_BOOK` | "That spell isn't in the book." |
    | Not known already | `ACT_R_KNOWN` | "You know that spell already." |
    | `spell_slots()` at its level above 0 | `ACT_R_BEYOND` | "That spell is beyond you for now." |
    | `spell_free()` at its level above 0 | `ACT_R_SLOTS_FULL` | "No room for more spells of that level." |

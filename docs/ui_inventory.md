@@ -191,7 +191,7 @@ Choose mode puts `a)` in columns 0-1. Panels: title (0-39, 0-1), list
 |---|---|
 | Attack with dice (weapon, launcher, thrown) | `<dice>d<sides> [<to_hit>,<to_damage>]`, signed |
 | Ammo, dice 0 | `[<to_hit>,<to_damage>]`, `[+0,+0]` if it has no attack part |
-| Armour, shield (`EF_WORN_AC` hook) | `AC <power>` |
+| Armour, shield, or jewellery with an `EF_WORN_AC` hook | `AC <n>`: armour's AC from its record (`gen_item_armour_ac()`, [items.md](items.md) R26), else the hook's power |
 | Wand | `<count> charges` |
 | Light | `<count> turns` |
 | Lock pick | `<count> uses` |

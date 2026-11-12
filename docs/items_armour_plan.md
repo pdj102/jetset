@@ -4,7 +4,7 @@ The steps that build I2 ([todo.md](todo.md)) as [items.md](items.md) specifies i
 R21 to R30, sections 4.7 and 4.11, D14 to D19. The spec says what and why; this file
 says in what order, what changes, and how each step is checked.
 
-Status: planned 2026-11-12.
+Status: done 2026-11-12 (steps 1 to 4; as built in items.md section 4.11).
 
 ## 1. How the steps work
 

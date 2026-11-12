@@ -203,7 +203,7 @@ can only aim at a creature.
 - I1.10 Food with effects: mushrooms, one kind per effect (healing,
   confusion, poison); elven waybread (`EF_HEROISM`)
 
-### I2 Armour with a property `[plan]` [spec](items.md) (R21 to R30, sections 4.7, 4.11), [plan](items_armour_plan.md) (I2.1, I2.2; I2.3, I2.4 later)
+### I2 Armour with a property [spec](items.md) (R21 to R30, sections 4.7, 4.11), [plan](items_armour_plan.md) (I2.1, I2.2 done 2026-11-12)
 
 Each kind has one hook, and armour spends it on its AC (`EF_WORN_AC`), so
 armour can't give AC and a resistance. Weapons don't have the problem:
@@ -214,9 +214,9 @@ their bonus is in their attack, their effect in the hook.
   property. Proposed over a second hook: 1 byte a kind (166 bytes) against
   3 (about 500), and it follows D&D, where armour has a base AC and magic on
   top. `screen_inv_bank.c`'s special case for `EF_WORN_AC` reads the field
-  instead
+  instead `[done]` (2026-11-12)
 - I2.2 Ego armour with it: armour of fire resistance, dragon scale mail (AC
-  and fire immunity), elven cloak, shield of warding
+  and fire immunity), elven cloak, shield of warding `[done]` (2026-11-12)
 - I2.3 A second hook, only if a kind needs two properties (a ring of fire
   and frost ward) (low)
 - I2.4 Enchantment rolled when generated, not fixed +1 and +2 rows: fewer

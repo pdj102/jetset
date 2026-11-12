@@ -388,6 +388,9 @@ armour, the amulet of guarding). A property isn't shown: the name says it.
   `DEV_ITEM_FIRST` in `player_bank.c`, set to the newest kinds
   (`IT_MAIL_FIRE_WARD`), so G cycles through just the four. Page 114 stayed
   the same size.
+- *Step 4 (docs, 2026-11-12).* As well as the docs the plan named,
+  action_learn.md and action_unlock.md now name the readers in place of the
+  kind's "group". spells_plan.md is a finished plan and keeps `.group`.
 
 ## 5. Decisions
 
@@ -520,9 +523,9 @@ The PC tests enforce the rules that the data could break:
 - **Inert finds.** Items waiting for a mechanic are generated at their real rarity,
   so the mix can be seen in play. Until those mechanics exist, many finds do
   nothing.
-- **Page 109 is below R17's 10%.** 589 bytes free (7.2%) after I1, about 435
-  (5.3%) after I2's four kinds. A later kind needs room made first: the names
-  could move to page 108, the generator's, which has about 6.7K free.
+- **Page 109 is below R17's 10%.** 589 bytes free (7.2%) after I1, 435 (5.3%)
+  after I2's four kinds (7,757 bytes used). A later kind needs room made first:
+  the names could move to page 108, the generator's, which has about 6.1K free.
 - **Treasure takes pack slots** until gold is picked up as gold.
 - **Row letters.** In the choosing lists, letters run past "z" after 26 rows
   (`'a' + i`), which a full list can reach.

@@ -675,7 +675,7 @@ player carries, and only into a free slot. A level-up no longer teaches anything
 add slots, and says so.
 
 **Everything reuses what is there.** A book is an item kind with a new subclass, and its
-`group` byte names its list of spells. Learning is an action, `ACT_LEARN`, which ends in
+`data.book_spells` byte names its list of spells. Learning is an action, `ACT_LEARN`, which ends in
 `spell_learn()`, so the message and event are the ones a level-up used to give. The book
 screen is the spell list in a second mode. Choosing a book is the inventory screen in a new
 mode, as for every other item command.
@@ -703,7 +703,7 @@ mode, as for every other item command.
 | Spell slot | Room for one known spell of one spell level |
 | Slot table | `spell_slots_table[]`: slots by class, character level and spell level |
 | Free slot | A slot of a spell level with no known spell in it: slots less spells known at that level |
-| Spell book | An item of subclass `ITEM_BOOK`. Its kind's `group` is a `SPELL_BOOK_*` |
+| Spell book | An item of subclass `ITEM_BOOK`. Its kind's `data.book_spells` is a `SPELL_BOOK_*` |
 | Book list | A book's spells, a row of `spell_books[]` |
 | Read | Open a book's screen. Learning from it is the action |
 
@@ -784,8 +784,9 @@ from the to-do list, with the reason.
   table would be split from the rule that reads it. *Rejected:* a formula (a curve with a
   rate per class): S2.7 of the old list asked for tables, and a table can be tuned a cell at
   a time.
-- **D20 A book's kind names its list through `group`.** `gen_item_group()` already reads
-  that byte for keys and lock picks. The lists are in the spells module, `spell_books[]`,
+- **D20 A book's kind names its list through `data.book_spells`.** The byte keys and lock
+  picks already used, now a named union with a reader per meaning, `gen_item_book_spells()`
+  for books ([items.md](items.md), section 4.7). The lists are in the spells module, `spell_books[]`,
   by `SPELL_BOOK_*`, so a book of fire spells later is a row and an item kind. *Rejected:* a
   spell level range in the book, which needs no list: every new spell would join a book
   whether wanted or not, and a book of a theme couldn't be made. *Rejected:* a list in the
@@ -877,7 +878,7 @@ const uint8_t spell_books[SPELL_BOOK_COUNT][SPELL_BOOK_MAX];   /* page 135: 24 b
 
 The items, in `gen_kinds.h` after `IT_QUEST`, so no number moves: `IT_BOOK_BASIC` 160,
 `IT_BOOK_ADEPT` 161, `IT_BOOK_MASTER` 162, `IT_COUNT` 163. `ITEM_BOOK` 16, `ITEM_COUNT` 17.
-Each row has `.subclass = ITEM_BOOK`, `.group = SPELL_BOOK_*`, the new `SPRITE_BOOK` in its
+Each row has `.subclass = ITEM_BOOK`, `.data.book_spells = SPELL_BOOK_*`, the new `SPRITE_BOOK` in its
 colourway, no hook and no slot, and the band of D28.
 
 The sprite is frame 84 of `assets/Sprites.aseprite`, tag `book`: a closed book drawn in
@@ -1003,7 +1004,7 @@ last free slot filled, then the next refused; check mode changing nothing, inclu
 
 **`test_pc`:** a level-up learns nothing and posts 5 events; 3 levels within half the queue.
 
-**`test_gen`:** the book kinds: `ITEM_BOOK`, a `group` below `SPELL_BOOK_COUNT`, no hook, no
+**`test_gen`:** the book kinds: `ITEM_BOOK`, a `data.book_spells` below `SPELL_BOOK_COUNT`, no hook, no
 slot; subclass shares by depth still sum.
 
 **`test_chargen`:** the Mage and Dev carry a basic spellbook, not equipped; the Fighter
