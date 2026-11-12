@@ -86,6 +86,7 @@ static int contents_seen;   /* items held by containers */
 static int chest_locks_seen;
 static int traps_seen;
 static int traps_in_corridors;
+static int boulders_seen;
 
 /* The events posted: kept to look at, then thrown away */
 static nge_event_t seen[32];
@@ -606,9 +607,10 @@ static int check_level(int depth)
         if (KIND_IS(id, CLASS_FEATURE) && kind_index[id] != FT_DOOR) {
             /*
              * Random features (docs/features.md 4.12): a kind of the depth,
-             * placed alone and drawn as its ready look. Furniture is on a
-             * room's interior, two cells from its walls, outside locked rooms,
-             * with nothing else blocking around it, so it cuts no path (R18)
+             * placed alone and drawn as its ready look. A boulder is on a
+             * corridor tile; other furniture is on a room's interior, two
+             * cells from its walls, outside locked rooms, with nothing else
+             * blocking around it, so it cuts no path (R18)
              */
             gen_feature_info_t info;
             uint8_t fx = NGE_LOCATION_X(id);
@@ -641,7 +643,13 @@ static int check_level(int depth)
                 depth > gen_features[kind_index[id]].where.depth_max) {
                 return fail(depth, "a random feature's kind isn't of the depth");
             }
-            if (info.block_shut != NGE_BLOCK_NONE) {
+            if (kind_index[id] == FT_BOULDER) {
+                /* A boulder: on a corridor tile, never a doorway, an obstacle to break (R18) */
+                if (terrain(fx, fy) != TERRAIN_CORRIDOR) {
+                    return fail(depth, "a boulder isn't on a corridor tile");
+                }
+                boulders_seen++;
+            } else if (info.block_shut != NGE_BLOCK_NONE) {
                 if (r < 0 || LEVEL_CELL_LOCKED(r) || fx < level_rooms[r].x1 + 2 || fx > level_rooms[r].x2 - 2 ||
                     fy < level_rooms[r].y1 + 2 || fy > level_rooms[r].y2 - 2) {
                     return fail(depth, "furniture isn't on the interior of a room not locked");
@@ -901,6 +909,8 @@ int main(void)
     CHECK(contents_seen > 0 && chest_locks_seen > 0);
     /* Traps are generated, about 3 in 4 of them in corridors, where walkers go */
     CHECK(traps_seen > 0 && traps_in_corridors > traps_seen * 6 / 10 && traps_in_corridors < traps_seen * 9 / 10);
+    /* Boulders are generated, in corridors */
+    CHECK(boulders_seen > 0);
 
     /* Every side room is locked, about one a level: fewer would hardly be seen (Next's rand: 0.98) */
     CHECK(locks_seen > SEEDS * LEVEL_DEPTH_BOTTOM * 3 / 4);

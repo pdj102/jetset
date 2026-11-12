@@ -138,13 +138,16 @@ disarmed trap needs no saving. A revisited depth is a new level.
 - **R17** A level has up to `LEVEL_FEATURES_MAX` random features (Q1),
   picked by depth and rarity.
 - **R18 (Changed when built)** Furniture is placed only where it can't cut a
-  path: on room floor whose eight neighbours are all room floor. Traps go on
+  path: on room floor whose eight neighbours are all room floor. A boulder is
+  the exception: it goes on a free corridor tile, an obstacle to break
+  through or go round by another route. Traps go on
   a free corridor tile 3 times in 4, else on free room floor, never on a
   doorway or a stairs tile. Reason: section 12.
 - **R19** Nothing else is generated on a feature's tile, and no feature goes
   in a locked room (action_unlock.md R9).
-- **R20** A feature never cuts off the stairs or the quest item. Locks and
-  hidden features may cut off only what is optional.
+- **R20** A feature never cuts off the stairs or the quest item for good.
+  Locks and hidden features may cut off only what is optional. A boulder may
+  block a corridor to them, as the player can always break it (R18).
 
 ### Messages and looks
 
@@ -389,8 +392,9 @@ Other messages:
 items, so items keep out of furniture tiles through `scan_floor()`:
 
 1. Roll the number of features, from 0 to `LEVEL_FEATURES_MAX`.
-2. For each one, pick a kind. A kind that blocks needs an interior tile (R18):
-   if none is found, it is dropped. A trap needs free floor on a room or
+2. For each one, pick a kind. A boulder needs a free corridor tile; any
+   other kind that blocks needs an interior tile (R18): if none is found, it
+   is dropped. A trap needs free floor on a room or
    corridor, not on a doorway.
 3. Place it with `feature_place()`, which draws it. A hidden trap draws the
    floor.
@@ -525,8 +529,9 @@ Spent and open looks share the ready look where a kind can't be used up.
   know, as they don't avoid traps (R16). *Rejected:* knowledge per creature.
 - **D11 Placement follows from blocking.** Furniture needs an interior tile so
   that it can't cut a path (R18), and anything that blocks nothing can go on
-  any free floor. *Rejected:* a placement field per kind, a rule the data
-  could get wrong.
+  any free floor. The boulder, meant to be broken, is the one exception,
+  tested by kind in `place_features()`: it goes in a corridor (R18).
+  *Rejected:* a placement field per kind, a rule the data could get wrong.
 - **D12 A step onto a known trap walks onto it** (changed 2026-11-11). Disarming
   is only ever the `D` command: the player chooses it, and a flier can cross a
   trap it knows (effects_extensions.md R19). A slip of the key sets the trap off.
@@ -666,8 +671,9 @@ CSpect checks:
   handlers run, so every reaction tests `NGE_ENTITY_IS_ALIVE()` (ecs.md 4.4).
 - **Falling with the quest item.** A trapdoor takes the player down with it.
   That is allowed (winning.md), but test that the quest item stays carried.
-- **Blocked monsters.** A boulder in a room makes a monster's straight path
-  fail, as a wall does. The AI copes with walls, but test a hunter next to
+- **Blocked monsters.** A boulder makes a monster's straight path fail, as
+  a wall does. In a corridor it cuts the way for monsters, which don't break
+  it: a hunter on the far side can't reach the player. Test a hunter next to
   one.
 - **Inert finds.** Until sleep, teleport and summoning are built, their traps
   aren't generated (D15).

@@ -715,9 +715,10 @@ static uint8_t free_corridor(uint8_t *x, uint8_t *y)
 
 /*
  * Up to LEVEL_FEATURES_MAX random features for the depth (docs/features.md
- * 4.12). Where one goes follows from what it blocks: furniture on an
- * interior tile, anything else (a trap) on a free corridor or room tile,
- * never a doorway. One with nowhere to go is
+ * 4.12). Where one goes follows from what it blocks: a boulder on a free
+ * corridor tile, an obstacle to break, other furniture on an interior
+ * tile, anything else (a trap) on a free corridor or room tile, never a
+ * doorway. One with nowhere to go is
  * destroyed, unplaced. A container gets 1 to its `holds` random items,
  * LEVEL_CONTENTS_MAX a level, held off the map (4.9); one that opens is
  * locked one time in three while locks are left of LEVEL_LOCKS_MAX, the
@@ -740,9 +741,14 @@ static void place_features(uint8_t depth, uint8_t locks)
             continue;
         }
         gen_feature_info(kind_index[id], &info);
-        /* Furniture inside a room; a trap where walkers go, a corridor 3 times in 4, else room floor */
-        if (!((info.block_shut != NGE_BLOCK_NONE) ? interior_floor(&x, &y)
-                                                   : ((roll(4) != 0 && free_corridor(&x, &y)) || free_floor(&x, &y)))) {
+        /*
+         * A boulder in a corridor: an obstacle to break through (R18).
+         * Other furniture inside a room; a trap where walkers go, a
+         * corridor 3 times in 4, else room floor
+         */
+        if (!((kind_index[id] == FT_BOULDER) ? free_corridor(&x, &y)
+              : (info.block_shut != NGE_BLOCK_NONE) ? interior_floor(&x, &y)
+              : ((roll(4) != 0 && free_corridor(&x, &y)) || free_floor(&x, &y)))) {
             nge_entity_destroy(id);
             continue;
         }
