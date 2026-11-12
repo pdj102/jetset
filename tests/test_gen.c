@@ -435,6 +435,13 @@ int main(void)
           GEN_HOOK_EF(gen_item_hook(IT_ELIXIR, GEN_HOOK_USE)) == EF_VITALITY && GEN_HOOK_EF(gen_item_hook(IT_POTION_STR, GEN_HOOK_USE)) == EF_RAISE_STR && GEN_HOOK_EF(gen_item_hook(IT_SWORD, GEN_HOOK_HIT)) == EF_NONE);
     CHECK(gen_item_ammo_group(IT_SHORT_BOW) == GROUP_ARROW && gen_item_ammo_group(IT_DARTS) == GROUP_THROWN &&
           gen_item_ammo_group(IT_SWORD) == GROUP_NONE);
+    /* The ego armour (docs/items.md 4.11): a plain kind's AC and a worn property */
+    CHECK(gen_item_armour_ac(IT_MAIL_FIRE_WARD) == 5 && GEN_HOOK_EF(gen_item_hook(IT_MAIL_FIRE_WARD, GEN_HOOK_WORN)) == EF_WORN_RES_FIRE &&
+          gen_item_armour_ac(IT_DRAGON_MAIL) == 6 && GEN_HOOK_EF(gen_item_hook(IT_DRAGON_MAIL, GEN_HOOK_WORN)) == EF_WORN_IMMUNE_FIRE &&
+          gen_item_armour_ac(IT_ELVEN_CLOAK) == 1 && GEN_HOOK_EF(gen_item_hook(IT_ELVEN_CLOAK, GEN_HOOK_WORN)) == EF_WORN_DEX &&
+          gen_item_armour_ac(IT_SHIELD_WARDING) == 2 && GEN_HOOK_EF(gen_item_hook(IT_SHIELD_WARDING, GEN_HOOK_WORN)) == EF_WORN_RES_MAGIC);
+    CHECK(IT_COUNT == IT_SHIELD_WARDING + 1 && gen_item_fits(IT_DRAGON_MAIL) == SLOT_BIT(SLOT_BODY) &&
+          gen_item_fits(IT_ELVEN_CLOAK) == SLOT_BIT(SLOT_CLOAK) && gen_item_fits(IT_SHIELD_WARDING) == SLOT_BIT(SLOT_SHIELD));
     CHECK(gen_item_key_lock_group(IT_KEY_SKELETON) == KEY_ANY && gen_item_key_lock_group(IT_DARTS) == KEY_NONE &&
           gen_item_pick_bonus(IT_FINE_LOCK_PICK) == 3 && gen_item_pick_bonus(IT_KEY_GOLD) == 0);
     CHECK(gen_item_flags(IT_QUARTERSTAFF) == ITEMF_TWO_HANDS && gen_item_flags(IT_RUSTY_SWORD) == ITEMF_CURSED &&

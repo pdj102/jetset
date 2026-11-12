@@ -246,7 +246,11 @@
 #define IT_AMULET_FIRE       205
 #define IT_AMULET_COLD       206
 #define IT_AMULET_POISON     207
-#define IT_COUNT             208
+#define IT_MAIL_FIRE_WARD    208   /* ego armour (docs/items.md 4.11) */
+#define IT_DRAGON_MAIL       209
+#define IT_ELVEN_CLOAK       210
+#define IT_SHIELD_WARDING    211
+#define IT_COUNT             212
 
 /* Features (CLASS_FEATURE) */
 #define FT_DOOR         0

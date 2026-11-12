@@ -676,6 +676,43 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .fits = SLOT_BIT(SLOT_SHIELD),
         .where = { .depth = 6, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 1 },
     },
+    /* Ego armour (docs/items.md 4.11): a plain kind's AC and a property */
+    [IT_MAIL_FIRE_WARD] = {
+        .name = "mail of fire ward",
+        .render = ITEM_RENDER(SPRITE_ARMOUR_MAIL, BANK_ORANGE),
+        .subclass = ITEM_ARMOUR,
+        .data.armour_ac = 5,
+        .fits = SLOT_BIT(SLOT_BODY),
+        .hook = { GEN_HOOK_WORN, EF_WORN_RES_FIRE, 1 },
+        .where = { .depth = 5, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 1 },
+    },
+    [IT_DRAGON_MAIL] = {
+        .name = "dragon scale mail",
+        .render = ITEM_RENDER(SPRITE_ARMOUR_MAIL, BANK_RED),
+        .subclass = ITEM_ARMOUR,
+        .data.armour_ac = 6,
+        .fits = SLOT_BIT(SLOT_BODY),
+        .hook = { GEN_HOOK_WORN, EF_WORN_IMMUNE_FIRE, 1 },
+        .where = { .depth = 8, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 1 },
+    },
+    [IT_ELVEN_CLOAK] = {
+        .name = "elven cloak",
+        .render = ITEM_RENDER(SPRITE_CLOAK, BANK_GREEN),
+        .subclass = ITEM_ARMOUR,
+        .data.armour_ac = 1,
+        .fits = SLOT_BIT(SLOT_CLOAK),
+        .hook = { GEN_HOOK_WORN, EF_WORN_DEX, 1 },
+        .where = { .depth = 4, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 1 },
+    },
+    [IT_SHIELD_WARDING] = {
+        .name = "shield of warding",
+        .render = ITEM_RENDER(SPRITE_SHIELD, BANK_PURPLE),
+        .subclass = ITEM_ARMOUR,
+        .data.armour_ac = 2,
+        .fits = SLOT_BIT(SLOT_SHIELD),
+        .hook = { GEN_HOOK_WORN, EF_WORN_RES_MAGIC, 1 },
+        .where = { .depth = 5, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 1 },
+    },
     /* ---- Food ---- */
     [IT_APPLE] = {
         .name = "apple",

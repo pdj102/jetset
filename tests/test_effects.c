@@ -712,6 +712,14 @@ int main(void)
     item_slot[e] = SLOT_NONE;
     effects_recompute(g);
     CHECK(health_ac[g] == k && stats_ability[ABIL_STR][g] == i);
+    /* Ego armour: dragon scale mail's AC 6 and fire immunity together, both gone when it comes off */
+    e = gen_item(IT_DRAGON_MAIL, g);
+    item_slot[e] = SLOT_BODY;
+    effects_recompute(g);
+    CHECK(health_ac[g] == k + 6 && (health_immune[g] & DMG_BIT(DMG_FIRE)) != 0);
+    item_slot[e] = SLOT_NONE;
+    effects_recompute(g);
+    CHECK(health_ac[g] == k && (health_immune[g] & DMG_BIT(DMG_FIRE)) == 0);
     e = gen_item(IT_RING_FIRE, g);
     item_slot[ring] = SLOT_NONE;
     item_slot[e] = SLOT_RING_L;

@@ -62,8 +62,9 @@
 #define PLAYER_CHORD_FRAMES  4
 
 #if GAME_DEV_KIT
-#define DEV_ITEMS  6        /* items G puts down at a time */
-static uint8_t dev_item;   /* the next of the kinds G puts down, from IT_SERRATED_SWORD: in common BSS */
+#define DEV_ITEMS       6                   /* items G puts down at a time */
+#define DEV_ITEM_FIRST  IT_MAIL_FIRE_WARD   /* the first kind G puts down: the newest kinds, to check them */
+static uint8_t dev_item;   /* the next of the kinds G puts down, from DEV_ITEM_FIRST: in common BSS */
 #endif
 
 /*
@@ -659,16 +660,16 @@ void player_command(nge_key_event_t ev) NGE_BANKED
         dev_traps();
         break;
     case 'G': {
-        /* Development: the next DEV_ITEMS of docs/items_extensions.md's kinds at the player's feet, cycling (no turn used) */
+        /* Development: the next DEV_ITEMS of the newest kinds at the player's feet, cycling (no turn used) */
         nge_entity_id_t id;
         uint8_t n;
 
         for (n = 0; n < DEV_ITEMS; n++) {
-            id = gen_item((uint8_t)(IT_SERRATED_SWORD + dev_item), LEVEL_AREA);
+            id = gen_item((uint8_t)(DEV_ITEM_FIRST + dev_item), LEVEL_AREA);
             if (id != NGE_ENTITY_INVALID) {
                 nge_location_set(id, NGE_LOCATION_X(actor_player), NGE_LOCATION_Y(actor_player));
             }
-            dev_item = (uint8_t)((dev_item + 1 == IT_COUNT - IT_SERRATED_SWORD) ? 0 : dev_item + 1);
+            dev_item = (uint8_t)((dev_item + 1 == IT_COUNT - DEV_ITEM_FIRST) ? 0 : dev_item + 1);
         }
         break;
     }

@@ -383,6 +383,11 @@ armour, the amulet of guarding). A property isn't shown: the name says it.
   Page 138 grew by 56 bytes, not about 15: the banked call and the 16-bit add
   into `d->value[ATTR_AC]`. Page 116 grew by 16 bytes. effects.md never named
   `EF_WORN_AC`, so only its comment in `effects.h` changed.
+- *Step 3 (ego armour, 2026-11-12).* Page 109 grew by 154 bytes to 7,757,
+  as predicted (435 free). The dev G key's first kind is now a constant,
+  `DEV_ITEM_FIRST` in `player_bank.c`, set to the newest kinds
+  (`IT_MAIL_FIRE_WARD`), so G cycles through just the four. Page 114 stayed
+  the same size.
 
 ## 5. Decisions
 
