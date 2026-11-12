@@ -16,6 +16,7 @@
 #include "ecs/components/nge_location.h"
 #include "ecs/nge_owner.h"
 #include "ecs/systems/nge_render.h"
+#include "map/nge_map.h"
 #include "sprite/nge_sprite.h"
 #include "vfx/nge_vfx.h"
 
@@ -190,6 +191,55 @@ static void fly_shot(nge_entity_id_t from, nge_entity_id_t to, nge_entity_id_t i
     fly(from, to, &look, ANIM_SHOT_SPEED);
 }
 
+/*
+ * The delay of an impact or glow away from an area's centre: no earlier
+ * than the bolt to the centre lands, while it is remembered
+ * (docs/items_aimed.md 4.8). D4 does this only for bursts at a bolt's end
+ */
+static uint8_t after_area(uint8_t delay)
+{
+    uint8_t lands;
+
+    if (anim_area_held) {
+        lands = nge_vfx_arrival(anim_area_x, anim_area_y);
+        if (lands > delay) {
+            delay = lands;
+        }
+    }
+    return delay;
+}
+
+/*
+ * An area at tile (cx, cy) by source: a bolt in the remembered effect's
+ * colour to the centre, and a burst there when it lands (D4), the centre
+ * remembered. A burst's centre is its user's tile: nothing flies, and each
+ * creature glows as for a direct item
+ */
+static void area(nge_entity_id_t source, uint8_t cx, uint8_t cy)
+{
+    nge_vfx_look_t look;
+    uint16_t x = (uint16_t)cx * NGE_MAP_TILE_PIXELS;
+    uint16_t y = (uint16_t)cy * NGE_MAP_TILE_PIXELS;
+    uint8_t ef = anim_area_ef;
+    uint8_t fx;
+
+    anim_area_held = 0;
+    if (ef >= EF_COUNT || !placed(source) || (cx == NGE_LOCATION_X(source) && cy == NGE_LOCATION_Y(source))) {
+        return;
+    }
+    fx = anim_ef_fx[ef];
+    if (fx == FX_NONE) {
+        return;
+    }
+    fx_look(&look, SPRITE_FX_ORB, SPRITE_FX_ORB_COUNT, ANIM_FX_RATE, FX_BANK(fx));
+    nge_vfx_bolt(NGE_LOCATION_PX(source), NGE_LOCATION_PY(source), x, y, ANIM_MAGIC_SPEED, &look);
+    fx_look(&look, SPRITE_FX_SPLASH, SPRITE_FX_SPLASH_COUNT, ANIM_FX_RATE, FX_BANK(fx));
+    nge_vfx_burst(x, y, &look, 0);
+    anim_area_x = x;
+    anim_area_y = y;
+    anim_area_held = 1;
+}
+
 /* An entity's own pattern, shown at its place in the flash bank for ANIM_FLASH_FRAMES, after delay (D11, D9) */
 static void flash(nge_entity_id_t id, const nge_render_look_t *shown, uint8_t delay)
 {
@@ -208,18 +258,20 @@ static void damaged(nge_entity_id_t id, uint8_t taken, uint8_t type)
 {
     nge_render_look_t shown;
     nge_vfx_look_t look;
+    uint8_t delay;
 
     if (taken == 0 || !placed(id)) {
         return;   /* immune: the message says so (R5) */
     }
+    delay = after_area(ANIM_IMPACT_DELAY);
     if (NGE_ENTITY_IS_ALIVE(id) && drawn(id)) {
         /* One killed is dying already: its stand-in flashes instead (D11) */
         nge_render_get(id, &shown);
-        flash(id, &shown, ANIM_IMPACT_DELAY);
+        flash(id, &shown, delay);
     }
     fx_look(&look, SPRITE_FX_SPLASH, SPRITE_FX_SPLASH_COUNT, ANIM_FX_RATE,
             type < DMG_COUNT ? anim_dmg_bank[type] : BANK_RED);
-    nge_vfx_burst(NGE_LOCATION_PX(id), NGE_LOCATION_PY(id), &look, ANIM_IMPACT_DELAY);
+    nge_vfx_burst(NGE_LOCATION_PX(id), NGE_LOCATION_PY(id), &look, delay);
 }
 
 /*
@@ -245,6 +297,7 @@ static void died(nge_entity_id_t id)
     if (lands < ANIM_IMPACT_DELAY) {
         lands = ANIM_IMPACT_DELAY;
     }
+    lands = after_area(lands);
 
     look.first = shown.pattern;   /* itself, until the blow lands */
     look.count = 1;
@@ -271,27 +324,43 @@ static void glow(nge_entity_id_t id, uint8_t ef)
         return;
     }
     fx_look(&look, SPRITE_FX_GLOW, SPRITE_FX_GLOW_COUNT, ANIM_FX_RATE, FX_BANK(fx));
-    nge_vfx_burst(NGE_LOCATION_PX(id), NGE_LOCATION_PY(id), &look, 0);
+    nge_vfx_burst(NGE_LOCATION_PX(id), NGE_LOCATION_PY(id), &look, after_area(0));
 }
 
 void anim_vfx_event(nge_event_id_t ev, nge_entity_id_t target, nge_entity_id_t source, uint8_t p1, uint8_t p2)
 {
     spell_def_t def;   /* a copy: the table is in the spells' page */
+    uint8_t ef;
 
     switch (ev) {
     case EV_FIRED:
+        anim_area_held = 0;
         fly_shot(source, target, p1);
         break;
     case EV_CAST:
-        if (target != source && target != NGE_EVENT_NONE && p1 < SPELL_COUNT) {   /* an area flies nothing here */
+        anim_area_held = 0;
+        if (p1 < SPELL_COUNT) {
             spell_get(p1, &def);
-            fly_effect(source, target, def.ef);
+            if (target == NGE_EVENT_NONE) {
+                anim_area_ef = def.ef;   /* an area: EV_AREA flies it */
+            } else if (target != source) {
+                fly_effect(source, target, def.ef);
+            }
         }
         break;
     case EV_AIMED:
-        if (target != source && target != NGE_EVENT_NONE && p1 < NGE_ENTITY_MAX) {   /* an area flies nothing here */
-            fly_effect(source, target, GEN_HOOK_EF(gen_hook_of(p1, GEN_HOOK_AIM)));
+        anim_area_held = 0;
+        if (p1 < NGE_ENTITY_MAX) {
+            ef = GEN_HOOK_EF(gen_hook_of(p1, GEN_HOOK_AIM));
+            if (target == NGE_EVENT_NONE) {
+                anim_area_ef = ef;   /* an area: EV_AREA flies it */
+            } else if (target != source) {
+                fly_effect(source, target, ef);
+            }
         }
+        break;
+    case EV_AREA:
+        area(source, p1, p2);
         break;
     case EV_EFFECT_STARTED:
         glow(target, p1);
@@ -305,4 +374,10 @@ void anim_vfx_event(nge_event_id_t ev, nge_entity_id_t target, nge_entity_id_t s
     default:
         break;
     }
+}
+
+void anim_vfx_clear(void) NGE_BANKED
+{
+    nge_vfx_clear();
+    anim_area_held = 0;
 }

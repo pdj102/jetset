@@ -292,7 +292,7 @@ static void change_level(void)
         game_over(GAME_OVER_WON);
         return;
     }
-    nge_vfx_clear();   /* nothing of the old level's shows on the new (R14) */
+    anim_vfx_clear();   /* nothing of the old level's shows on the new (R14) */
     level_generate(depth, actor_player, arrival);
 #if GAME_DEV_KIT
     quest_check();   /* still on one depth, and on the map if it is this one (docs/winning.md R14) */
@@ -331,7 +331,7 @@ static void play_start(void)
     level_clear_request();
     ended = 0;
     nge_render_follow(actor_player);   /* the camera slides with them (after nge_render_init()) */
-    nge_vfx_clear();         /* the last game's */
+    anim_vfx_clear();        /* the last game's */
     level_generate(1, actor_player, LEVEL_ARRIVE_ANY);   /* the first level; the camera on the player */
 #if GAME_DEV_KIT
     level_dev_bandit(actor_player);

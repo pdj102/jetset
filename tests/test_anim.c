@@ -334,5 +334,85 @@ int main(void)
         CHECK(!nge_vfx_busy() && !anim_holding());
     }
 
+    /* ======== an area's VFX: a bolt to the centre, a burst there, impacts after it (docs/items_aimed.md 4.8) ======== */
+    {
+        nge_entity_id_t wand = gen_item(IT_WAND_FIREBALL, NGE_OWNER_WORLD);
+        nge_entity_id_t panic = gen_item(IT_SP_PANIC, NGE_OWNER_WORLD);
+        nge_entity_id_t near;
+        int lands = 64 / ANIM_MAGIC_SPEED - 1;   /* the centre is 4 tiles from the player */
+        int s;
+        int t;
+
+        anim_vfx_clear();
+        nge_location_set(player, 2, 5);
+        near = creature(CR_RAT, 6, 6);                      /* next to the centre (6, 5) */
+        nge_event_flush();
+
+        /* ---- no target: nothing flies; EV_AREA flies the effect's bolt and bursts when it lands ---- */
+        post(NGE_EVENT_NONE, EV_AIMED, player, (int8_t)wand, 0);
+        CHECK(!nge_vfx_busy());
+        post(NGE_EVENT_NONE, EV_AREA, player, 6, 5);
+        s = vfx_find(NGE_VFX_BOLT, SPRITE_FX_ORB);
+        t = vfx_find(NGE_VFX_BURST, SPRITE_FX_SPLASH);
+        CHECK(s >= 0 && vfx_bank(s) == BANK_ORANGE && nge_vfx_speed[s] == ANIM_MAGIC_SPEED);
+        CHECK(nge_vfx_x[s] == 2 * 16 && nge_vfx_ex[s] == 6 * 16 && nge_vfx_ey[s] == 5 * 16);
+        CHECK(t >= 0 && vfx_bank(t) == BANK_ORANGE && nge_vfx_x[t] == 6 * 16 && nge_vfx_y[t] == 5 * 16 &&
+              nge_vfx_delay[t] == lands);
+        /* An impact and a glow on another tile wait for the bolt to the centre */
+        post(near, EV_DAMAGED, player, 4, (int8_t)EV_DMG_PACK(DMG_NORMAL, DMG_FIRE));
+        post(near, EV_EFFECT_STARTED, NGE_EVENT_NONE, EF_HOLD, 0);
+        {
+            int i;
+            int splash = 0;
+            int flashed = 0;
+            int glowed = 0;
+
+            for (i = 0; i < NGE_VFX_SLOTS; i++) {
+                if (nge_vfx_kind[i] != NGE_VFX_BURST || nge_vfx_y[i] != 6 * 16) {
+                    continue;
+                }
+                splash += nge_vfx_first[i] == SPRITE_FX_SPLASH && nge_vfx_delay[i] == lands;
+                flashed += vfx_bank(i) == BANK_FLASH && nge_vfx_delay[i] == lands;
+                glowed += nge_vfx_first[i] == SPRITE_FX_GLOW && nge_vfx_delay[i] == lands;
+            }
+            CHECK(splash == 1 && flashed == 1 && glowed == 1);
+        }
+        /* Cleared, as on a change of level: nothing shows, and the centre is forgotten */
+        anim_vfx_clear();
+        CHECK(!nge_vfx_busy());
+        post(near, EV_DAMAGED, player, 4, (int8_t)EV_DMG_PACK(DMG_NORMAL, DMG_FIRE));
+        t = vfx_find(NGE_VFX_BURST, SPRITE_FX_SPLASH);
+        CHECK(t >= 0 && nge_vfx_delay[t] == ANIM_IMPACT_DELAY);
+        anim_vfx_clear();
+
+        /* ---- a spell's area too; a later EV_FIRED forgets the centre ---- */
+        post(NGE_EVENT_NONE, EV_CAST, player, SP_FROST_BOLT, 0);
+        post(NGE_EVENT_NONE, EV_AREA, player, 6, 5);
+        s = vfx_find(NGE_VFX_BOLT, SPRITE_FX_ORB);
+        CHECK(s >= 0 && vfx_bank(s) == BANK_ICE);
+        post(player, EV_FIRED, player, (int8_t)NGE_EVENT_NONE, 0);   /* at itself: nothing flies */
+        post(near, EV_DAMAGED, player, 4, (int8_t)EV_DMG_PACK(DMG_NORMAL, DMG_COLD));
+        {
+            int i;
+            int early = 0;
+
+            for (i = 0; i < NGE_VFX_SLOTS; i++) {
+                early += nge_vfx_kind[i] == NGE_VFX_BURST && nge_vfx_y[i] == 6 * 16 &&
+                         nge_vfx_first[i] == SPRITE_FX_SPLASH && nge_vfx_delay[i] == ANIM_IMPACT_DELAY;
+            }
+            CHECK(early == 1);
+        }
+        anim_vfx_clear();
+
+        /* ---- a burst: the centre is the user's tile, nothing flies, and a glow doesn't wait ---- */
+        post(NGE_EVENT_NONE, EV_AIMED, player, (int8_t)panic, 0);
+        post(NGE_EVENT_NONE, EV_AREA, player, 2, 5);
+        CHECK(!nge_vfx_busy());
+        post(near, EV_EFFECT_STARTED, NGE_EVENT_NONE, EF_FEAR, 0);
+        s = vfx_find(NGE_VFX_BURST, SPRITE_FX_GLOW);
+        CHECK(s >= 0 && nge_vfx_delay[s] == 0 && vfx_count(NGE_VFX_BOLT) == 0);
+        anim_vfx_clear();
+    }
+
     return test_summary("anim");
 }

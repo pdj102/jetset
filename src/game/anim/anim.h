@@ -56,6 +56,12 @@ void anim_init(void) NGE_BANKED;
  */
 void anim_on_event(const nge_event_t *e) NGE_BANKED;
 
+/**
+ * @brief End every VFX now (nge_vfx_clear()), and forget an area's centre:
+ *        on a change of level and a new game (docs/vfx.md R14).
+ */
+void anim_vfx_clear(void) NGE_BANKED;
+
 /** @brief An animation or VFX the world waits for is playing. Ask it only when deciding whether something may act. */
 uint8_t anim_holding(void);
 

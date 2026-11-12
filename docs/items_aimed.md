@@ -538,3 +538,18 @@ CSpect checks are in the plan.
   `BANK_56` is 15,989 of 16,384: **395 bytes free**. Page 114 (the player's commands) grows
   by 118, page 124 (targeting) by 106, and pages 126/127 by 22 (the VFX guard). Common
   memory is unchanged.
+
+### Step 4: the area VFX
+
+- **Where the state is.** The remembered effect and centre (`anim_area_ef`,
+  `anim_area_held`, `anim_area_x`, `anim_area_y`, 6 bytes) are in page 127 with the
+  module's other page data, mapped while its code runs: common memory doesn't grow.
+  `anim_init()` sets them.
+- **`anim_vfx_clear()`** (anim.h) is `nge_vfx_clear()` and forgets the centre. `game.c`
+  calls it on a change of level and a new game, where it called `nge_vfx_clear()`.
+- **The centre is remembered only when a bolt flew to it.** A burst's centre is its
+  user's tile: nothing flies, and its glows start at once.
+- **A flash waits too:** `damaged()` gives the hit flash the same delay as the splash.
+- **Memory.** Page 126 grows by 486 bytes in both builds (the code has no asserts), not
+  the plan's 150: zsdcc's code for the new cases. The page has about 5K free. Page 127
+  grows by 6.

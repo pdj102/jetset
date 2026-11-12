@@ -16,6 +16,7 @@
 #include "map/nge_map.h"
 
 #include "game/components/kind.h"
+#include "game/effects/effects.h"
 #include "game/events.h"
 #include "game/level/level.h"
 
@@ -31,6 +32,8 @@ void anim_init(void) NGE_BANKED
             anim_seqs[kind][s] = seq[s];
         }
     }
+    anim_area_ef = EF_NONE;
+    anim_area_held = 0;
 }
 
 /* Drawn on the current level: the only entities an animation can show */
