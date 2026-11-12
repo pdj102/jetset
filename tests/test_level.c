@@ -273,6 +273,34 @@ static int key_outside(uint8_t lock)
     return 0;
 }
 
+/* Every key the level made fits a lock on the level: keys are never random items */
+static int keys_have_locks(void)
+{
+    nge_entity_id_t id;
+    nge_entity_id_t f;
+    uint8_t i;
+    uint8_t j;
+    uint8_t lock;
+    int found;
+
+    NGE_ENTITY_FOR_EACH_ALIVE(i, id) {
+        if (!ITEM_IS(id) || gen_item_subclass(kind_index[id]) != ITEM_KEY || top_owner(id) != LEVEL_AREA || kept(id)) {
+            continue;
+        }
+        found = 0;
+        NGE_ENTITY_FOR_EACH_ALIVE(j, f) {
+            if (FEATURE_IS(f) && FEATURE_IS_LOCKED(f) && top_owner(f) == LEVEL_AREA) {
+                lock = (uint8_t)((feature_state[f] & FEAT_KEY_MASK) >> FEAT_KEY_SHIFT);
+                found = found || lock == gen_item_group(kind_index[id]);
+            }
+        }
+        if (!found) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
 static int flood_stops_at_locks;   /* flood() treats a locked door as a wall */
 
 static void flood(uint8_t x, uint8_t y)
@@ -808,6 +836,9 @@ static int check_level(int depth)
         return fail(depth, "more doorways than link ends");
     }
     doorways_seen += level_doorway_count;
+    if (!keys_have_locks()) {
+        return fail(depth, "a key has no lock of its kind on the level");
+    }
     return 1;
 }
 

@@ -1211,41 +1211,41 @@ const gen_item_kind_t gen_items[IT_COUNT] = {
         .hook = { GEN_HOOK_WORN, EF_WORN_LIGHT, 4 },
         .where = { .depth = 6, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 1 },
     },
-    /* ---- Key ---- */
+    /* ---- Key: never at random; the level generator makes the key to each lock it makes ---- */
     [IT_KEY_IRON] = {
         .name = "iron key",
         .render = ITEM_RENDER(SPRITE_KEY, BANK_IRON),
         .subclass = ITEM_KEY,
         .group = KEY_IRON,
-        .where = { .depth = 1, .depth_max = 5, .rarity = 4 },
+        .where = { .depth = 1, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 0 },
     },
     [IT_KEY_BRASS] = {
         .name = "brass key",
         .render = ITEM_RENDER(SPRITE_KEY, BANK_ORANGE),
         .subclass = ITEM_KEY,
         .group = KEY_BRASS,
-        .where = { .depth = 2, .depth_max = 7, .rarity = 3 },
+        .where = { .depth = 1, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 0 },
     },
     [IT_KEY_SILVER] = {
         .name = "silver key",
         .render = ITEM_RENDER(SPRITE_KEY, BANK_BONE),
         .subclass = ITEM_KEY,
         .group = KEY_SILVER,
-        .where = { .depth = 4, .depth_max = 9, .rarity = 2 },
+        .where = { .depth = 1, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 0 },
     },
     [IT_KEY_GOLD] = {
         .name = "gold key",
         .render = ITEM_RENDER(SPRITE_KEY, BANK_GOLD),
         .subclass = ITEM_KEY,
         .group = KEY_GOLD,
-        .where = { .depth = 6, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 2 },
+        .where = { .depth = 1, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 0 },
     },
     [IT_KEY_SKELETON] = {
         .name = "skeleton key",
         .render = ITEM_RENDER(SPRITE_KEY, BANK_DARK),
         .subclass = ITEM_KEY,
         .group = KEY_ANY,
-        .where = { .depth = 7, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 1 },
+        .where = { .depth = 1, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 0 },
     },
     /* ---- Tool ---- */
     [IT_LOCK_PICK] = {

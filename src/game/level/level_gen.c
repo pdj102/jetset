@@ -603,7 +603,7 @@ static void place_key(uint8_t key)
  * inside: there are few of them, about one a level.
  * The rooms are all marked first, so the keys then land outside every one
  * of them. Harder locks come with depth; a key is made by kind, as its
- * lock's, whatever depths that kind turns up at by chance.
+ * lock's: keys are never random items (docs/action_unlock.md R11).
  * Returns how many: chests may lock with what is left (place_features())
  */
 static uint8_t place_locks(uint8_t depth)

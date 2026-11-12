@@ -167,7 +167,7 @@ static int kind_ok(uint8_t kind)
 
     if (strlen(k->name) > 19 || k->subclass >= ITEM_COUNT || depth_max > LEVEL_DEPTH_BOTTOM ||
         k->where.depth < 1 || k->where.depth > depth_max || (k->fits & ~SLOTS_HUMANOID) != 0 ||
-        (k->where.rarity == 0) != (kind == IT_QUEST)) {
+        (k->where.rarity == 0) != (kind == IT_QUEST || k->subclass == ITEM_KEY)) {   /* never at random */
         return 0;
     }
     switch (k->subclass) {
@@ -589,11 +589,14 @@ int main(void)
     CHECK(gen_creature_random(0, AREA) == NGE_ENTITY_INVALID);
     CHECK(gen_item_random(0, AREA) == NGE_ENTITY_INVALID);
     CHECK(nge_entity_free_count() == NGE_ENTITY_MAX);
-    /* The quest item: never at random, at any depth (docs/winning.md R2) */
+    /*
+     * The quest item and keys: never at random, at any depth (docs/winning.md
+     * R2, docs/action_unlock.md); keys come only with their locks
+     */
     ok = 1;
     for (i = 0; i < 1000 && ok; i++) {
         id = gen_item_random((uint8_t)(1 + i % LEVEL_DEPTH_BOTTOM), AREA);
-        ok = id != NGE_ENTITY_INVALID && kind_index[id] != IT_QUEST;
+        ok = id != NGE_ENTITY_INVALID && kind_index[id] != IT_QUEST && gen_items[kind_index[id]].subclass != ITEM_KEY;
         nge_entity_destroy(id);
         nge_entity_release(nge_entity_next_dying());
     }

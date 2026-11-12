@@ -46,6 +46,10 @@ lock rules in [feature.c](../src/game/components/feature.c); the placement in
 - **R10** Chests take the locks the side rooms leave, out of the same `LEVEL_LOCKS_MAX`: each
   chest is locked one time in three while locks are left, and its key is placed as a door's
   (features.md, D17).
+- **R11** Keys are never random items: a key is made only by the level generator, for a
+  lock it makes on that level (R8, R10), so every key found opens a lock at its depth. The
+  skeleton key is therefore not generated. Lock picks are random items, the way into a lock
+  whose key is lost.
 
 ## 3. Design
 
@@ -85,8 +89,8 @@ lock rules in [feature.c](../src/game/components/feature.c); the placement in
   `level_doorway_x[]` (D3). Each, up to `LEVEL_LOCKS_MAX`, gets a closed door locked with a
   kind for the depth, a random item inside, and its cell set in `level_locked_cells` (D4).
 - All the rooms are marked first, so every key then lands outside every one of them. A key is
-  made by its lock's kind (`IT_KEY_IRON` + kind), whatever depths that kind turns up at by
-  chance.
+  made by its lock's kind (`IT_KEY_IRON` + kind). Key kinds have rarity 0, so
+  `gen_item_random()` never makes one (R11).
 - **The lock's kind** is `KEY_IRON` plus a roll over `1 + depth / 3` kinds, at most 4, so
   deeper levels add brass, silver and gold. A skeleton key's `KEY_ANY` is never a lock.
 - Random placement skips locked rooms in one place, so no caller can forget (D5).
@@ -135,5 +139,6 @@ lock rules in [feature.c](../src/game/components/feature.c); the placement in
 `test_act`: `ACT_R_LOCKED` on open; each key and pick case (a key that fits, `KEY_ANY`, the
 wrong key, an item that is neither, a pick that wins and loses, its count used and the pick
 destroyed at 0); each refusal; and check mode drawing no numbers. `test_level`: every side
-room locked, at most 2 a level, one item inside, each key outside every locked room, and
-random placement keeping out.
+room locked, at most 2 a level, one item inside, each key outside every locked room, every
+key on the level fitting a lock there (R11), and random placement keeping out. `test_gen`: no
+key from `gen_item_random()` at any depth.

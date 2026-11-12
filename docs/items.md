@@ -155,7 +155,7 @@ the records, so adding one should change code and leave the data alone.
 | `ITEM_WAND` | Wands and staves | Aim hook; count is charges |
 | `ITEM_RING`, `ITEM_AMULET` | Jewellery, some cursed | Worn hook |
 | `ITEM_LIGHT` | Torches, lanterns | Worn hook; count is burn time |
-| `ITEM_KEY` | Keys | Group is the locks it opens |
+| `ITEM_KEY` | Keys | Group is the locks it opens; rarity 0: made only with a lock (action_unlock.md R11) |
 | `ITEM_TOOL` | Lock picks | Group is its bonus; count is uses |
 | `ITEM_TREASURE` | Gold and gems | Count is gold |
 | `ITEM_QUEST` | The quest item | Rarity 0; see [winning.md](winning.md) |
