@@ -59,9 +59,10 @@ Status: built. Code: [act_aim.c](../src/game/actions/act_aim.c).
 | Wand of teleport | `EF_TELEPORT` | Direct | It sends away the creature chosen, not whatever is nearest |
 | Staff of healing | `EF_HEALING` | Direct | Healing doesn't fly, and an ally behind an enemy should be the one healed |
 | Wand and parchment of sleep, wand of slowness | `EF_SLEEP`, `EF_SLOW` | Direct | A spell on the mind or body, not a missile |
-| Wands of striking, fire, frost; staff of power; the missile, fire, frost and acid parchments | `EF_BOLT_*` | Bolt | They fly (actions.md D11) |
+| Terror, confusion, hold, hex and bane parchments; wand of weakness | `EF_FEAR`, `EF_CONFUSE`, `EF_PARALYSE`, `EF_HEX`, `EF_BANE`, `EF_WEAKNESS` | Direct | The same (items_extensions.md) |
+| Wands of striking, fire, frost, acid; staff of power; the missile, fire, frost and acid parchments | `EF_BOLT_*` | Bolt | They fly (actions.md D11) |
 
-13 kinds use aim: 8 wands and staves, and 5 parchments. A row whose effect is still pending,
+20 kinds use aim: 10 wands and staves, and 10 parchments. A row whose effect is still pending,
 such as the wand of teleport's, uses its charge and does nothing yet (items.md R12).
 
 ## 4. Callers

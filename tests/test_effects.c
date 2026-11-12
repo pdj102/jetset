@@ -180,6 +180,7 @@ int main(void)
     int r;
 
     test_init();
+    effects_apply_no_save = 1;   /* the saving throw when applied is tested on its own (items_extensions.md R14) */
 
     /* ---- the definitions: well formed, each duration with only what it uses ---- */
     ok = 1;
@@ -653,6 +654,16 @@ int main(void)
     CHECK_STR(text, "You ");                                       /* cut to fit */
     effect_text(EF_POISON, EFFECT_TEXT_START, text, 1);
     CHECK_STR(text, "");
+    /* A seen text for every timed effect but the innate ones, and none for the rest (items_extensions.md R12) */
+    ok = 1;
+    for (i = 1; i < EF_COUNT; i++) {
+        effect_text((uint8_t)i, EFFECT_TEXT_SEEN, text, sizeof(text));
+        ok = ok && ((text[0] != '\0') == (i < EF_TIMED_COUNT && !(effect_defs[i].flags & EFFECT_INNATE)));
+        ok = ok && strlen(text) <= 24;   /* messages_bank.c's SEEN_MAX, less the space and the NUL */
+    }
+    CHECK(ok);
+    effect_text(EF_BURNING, EFFECT_TEXT_SEEN, text, sizeof(text));
+    CHECK_STR(text, "catches fire!");
     effect_text(EF_POISON, EFFECT_TEXT_NAME, text, sizeof(text));
     CHECK_STR(text, "Poison");
     effect_text(EF_REGEN, EFFECT_TEXT_NAME, text, sizeof(text));
@@ -991,6 +1002,31 @@ int main(void)
     effect_end(e2);
     TEST_EXPECT_HALT(effect_end(e2));                              /* ended already */
     CHECK(test_halt_count == 1);
+
+    /* ---- the saving throw when applied (items_extensions.md R14) ---- */
+    reset();
+    effects_apply_no_save = 0;
+    g = goblin();
+    seed_for_rolls(1, 20, 20);                                     /* passed: resisted, nothing starts */
+    CHECK(effect_apply(EF_POISON, 1, g, e) == 0 && count_effects(g, EF_POISON) == 0 && !STATUS_HAS(g, STATUS_POISONED));
+    CHECK(events() == 1 && is(0, g, EV_RESISTED, e, EF_POISON));
+    seed_for_rolls(1, 20, 20);
+    CHECK(effect_apply(EF_POISON, 1, g, NGE_ENTITY_INVALID) == 0 && events() == 1 && is(0, g, EV_RESISTED, NGE_EVENT_NONE, EF_POISON));
+    seed_for_rolls(1, 1, 1);                                       /* failed: it starts */
+    CHECK(effect_apply(EF_POISON, 1, g, NGE_ENTITY_INVALID) == 1 && count_effects(g, EF_POISON) == 1);
+    events();
+    seed_for_rolls(1, 20, 20);                                     /* resisted again: the one there isn't refreshed */
+    e2 = effect_on(g, EF_POISON);
+    nge_timer_cycles[e2] = 2;
+    CHECK(effect_apply(EF_POISON, 1, g, NGE_ENTITY_INVALID) == 0 && nge_timer_cycles[e2] == 2);
+    events();
+    seed_for_rolls(1, 20, 20);                                     /* no saving throw: never resisted */
+    CHECK(effect_apply(EF_HASTE, 1, g, NGE_ENTITY_INVALID) == 1);
+    events();
+    seed_for_rolls(1, 20, 20);                                     /* unsaved: it lands */
+    CHECK(effect_apply_unsaved(EF_SLOW, 1, g, NGE_ENTITY_INVALID) == 1 && count_effects(g, EF_SLOW) == 1);
+    events();
+    effects_apply_no_save = 1;
 
     return test_summary("effects");
 }

@@ -187,7 +187,8 @@
 #define EFFECT_TEXT_START  0   /**< When it starts: "You feel sick." */
 #define EFFECT_TEXT_END    1   /**< When it ends: "The poison wears off." */
 #define EFFECT_TEXT_NAME   2   /**< While it lasts (a timed effect): "Poison". */
-#define EFFECT_TEXT_COUNT  3
+#define EFFECT_TEXT_SEEN   3   /**< When it starts on a monster the player sees, after its name: "is poisoned." */
+#define EFFECT_TEXT_COUNT  4
 
 #define EFFECT_NAME_MAX  14   /**< The longest name (EFFECT_TEXT_NAME). */
 
@@ -197,14 +198,23 @@
  *        recomputing the target) or refreshes the one there. Posts
  *        EV_EFFECT_STARTED, except for an instant effect whose op
  *        fizzled (EV_FIZZLED instead). A worn effect can't be applied: its
- *        modifiers count through equipment (asserts).
+ *        modifiers count through equipment (asserts). An effect with a
+ *        saving throw tries it first: passed, the effect is resisted
+ *        (EV_RESISTED, docs/items_extensions.md R14) and nothing changes.
  * @param power  Multiplies its amounts: not 0.
- * @param source What caused it, for its on_start op's events (damage), or
- *               NGE_ENTITY_INVALID.
+ * @param source What caused it, for its on_start op's events (damage), and
+ *               EV_RESISTED's source, or NGE_ENTITY_INVALID.
  * @return 1, or 0 if refused: the target isn't alive, has no health or is
- *         at 0 hp, or no entity is free for an active effect.
+ *         at 0 hp, it resisted, or no entity is free for an active effect.
  */
 uint8_t effect_apply(uint8_t ef, int8_t power, nge_entity_id_t target, nge_entity_id_t source) NGE_BANKED;
+
+/**
+ * @brief effect_apply() without the saving throw when applied: for what
+ *        can't be resisted, such as a development aid putting a status on
+ *        the player. The saving throw is still tried at its firings.
+ */
+uint8_t effect_apply_unsaved(uint8_t ef, int8_t power, nge_entity_id_t target, nge_entity_id_t source) NGE_BANKED;
 
 /**
  * @brief effect_apply(), for an effect that needs a tile (EF_BLINK, the

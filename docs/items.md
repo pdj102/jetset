@@ -131,7 +131,7 @@ the records, so adding one should change code and leave the data alone.
 | Field | Meaning |
 |---|---|
 | `name` | In the table's page |
-| `render` | Sprite and colour bank |
+| `render` | Sprite pattern and colour bank, 2 bytes: the generator adds the rest (items_extensions.md D1) |
 | `subclass` | `ITEM_*` |
 | `group` | `GROUP_*`, `KEY_*` or a lock pick's bonus, by subclass |
 | `flags` | `ITEMF_*` |

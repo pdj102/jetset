@@ -20,8 +20,9 @@
  * near the player: a locked chest holding two items with its key at the
  * player's feet, and a cracked statue holding one, and traps on the free
  * tiles around the player, all found but one, the runes among them
- * (level_dev_features(), game/player); G puts a stairway parchment and
- * a levitation potion at the player's feet, J starts a delayed descent
+ * (level_dev_features(), game/player); G puts the next 6 of the item
+ * kinds added by docs/items_extensions.md at the player's feet, cycling
+ * through all 42, J starts a delayed descent
  * on the player, Y detects traps within 5 tiles of them, and Z puts the
  * next of confused, frightened, paralysed and asleep on them
  * (game/player);

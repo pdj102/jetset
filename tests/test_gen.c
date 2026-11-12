@@ -408,14 +408,34 @@ int main(void)
           gen_item_group(IT_SWORD) == GROUP_NONE);
     CHECK(gen_item_flags(IT_QUARTERSTAFF) == ITEMF_TWO_HANDS && gen_item_flags(IT_RUSTY_SWORD) == ITEMF_CURSED &&
           gen_item_flags(IT_SWORD) == 0);
-    /* Direct items: exactly the five that don't fly (docs/actions.md, section 4.11) */
+    /* Direct items: exactly those that don't fly (docs/action_aim.md, docs/items_extensions.md) */
     ok = 1;
     for (kind = 0; kind < IT_COUNT; kind++) {
         ok = ok && ((gen_item_flags(kind) & ITEMF_DIRECT) != 0) ==
                        (kind == IT_SP_SLEEP || kind == IT_WAND_SLOW || kind == IT_WAND_SLEEP ||
-                        kind == IT_WAND_TELEPORT || kind == IT_STAFF_HEALING);
+                        kind == IT_WAND_TELEPORT || kind == IT_STAFF_HEALING ||
+                        kind == IT_SP_TERROR || kind == IT_SP_CONFUSE || kind == IT_SP_HOLD ||
+                        kind == IT_SP_HEX || kind == IT_SP_BANE || kind == IT_WAND_WEAKNESS);
     }
     CHECK(ok);
+    /*
+     * Every effect is made by some item kind (docs/items_extensions.md R1),
+     * but for those meant for monsters and innate ones, and blink, which needs
+     * an item aimed at a tile (todo I3)
+     */
+    ok = 1;
+    for (i = 1; i < EF_COUNT; i++) {
+        int used = i == EF_REGEN || i == EF_ROOT || i == EF_HOLD || i == EF_MANA_REGEN || i == EF_BLINK ||
+                   (i >= EF_DRAIN_STR && i <= EF_DRAIN_CHA);
+
+        for (kind = 0; kind < IT_COUNT && !used; kind++) {
+            used = gen_items[kind].hook.ef == i;
+        }
+        ok = ok && used;
+    }
+    CHECK(ok);
+    /* The flask of oil sets what it hits burning (R11) */
+    CHECK(GEN_HOOK_EF(gen_item_hook(IT_OIL, GEN_HOOK_HIT)) == EF_BURNING && GEN_HOOK_POWER(gen_item_hook(IT_OIL, GEN_HOOK_HIT)) == 4);
     {
         attack_kind_t attack;
 

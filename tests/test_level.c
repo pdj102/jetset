@@ -39,6 +39,7 @@
 #include "game/level/level_internal.h"
 #include "game/quest/quest.h"
 #include "game/ui/screen_main.h"
+#include "game/effects/effects_internal.h"
 
 #define SEEDS  20   /* level_dev_seed values: SEEDS * LEVEL_DEPTH_BOTTOM levels checked */
 
@@ -909,6 +910,7 @@ int main(void)
     nge_entity_id_t quest;
 
     test_init();
+    effects_apply_no_save = 1;   /* the saving throw when applied is tested on its own (items_extensions.md R14) */
 
     nge_entity_init();
     nge_render_init();

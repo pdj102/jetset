@@ -204,7 +204,49 @@
 #define IT_SP_LEVEL_TELEPORT 163   /* docs/effects_extensions.md: added at the end, so no number moves */
 #define IT_POTION_LEVITATE   164
 #define IT_BOOTS_LEVITATE    165
-#define IT_COUNT             166
+#define IT_SERRATED_SWORD    166   /* docs/items_extensions.md: added at the end, so no number moves */
+#define IT_BARBED_SPEAR      167
+#define IT_ACID_BLADE        168
+#define IT_FIRE_BRAND        169
+#define IT_BARBED_ARROWS     170
+#define IT_FIRE_ARROWS       171
+#define IT_POISON_DARTS      172
+#define IT_SLEEP_DARTS       173
+#define IT_ACID_FLASK        174
+#define IT_WAYBREAD          175
+#define IT_MUSHROOM_PALE     176
+#define IT_MUSHROOM_VIOLET   177
+#define IT_MUSHROOM_GREEN    178
+#define IT_POTION_GRACE      179
+#define IT_POTION_ENDURANCE  180
+#define IT_POTION_INSIGHT    181
+#define IT_POTION_INTUITION  182
+#define IT_ANTIVENOM         183
+#define IT_POTION_ACID       184
+#define IT_POTION_WARDING    185
+#define IT_POTION_HEROISM    186
+#define IT_POTION_AID        187
+#define IT_EYE_DROPS         188
+#define IT_POTION_CONFUSE    189
+#define IT_POTION_DREAD      190
+#define IT_POTION_PARALYSE   191
+#define IT_SP_DETECT         192
+#define IT_SP_SHIELD         193
+#define IT_SP_BLESS          194
+#define IT_SP_DESCENT        195
+#define IT_SP_RECALL         196
+#define IT_SP_TERROR         197
+#define IT_SP_CONFUSE        198
+#define IT_SP_HOLD           199
+#define IT_SP_HEX            200
+#define IT_SP_BANE           201
+#define IT_WAND_ACID         202
+#define IT_WAND_WEAKNESS     203
+#define IT_RING_CHA_1        204
+#define IT_AMULET_FIRE       205
+#define IT_AMULET_COLD       206
+#define IT_AMULET_POISON     207
+#define IT_COUNT             208
 
 /* Features (CLASS_FEATURE) */
 #define FT_DOOR         0

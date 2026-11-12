@@ -26,6 +26,7 @@
 #include "game/events.h"
 #include "game/spells/spells.h"
 #include "game/gen/gen.h"
+#include "game/effects/effects_internal.h"
 
 #define AREA   NGE_OWNER_AREA(0)
 #define AREA1  NGE_OWNER_AREA(1)
@@ -199,6 +200,7 @@ int main(void)
     int ok;
 
     test_init();
+    effects_apply_no_save = 1;   /* the saving throw when applied is tested on its own (items_extensions.md R14) */
 
     /* A 10 x 10 room of floor, a wall at (5, 4) */
     nge_map_init(10, 10, &window);

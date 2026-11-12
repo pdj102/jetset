@@ -80,6 +80,7 @@ typedef struct effect_def {
     const char  *name;         /* timed: shown while it lasts (the PC screen), 14 characters at most; in page 121 */
     const char  *start_text;   /* in page 121, or NULL */
     const char  *end_text;
+    const char  *seen_text;    /* timed, not innate: after a seen monster's name when it starts, "is terrified!"; or NULL */
     uint8_t      duration;     /* EFFECT_INSTANT, EFFECT_TIMED or EFFECT_WORN */
     uint8_t      flags;        /* EFFECT_STACK, EFFECT_INNATE */
     uint8_t      period;       /* timed: ticks between firings, 1-255 (the timer's period) */

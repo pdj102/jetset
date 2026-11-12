@@ -49,6 +49,7 @@
 #include "game/ui/screen_title.h"
 #include "game/chargen/chargen.h"
 #include "game/ui/screen_internal.h"
+#include "game/effects/effects_internal.h"
 
 #define AREA     NGE_OWNER_AREA(0)
 #define EV(k)    ((nge_key_event_t)(k))
@@ -436,6 +437,7 @@ int main(void)
     uint8_t y;
 
     test_init();
+    effects_apply_no_save = 1;   /* the saving throw when applied is tested on its own (items_extensions.md R14) */
     test_port_read_hook = kb_port;   /* the fake keyboard: no key held until a chord test holds one */
     test_reg_read_hook = kb_reg;
 
@@ -1373,6 +1375,34 @@ int main(void)
         CHECK(player_turn && item_count[staff] == 0);
         nge_entity_destroy(staff);
         nge_event_flush();
+        /* A wand of sleep at a rat in sight: the aim and the effect said (items_extensions.md R12) */
+        {
+            nge_entity_id_t wand = gen_item(IT_WAND_SLEEP, actor_player);
+            nge_entity_id_t rat = gen_creature(CR_RAT, AREA);
+
+            nge_location_set(rat, (uint8_t)(NGE_LOCATION_X(actor_player) - 1), NGE_LOCATION_Y(actor_player));
+            nge_event_flush();
+            fresh();
+            player_turn = 1;
+            press(EV(NGE_KEY_A));
+            press(EV(NGE_KEY_SPACE));
+            press(EV(NGE_KEY_LEFT));
+            press(EV(NGE_KEY_ENTER));
+            player_command(EV(NGE_KEY_A));
+            nge_event_process(messages_on_event);
+            CHECK(!player_turn && starts(row(29), "You aim the wand of sleep.") && said("The rat falls asleep."));
+            /* Resisted when applied: said for a monster in sight and for the player (R14) */
+            nge_event_post(rat, EV_RESISTED, actor_player, EF_SLEEP, 0);
+            nge_event_process(messages_on_event);
+            CHECK(said("The rat resists."));
+            nge_event_post(actor_player, EV_RESISTED, NGE_EVENT_NONE, EF_POISON, 0);
+            nge_event_process(messages_on_event);
+            CHECK(said("You resist."));
+            nge_entity_destroy(rat);
+            nge_entity_destroy(wand);
+            nge_event_flush();
+            player_turn = 1;
+        }
     }
 
     /* ---- cast: m lists the spells known, then a bolt asks for a tile; backing out uses no turn ---- */
@@ -1452,6 +1482,16 @@ int main(void)
             nge_event_post(actor_player, EV_CAST, shaman, SP_MAGIC_BOLT, 0);
             nge_event_process(messages_on_event);
             CHECK(said("The goblin shaman casts Magic Bolt."));
+            /* An effect on a monster in sight: its start said, a save said, running out not (items_extensions.md R12, R13) */
+            effect_apply(EF_FEAR, 1, shaman, actor_player);
+            nge_event_process(messages_on_event);
+            CHECK(said("The goblin shaman is terrified!"));
+            nge_event_post(shaman, EV_EFFECT_ENDED, NGE_EVENT_NONE, EF_FEAR, EFFECT_END_SAVED);
+            nge_event_process(messages_on_event);
+            CHECK(said("The goblin shaman shakes it off."));
+            nge_event_post(shaman, EV_EFFECT_ENDED, NGE_EVENT_NONE, EF_FEAR, EFFECT_END_EXPIRED);
+            nge_event_process(messages_on_event);
+            CHECK(said("The goblin shaman shakes it off."));   /* nothing new */
             nge_entity_destroy(shaman);
         }
         /* Knowing none: said, and no screen */

@@ -46,6 +46,7 @@
  * | EV_GOLD_CHANGED   | the player          | -        | -        |
  * | EV_QUEST_FOUND    | the quest item      | the player | -      |
  * | EV_AI_CHANGED     | the AI entity       | the cause, or NGE_EVENT_NONE | p1: old state, p2: new state (AI_STATE_*) |
+ * | EV_RESISTED       | the entity          | the cause, or NGE_EVENT_NONE | p1: EF_* |
  */
 
 #include "event/nge_event.h"
@@ -87,5 +88,6 @@
 #define EV_DISARMED       (NGE_EVENT_USER + 34)    /**< Disarmed by the source (act_disarm()): destroyed. */
 #define EV_SEARCHED       (NGE_EVENT_USER + 35)    /**< Searched around itself, finding p1 hidden features (act_search()). */
 #define EV_FIZZLED        (NGE_EVENT_USER + 36)    /**< An effect's op p1 could do nothing to the target (game/effects). */
+#define EV_RESISTED       (NGE_EVENT_USER + 37)    /**< Effect p1 was resisted by the target's saving throw when applied (game/effects). */
 
 #endif

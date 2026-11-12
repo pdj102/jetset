@@ -61,6 +61,11 @@
  */
 #define PLAYER_CHORD_FRAMES  4
 
+#if GAME_DEV_KIT
+#define DEV_ITEMS  6        /* items G puts down at a time */
+static uint8_t dev_item;   /* the next of the kinds G puts down, from IT_SERRATED_SWORD: in common BSS */
+#endif
+
 /*
  * The direction of the last press read in play or a prompt: a repeat that
  * doesn't continue it is refused (docs/diagonals.md, D6). In common BSS,
@@ -653,13 +658,20 @@ void player_command(nge_key_event_t ev) NGE_BANKED
         level_dev_features(actor_player);   /* development: features to check, near the player (no turn used) */
         dev_traps();
         break;
-    case 'G':
-        /* Development: a stairway parchment and a levitation potion at the player's feet (no turn used) */
-        nge_location_set(gen_item(IT_SP_LEVEL_TELEPORT, LEVEL_AREA), NGE_LOCATION_X(actor_player),
-                         NGE_LOCATION_Y(actor_player));
-        nge_location_set(gen_item(IT_POTION_LEVITATE, LEVEL_AREA), NGE_LOCATION_X(actor_player),
-                         NGE_LOCATION_Y(actor_player));
+    case 'G': {
+        /* Development: the next DEV_ITEMS of docs/items_extensions.md's kinds at the player's feet, cycling (no turn used) */
+        nge_entity_id_t id;
+        uint8_t n;
+
+        for (n = 0; n < DEV_ITEMS; n++) {
+            id = gen_item((uint8_t)(IT_SERRATED_SWORD + dev_item), LEVEL_AREA);
+            if (id != NGE_ENTITY_INVALID) {
+                nge_location_set(id, NGE_LOCATION_X(actor_player), NGE_LOCATION_Y(actor_player));
+            }
+            dev_item = (uint8_t)((dev_item + 1 == IT_COUNT - IT_SERRATED_SWORD) ? 0 : dev_item + 1);
+        }
         break;
+    }
     case 'J':
         /* Development: a delayed descent on the player, a level down in 15 turns (no turn used) */
         effect_apply(EF_DESCENT, 1, actor_player, NGE_ENTITY_INVALID);
@@ -672,7 +684,7 @@ void player_command(nge_key_event_t ev) NGE_BANKED
         /* Development: the next of confused, frightened, paralysed and asleep on the player (no turn used) */
         static uint8_t next;
 
-        effect_apply((uint8_t)((next == 0) ? EF_CONFUSE : (next == 1) ? EF_FEAR : (next == 2) ? EF_PARALYSE : EF_SLEEP), 1,
+        effect_apply_unsaved((uint8_t)((next == 0) ? EF_CONFUSE : (next == 1) ? EF_FEAR : (next == 2) ? EF_PARALYSE : EF_SLEEP), 1,
                      actor_player, NGE_ENTITY_INVALID);
         next = (uint8_t)((next + 1) & 3);
         break;

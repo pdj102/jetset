@@ -196,7 +196,7 @@ Timed (before `EF_TIMED_COUNT`; the instant and worn numbers move):
 | `EF_CORROSION` | 1 acid per power every 2 turns, 4 times | |
 
 Instant: `EF_CURE_BLIND`. Worn: `EF_WORN_CHA`, `EF_WORN_IMMUNE_FIRE`,
-`EF_WORN_IMMUNE_COLD` and `EF_WORN_IMMUNE_POISON`. No item uses the E3 rows yet (D11).
+`EF_WORN_IMMUNE_COLD` and `EF_WORN_IMMUNE_POISON`. Items use the E3 rows since items_extensions.md (todo I1).
 Each new row gets a VFX colour in `anim_vfx.c`.
 
 ### 3.9 Bank depth
@@ -231,6 +231,7 @@ against the 8 allowed.
   that serves the caster needs factions (later).
 - **D10 Frightened uses Charisma for its save,** giving Cha a use (G1). Bane uses it too.
 - **D11 E3 is rows only,** with no items yet. Items named by E1.4 and E4.4 are added.
+  Later: items_extensions.md (todo I1) adds items for the rows.
   *Alternative:* add potions or spells for the new buffs now.
 - **D12 Detect traps only.** Detect monsters needs fog of war, as map does.
 

@@ -461,7 +461,10 @@ void effects_on_timer(nge_entity_id_t effect, uint8_t cycles) NGE_BANKED
     }
 }
 
-uint8_t effect_apply(uint8_t ef, int8_t power, nge_entity_id_t target, nge_entity_id_t source) NGE_BANKED
+uint8_t effects_apply_no_save;   /* effects_internal.h: 0 in the game */
+
+/* effect_apply(), with the saving throw when applied (saves) or without */
+static uint8_t apply(uint8_t ef, int8_t power, nge_entity_id_t target, nge_entity_id_t source, uint8_t saves)
 {
     effect_def_t def;   /* a copy: the calls below map other pages */
     nge_entity_id_t e;
@@ -475,6 +478,11 @@ uint8_t effect_apply(uint8_t ef, int8_t power, nge_entity_id_t target, nge_entit
     nge_util_assert(def.duration != EFFECT_WORN);   /* worn effects count through equipment */
     nge_util_assert(def.save.dc == 0 || def.duration == EFFECT_TIMED);   /* a saving throw is tried at firings */
     if (!affectable(target)) {
+        return 0;
+    }
+    /* Resisted when applied: nothing starts or is refreshed (docs/items_extensions.md R14) */
+    if (saves && !effects_apply_no_save && def.save.dc != 0 && effects_save(target, def.save.arg, def.save.dc)) {
+        nge_event_post(target, EV_RESISTED, (source != NGE_ENTITY_INVALID) ? source : NGE_EVENT_NONE, ef, 0);
         return 0;
     }
 
@@ -500,6 +508,16 @@ uint8_t effect_apply(uint8_t ef, int8_t power, nge_entity_id_t target, nge_entit
     }
     started(e, target, ef, power);
     return 1;
+}
+
+uint8_t effect_apply(uint8_t ef, int8_t power, nge_entity_id_t target, nge_entity_id_t source) NGE_BANKED
+{
+    return apply(ef, power, target, source, 1);
+}
+
+uint8_t effect_apply_unsaved(uint8_t ef, int8_t power, nge_entity_id_t target, nge_entity_id_t source) NGE_BANKED
+{
+    return apply(ef, power, target, source, 0);
 }
 
 uint8_t effect_apply_at(uint8_t ef, int8_t power, nge_entity_id_t target, nge_entity_id_t source, uint8_t x,
@@ -554,6 +572,9 @@ void effect_text(uint8_t ef, uint8_t which, char *buf, uint8_t size) NGE_BANKED
         break;
     case EFFECT_TEXT_END:
         s = effect_defs[ef].end_text;
+        break;
+    case EFFECT_TEXT_SEEN:
+        s = effect_defs[ef].seen_text;
         break;
     default:
         s = effect_defs[ef].name;

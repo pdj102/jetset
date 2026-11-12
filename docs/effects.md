@@ -170,6 +170,7 @@ are never recomputed by a handler (R17).
 |---|---|---|
 | `name` | Shown while it lasts, 14 characters at most | Timed |
 | `start_text`, `end_text` | What the player is told, or none | Instant, timed |
+| `seen_text` | After a seen monster's name when it starts on it: "is terrified!", or none (items_extensions.md R12) | Timed, not innate |
 | `duration` | `EFFECT_INSTANT`, `EFFECT_TIMED` or `EFFECT_WORN` | All |
 | `flags` | `EFFECT_STACK`, `EFFECT_INNATE` | Timed |
 | `period`, `cycles` | Firings: ticks between them, how many; given to the timer when it is created or restarted | Timed |
@@ -214,7 +215,11 @@ enforces.
 ### 4.3 Applying an effect
 
 `effect_apply(ef, power, target, source)` copies the definition, then refuses a
-target that can't be affected (R6).
+target that can't be affected (R6). An effect with a saving throw then tries it
+(items_extensions.md R14): passed, it posts `EV_RESISTED` (p1 the effect, source
+the cause) and returns 0, starting and refreshing nothing.
+`effect_apply_unsaved()` skips that throw, for development aids; the PC tests
+skip it with `effects_apply_no_save` (`effects_internal.h`).
 
 - **Instant:** runs `on_start`, with `source` as its cause, and posts
   `EV_EFFECT_STARTED`.

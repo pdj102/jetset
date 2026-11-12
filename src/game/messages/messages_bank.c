@@ -36,6 +36,7 @@
 
 #define MESSAGE_MAX  41   /* a message window line, and its NUL */
 #define NAME_MAX     20   /* a kind's name, and its NUL */
+#define SEEN_MAX     26   /* a space, an effect's longest seen text ("is drained of presence."), and its NUL */
 
 /* line[MESSAGE_MAX] ends in the word "a", and name is next: make it "an" ahead of a vowel */
 static void set_article(char *line, const char *name)
@@ -75,6 +76,18 @@ static void say_effect(uint8_t ef, uint8_t which)
     effect_text(ef, which, line, sizeof(line));
     if (line[0] != '\0') {
         screen_message(line);
+    }
+}
+
+/* Effect ef starting on a monster the player sees: "The goblin is terrified!", if ef has a text for it */
+static void say_seen_effect(nge_entity_id_t target, uint8_t ef)
+{
+    char after[SEEN_MAX];
+
+    after[0] = ' ';
+    effect_text(ef, EFFECT_TEXT_SEEN, after + 1, sizeof(after) - 1);
+    if (after[1] != '\0') {
+        say_named("The ", target, after);
     }
 }
 
@@ -408,11 +421,22 @@ void messages_on_event(const nge_event_t *e) NGE_BANKED
     case EV_EFFECT_STARTED:
         if (target == actor_player) {
             say_effect(p1, EFFECT_TEXT_START);
+        } else if (seen_ai(target)) {
+            say_seen_effect(target, p1);   /* docs/items_extensions.md R12 */
         }
         break;
     case EV_EFFECT_ENDED:
         if (target == actor_player) {
             say_effect(p1, EFFECT_TEXT_END);
+        } else if (p2 == EFFECT_END_SAVED && seen_ai(target)) {
+            say_named("The ", target, " shakes it off.");   /* R13: one that runs out goes unsaid */
+        }
+        break;
+    case EV_RESISTED:
+        if (target == actor_player) {
+            screen_message("You resist.");   /* docs/items_extensions.md R14 */
+        } else if (seen_ai(target)) {
+            say_named("The ", target, " resists.");
         }
         break;
     case EV_FIZZLED:

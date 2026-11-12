@@ -166,7 +166,7 @@ Effects no item uses but that belong elsewhere: the drains (`EF_DRAIN_*`)
 suit monster hit hooks (a shadow, a wraith); `EF_REGEN`, `EF_ROOT`,
 `EF_MANA_REGEN` and `EF_HOLD` are innate or monster effects already.
 
-### I1 Items for the unused effects (data only)
+### I1 Items for the unused effects (data only) `[done]` (2026-11-12) [spec](items_extensions.md)
 
 New rows using effects that work today; no new code. Before I3, every item
 can only aim at a creature.
