@@ -43,18 +43,30 @@
 #define LEVEL_CELL_W    15     /* tiles */
 #define LEVEL_CELL_H    13
 
-#define LEVEL_ROOMS_MIN     5  /* rooms per level; the other cells are junctions */
-#define LEVEL_ROOMS_MAX     10
+#define LEVEL_ROOMS_MIN     7  /* rooms per level; the other cells are junctions */
+#define LEVEL_ROOMS_MAX     11
 #define LEVEL_LOOPS_MAX     2  /* extra links after the spanning tree: 0 to LEVEL_LOOPS_MAX */
 #define LEVEL_DOORS_MAX     12 /* door entities per level */
 #define LEVEL_DOOR_CHANCE   3  /* a doorway gets a door 1 time in LEVEL_DOOR_CHANCE */
 #define LEVEL_LOCKS_MAX     2  /* locks per level: side rooms first, then chests (docs/features.md D17) */
 #define LEVEL_FEATURES_MAX  4  /* random features per level (docs/features.md R17) */
 #define LEVEL_CONTENTS_MAX  4  /* items in containers per level (R24) */
-#define LEVEL_ITEMS_MIN     9  /* items per level, not counting a locked room's */
-#define LEVEL_ITEMS_MAX     15
-#define LEVEL_MONSTERS_MIN  2  /* monsters per level */
-#define LEVEL_MONSTERS_MAX  5
+#define LEVEL_ITEMS_MIN     11 /* items per level, not counting a locked room's: 1.5 to 2 a room */
+#define LEVEL_ITEMS_MAX     18
+#define LEVEL_MONSTERS_MIN  6  /* monsters per level */
+#define LEVEL_MONSTERS_MAX  10
+
+/*
+ * The entity budget: a level's entities at most, with room kept for the
+ * player and what they own (25), the persistent entities such as the boss
+ * and the quest item (10), and spells, summons and effects made in play (15)
+ */
+#define LEVEL_RESERVED_ENTITIES  50
+#define LEVEL_CREATURE_OWNED     3   /* entities a monster owns at most: effects, items picked up */
+#define LEVEL_ENTITIES_MAX  (2 + LEVEL_DOORS_MAX + LEVEL_FEATURES_MAX + LEVEL_CONTENTS_MAX + \
+                             2 * LEVEL_LOCKS_MAX + LEVEL_ITEMS_MAX + \
+                             LEVEL_MONSTERS_MAX * (1 + LEVEL_CREATURE_OWNED))   /* stairs, keys and locked rooms' items too */
+typedef char level_entity_check[(LEVEL_ENTITIES_MAX + LEVEL_RESERVED_ENTITIES <= NGE_ENTITY_MAX) ? 1 : -1];
 
 /* Each depth has an area of its own */
 typedef char level_depth_check[(LEVEL_DEPTH_BOTTOM < NGE_OWNER_AREA_MAX) ? 1 : -1];
