@@ -29,6 +29,10 @@ draught and a healing potion are the same effect at powers 3 and 6, and a
 ring and a cursed ring can share one row at +1 and -2. An item's strength
 therefore lives in the kind, and one effect serves many items.
 
+**Armour's AC is in its record, not its hook** (section 4.11). Armour's hook
+is then free for a property, so a mail can give AC and resist fire, as a
+weapon's bonus is in its attack and its effect in its hook.
+
 ```text
  kind records (gen_items[], in the item generator's data page)
       |  picked by depth and rarity, or asked for by kind
@@ -65,7 +69,10 @@ the records, so adding one should change code and leave the data alone.
 | Band | The depths a kind appears on, `depth` to `depth_max` |
 | Rarity | A kind's weight among those in band: higher is commoner, 0 is never |
 | Count | An entity's quantity: missiles, charges, uses, burn time or gold |
-| Group | What a kind matches: ammo with its launcher, a key with its lock |
+| Data | A byte of the kind record whose meaning depends on the subclass, a named union (4.7): the ammo group, a key's lock group, a pick's bonus, a book's spells or armour's AC |
+| Group | What a kind matches: ammo with its launcher (`GROUP_*`), a key with its lock (`KEY_*`) |
+| Armour's AC | The AC an armour kind gives while equipped, from its record (section 4.11) |
+| Property | An armour kind's worn effect beside its AC: a resistance, an ability... |
 | Pending effect | An effect defined as data whose mechanic isn't built, so it does nothing |
 
 ## 3. Requirements
@@ -113,6 +120,31 @@ the records, so adding one should change code and leave the data alone.
 - **R16** Messages suit the item: eat, drink or read by subclass, and "a" or "an"
   by the name's first letter.
 
+### Armour (I2)
+
+- **R21** An armour kind's AC is a number in its record, not its hook. It
+  counts while the armour is equipped, recomputed with the worn effects.
+- **R22** Armour's hook is free for one property, a worn effect that counts
+  beside its AC.
+- **R23** A plus on armour is a larger AC in the record, as a plus on a weapon
+  is larger numbers in its attack (4.6).
+- **R24** Armour with a property has the AC of its plain kind: gauntlets of
+  might give an iron gauntlet's AC as well as their Str.
+- **R25** Jewellery's AC stays a worn effect: the ring of armour and the amulet
+  of guarding keep `EF_WORN_AC` on their hook.
+- **R26** The inventory shows an armour's AC from its record, and an
+  `EF_WORN_AC` item's from its hook, as "AC n" (ui_inventory.md).
+- **R27** Ego armour, from existing worn effects: armour of fire ward, dragon
+  scale mail (AC and fire immunity), an elven cloak and a shield of warding
+  (4.11).
+- **R28** The record gains no bytes: page 109 has 589 bytes free (R17).
+- **R29** The record's subclass-dependent byte is a named union, `data`, with a
+  member for each meaning: `ammo_group`, `key_lock_group`, `pick_bonus`,
+  `book_spells`, `armour_ac`. The data and the code name the meaning they mean,
+  never a bare `group`.
+- **R30** Each meaning has its own reader, which checks the subclass, so a
+  reader never returns another meaning's number (a key's lock group as AC).
+
 ### Constraints
 
 - **R17** The table and its names fit their 8K page with at least 10% free.
@@ -133,7 +165,7 @@ the records, so adding one should change code and leave the data alone.
 | `name` | In the table's page |
 | `render` | Sprite pattern and colour bank, 2 bytes: the generator adds the rest (items_extensions.md D1) |
 | `subclass` | `ITEM_*` |
-| `group` | `GROUP_*`, `KEY_*` or a lock pick's bonus, by subclass |
+| `data` | One byte, a named union by subclass (4.7): `ammo_group`, `key_lock_group`, `pick_bonus`, `book_spells` or `armour_ac` |
 | `flags` | `ITEMF_*` |
 | `count` | The entity's count when made |
 | `fits` | The slots it can be equipped in, a mask |
@@ -146,20 +178,20 @@ the records, so adding one should change code and leave the data alone.
 | Subclass | What it is | How it works |
 |---|---|---|
 | `ITEM_WEAPON` | Melee weapons | Attack; some have a hit hook |
-| `ITEM_RANGED` | Launchers | Ranged attack, and a group for its ammo |
-| `ITEM_AMMO` | Missiles and thrown items | Count, group; thrown ones have their own attack |
-| `ITEM_ARMOUR` | Body, head, arms, hands, legs, feet, cloak, shields | Worn hook |
+| `ITEM_RANGED` | Launchers | Ranged attack, and `ammo_group` for its ammo |
+| `ITEM_AMMO` | Missiles and thrown items | Count, `ammo_group`; thrown ones have their own attack |
+| `ITEM_ARMOUR` | Body, head, arms, hands, legs, feet, cloak, shields | `armour_ac`; a worn hook for a property, or none (4.11) |
 | `ITEM_FOOD`, `ITEM_DRINK` | Eaten or drunk | Use hook |
 | `ITEM_POTION` | Good and bad potions | Use hook |
 | `ITEM_PARCHMENT` | Read on the reader, or aimed | Use or aim hook |
 | `ITEM_WAND` | Wands and staves | Aim hook; count is charges |
 | `ITEM_RING`, `ITEM_AMULET` | Jewellery, some cursed | Worn hook |
 | `ITEM_LIGHT` | Torches, lanterns | Worn hook; count is burn time |
-| `ITEM_KEY` | Keys | Group is the locks it opens; rarity 0: made only with a lock (action_unlock.md R11) |
-| `ITEM_TOOL` | Lock picks | Group is its bonus; count is uses |
+| `ITEM_KEY` | Keys | `key_lock_group` is the locks it opens; rarity 0: made only with a lock (action_unlock.md R11) |
+| `ITEM_TOOL` | Lock picks | `pick_bonus`; count is uses |
 | `ITEM_TREASURE` | Gold and gems | Count is gold |
 | `ITEM_QUEST` | The quest item | Rarity 0; see [winning.md](winning.md) |
-| `ITEM_BOOK` | Spell books: basic, adept's, master's (`IT_BOOK_*`, after `IT_QUEST`) | Group is its list of spells (`SPELL_BOOK_*`); no hook, can't be used, worn or aimed; read with `b`. See [spells.md](spells.md) section 10 |
+| `ITEM_BOOK` | Spell books: basic, adept's, master's (`IT_BOOK_*`, after `IT_QUEST`) | `book_spells` is its list of spells (`SPELL_BOOK_*`); no hook, can't be used, worn or aimed; read with `b`. See [spells.md](spells.md) section 10 |
 
 ### 4.3 Where an item is
 
@@ -181,7 +213,7 @@ wider mask.
 |---|---|---|---|
 | `GEN_HOOK_USE` | Items | When used up: drunk, eaten or read | The user |
 | `GEN_HOOK_HIT` | Weapons, ammo, creatures | A hit that leaves its target alive | The target |
-| `GEN_HOOK_WORN` | Equipment | Counts while equipped | The wearer |
+| `GEN_HOOK_WORN` | Jewellery, lights, armour's property | Counts while equipped | The wearer |
 | `GEN_HOOK_INNATE` | Creatures | When generated: only `EFFECT_INNATE` effects | Itself |
 | `GEN_HOOK_AIM` | Wands, staves, parchments | At a chosen target; no action reads it yet | The target |
 
@@ -236,9 +268,22 @@ The data is laid out for firing, which isn't built:
 
 - **A stack is one entity,** and `item_count[]` holds its quantity in a byte.
   What the count means depends on the subclass (section 4.2).
-- **`group`** is one byte whose meaning depends on the subclass. Ammo and
-  launchers must share a `GROUP_*`. A key opens locks of its `KEY_*`, and
-  `KEY_ANY` opens all.
+- **`data`** is one byte whose meaning depends on the subclass: a named union,
+  `gen_item_data_t` (D19), one member per meaning, each with its reader in page
+  108 (R30):
+
+  | Member | Subclasses | Holds | Reader | Another subclass |
+  |---|---|---|---|---|
+  | `ammo_group` | `ITEM_RANGED`, `ITEM_AMMO` | `GROUP_*`: ammo and launchers must share one | `gen_item_ammo_group()` | `GROUP_NONE` |
+  | `key_lock_group` | `ITEM_KEY` | `KEY_*`: the locks it opens; `KEY_ANY` opens all | `gen_item_key_lock_group()` | 0, no lock |
+  | `pick_bonus` | `ITEM_TOOL` | the lock pick's bonus to its roll | `gen_item_pick_bonus()` | 0 |
+  | `book_spells` | `ITEM_BOOK` | `SPELL_BOOK_*`: its list of spells | `gen_item_book_spells()` | an assert: 0 is a list |
+  | `armour_ac` | `ITEM_ARMOUR` | its AC (4.11) | `gen_item_armour_ac()` | 0 |
+
+  The table sets a member by name, `.data.armour_ac = 5`; a subclass with no
+  meaning leaves `data` 0. `gen_item_group()` goes: its callers (firing, the
+  shot's look, keys, picks, learning, the spell screen) each call their
+  meaning's reader.
 - **`flags`** hold `ITEMF_TWO_HANDS`, `ITEMF_CURSED` and `ITEMF_DIRECT`. The first two's
   rules are in the inventory component, and an item's lifted curse is an entity flag,
   `ITEM_UNCURSED`. `ITEMF_DIRECT` makes an aimed item pass creatures on the way to the
@@ -255,7 +300,9 @@ Creatures use the same macro, and every class has the same `gen_where_t`.
 Kinds added after the catalogue are numbered at the end, so no number moves: the spell
 books (after `IT_QUEST`), then the stairway parchment (`EF_LEVEL_TELEPORT`), the
 levitation potion (`EF_LEVITATE`) and boots of levitation (`EF_WORN_FLY`), from
-[effects_extensions.md](effects_extensions.md). `IT_COUNT` is 166.
+[effects_extensions.md](effects_extensions.md), then I1's 42 kinds (166 to 207,
+[items_extensions.md](items_extensions.md)), then I2's four armour kinds (208 to
+211, section 4.11). `IT_COUNT` is 212.
 
 ### 4.9 Names and messages
 
@@ -274,6 +321,54 @@ several materials are drawn with the material in the primary ramp, because a ban
 changes only slots 9-15 ([sprite_style.md](sprite_style.md) 6.6). There are too
 few banks for every potion to have its own colour, so unrelated potions can share
 one; their names tell them apart.
+
+### 4.11 Armour
+
+**AC.** An armour kind's AC is `data.armour_ac` (D14), unsigned, 0 for none.
+`gen_item_armour_ac(kind)`, banked with the table in page 108, returns it for
+`ITEM_ARMOUR` and 0 for any other subclass, so a key's lock group never counts
+as AC (D16). In the table: `.data.armour_ac = 5`.
+
+**Counting.** `derive()` in `attrs_bank.c` already walks the equipped items
+for their worn hooks. For each one it also adds `gen_item_armour_ac()` to
+`ATTR_AC`, as a number modifier would, so the AC is clamped and stored with
+the rest and the PC screen shows it against the base as before. A property
+on the hook is added as today. No effect row is needed for the AC.
+
+**The data.** Every armour kind whose hook is `EF_WORN_AC` moves the power to
+its AC and drops the hook (24 kinds). Armour with a property gains the AC of
+its plain kind (R24):
+
+| Kind | AC | Hook |
+|---|---|---|
+| gauntlets of might | 2, as iron gauntlets | `EF_WORN_STR` 2, as now |
+| boots of speed | 1, as leather boots | `EF_WORN_SPEED` 2, as now |
+| boots of levitation | 1, as leather boots | `EF_WORN_FLY` 1, as now |
+| fireproof cloak | 1, as a cloak | `EF_WORN_RES_FIRE` 1, as now |
+| cloak of protection | 3, its old power: a cloak +2 | none |
+
+The best full set still totals AC 25 (plate +2, iron head, arms, hands, legs
+and feet, cloak of protection, tower shield): gauntlets of might now match
+iron gauntlets instead of giving up their AC.
+
+**Ego armour** (I2.2), numbered at the end, data only:
+
+| ID | Name | Look | AC | Hook | Band, rarity |
+|---|---|---|---|---|---|
+| `IT_MAIL_FIRE_WARD` 208 | mail of fire ward | mail, `BANK_ORANGE` | 5, as chain mail | worn `EF_WORN_RES_FIRE` 1 | 5-B, 1 |
+| `IT_DRAGON_MAIL` 209 | dragon scale mail | mail, `BANK_RED` | 6, as scale mail +2 | worn `EF_WORN_IMMUNE_FIRE` 1 | 8-B, 1 |
+| `IT_ELVEN_CLOAK` 210 | elven cloak | cloak, `BANK_GREEN` | 1, as a cloak | worn `EF_WORN_DEX` 1 | 4-B, 1 |
+| `IT_SHIELD_WARDING` 211 | shield of warding | shield, `BANK_PURPLE` | 2, as an iron shield | worn `EF_WORN_RES_MAGIC` 1 | 5-B, 1 |
+
+B is `LEVEL_DEPTH_BOTTOM`. Each look is a pattern and bank no other kind uses.
+"Mail of fire ward" follows "amulet of acid ward" (a resistance); "fireproof"
+names immunity on the I1 amulets, and the fireproof cloak, older, keeps its
+name. Each adds 22 bytes and its name: 154 bytes of page 109 for the four.
+
+**The inventory** (R26). `screen_inv_bank.c`'s last case prints "AC n" from
+`gen_item_armour_ac()` when it isn't 0, else from an `EF_WORN_AC` hook (the ring of
+armour, the amulet of guarding). A property isn't shown: the name says it.
+
 
 ## 5. Decisions
 
@@ -295,8 +390,9 @@ one; their names tell them apart.
   every recompute, but a potion's effect outlives the potion. *Rejected:*
   recording the source item, as an entity ID can be reused. On a refresh the
   higher power stays, so a weak poison can't dilute a strong one.
-- **D5 Armour shares one effect.** All armour is `EF_WORN_AC` with the AC as its
-  power, so plate +2 needs no row of its own.
+- **D5 Armour shares one effect.** *(Superseded by D14: armour's AC is in its
+  record. `EF_WORN_AC` stays, for jewellery.)* All armour is `EF_WORN_AC` with
+  the AC as its power, so plate +2 needs no row of its own.
 - **D6 One hook per item kind.** Each kind in the catalogue needs only one, and
   it saves 7 bytes a kind. Two effects on one item can usually be one definition.
   A second hook would cost 3 bytes a kind, which would fit.
@@ -319,6 +415,39 @@ one; their names tell them apart.
   have no slot words now, and every name fits; [ui_inventory.md](ui_inventory.md).)*
   The list panel is 28 columns, so a
   long name can lose the end of its slot word. This is cosmetic and accepted.
+- **D14 Armour's AC shares the subclass byte** (answered 2026-11-12). Armour
+  has no ammo, lock, bonus or spells, so the byte that holds them is free,
+  and it costs nothing in page 109. It is the `armour_ac` member of the
+  union `data` (D19). *Rejected:* an `ac` field of its own, the to-do's first
+  proposal: 1 byte for each of 212 kinds, 212 of the 589 bytes free, paid by
+  every potion and key. *Rejected:* a second hook (3 bytes a kind, 636), which
+  I2.3 keeps for a kind needing two properties.
+- **D15 AC is unsigned.** 0 to 255, as `health_ac[]`. Cursed armour, when it
+  is wanted, puts a negative `EF_WORN_AC` on its hook.
+- **D16 One reader per meaning, checking the subclass** (R30). With five
+  meanings in one byte, a read with the wrong meaning returns a plausible
+  number, not an error: a key's `KEY_GOLD` would be AC 4. Each reader returns
+  its member only for its subclasses, so the rule is in one place, and
+  `derive()` can ask any equipped item for its AC without knowing subclasses.
+  About 15 bytes a reader in page 108, which has 6.7K free. *Rejected:* one
+  `gen_item_data()` returning the byte, as `gen_item_group()` did, leaving
+  every caller to know the subclass.
+- **D17 Armour with a property keeps its plain kind's AC** (R24). A pair of
+  gauntlets of might that gave up their AC was the cost of the one hook, not a
+  design. The best set's AC doesn't change (4.11).
+- **D19 A named union, not an anonymous one** (asked for 2026-11-12, as an
+  anonymous union). zsdcc (z88dk's, `-clib=sdcc_iy`) gets designated
+  initialisers of an anonymous union's members wrong, with only a warning
+  ("excess elements in struct initializer"): only the first member can be set,
+  any other comes out 0, and the fields after it in the record are lost or
+  shifted (a pick's bonus landed in `fits`). gcc compiles it correctly, so the
+  PC tests would pass. A named union, `.data.armour_ac = 5` or
+  `.data = { .armour_ac = 5 }`, compiled right in the same test (checked
+  2026-11-12 by reading the asm), and reads the same in code:
+  `gen_items[kind].data.armour_ac`.
+- **D18 Not now: I2.3 and I2.4** (low). A second hook only when a kind needs
+  two properties; enchantment rolled per entity would need a byte per entity
+  and names built at run time (D1).
 
 ## 6. Not built yet
 
@@ -346,12 +475,20 @@ The PC tests enforce the rules that the data could break:
 - **`test_gen`:** every kind is well formed: name length, power and effect, the
   right family of effect for its hook, rarity, band, slots; each subclass has
   what its mechanic will need; the mix by depth (R4); `GEN_PICK()`; what
-  `gen_item()` creates.
+  `gen_item()` creates; armour has an AC or a worn hook, never `EF_WORN_AC`
+  on its hook (D14); each `data` reader returns its member for its subclasses
+  and its "another subclass" value for every other kind (R30); the table's
+  bytes match the members set (a guard against D19's miscompile, for the
+  copy the Next runs: read the asm of `gen_item_pdata.c` once).
 - **`test_effects`:** scaling for instant, worn and timed effects, negative
   powers, masks, refreshes, clamps, the numbering (D12), and that pending ops run
   safely.
 - **`test_act`:** use and hit pass the kind's power, and the slots equip.
-- **`test_ui`:** the verbs and "a" or "an".
+- **`test_effects`** (armour): worn armour adds its AC and its property
+  together (dragon scale mail: AC and fire immunity), and taking it off
+  removes both.
+- **`test_ui`:** the verbs and "a" or "an"; "AC n" for armour and for a ring of
+  armour.
 
 ## 8. Known risks
 
@@ -364,6 +501,9 @@ The PC tests enforce the rules that the data could break:
 - **Inert finds.** Items waiting for a mechanic are generated at their real rarity,
   so the mix can be seen in play. Until those mechanics exist, many finds do
   nothing.
+- **Page 109 is below R17's 10%.** 589 bytes free (7.2%) after I1, about 435
+  (5.3%) after I2's four kinds. A later kind needs room made first: the names
+  could move to page 108, the generator's, which has about 6.7K free.
 - **Treasure takes pack slots** until gold is picked up as gold.
 - **Row letters.** In the choosing lists, letters run past "z" after 26 rows
   (`'a' + i`), which a full list can reach.

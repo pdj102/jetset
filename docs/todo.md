@@ -203,7 +203,7 @@ can only aim at a creature.
 - I1.10 Food with effects: mushrooms, one kind per effect (healing,
   confusion, poison); elven waybread (`EF_HEROISM`)
 
-### I2 Armour with a property
+### I2 Armour with a property `[plan]` [spec](items.md) (R21 to R30, sections 4.7, 4.11), [plan](items_armour_plan.md) (I2.1, I2.2; I2.3, I2.4 later)
 
 Each kind has one hook, and armour spends it on its AC (`EF_WORN_AC`), so
 armour can't give AC and a resistance. Weapons don't have the problem:
