@@ -118,7 +118,7 @@ int main(void)
     CHECK(in_slot(IT_SHIELD, SLOT_SHIELD));
     CHECK(items() == 3 && inv_count(actor_player) == 0);   /* all equipped */
     CHECK(carried(IT_BOOK_BASIC) == NGE_ENTITY_INVALID);
-    CHECK(health_ac[actor_player] > health_ac_base[actor_player]);   /* the armour and shield count */
+    CHECK(health_ac[actor_player] == health_ac_base[actor_player] + 4);   /* leather armour 2, iron shield 2 */
     CHECK(nge_event_count() == 0);                                     /* no "You wield..." */
     used_fighter = (uint8_t)(NGE_ENTITY_MAX - nge_entity_free_count());
 

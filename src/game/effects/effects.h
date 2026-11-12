@@ -152,7 +152,7 @@
 #define EF_DETECT_TRAPS       69   /**< Instant: finds the hidden features within 1 tile per power. */
 #define EF_BLINK              70   /**< Instant: to the tile given to effect_apply_at(). */
 #define EF_WORN_HP            71   /**< Worn: +1 per power maximum hit points. */
-#define EF_WORN_AC            72   /**< Worn: AC +1 per power. */
+#define EF_WORN_AC            72   /**< Worn: AC +1 per power: for jewellery and cursed armour; armour's own AC is in its record (docs/items.md 4.11). */
 #define EF_WORN_SPEED         73   /**< Worn: speed -1 per power (lower is faster). */
 #define EF_WORN_STR           74   /**< Worn: Str +1 per power. */
 #define EF_WORN_DEX           75   /**< Worn: Dex +1 per power. */

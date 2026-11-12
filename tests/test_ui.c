@@ -937,6 +937,7 @@ int main(void)
             { IT_LOCK_PICK,      1, "lock pick",          "5 uses" },
             { IT_GOLD_SMALL,    10, "handful of gold",    "" },
             { IT_HEAL_POTION,    1, "healing potion",     "" },
+            { IT_RING_ARMOUR_1,  1, "ring of armour +1",  "AC 1" },   /* jewellery: its AC from its hook */
         };
         nge_entity_id_t ids[sizeof(rows) / sizeof(rows[0])];
         uint8_t i;

@@ -379,6 +379,10 @@ armour, the amulet of guarding). A property isn't shown: the name says it.
   common memory stayed the same size. A key reader's "another subclass" value
   is named `KEY_NONE` (0) in `gen_kinds.h`. `feature_key_fits()` keeps its own
   subclass check, because an unlocked door's key bits are also 0.
+- *Step 2 (AC in the record, 2026-11-12).* Page 109 stayed the same size.
+  Page 138 grew by 56 bytes, not about 15: the banked call and the 16-bit add
+  into `d->value[ATTR_AC]`. Page 116 grew by 16 bytes. effects.md never named
+  `EF_WORN_AC`, so only its comment in `effects.h` changed.
 
 ## 5. Decisions
 

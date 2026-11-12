@@ -699,7 +699,19 @@ int main(void)
     item_slot[e] = SLOT_BODY;
     k = health_ac[g];
     effects_recompute(g);
-    CHECK(health_ac[g] == k + 9);
+    CHECK(health_ac[g] == k + 9);   /* plate +2's AC, from its record */
+    item_slot[e] = SLOT_NONE;
+    effects_recompute(g);
+    CHECK(health_ac[g] == k);
+    /* Armour with a property: its AC and its hook together, and both go when it comes off */
+    e = gen_item(IT_GAUNTLETS_MIGHT, g);
+    item_slot[e] = SLOT_HANDS;
+    i = stats_ability[ABIL_STR][g];
+    effects_recompute(g);
+    CHECK(health_ac[g] == k + 2 && stats_ability[ABIL_STR][g] == i + 2);
+    item_slot[e] = SLOT_NONE;
+    effects_recompute(g);
+    CHECK(health_ac[g] == k && stats_ability[ABIL_STR][g] == i);
     e = gen_item(IT_RING_FIRE, g);
     item_slot[ring] = SLOT_NONE;
     item_slot[e] = SLOT_RING_L;

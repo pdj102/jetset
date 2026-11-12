@@ -288,6 +288,7 @@ static void describe(nge_entity_id_t id, NGE_FILE *s)
     uint8_t kind = kind_index[id];
     uint8_t subclass = gen_item_subclass(kind);
     uint16_t hook;
+    int8_t ac;
 
     switch (subclass) {
     case ITEM_WEAPON:
@@ -320,11 +321,17 @@ static void describe(nge_entity_id_t id, NGE_FILE *s)
     default:
         break;
     }
-    hook = gen_hook_of(id, GEN_HOOK_WORN);
-    if (GEN_HOOK_EF(hook) == EF_WORN_AC) {
-        nge_puts("AC ", s);
-        nge_puti16(GEN_HOOK_POWER(hook), s);
+    /* Armour's AC from its record, else jewellery's from an AC hook (docs/items.md R26) */
+    ac = gen_item_armour_ac(kind);
+    if (ac == 0) {
+        hook = gen_hook_of(id, GEN_HOOK_WORN);
+        if (GEN_HOOK_EF(hook) != EF_WORN_AC) {
+            return;
+        }
+        ac = GEN_HOOK_POWER(hook);
     }
+    nge_puts("AC ", s);
+    nge_puti16(ac, s);
 }
 
 /* How many of an item there are: a stack's count, 1 for anything else (Q2) */

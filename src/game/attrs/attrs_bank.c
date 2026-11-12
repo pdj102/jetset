@@ -25,6 +25,7 @@
 #include "event/nge_event.h"
 #include "game/components/health.h"
 #include "game/components/item.h"
+#include "game/components/kind.h"
 #include "game/components/mana.h"
 #include "game/components/stats.h"
 #include "game/effects/effects_defs.h"
@@ -127,12 +128,13 @@ static uint8_t *base_of(nge_entity_id_t id, uint8_t attr)
     return at->base;
 }
 
-/* id's bases (0 for an attribute it hasn't), plus the statuses and modifiers of its equipped items' worn effects and of its active effects */
+/* id's bases (0 for an attribute it hasn't), plus its equipped armour's AC, the statuses and modifiers of its equipped items' worn effects, and those of its active effects */
 static void derive(nge_entity_id_t id, derived_t *d)
 {
     nge_entity_id_t owned;
     nge_component_t component;
     uint16_t hook;
+    uint8_t kind;
     uint8_t *base;
     uint8_t combine;
     uint8_t a;
@@ -154,6 +156,8 @@ static void derive(nge_entity_id_t id, derived_t *d)
     d->status = 0;
     NGE_OWNER_FOR_EACH_OWNED(i, owned, id) {
         if (ITEM_IS(owned) && item_slot[owned] != SLOT_NONE) {
+            kind = kind_index[owned];   /* in a local before the banked call (T-ZSDCC-1) */
+            d->value[ATTR_AC] += gen_item_armour_ac(kind);   /* armour's AC, in its record (docs/items.md 4.11) */
             hook = gen_hook_of(owned, GEN_HOOK_WORN);
             add(d, GEN_HOOK_EF(hook), GEN_HOOK_POWER(hook));
         } else if (NGE_ENTITY_HAS_COMPONENT(owned, NGE_COMPONENT_EFFECT)) {

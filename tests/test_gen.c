@@ -217,9 +217,13 @@ static int kind_ok(uint8_t kind)
     case ITEM_FOOD:
     case ITEM_DRINK:
         return h->hook == GEN_HOOK_USE && h->ef != EF_NONE;
+    case ITEM_ARMOUR:   /* an AC, a worn property, or both; its AC never on the hook (docs/items.md R21, R22) */
+        if (h->ef == EF_NONE) {
+            return k->fits != 0 && k->data.armour_ac != 0;
+        }
+        return k->fits != 0 && h->hook == GEN_HOOK_WORN && h->ef != EF_WORN_AC;
     case ITEM_RING:
     case ITEM_AMULET:
-    case ITEM_ARMOUR:
     case ITEM_LIGHT:
         return h->hook == GEN_HOOK_WORN && h->ef != EF_NONE && k->fits != 0;
     default:
