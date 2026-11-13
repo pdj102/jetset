@@ -103,13 +103,15 @@ that is refused, followed by a melee.
 - **R7** A failure always gives a reason, and every reason is either refused or attempted,
   defined once.
 - **R8** The action sets `used`: 1 on success or an attempted failure, 0 if refused or
-  checked. Callers decide whether the turn is over from `used` alone.
+  checked, and 0 on the success of an action that takes no time (R10). Callers decide whether
+  the turn is over from `used` alone.
 - **R9** Validation fails only with refused reasons, and attempted reasons come only after
   the check has stopped.
 
 ### Time
 
-- **R10** Every action takes one turn of the actor, whatever the action.
+- **R10** Every action takes one turn of the actor, whatever the action, except look, which
+  takes none (D18, [action_look.md](action_look.md)).
 - **R11** Consequences use no turn.
 
 ### Rules
@@ -173,26 +175,28 @@ that is refused, followed by a melee.
 | `act.h` | | The public interface | |
 | `act_internal.h` | | The endings, helpers and line modes, for the actions only | |
 | `act.c` | Common | `act_do()`, `act_attempted()`, `act_reason_flags[]` | |
-| `act_shared.c` | `BANK_56` | The endings, `act_rooted()`, `act_strike()`, `act_line()`, `act_find_feature()` | 1,906 |
-| `act_move.c` | `BANK_56` | Move ([action_move.md](action_move.md)) | 946 |
+| `act_shared.c` | `BANK_56` | The endings, `act_rooted()`, `act_status()`, `act_strike()`, `act_line()`, `act_shape_find()`, `act_find_feature()` | 3,196 |
+| `act_move.c` | `BANK_56` | Move ([action_move.md](action_move.md)) | 1,123 |
 | `act_pickup.c` | `BANK_56` | Pick up ([action_pickup.md](action_pickup.md)) | 1,054 |
 | `act_drop.c` | `BANK_56` | Drop ([action_drop.md](action_drop.md)) | 468 |
 | `act_equip.c` | `BANK_56` | Equip, exchange and unequip | 2,060 |
-| `act_melee.c` | `BANK_56` | Melee, as far as validation | 1,075 |
+| `act_melee.c` | `BANK_56` | Melee, as far as validation | 1,145 |
 | `act_use.c` | `BANK_56` | Use | 396 |
 | `act_open.c` | `BANK_56` | Open, close and unlock | 996 |
 | `act_stairs.c` | `BANK_56` | Ascend and descend | 782 |
 | `act_wait.c` | `BANK_56` | Wait | 161 |
-| `act_fire.c` | `BANK_56` | Fire | 853 |
-| `act_aim.c` | `BANK_56` | Aim | 770 |
-| `act_cast.c` | `BANK_56` | Cast | 612 |
+| `act_fire.c` | `BANK_56` | Fire | 893 |
+| `act_aim.c` | `BANK_56` | Aim | 813 |
+| `act_cast.c` | `BANK_56` | Cast | 602 |
 | `act_learn.c` | `BANK_56` | Learn | 690 |
 | `act_operate.c` | `BANK_56` | Operate | 232 |
 | `act_disarm.c` | `BANK_56` | Search and disarm | 718 |
-| `act_spring.c` | `BANK_56` | `act_spring()`: a trap going off, a reaction, not an action ([features.md](features.md), 4.8) | 643 |
+| `act_spring.c` | `BANK_56` | `act_spring()`: a trap going off, a reaction, not an action ([features.md](features.md), 4.8) | 660 |
+| `act_look.c` | `BANK_56` | Look ([action_look.md](action_look.md)) | 291 |
 
-The sizes are from the debug build's map, with asserts. They total 14,362 bytes of
-`BANK_56`'s 16,384 (pages 112 and 113, D15), which leaves 2,022.
+The sizes are from the debug build's map of 2026-11-13, with asserts. Built, they total
+16,280 bytes of `BANK_56`'s 16,384 (pages 112 and 113, D15), which leaves 104. Look has no
+asserts, as their text didn't fit ([action_look.md](action_look.md), 4.6).
 
 ### 4.2 The context
 
@@ -236,6 +240,7 @@ Who reads what:
 | Operate | In or find; out | | If `target` is invalid | | Out: `effect` | |
 | Search | | | | | | Out: how many found |
 | Disarm | In or find; out | | If `target` is invalid | | | |
+| Look | | | | In | | |
 
 A context can be passed straight to the next action. After a move is refused, `target`
 already holds the blocker, ready for a melee or an open. It can also be passed to the same
@@ -251,12 +256,16 @@ an output of one is the next one's input if that reads it.
 | Ending | Function | `reason` | `used` | Returns |
 |---|---|---|---|---|
 | Success | `act_succeed()` | `ACT_R_NONE` | 1 | `ACT_SUCCESS` |
+| Success taking no time | `act_succeed_free()` | `ACT_R_NONE` | 0 | `ACT_SUCCESS` |
 | Check passed | `act_checked()` | `ACT_R_NONE` | 0 | `ACT_SUCCESS` |
 | Refused | `act_fail()` | Why | 0 | `ACT_FAIL` |
 | Attempted | `act_fail()` | Why | 1 | `ACT_FAIL` |
 
 `act_fail()` reads the kind from `act_reason_flags[]`, so an action can't set it wrongly. A
 debug build asserts that a reason isn't `ACT_R_NONE` and is in range.
+
+`act_succeed_free()` is look's ending (D18). It is a `#define` to `act_checked()`, which sets
+the same fields, so it costs nothing; the name says what the action means.
 
 ### 4.4 Event order
 
@@ -270,6 +279,8 @@ comes before what it caused:
   between the two: it is dying when handlers see the event, and stays readable until it is
   released.
 - **Exchange:** `EV_UNEQUIPPED` for each item taken off, then `EV_EQUIPPED`.
+- **Look:** `EV_LOOKED` alone (p1, p2 the tile); the messages read the tile when they handle
+  it.
 
 Everywhere else, the change comes first and its event follows.
 
@@ -278,8 +289,9 @@ Consequences are direct calls, because the rest of the action reads their result
 
 ### 4.5 Reasons
 
-There are 51 reasons with `ACT_R_NONE` (`ACT_R_COUNT`). Each action's file lists the ones it
-gives, with the player's text. Five are attempted:
+There are 54 reasons with `ACT_R_NONE` (`ACT_R_COUNT`), the last `ACT_R_BLIND` (refused, by
+look: "You can't see!"). Each action's file lists the ones it gives, with
+the player's text. Six are attempted:
 
 | Attempted reason | Where | Event | What the player is told |
 |---|---|---|---|
@@ -288,8 +300,9 @@ gives, with the player's text. Five are attempted:
 | `ACT_R_PICK_FAILED` | Unlock | None | "The lock holds." |
 | `ACT_R_DISARM_FAILED` | Disarm | None | "You fail to disarm the (trap)." |
 | `ACT_R_SET_OFF` | Disarm | `EV_TRIGGERED` and the trap's | The trap's messages |
+| `ACT_R_STUMBLED` | Move, confused | None | `messages_act_failed()`'s text |
 
-Rooted, a failed pick and a failed disarm post no event: their text comes from
+Rooted, stumbling, a failed pick and a failed disarm post no event: their text comes from
 `messages_act_failed()`. Nothing needs an event for a rooted monster, as the AI tests
 `AI_CAN_MOVE` first and doesn't try.
 
@@ -325,6 +338,7 @@ exceptions.
 | 18 | `ACT_SEARCH` | `act_disarm.c` | [action_search.md](action_search.md) | `s` | No |
 | 19 | `ACT_DISARM` | `act_disarm.c` | [action_disarm.md](action_disarm.md) | `D` | No |
 | 20 | `ACT_LEARN` | `act_learn.c` | [action_learn.md](action_learn.md) | `b`; `b` on the inventory screen; then the book screen | No |
+| 21 | `ACT_LOOK` | `act_look.c` | [action_look.md](action_look.md) | `x`, then a tile; uses no turn | No |
 | | `ACT_STEAL`, not built | | [action_steal.md](action_steal.md) | | The bandit |
 
 ### 4.7 Callers
@@ -336,6 +350,7 @@ exceptions.
 | AI, aimed | `opt_shoot()` and `opt_cast()`: `ACT_CHECK`, then `ACT_DO` only if the check's `target` is its own | Holds, and tries its next option |
 | Inventory screen | `ACT_CHECK` to list and offer; does drop, equip, unequip, use and exchange itself; returns aim, unlock and learn to `item_command()` | Doesn't offer it, or says why on its status line |
 | Spell list | `ACT_CHECK` for each spell | Says why it can't be cast |
+| Targeting | `ACT_CHECK` at the cursor's tile, for fire, aim, cast and look ([targeting.md](targeting.md) R19) | Colours the cursor; on ENTER, says why and goes on |
 
 **Bumping** is the player's move command combining actions. A step into a known web strikes
 it; a step onto any other known trap walks onto it (only `D` disarms). Otherwise it checks the
@@ -499,7 +514,8 @@ disarm. It takes `a->target`, or with `NGE_ENTITY_INVALID` the feature in direct
 - **D4 Reasons are classified in a table.** The kind is defined once, and tested, so
   actions can't disagree about whether a reason uses the turn.
 - **D5 Every action costs one turn.** An actor's timer fires every `speed` ticks, so time
-  depends on who acts, not what they do. Callers read `used` and need no costs.
+  depends on who acts, not what they do. Callers read `used` and need no costs. Look is the
+  one exception, and costs nothing (D18).
 - **D6 Callers combine actions.** Bumping is the player's choice, not a rule of movement,
   and the AI decides for itself.
 - **D7 Endings are functions.** zsdcc dropped the assignments in a comma expression
@@ -545,14 +561,27 @@ disarm. It takes `a->target`, or with `NGE_ENTITY_INVALID` the feature in direct
   second function, `act_line_direct()`, which repeats the range, own tile and wall tests
   (G-ARCH-1). *Rejected:* letting a direct line ignore walls too, as that reaches creatures
   the actor can't see, and the cursor would be green where sight says no.
+- **D18 Look is an action that takes no time.** It changes nothing in the world, so it costs no
+  turn, but as an action it gets a check, so blindness and sight refuse it and colour the
+  targeting cursor with no special case (targeting.md D7). The action ends with
+  `act_succeed_free()`, which sets `used` to 0, so no caller changes: they already read `used`
+  alone (R8). *Rejected:* a table of free actions, costing common memory for one entry.
+  *Rejected:* the caller ignoring `used` for look, a rule of the action in its caller.
+  Built 2026-11-13 ([action_look.md](action_look.md) D1, D2).
+- **D19 Sight is not the line of fire.** Look tests sight as a monster does, `AI_SIGHT` and
+  `nge_block_line()` with `NGE_BLOCK_SOLID`, not `act_line()`: the line of fire refuses the
+  actor's own tile and an empty one, and stops at a wall on the chosen tile, which sight sees
+  ([action_look.md](action_look.md) D3, D4).
 
 ## 6. Not built yet
 
 What applies to every action:
 
-- **Blinded and unconscious.** No rule reads those statuses yet (attributes.md, "Not built
-  yet"). A blinded reader belongs in the actions that read. Being unconscious belongs in
-  whatever gives the actor its turn, not in each action (ai.md R19).
+- **Blinded and unconscious.** Being unconscious is in whatever gives the actor its turn, not
+  in each action (ai.md R19), and loses the turn (E4.6). Blindness is read by a monster's sight
+  (`ai_sense()`) and by the to-hit modifier, and look will refuse it (`ACT_R_BLIND`,
+  [action_look.md](action_look.md)). A blinded reader of parchments and books belongs in the
+  actions that read, and isn't built.
 - **Delayed actions.** A timer's handler would fill a context and call `act_do()`. None does
   yet. It must test that its actor is alive first.
 - **Monsters' use of actions.** The AI drops, unequips, closes, takes stairs, aims, unlocks,
@@ -565,7 +594,7 @@ What needs no new action:
 | Throwing | `ACT_FIRE` with thrown ammo in `SLOT_AMMO` ([action_fire.md](action_fire.md)) |
 | Reading a parchment, eating, drinking | `ACT_USE`, or `ACT_AIM` for aimed parchments |
 | Rest, running, travelling | A player command that repeats `ACT_WAIT` or `ACT_MOVE`, stopping when something happens |
-| Looking, the PC screen | They change nothing, so they use no turn ([targeting.md](targeting.md)) |
+| The PC screen | It changes nothing, so it uses no turn. Looking was here too, until it became an action that uses no turn (D18) |
 | Bump to unlock, bump to strike a web | A caller combining actions (R13) |
 | Swapping weapons | `ACT_EXCHANGE`, one turn |
 | A chest | `ACT_OPEN`, and the chest spills in reaction to `EV_OPENED` ([features.md](features.md), 4.9) |
@@ -585,7 +614,8 @@ use, exchange, fire, aim, unlock, cast, search, disarm, and the whole of
 - its successes, every refusal and its events;
 - check mode giving the same answers while changing nothing, including `rand()`;
 - `act_do()` matching the direct call;
-- the reason table: exactly the five reasons of section 4.5 are attempted;
+- the reason table: exactly the six reasons of section 4.5 are attempted;
+- look: a success leaves `used` at 0 in both modes (R8, R10);
 - the asserts.
 
 And for what the actions share:
@@ -619,7 +649,8 @@ CSpect checks, by the user.
   and run twice for each shot, so `opt_shoot()` and `opt_cast()` test sight first.
 - **A dying target.** A target found earlier may be dead by the time an action uses it, and
   melee tests for that. Delayed actions must test their actor too.
-- **`BANK_56` has 2,022 bytes left** in the debug build. `ACT_STEAL` and the gaps in the
-  action files must fit in that, or the module needs another section.
+- **`BANK_56` has 104 bytes left** in the debug build of 2026-11-13, with look built. `ACT_STEAL` and the gaps in the action files won't fit in that: the next action
+  of any size needs another section, and an action there can't call the shared helpers in
+  `act_shared.c`, which aren't banked (D15).
 - **zsdcc.** Don't return comma expressions from the endings (T-ZSDCC-2), and copy event and
   struct fields into locals before branching on them (T-ZSDCC-1).

@@ -283,10 +283,10 @@ mapping and enchanting (E2).
 ## J — 
 ## K — 
 ## L — Look around
-### L1 Look around line of sight
-- L1.1 Look checks for line of sight of sight
-- L1.2 Target cursor is green if there is  LoS and red if no LoS (fire, aim and cast: T2)
-- L1.3 Look as an action (`ACT_LOOK`, uses no turn): targeting colours and refuses it by its check like the others, so blindness and LoS need no special case; then targeting's "without an action" path goes (targeting.md D7)
+### L1 Look around line of sight `[done]` (2026-11-13) [spec](action_look.md)
+- L1.1 Look checks for line of sight of sight `[done]`
+- L1.2 Target cursor is green if there is  LoS and red if no LoS (fire, aim and cast: T2) `[done]`
+- L1.3 Look as an action (`ACT_LOOK`, uses no turn): targeting colours and refuses it by its check like the others, so blindness and LoS need no special case; then targeting's "without an action" path goes (targeting.md D7) `[done]`
 ## M
 ## N
 ## O

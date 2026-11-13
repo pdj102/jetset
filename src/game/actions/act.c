@@ -61,6 +61,7 @@ const uint8_t act_reason_flags[ACT_R_COUNT] = {
     [ACT_R_SLOTS_FULL]       = 0,
     [ACT_R_AFRAID]           = 0,
     [ACT_R_STUMBLED]         = ACT_RF_ATTEMPTED,   /* it moved, just not anywhere: the turn is used */
+    [ACT_R_BLIND]            = 0,
 };
 
 uint8_t act_do(uint8_t action, act_t *a, uint8_t mode)
@@ -109,6 +110,8 @@ uint8_t act_do(uint8_t action, act_t *a, uint8_t mode)
         return act_disarm(a, mode);
     case ACT_LEARN:
         return act_learn(a, mode);
+    case ACT_LOOK:
+        return act_look(a, mode);
     default:
         nge_util_abort("bad action");
         return ACT_FAIL;

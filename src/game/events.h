@@ -48,6 +48,7 @@
  * | EV_AI_CHANGED     | the AI entity       | the cause, or NGE_EVENT_NONE | p1: old state, p2: new state (AI_STATE_*) |
  * | EV_RESISTED       | the entity          | the cause, or NGE_EVENT_NONE | p1: EF_* |
  * | EV_AREA           | NGE_EVENT_NONE      | the user | p1, p2: the centre's x, y |
+ * | EV_LOOKED         | the looker          | -        | p1, p2: the tile's x, y |
  */
 
 #include "event/nge_event.h"
@@ -91,5 +92,6 @@
 #define EV_FIZZLED        (NGE_EVENT_USER + 36)    /**< An effect's op p1 could do nothing to the target (game/effects). */
 #define EV_RESISTED       (NGE_EVENT_USER + 37)    /**< Effect p1 was resisted by the target's saving throw when applied (game/effects). */
 #define EV_AREA           (NGE_EVENT_USER + 38)    /**< An area around (p1, p2) by the source (act_aim(), act_cast()); each creature's effect events follow. */
+#define EV_LOOKED         (NGE_EVENT_USER + 39)    /**< Looked at tile (p1, p2) in its own area (act_look()). */
 
 #endif

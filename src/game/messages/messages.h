@@ -30,11 +30,4 @@ void messages_act_failed(const act_t *a) NGE_BANKED;
 /** @brief Why the game ended (GAME_OVER_*, game/game.h), and to press a key. */
 void messages_game_over(uint8_t reason) NGE_BANKED;
 
-/**
- * @brief Look at tile (x, y) of the current level: one message for each game
- *        entity on it, in ID order ("You see a ring.", "You see yourself."),
- *        or "You see nothing there.".
- */
-void messages_look(uint8_t x, uint8_t y) NGE_BANKED;
-
 #endif

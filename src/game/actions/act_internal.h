@@ -36,6 +36,13 @@ uint8_t act_succeed(act_t *a);
 uint8_t act_checked(act_t *a);
 
 /*
+ * End an action that succeeded and uses no turn: look only (docs/action_look.md
+ * D2). The same as act_checked(), so it costs nothing. A #define to a
+ * function, not a comma expression (T-ZSDCC-2). Returns ACT_SUCCESS
+ */
+#define act_succeed_free(a)  act_checked(a)
+
+/*
  * Steps 3 and 4 of an attack, on a->target by a->actor, once validated: the
  * d20 roll against attacker's attack of this use (ATTACK_MELEE, ATTACK_RANGED),
  * then on a hit the damage (sets a->damage and a->amount) and the hit effect of

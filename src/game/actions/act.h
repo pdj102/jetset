@@ -39,7 +39,8 @@
  * The action sets a->used from that (1 on success), so callers decide
  * whether the entity used its turn from used alone; act_attempted() tells
  * the two kinds apart for callers that care. Every action takes the same
- * time, one turn of the actor (its speed: game/components/stats.h).
+ * time, one turn of the actor (its speed: game/components/stats.h), but
+ * look, which uses none: used is 0 even on success.
  *
  * Actions don't call each other for choices: the caller combines them
  * (bump to attack or open: a move refused with ACT_R_BLOCKED_ENTITY, then
@@ -113,8 +114,8 @@ typedef struct act {
 #define ACT_SEARCH  18
 #define ACT_DISARM  19
 #define ACT_LEARN   20
-#define ACT_COUNT   21
-#define ACT_NONE    0xFF   /**< No action: for a caller that may give one (targeting, game/target/target.h). */
+#define ACT_LOOK    21
+#define ACT_COUNT   22
 
 /** How far an aimed item reaches (nge_map_within()): a kind has no range of its own. */
 #define ACT_AIM_RANGE  8
@@ -180,7 +181,8 @@ typedef struct act {
 #define ACT_R_SLOTS_FULL        50  /**< Refused: every slot at the spell's level is filled. */
 #define ACT_R_AFRAID            51  /**< Refused: the actor is too frightened to attack (STATUS_FRIGHTENED). */
 #define ACT_R_STUMBLED          52  /**< Attempted: confused, the actor lurched a random way, into something (the turn is used). */
-#define ACT_R_COUNT             53
+#define ACT_R_BLIND             53  /**< Refused: the actor can't see (STATUS_BLINDED). */
+#define ACT_R_COUNT             54
 
 /**
  * @brief Move one tile.
@@ -489,6 +491,20 @@ uint8_t act_cast(act_t *a, uint8_t mode) NGE_BANKED;
  * assert.
  */
 uint8_t act_learn(act_t *a, uint8_t mode) NGE_BANKED;
+
+/**
+ * @brief Look at a tile the actor sees (docs/action_look.md). Uses no turn.
+ *
+ * In: actor (alive, placed in an area), x, y (a tile on the map). The actor
+ * sees the tile as a monster does: within AI_SIGHT (game/ai/ai.h) by
+ * nge_map_within(), with a clear NGE_BLOCK_SOLID line, the two ends not
+ * tested (so a wall is seen); its own tile is always seen. Succeeds with
+ * anything or nothing on the tile, and posts EV_LOOKED (p1, p2: x, y): the
+ * messages say what is seen. Refused, in that order, with ACT_R_BLIND
+ * (STATUS_BLINDED, every tile), ACT_R_OUT_OF_RANGE or ACT_R_NO_LINE. used is
+ * 0 on success and failure alike.
+ */
+uint8_t act_look(act_t *a, uint8_t mode) NGE_BANKED;
 
 /** @brief Call action (ACT_MOVE...) by number: for the AI and delayed actions. */
 uint8_t act_do(uint8_t action, act_t *a, uint8_t mode);

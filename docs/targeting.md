@@ -15,6 +15,12 @@ instead of a frame loop of its own, and the cursor is overlay sprite
 and which the frame start uploads. Sections 4 and 5 describe the first
 version.
 
+L1 (look as an action with line of sight, [action_look.md](action_look.md), built
+2026-11-13) replaces R16 to R18 and the path without an action (R5's range-only colours,
+R7's "That is out of range.", `ACT_NONE`, the origin and range in `target_t`,
+`TARGET_RANGE_ANY` and `target_in_range()`): every caller gives an action. Sections 5 to 7
+still describe the first version.
+
 Covers the targeting mode: the player moves a cursor over the map and
 chooses a tile or cancels. Also covers the first command that uses it,
 look. Ranged attacks and spells will use it later.
@@ -111,6 +117,9 @@ Section 4 gives the reasons.
   animating, and the map and sprites are redrawn when the camera moves.
 
 ### Look
+
+Replaced by [action_look.md](action_look.md) (L1): look is `ACT_LOOK`, which sees only
+what the player can see.
 
 - **R16** The look command (key x) targets with purpose `TARGET_LOOK`. The
   origin and start are the player's tile, and the range is

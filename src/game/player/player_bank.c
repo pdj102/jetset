@@ -279,23 +279,6 @@ static void pick_up(void)
     player_act(ACT_PICKUP, &a);
 }
 
-/* Look: choose a tile anywhere on the map, and hear what is on it. No turn is used */
-static void look(void)
-{
-    target_t t;
-
-    t.action = ACT_NONE;   /* the range alone, for now (docs/targeting.md D7) */
-    t.act = NULL;
-    t.origin_x = NGE_LOCATION_X(actor_player);
-    t.origin_y = NGE_LOCATION_Y(actor_player);
-    t.range = TARGET_RANGE_ANY;
-    t.x = t.origin_x;
-    t.y = t.origin_y;
-    if (target_choose(&t)) {
-        messages_look(t.x, t.y);
-    }
-}
-
 /*
  * Choose a tile from the player's for an action, which the cursor and ENTER
  * check (docs/targeting.md R19): 1 with it in a->x, a->y
@@ -307,17 +290,24 @@ static uint8_t choose_tile(uint8_t action, act_t *a)
     a->actor = actor_player;   /* the check needs it before player_act() sets it */
     t.action = action;
     t.act = a;
-    t.origin_x = NGE_LOCATION_X(actor_player);
-    t.origin_y = NGE_LOCATION_Y(actor_player);
-    t.range = TARGET_RANGE_ANY;   /* not read with an action */
-    t.x = t.origin_x;
-    t.y = t.origin_y;
+    t.x = NGE_LOCATION_X(actor_player);
+    t.y = NGE_LOCATION_Y(actor_player);
     if (!target_choose(&t)) {
         return 0;
     }
     a->x = t.x;
     a->y = t.y;
     return 1;
+}
+
+/* Look: choose a tile in sight, and hear what is on it (docs/action_look.md). The action uses no turn */
+static void look(void)
+{
+    act_t a = { 0 };
+
+    if (choose_tile(ACT_LOOK, &a)) {
+        player_act(ACT_LOOK, &a);
+    }
 }
 
 /*

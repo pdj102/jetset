@@ -1,4 +1,4 @@
-/* game/target: targeting's cursor, keys, range and scrolling, and the look messages (game/messages). */
+/* game/target: targeting's cursor, keys and scrolling, coloured by the action's check (look, fire, aim). */
 #include "test.h"
 
 #include <string.h>
@@ -16,6 +16,7 @@
 #include "game/actors.h"
 #include "game/components/health.h"
 #include "game/components/item.h"
+#include "game/components/stats.h"
 #include "game/game.h"
 #include "game/events.h"
 #include "game/gen/gen.h"
@@ -127,14 +128,14 @@ static int said(int n, const char *s)
     return strncmp(message(n), s, strlen(s)) == 0;
 }
 
-/* Without an action: the range alone, the start's check done, as target_choose() does */
-static void context(target_t *t, uint8_t x, uint8_t y, uint8_t range)
+/* Look's context: the player looks (docs/action_look.md) */
+static act_t look_act;
+
+/* Looking: the cursor on (x, y), the start's check done, as target_choose() does */
+static void context(target_t *t, uint8_t x, uint8_t y)
 {
-    t->action = ACT_NONE;
-    t->act = NULL;
-    t->origin_x = x;
-    t->origin_y = y;
-    t->range = range;
+    t->action = ACT_LOOK;
+    t->act = &look_act;
     t->x = x;
     t->y = y;
     target_check(t);
@@ -145,9 +146,6 @@ static void context_act(target_t *t, uint8_t action, const act_t *a, uint8_t x, 
 {
     t->action = action;
     t->act = a;
-    t->origin_x = NGE_LOCATION_X(actor_player);
-    t->origin_y = NGE_LOCATION_Y(actor_player);
-    t->range = 0;   /* not read with an action */
     t->x = x;
     t->y = y;
     target_check(t);
@@ -163,8 +161,9 @@ int main(void)
         EV(NGE_KEY_RIGHT), EV(NGE_KEY_RIGHT), EV(NGE_KEY_RIGHT), EV(NGE_KEY_ENTER), NGE_KEY_NONE,
     };
     static const nge_key_event_t out_then_back[] = {
-        EV(NGE_KEY_DOWN), EV(NGE_KEY_DOWN), EV(NGE_KEY_SPACE), EV(NGE_KEY_UP), EV(NGE_KEY_SPACE), NGE_KEY_NONE,
+        EV(NGE_KEY_RIGHT), EV(NGE_KEY_SPACE), EV(NGE_KEY_LEFT), EV(NGE_KEY_SPACE), NGE_KEY_NONE,
     };
+    static const nge_key_event_t right_enter[] = { EV(NGE_KEY_RIGHT), EV(NGE_KEY_ENTER), NGE_KEY_NONE };
     static const nge_key_event_t refused_then_cancel[] = { EV(NGE_KEY_ENTER), EV(NGE_KEY_Q), NGE_KEY_NONE };
     target_t t;
     act_t a;
@@ -187,28 +186,14 @@ int main(void)
     nge_map_init(LEVEL_WIDTH, LEVEL_HEIGHT, &screen_map_view);   /* 60 x 40, the view 14 x 13 */
     actor_player = gen_creature(CR_PLAYER, LEVEL_AREA);
     nge_location_set(actor_player, 30, 20);
+    look_act.actor = actor_player;
     nge_map_centre_camera(30, 20);
     nge_render_set_view(LEVEL_AREA);
     nge_event_flush();
 
-    /* ---- range: from the origin, not the start ---- */
-    context(&t, 30, 20, 3);
-    CHECK(target_in_range(&t));
-    t.x = 33;
-    CHECK(target_in_range(&t));
-    t.x = 34;
-    CHECK(!target_in_range(&t));
-    t.x = 32;
-    t.y = 22;   /* 4 + 4 <= 12 */
-    CHECK(target_in_range(&t));
-    context(&t, 0, 0, TARGET_RANGE_ANY);
-    t.x = LEVEL_WIDTH - 1;
-    t.y = LEVEL_HEIGHT - 1;
-    CHECK(target_in_range(&t));
-
     /* ---- moving: every movement key, never off the map ---- */
     nge_map_set_camera(24, 14);   /* the cursor well inside the view (columns 24-37, rows 14-26): no scrolling */
-    context(&t, 30, 20, TARGET_RANGE_ANY);
+    context(&t, 30, 20);
     CHECK(target_key(&t, EV(NGE_KEY_RIGHT)) == TARGET_STEP_MOVING && t.x == 31 && t.y == 20);
     CHECK(target_key(&t, EV(NGE_KEY_H)) == TARGET_STEP_MOVING && t.x == 30);
     CHECK(target_key(&t, EV(NGE_KEY_DOWN)) == TARGET_STEP_MOVING && t.y == 21);
@@ -217,34 +202,34 @@ int main(void)
     CHECK(target_key(&t, EV(NGE_KEY_J)) == TARGET_STEP_MOVING && t.y == 21);
     CHECK(nge_map.cam_x == 24 && nge_map.cam_y == 14);
     nge_map_set_camera(0, 0);
-    context(&t, 0, 0, TARGET_RANGE_ANY);   /* the top-left corner */
+    context(&t, 0, 0);   /* the top-left corner */
     CHECK(target_key(&t, EV(NGE_KEY_LEFT)) == TARGET_STEP_MOVING && t.x == 0 && t.y == 0);
     CHECK(target_key(&t, EV(NGE_KEY_UP)) == TARGET_STEP_MOVING && t.x == 0 && t.y == 0);
     nge_map_set_camera(LEVEL_WIDTH, LEVEL_HEIGHT);   /* clamped: the bottom-right */
-    context(&t, LEVEL_WIDTH - 1, LEVEL_HEIGHT - 1, TARGET_RANGE_ANY);
+    context(&t, LEVEL_WIDTH - 1, LEVEL_HEIGHT - 1);
     CHECK(target_key(&t, EV(NGE_KEY_RIGHT)) == TARGET_STEP_MOVING && t.x == LEVEL_WIDTH - 1);
     CHECK(target_key(&t, EV(NGE_KEY_DOWN)) == TARGET_STEP_MOVING && t.y == LEVEL_HEIGHT - 1);
 
     /* ---- scrolling: one tile when the cursor comes into the margin ---- */
     nge_map_set_camera(20, 10);   /* view columns 20-33, rows 10-22 */
-    context(&t, 20 + TARGET_SCROLL_MARGIN, 16, TARGET_RANGE_ANY);   /* row 16: clear of the top and bottom margins */
+    context(&t, 20 + TARGET_SCROLL_MARGIN, 16);   /* row 16: clear of the top and bottom margins */
     target_key(&t, EV(NGE_KEY_LEFT));   /* 23: into the left margin */
     CHECK(t.x == 23 && nge_map.cam_x == 19 && t.x - nge_map.cam_x == TARGET_SCROLL_MARGIN);
-    context(&t, 33 - TARGET_SCROLL_MARGIN - 1, 16, TARGET_RANGE_ANY);   /* 28: just outside the right margin */
+    context(&t, 33 - TARGET_SCROLL_MARGIN - 1, 16);   /* 28: just outside the right margin */
     nge_map_set_camera(20, 10);
     target_key(&t, EV(NGE_KEY_RIGHT));
     CHECK(t.x == 29 && nge_map.cam_x == 20);   /* 29 + 4 < 34: no scroll */
     target_key(&t, EV(NGE_KEY_RIGHT));
     CHECK(t.x == 30 && nge_map.cam_x == 21);
-    context(&t, 30, 10 + TARGET_SCROLL_MARGIN, TARGET_RANGE_ANY);
+    context(&t, 30, 10 + TARGET_SCROLL_MARGIN);
     target_key(&t, EV(NGE_KEY_UP));
     CHECK(t.y == 13 && nge_map.cam_y == 9);
-    context(&t, 30, 9 + 13 - TARGET_SCROLL_MARGIN, TARGET_RANGE_ANY);   /* 18: the bottom margin's edge */
+    context(&t, 30, 9 + 13 - TARGET_SCROLL_MARGIN);   /* 18: the bottom margin's edge */
     target_key(&t, EV(NGE_KEY_DOWN));
     CHECK(t.y == 19 && nge_map.cam_y == 10);
     /* At the map's edge the view can't scroll: the cursor walks on to the view's edge */
     nge_map_set_camera(0, 0);
-    context(&t, 2, 2, TARGET_RANGE_ANY);
+    context(&t, 2, 2);
     target_key(&t, EV(NGE_KEY_LEFT));
     target_key(&t, EV(NGE_KEY_UP));
     target_key(&t, EV(NGE_KEY_LEFT));
@@ -253,22 +238,22 @@ int main(void)
 
     /* ---- choosing and cancelling ---- */
     nge_map_centre_camera(30, 20);
-    context(&t, 30, 20, 3);
-    t.x = 33;
+    context(&t, 30, 20);
+    t.x = 38;                                               /* 8 tiles: in sight */
     target_check(&t);
-    CHECK(target_key(&t, EV(NGE_KEY_ENTER)) == TARGET_STEP_CHOSEN && t.x == 33 && t.y == 20);
+    CHECK(target_key(&t, EV(NGE_KEY_ENTER)) == TARGET_STEP_CHOSEN && t.x == 38 && t.y == 20);
     CHECK(target_key(&t, EV(NGE_KEY_SPACE)) == TARGET_STEP_CHOSEN);
-    t.x = 34;
+    t.x = 39;                                               /* 9: beyond AI_SIGHT */
     target_check(&t);
-    CHECK(target_key(&t, EV(NGE_KEY_ENTER)) == TARGET_STEP_MOVING && t.x == 34 && t.y == 20);
-    CHECK(said(0, "That is out of range."));
+    CHECK(target_key(&t, EV(NGE_KEY_ENTER)) == TARGET_STEP_MOVING && t.x == 39 && t.y == 20);
+    CHECK(said(0, "That is out of reach."));
     CHECK(target_key(&t, EV(NGE_KEY_Q)) == TARGET_STEP_CANCELLED);
     CHECK(t.x == NGE_MAP_X_INVALID && t.y == NGE_MAP_Y_INVALID);
     CHECK(said(0, "Never mind."));
 
     /* ---- target_choose(): frames until the player answers ---- */
     nge_map_set_camera(0, 0);   /* moved away: put back on the player at the end */
-    context(&t, 30, 20, TARGET_RANGE_ANY);
+    context(&t, 30, 20);
     queue_key(EV(NGE_KEY_LEFT));   /* typed before targeting: thrown away */
     script = right_right_enter;
     play_helps = 0;
@@ -282,21 +267,21 @@ int main(void)
     nge_map_centre_camera(30, 20);
     CHECK(nge_map.cam_x == x && nge_map.cam_y == y);   /* back on the player */
 
-    context(&t, 30, 20, TARGET_RANGE_ANY);
+    context(&t, 30, 20);
     script = cancel;
     CHECK(target_choose(&t) == 0 && !out_of_keys);
     CHECK(t.x == NGE_MAP_X_INVALID && t.y == NGE_MAP_Y_INVALID);
 
-    context(&t, 30, 20, 1);   /* out of range is refused, and targeting goes on */
+    context(&t, 38, 20);   /* out of sight is refused, and targeting goes on */
     script = out_then_back;
     CHECK(target_choose(&t) == 1 && !out_of_keys);
-    CHECK(t.x == 30 && t.y == 21);
-    CHECK(said(0, "That is out of range.") && said(1, "Select target"));
+    CHECK(t.x == 38 && t.y == 20);
+    CHECK(said(0, "That is out of reach.") && said(1, "Select target"));
     script = NULL;
 
     /* ---- the cursor's bank, from the check's reason (R20) ---- */
-    context(&t, 30, 20, 8);
-    CHECK(t.reason == ACT_R_NONE && target_cursor_bank(&t) == BANK_GREEN);   /* without an action: green in range */
+    context(&t, 30, 20);
+    CHECK(t.reason == ACT_R_NONE && target_cursor_bank(&t) == BANK_GREEN);   /* look at the player's own tile */
     t.x = 39;
     target_check(&t);
     CHECK(t.reason == ACT_R_OUT_OF_RANGE && target_cursor_bank(&t) == BANK_RED);
@@ -312,34 +297,34 @@ int main(void)
     CHECK(target_cursor_bank(&t) == BANK_ORANGE);
 
     /* ---- asserts: a start off the map, an unknown purpose ---- */
-    context(&t, 30, 20, TARGET_RANGE_ANY);
+    context(&t, 30, 20);
     t.x = LEVEL_WIDTH;
     TEST_EXPECT_HALT(target_choose(&t));
     CHECK(test_halt_count == 1);
-    context(&t, 30, 20, TARGET_RANGE_ANY);
+    context(&t, 30, 20);
     t.action = ACT_COUNT;                                   /* an unknown action */
     TEST_EXPECT_HALT(target_choose(&t));
     CHECK(test_halt_count == 1);
-    context(&t, 30, 20, TARGET_RANGE_ANY);
+    context(&t, 30, 20);
     t.action = ACT_FIRE;                                    /* an action with no context */
+    t.act = NULL;
     TEST_EXPECT_HALT(target_choose(&t));
     CHECK(test_halt_count == 1);
 
-    /* ---- look: one message per entity with a kind, in ID order ---- */
+    /* ---- the look command: the cursor, then what is seen; no turn is used (action_look.md R7, R8) ---- */
     ring = gen_item(IT_RING_HEALTH_2, LEVEL_AREA);
     sword = gen_item(IT_SWORD, LEVEL_AREA);
-    nge_location_set(ring, 10, 5);
-    nge_location_set(sword, 10, 5);
+    nge_location_set(ring, 31, 20);
+    nge_location_set(sword, 31, 20);
     nge_event_flush();
-    messages_look(10, 5);
+    player_turn = 1;
+    script = right_enter;
+    out_of_keys = 0;
+    player_command(EV(NGE_KEY_X));
+    CHECK(player_turn && !out_of_keys);
+    nge_event_process(messages_on_event);
     CHECK(said(1, "You see a ring of health +2.") && said(0, "You see a sword."));
-    messages_look(11, 5);
-    CHECK(said(0, "You see nothing there."));
-    messages_look(30, 20);
-    CHECK(said(0, "You see yourself."));
-    nge_location_set(ring, 30, 20);
-    messages_look(30, 20);
-    CHECK(said(1, "You see yourself.") && said(0, "You see a ring of health +2."));
+    script = NULL;
 
     /* ---- fire: no cursor with nothing to fire, then the shooter's range, the same tiles as the action ---- */
     nge_entity_destroy(ring);
@@ -357,7 +342,6 @@ int main(void)
     player_command(EV(NGE_KEY_F));
     CHECK(said(0, "You have no ammunition ready.") && waits == 0 && player_turn);
     item_slot[gen_item(IT_ARROWS, actor_player)] = SLOT_AMMO;
-    context(&t, 30, 20, 6);
     ok = 1;
     for (y = 12; y <= 28; y++) {
         for (x = 22; x <= 38; x++) {
@@ -366,10 +350,8 @@ int main(void)
             a.actor = actor_player;
             a.x = x;
             a.y = y;
-            t.x = x;
-            t.y = y;
             act_fire(&a, ACT_CHECK);
-            ok = ok && (a.reason == ACT_R_OUT_OF_RANGE) == !target_in_range(&t);
+            ok = ok && (a.reason == ACT_R_OUT_OF_RANGE) == !nge_map_within(30, 20, x, y, 6);
         }
     }
     CHECK(ok);
@@ -450,6 +432,28 @@ int main(void)
     CHECK(t.reason == ACT_R_NONE && target_cursor_bank(&t) == BANK_GREEN);
     context_act(&t, ACT_AIM, &a, 30, 22);                   /* the wall: no line, red */
     CHECK(t.reason == ACT_R_NO_LINE && target_cursor_bank(&t) == BANK_RED);
+
+    /* ---- look: the player's sight colours the cursor (action_look.md R11) ---- */
+    context(&t, 33, 20);                                    /* the rat in the open: green, chosen */
+    CHECK(t.reason == ACT_R_NONE && target_cursor_bank(&t) == BANK_GREEN);
+    CHECK(target_key(&t, EV(NGE_KEY_ENTER)) == TARGET_STEP_CHOSEN);
+    context(&t, 30, 24);                                    /* the rat behind the wall: red */
+    CHECK(t.reason == ACT_R_NO_LINE && target_cursor_bank(&t) == BANK_RED);
+    CHECK(target_key(&t, EV(NGE_KEY_ENTER)) == TARGET_STEP_MOVING && said(0, "Something is in the way."));
+    context(&t, 30, 22);                                    /* the wall itself is seen */
+    CHECK(t.reason == ACT_R_NONE);
+    context(&t, 39, 20);                                    /* 9 tiles away in the open: red */
+    CHECK(t.reason == ACT_R_OUT_OF_RANGE && target_cursor_bank(&t) == BANK_RED);
+    context(&t, 31, 21);                                    /* empty floor in sight: green, chosen */
+    CHECK(t.reason == ACT_R_NONE && target_cursor_bank(&t) == BANK_GREEN);
+    CHECK(target_key(&t, EV(NGE_KEY_SPACE)) == TARGET_STEP_CHOSEN);
+    stats_status[actor_player] |= STATUS_BLINDED;           /* blinded: amber everywhere */
+    context(&t, 30, 20);
+    CHECK(t.reason == ACT_R_BLIND && target_cursor_bank(&t) == BANK_ORANGE);
+    CHECK(target_key(&t, EV(NGE_KEY_ENTER)) == TARGET_STEP_MOVING && said(0, "You can't see!"));
+    context(&t, 33, 20);
+    CHECK(t.reason == ACT_R_BLIND && target_cursor_bank(&t) == BANK_ORANGE);
+    stats_status[actor_player] &= (uint8_t)~STATUS_BLINDED;
 
     return test_summary("target");
 }

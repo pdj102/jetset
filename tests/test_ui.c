@@ -357,6 +357,19 @@ static int said(const char *s)
     return 0;
 }
 
+/* The line n up from the newest message (0): said() for older lines */
+static int said_up(int n, const char *s)
+{
+    int y;
+
+    for (y = 30; y >= 26; y--) {
+        if (row((uint8_t)y)[0] != ' ') {
+            return y - n >= 26 && starts(row((uint8_t)(y - n)), s);
+        }
+    }
+    return 0;
+}
+
 /* A screen ran and closed: the overlay shown while it waited, the main screen shown now, every key taken */
 #define RAN_AND_CLOSED()  (paused > 0 && seen_buffer == SCREEN_BUFFER_OVERLAY && \
                            test_layer2_buffer == SCREEN_BUFFER_MAIN && KEYS_USED())
@@ -1309,6 +1322,58 @@ int main(void)
         a.reason = ACT_R_STUMBLED;
         messages_act_failed(&a);
         CHECK(said("You stumble."));
+    }
+    /* Look: what the player sees on a tile, from their EV_LOOKED (docs/action_look.md R8 to R10) */
+    {
+        act_t a = { 0 };
+        uint8_t px = NGE_LOCATION_X(actor_player);
+        uint8_t py = NGE_LOCATION_Y(actor_player);
+        uint8_t x = (uint8_t)(px + 3);
+        nge_entity_id_t ring = gen_item(IT_RING_HEALTH_2, AREA);
+        nge_entity_id_t sword = gen_item(IT_SWORD, AREA);
+        nge_entity_id_t trap = gen_feature(FT_DART_TRAP, AREA);
+        nge_entity_id_t rat = gen_creature(CR_RAT, AREA);
+
+        CHECK(nge_location_find(AREA, x, py, COMPONENT_KIND, 0) == NGE_ENTITY_INVALID);
+        nge_event_flush();
+        nge_event_post(actor_player, EV_LOOKED, NGE_EVENT_NONE, x, py);
+        nge_event_process(messages_on_event);
+        CHECK(said("You see nothing there."));
+        nge_location_set(ring, x, py);                              /* two items: two lines, in ID order */
+        nge_location_set(sword, x, py);
+        nge_event_post(actor_player, EV_LOOKED, NGE_EVENT_NONE, x, py);
+        nge_event_process(messages_on_event);
+        CHECK(said_up(1, "You see a ring of health +2.") && said("You see a sword."));
+        CHECK(nge_location_find(AREA, x, (uint8_t)(py + 3), COMPONENT_KIND, 0) == NGE_ENTITY_INVALID);
+        nge_location_set(actor_player, x, (uint8_t)(py + 3));      /* the player's own tile: themselves first */
+        nge_location_set(ring, x, (uint8_t)(py + 3));
+        nge_event_post(actor_player, EV_LOOKED, NGE_EVENT_NONE, x, (uint8_t)(py + 3));
+        nge_event_process(messages_on_event);
+        feature_place(trap, x, (uint8_t)(py + 1));                  /* a hidden trap isn't seen */
+        nge_event_flush();
+        CHECK(FEATURE_IS_HIDDEN(trap));
+        nge_event_post(actor_player, EV_LOOKED, NGE_EVENT_NONE, x, (uint8_t)(py + 1));
+        nge_event_process(messages_on_event);
+        CHECK(said("You see nothing there."));
+        feature_find(trap);                                         /* found, it is */
+        nge_event_flush();
+        nge_event_post(actor_player, EV_LOOKED, NGE_EVENT_NONE, x, (uint8_t)(py + 1));
+        nge_event_process(messages_on_event);
+        CHECK(said("You see a dart trap."));
+        nge_location_set(rat, x, (uint8_t)(py + 2));                /* another's look says nothing */
+        nge_event_flush();
+        screen_message("Marker.");
+        nge_event_post(rat, EV_LOOKED, NGE_EVENT_NONE, x, py);
+        nge_event_process(messages_on_event);
+        CHECK(said("Marker."));
+        a.reason = ACT_R_BLIND;
+        messages_act_failed(&a);
+        CHECK(said("You can't see!"));
+        /* Off the map: the tests below don't expect them */
+        nge_location_remove(ring);
+        nge_location_remove(sword);
+        nge_location_remove(trap);
+        nge_location_remove(rat);
     }
     messages_game_over(GAME_OVER_WON);
     CHECK(said("Press any key.") && shown("You escape with the crown. You win!"));

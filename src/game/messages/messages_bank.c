@@ -278,6 +278,36 @@ static void say_cast(nge_entity_id_t caster, uint8_t sp)
     }
 }
 
+/*
+ * What the player sees on tile (x, y) of the current level: a line for each
+ * entity with a kind (they have names), in ID order, or nothing there. A
+ * hidden feature isn't seen: unknown to the player is not there (D8)
+ */
+static void look_at(uint8_t x, uint8_t y)
+{
+    nge_entity_id_t id;
+    uint8_t seen = 0;
+
+    NGE_LOCATION_FOR_EACH_AT(id, LEVEL_AREA, x, y, COMPONENT_KIND) {
+        if (FEATURE_IS(id) && FEATURE_IS_HIDDEN(id)) {
+            continue;
+        }
+        if (id == actor_player) {
+            screen_message("You see yourself.");
+        } else {
+#if GAME_DEV_KIT
+            say_named("You see a ", id, AI_IS(id) ? ai_state_names[ai_get_state(id)] : ".");
+#else
+            say_named("You see a ", id, ".");
+#endif
+        }
+        seen = 1;
+    }
+    if (!seen) {
+        screen_message("You see nothing there.");
+    }
+}
+
 void messages_on_event(const nge_event_t *e) NGE_BANKED
 {
     /*
@@ -386,6 +416,11 @@ void messages_on_event(const nge_event_t *e) NGE_BANKED
     case EV_SEARCHED:
         if (target == actor_player && p1 == 0) {
             screen_message("You find nothing.");
+        }
+        break;
+    case EV_LOOKED:
+        if (target == actor_player) {
+            look_at(p1, p2);
         }
         break;
     case EV_UNLOCKED:
@@ -589,6 +624,9 @@ void messages_act_failed(const act_t *a) NGE_BANKED
     case ACT_R_STUMBLED:
         screen_message("You stumble.");
         break;
+    case ACT_R_BLIND:
+        screen_message("You can't see!");
+        break;
     case ACT_R_CANT_OPERATE:
         say_named("You can't use the ", target, ".");
         break;
@@ -639,28 +677,5 @@ void messages_game_over(uint8_t reason) NGE_BANKED
         screen_message("Press any key.");
     } else {
         screen_message("Game over. Press any key.");
-    }
-}
-
-void messages_look(uint8_t x, uint8_t y) NGE_BANKED
-{
-    nge_entity_id_t id;
-    uint8_t seen = 0;
-
-    /* Only entities with a kind: they have names */
-    NGE_LOCATION_FOR_EACH_AT(id, LEVEL_AREA, x, y, COMPONENT_KIND) {
-        if (id == actor_player) {
-            screen_message("You see yourself.");
-        } else {
-#if GAME_DEV_KIT
-            say_named("You see a ", id, AI_IS(id) ? ai_state_names[ai_get_state(id)] : ".");
-#else
-            say_named("You see a ", id, ".");
-#endif
-        }
-        seen = 1;
-    }
-    if (!seen) {
-        screen_message("You see nothing there.");
     }
 }

@@ -16,6 +16,7 @@
 
 #include "game/actions/act.h"
 #include "game/actions/act_internal.h"
+#include "game/ai/ai.h"
 #include "game/components/attack.h"
 #include "game/attrs/attrs.h"
 #include "game/components/health.h"
@@ -1071,6 +1072,137 @@ static void test_blink_detect(void)
     CHECK(events() == 2 && is(0, near, EV_FOUND, pc) && is(1, pc, EV_EFFECT_STARTED, NGE_EVENT_NONE));
     effect_apply(EF_DETECT_TRAPS, 4, pc, NGE_ENTITY_INVALID);     /* found already: only the pit */
     CHECK(!FEATURE_IS_HIDDEN(far) && events() == 2 && is(0, far, EV_FOUND, pc));
+}
+
+/* act_look() by actor at (x, y): its result, and the context in last */
+static uint8_t look(nge_entity_id_t actor, uint8_t x, uint8_t y, uint8_t mode)
+{
+    last = move(actor, 0, 0);
+    last.x = x;
+    last.y = y;
+    return act_look(&last, mode);
+}
+
+/* Look (docs/action_look.md): sight as a monster's, blindness first, no turn used */
+static void test_look(void)
+{
+    nge_entity_id_t pc;
+    nge_entity_id_t rat;
+    nge_entity_id_t door;
+    nge_entity_id_t pit;
+    act_t b;
+    uint8_t x;
+    uint8_t y;
+    uint8_t r;
+    int r1;
+    int ok;
+    int n;
+
+    events();
+    nge_entity_init();
+    for (y = 0; y < 10; y++) {
+        for (x = 0; x < 10; x++) {
+            NGE_MAP_TILE(x, y).tile_id = FLOOR;
+        }
+    }
+
+    /* ---- range: AI_SIGHT by nge_map_within(), on open floor (R1, R5) ---- */
+    pc = creature(CR_PLAYER, 0, 0);
+    events();
+    ok = 1;
+    n = 0;
+    for (y = 0; y < 10; y++) {
+        for (x = 0; x < 10; x++) {
+            r = look(pc, x, y, ACT_CHECK);
+            ok = ok && (r == ACT_SUCCESS) == nge_map_within(0, 0, x, y, AI_SIGHT) && last.used == 0;
+            ok = ok && (r == ACT_SUCCESS || last.reason == ACT_R_OUT_OF_RANGE);
+            n += r == ACT_FAIL;
+        }
+    }
+    CHECK(ok && n > 0 && events() == 0);
+    CHECK(look(pc, 8, 0, ACT_DO) == ACT_SUCCESS);
+    events();
+    CHECK(refused(&last, look(pc, 9, 0, ACT_DO), ACT_R_OUT_OF_RANGE));
+
+    /* ---- a look: success, no turn, EV_LOOKED with the tile; a check posts nothing (R6 to R8) ---- */
+    nge_location_set(pc, 2, 2);
+    NGE_MAP_TILE(2, 5).tile_id = WALL;
+    door = gen_feature(FT_DOOR, AREA);
+    feature_place(door, 5, 2);
+    pit = gen_feature(FT_PIT, AREA);
+    feature_place(pit, 1, 2);
+    rat = creature(CR_RAT, 4, 4);
+    events();
+    CHECK(look(pc, 3, 3, ACT_CHECK) == ACT_SUCCESS && last.reason == ACT_R_NONE && last.used == 0 && events() == 0);
+    CHECK(look(pc, 3, 3, ACT_DO) == ACT_SUCCESS && last.reason == ACT_R_NONE && last.used == 0);
+    CHECK(events() == 1 && is(0, pc, EV_LOOKED, NGE_EVENT_NONE) && seen[0].p1 == 3 && seen[0].p2 == 3);
+    CHECK(look(pc, 2, 2, ACT_DO) == ACT_SUCCESS && last.used == 0);   /* its own tile (R3) */
+    CHECK(events() == 1 && seen[0].p1 == 2 && seen[0].p2 == 2);
+
+    /* ---- the line: walls and closed doors block and are seen; a creature, an open door and a pit don't (R2) ---- */
+    CHECK(refused(&last, look(pc, 2, 7, ACT_DO), ACT_R_NO_LINE));     /* behind the wall */
+    CHECK(look(pc, 2, 5, ACT_CHECK) == ACT_SUCCESS);                  /* the wall */
+    CHECK(refused(&last, look(pc, 7, 2, ACT_DO), ACT_R_NO_LINE));     /* behind the closed door */
+    CHECK(look(pc, 5, 2, ACT_CHECK) == ACT_SUCCESS);                  /* the door */
+    CHECK(look(pc, 6, 6, ACT_CHECK) == ACT_SUCCESS);                  /* past the rat */
+    CHECK(look(pc, 0, 2, ACT_CHECK) == ACT_SUCCESS);                  /* past the pit */
+    feature_open(door);
+    events();
+    CHECK(look(pc, 7, 2, ACT_CHECK) == ACT_SUCCESS);                  /* past the open door */
+    feature_close(door);
+    events();
+
+    /* ---- blinded: every tile, before range and line (R4, R5) ---- */
+    stats_status[pc] |= STATUS_BLINDED;
+    CHECK(refused(&last, look(pc, 2, 2, ACT_DO), ACT_R_BLIND));
+    CHECK(refused(&last, look(pc, 3, 3, ACT_DO), ACT_R_BLIND));
+    CHECK(refused(&last, look(pc, 9, 9, ACT_DO), ACT_R_BLIND));       /* beyond range */
+    CHECK(refused(&last, look(pc, 2, 7, ACT_CHECK), ACT_R_BLIND));    /* no line */
+    stats_status[pc] &= (uint8_t)~STATUS_BLINDED;
+
+    /* ---- no random numbers; act_do() is the direct call ---- */
+    srand(5);
+    r1 = rand();
+    srand(5);
+    look(pc, 3, 3, ACT_DO);
+    CHECK(rand() == r1);
+    events();
+    ok = 1;
+    for (y = 0; y < 10; y++) {
+        for (x = 0; x < 10; x++) {
+            r = look(pc, x, y, ACT_CHECK);
+            b = last;
+            ok = ok && act_do(ACT_LOOK, &b, ACT_CHECK) == r && b.reason == last.reason && b.used == last.used;
+        }
+    }
+    CHECK(ok && events() == 0);
+
+    /* ---- the player sees as a monster sees: looking from the rat agrees with ai_sees() (D3) ---- */
+    ok = 1;
+    n = 0;
+    for (y = 0; y < 10; y++) {
+        for (x = 0; x < 10; x++) {
+            if (NGE_MAP_TILE(x, y).tile_id == WALL || (x == 4 && y == 4) || (x == 5 && y == 2) ||
+                (x == 1 && y == 2)) {
+                continue;
+            }
+            nge_location_set(pc, x, y);
+            r = look(rat, x, y, ACT_CHECK);
+            ok = ok && (r == ACT_SUCCESS) == ai_sees(rat, pc);
+            n += r == ACT_FAIL;
+        }
+    }
+    CHECK(ok && n > 0);
+    events();
+
+    /* ---- the reason table: ACT_R_BLIND refused; the attempted reasons as before ---- */
+    CHECK(!act_attempted(ACT_R_BLIND));
+    n = 0;
+    for (r = 0; r < ACT_R_COUNT; r++) {
+        n += act_attempted(r);
+    }
+    CHECK(n == 6 && act_attempted(ACT_R_MISSED) && act_attempted(ACT_R_ROOTED) && act_attempted(ACT_R_PICK_FAILED) &&
+          act_attempted(ACT_R_DISARM_FAILED) && act_attempted(ACT_R_SET_OFF) && act_attempted(ACT_R_STUMBLED));
 }
 
 /* Tile items: aimed, they send their user to a free tile, as the Blink spell does (docs/items_aimed.md R3) */
@@ -2888,6 +3020,7 @@ int main(void)
     test_traps();
     test_statuses();
     test_blink_detect();
+    test_look();
     test_aim_tile();
     test_aim_area();
     test_search_disarm();

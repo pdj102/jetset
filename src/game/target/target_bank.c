@@ -34,22 +34,13 @@
 static const char prompt[] = "Select target";
 static const char help[] = "Arrows: move  ENTER: target  Other: back";
 
-uint8_t target_in_range(const target_t *t) NGE_BANKED
-{
-    return nge_map_within(t->origin_x, t->origin_y, t->x, t->y, t->range);
-}
-
 /* One check a move, kept for the cursor's colour and ENTER (D6). The check changes nothing (act.h), so a copy is
    enough to keep the caller's context as it was */
 void target_check(target_t *t) NGE_BANKED
 {
     act_t a;
-    uint8_t action = t->action;   /* in locals (T-ZSDCC-1) */
+    uint8_t action = t->action;   /* in a local, read before the copy (T-ZSDCC-1) */
 
-    if (action == ACT_NONE) {
-        t->reason = target_in_range(t) ? ACT_R_NONE : ACT_R_OUT_OF_RANGE;
-        return;
-    }
     a = *t->act;
     a.x = t->x;
     a.y = t->y;
@@ -95,16 +86,12 @@ static void scroll(const target_t *t)
     }
 }
 
-/* Why ENTER was refused: the action's own message, with the check's context, or the range without an action */
+/* Why ENTER was refused: the action's own message, with the check's context */
 static void refused(const target_t *t)
 {
     act_t a;
-    uint8_t action = t->action;   /* in locals (T-ZSDCC-1) */
+    uint8_t action = t->action;   /* in a local, read before the copy (T-ZSDCC-1) */
 
-    if (action == ACT_NONE) {
-        screen_message("That is out of range.");
-        return;
-    }
     a = *t->act;
     a.x = t->x;
     a.y = t->y;
@@ -162,7 +149,7 @@ uint8_t target_choose(target_t *t) NGE_BANKED
 {
     uint8_t step = TARGET_STEP_MOVING;
 
-    nge_util_assert(t->action == ACT_NONE || (t->action < ACT_COUNT && t->act != NULL));
+    nge_util_assert(t->action < ACT_COUNT && t->act != NULL);
     nge_util_assert(t->x < nge_map.width && t->y < nge_map.height);
 
     nge_key_flush();   /* keys typed for play don't move the cursor */
