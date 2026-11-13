@@ -27,6 +27,7 @@
 #include "game/target/target.h"
 
 #define EV(k)  ((nge_key_event_t)(k))
+#define WALL   '#'   /* a tile ID made solid for the action tests */
 
 /* What game.c and actors.c provide in the game (not linked here) */
 nge_entity_id_t actor_player;
@@ -126,15 +127,30 @@ static int said(int n, const char *s)
     return strncmp(message(n), s, strlen(s)) == 0;
 }
 
+/* Without an action: the range alone, the start's check done, as target_choose() does */
 static void context(target_t *t, uint8_t x, uint8_t y, uint8_t range)
 {
-    t->purpose = TARGET_LOOK;
+    t->action = ACT_NONE;
+    t->act = NULL;
     t->origin_x = x;
     t->origin_y = y;
     t->range = range;
-    t->radius = 0;
     t->x = x;
     t->y = y;
+    target_check(t);
+}
+
+/* With an action: the player's context a, the cursor on (x, y), checked */
+static void context_act(target_t *t, uint8_t action, const act_t *a, uint8_t x, uint8_t y)
+{
+    t->action = action;
+    t->act = a;
+    t->origin_x = NGE_LOCATION_X(actor_player);
+    t->origin_y = NGE_LOCATION_Y(actor_player);
+    t->range = 0;   /* not read with an action */
+    t->x = x;
+    t->y = y;
+    target_check(t);
 }
 
 int main(void)
@@ -149,7 +165,10 @@ int main(void)
     static const nge_key_event_t out_then_back[] = {
         EV(NGE_KEY_DOWN), EV(NGE_KEY_DOWN), EV(NGE_KEY_SPACE), EV(NGE_KEY_UP), EV(NGE_KEY_SPACE), NGE_KEY_NONE,
     };
+    static const nge_key_event_t refused_then_cancel[] = { EV(NGE_KEY_ENTER), EV(NGE_KEY_Q), NGE_KEY_NONE };
     target_t t;
+    act_t a;
+    act_t before;
     nge_entity_id_t ring;
     nge_entity_id_t sword;
     nge_entity_id_t id;
@@ -236,9 +255,11 @@ int main(void)
     nge_map_centre_camera(30, 20);
     context(&t, 30, 20, 3);
     t.x = 33;
+    target_check(&t);
     CHECK(target_key(&t, EV(NGE_KEY_ENTER)) == TARGET_STEP_CHOSEN && t.x == 33 && t.y == 20);
     CHECK(target_key(&t, EV(NGE_KEY_SPACE)) == TARGET_STEP_CHOSEN);
     t.x = 34;
+    target_check(&t);
     CHECK(target_key(&t, EV(NGE_KEY_ENTER)) == TARGET_STEP_MOVING && t.x == 34 && t.y == 20);
     CHECK(said(0, "That is out of range."));
     CHECK(target_key(&t, EV(NGE_KEY_Q)) == TARGET_STEP_CANCELLED);
@@ -254,7 +275,7 @@ int main(void)
     waits = 0;
     CHECK(target_choose(&t) == 1);
     CHECK(t.x == 32 && t.y == 20 && waits == 3 && !out_of_keys);
-    CHECK(said(0, "Look at what?"));
+    CHECK(said(0, "Select target"));
     CHECK(play_helps == 1 && nge_key_get() == NGE_KEY_NONE);
     x = nge_map.cam_x;
     y = nge_map.cam_y;
@@ -270,44 +291,24 @@ int main(void)
     script = out_then_back;
     CHECK(target_choose(&t) == 1 && !out_of_keys);
     CHECK(t.x == 30 && t.y == 21);
-    CHECK(said(0, "That is out of range.") && said(1, "Look at what?"));
-    script = NULL;
-    /* Casting asks its own question */
-    context(&t, 30, 20, 8);
-    t.purpose = TARGET_CAST;
-    script = cancel;
-    CHECK(target_choose(&t) == 0 && !out_of_keys && said(1, "Cast at what?"));
-    context(&t, 30, 20, 6);
-    t.purpose = TARGET_CAST_TILE;                           /* blink: where to, not at what */
-    script = cancel;
-    CHECK(target_choose(&t) == 0 && !out_of_keys && said(1, "Cast to where?"));
-    context(&t, 30, 20, 8);
-    t.purpose = TARGET_AIM_TILE;                            /* a blink item: the same, for aiming */
-    script = cancel;
-    CHECK(target_choose(&t) == 0 && !out_of_keys && said(1, "Aim to where?"));
+    CHECK(said(0, "That is out of range.") && said(1, "Select target"));
     script = NULL;
 
-    /* ---- the cursor's bank: red out of range; amber within a radius of the origin, green beyond (R14) ---- */
+    /* ---- the cursor's bank, from the check's reason (R20) ---- */
     context(&t, 30, 20, 8);
-    CHECK(target_cursor_bank(&t) == BANK_GREEN);           /* radius 0: green everywhere in range */
-    t.x = 31;
-    CHECK(target_cursor_bank(&t) == BANK_GREEN);
+    CHECK(t.reason == ACT_R_NONE && target_cursor_bank(&t) == BANK_GREEN);   /* without an action: green in range */
     t.x = 39;
+    target_check(&t);
+    CHECK(t.reason == ACT_R_OUT_OF_RANGE && target_cursor_bank(&t) == BANK_RED);
+    t.reason = ACT_R_NO_LINE;
     CHECK(target_cursor_bank(&t) == BANK_RED);
-    t.radius = 1;
-    CHECK(target_cursor_bank(&t) == BANK_RED);
-    t.x = 30;
-    CHECK(target_cursor_bank(&t) == BANK_ORANGE);          /* the origin: the player caught */
-    t.x = 31;
-    t.y = 21;
+    t.reason = ACT_R_NO_TARGET;
     CHECK(target_cursor_bank(&t) == BANK_ORANGE);
-    t.x = 32;
-    t.y = 20;
-    CHECK(target_cursor_bank(&t) == BANK_GREEN);
-    t.x = 38;
-    CHECK(target_cursor_bank(&t) == BANK_GREEN);
-    t.radius = 2;
-    t.x = 32;
+    t.reason = ACT_R_BLOCKED;                               /* occupied: reached, but refused (D8) */
+    CHECK(target_cursor_bank(&t) == BANK_ORANGE);
+    t.reason = ACT_R_BLOCKED_ENTITY;
+    CHECK(target_cursor_bank(&t) == BANK_ORANGE);
+    t.reason = ACT_R_NO_CHARGES;                            /* any other reason */
     CHECK(target_cursor_bank(&t) == BANK_ORANGE);
 
     /* ---- asserts: a start off the map, an unknown purpose ---- */
@@ -316,7 +317,11 @@ int main(void)
     TEST_EXPECT_HALT(target_choose(&t));
     CHECK(test_halt_count == 1);
     context(&t, 30, 20, TARGET_RANGE_ANY);
-    t.purpose = TARGET_PURPOSE_COUNT;
+    t.action = ACT_COUNT;                                   /* an unknown action */
+    TEST_EXPECT_HALT(target_choose(&t));
+    CHECK(test_halt_count == 1);
+    context(&t, 30, 20, TARGET_RANGE_ANY);
+    t.action = ACT_FIRE;                                    /* an action with no context */
     TEST_EXPECT_HALT(target_choose(&t));
     CHECK(test_halt_count == 1);
 
@@ -371,14 +376,14 @@ int main(void)
     /* Cancelled: no turn, no shot */
     script = cancel;
     player_command(EV(NGE_KEY_F));
-    CHECK(said(1, "Fire at what?") && said(0, "Never mind.") && player_turn && !out_of_keys);
+    CHECK(said(1, "Select target") && said(0, "Never mind.") && player_turn && !out_of_keys);
     /* At a rat three tiles east: the turn used, and the player told */
     id = gen_creature(CR_RAT, LEVEL_AREA);
     nge_location_set(id, 33, 20);
     health_ac[id] = 250;                                      /* only a 20 hits */
     script = at_the_rat;
     player_command(EV(NGE_KEY_F));
-    CHECK(said(0, "Fire at what?") && !player_turn && !out_of_keys);
+    CHECK(said(0, "Select target") && !player_turn && !out_of_keys);
     nge_event_process(messages_on_event);
     CHECK(said(0, "You fire.") || said(1, "You fire.") || said(2, "You fire."));
     script = NULL;
@@ -388,6 +393,63 @@ int main(void)
     nge_event_post(actor_player, EV_FIRED, id, NGE_EVENT_NONE, 0);
     nge_event_process(messages_on_event);
     CHECK(said(0, "The rat fires."));
+    nge_entity_destroy(id);
+    while ((id = nge_entity_next_dying()) != NGE_ENTITY_INVALID) {
+        nge_entity_release(id);
+    }
+    nge_event_flush();
+
+    /* ---- with an action: the action's check colours the cursor and refuses ENTER (R19 to R21) ---- */
+    nge_map_set_block(WALL, NGE_BLOCK_SOLID);
+    NGE_MAP_TILE(30, 22).tile_id = WALL;                    /* a wall two tiles south of the player */
+    id = gen_creature(CR_RAT, LEVEL_AREA);                  /* the first rat, east, is still there (33, 20) */
+    nge_location_set(id, 30, 24);                           /* behind the wall */
+    memset(&a, 0, sizeof(a));
+    a.actor = actor_player;
+    a.x = 1;                                                /* the caller's, kept as they are */
+    a.y = 2;
+    before = a;
+    /* The start (the player's tile): reached, nothing to fire at */
+    context_act(&t, ACT_FIRE, &a, 30, 20);
+    CHECK(t.reason == ACT_R_NO_TARGET && target_cursor_bank(&t) == BANK_ORANGE);
+    CHECK(memcmp(&a, &before, sizeof(a)) == 0);
+    /* The rat in the open: green, and ENTER chooses */
+    context_act(&t, ACT_FIRE, &a, 32, 20);
+    target_key(&t, EV(NGE_KEY_RIGHT));                      /* each move checks the new tile */
+    CHECK(t.x == 33 && t.reason == ACT_R_NONE && target_cursor_bank(&t) == BANK_GREEN);
+    CHECK(target_key(&t, EV(NGE_KEY_ENTER)) == TARGET_STEP_CHOSEN);
+    CHECK(memcmp(&a, &before, sizeof(a)) == 0);
+    /* Empty floor in reach: amber, and ENTER says why and targeting goes on */
+    target_key(&t, EV(NGE_KEY_DOWN));
+    CHECK(t.x == 33 && t.y == 21 && target_cursor_bank(&t) == BANK_ORANGE);
+    CHECK(target_key(&t, EV(NGE_KEY_ENTER)) == TARGET_STEP_MOVING && t.x == 33 && t.y == 21);
+    CHECK(said(0, "There is nothing there to attack."));
+    /* The rat behind the wall: red, and ENTER gives the action's reason */
+    context_act(&t, ACT_FIRE, &a, 30, 24);
+    CHECK(t.reason == ACT_R_NO_LINE && target_cursor_bank(&t) == BANK_RED);
+    CHECK(target_key(&t, EV(NGE_KEY_SPACE)) == TARGET_STEP_MOVING && said(0, "Something is in the way."));
+    /* Beyond the bow's range: red */
+    context_act(&t, ACT_FIRE, &a, 30 + 12, 20);
+    CHECK(t.reason == ACT_R_OUT_OF_RANGE && target_cursor_bank(&t) == BANK_RED);
+    CHECK(memcmp(&a, &before, sizeof(a)) == 0);
+    /* target_choose(): the start is checked, a refused ENTER keeps targeting */
+    context_act(&t, ACT_FIRE, &a, 30, 20);
+    t.reason = ACT_R_NONE;                                  /* stale: target_choose() checks the start itself */
+    script = refused_then_cancel;
+    CHECK(target_choose(&t) == 0 && !out_of_keys);
+    CHECK(said(2, "Select target") && said(1, "There is nothing there to attack.") && said(0, "Never mind."));
+    script = NULL;
+    /* A blink item onto a creature: reached but occupied, amber, and ENTER names it (D8) */
+    memset(&a, 0, sizeof(a));
+    a.actor = actor_player;
+    a.item = gen_item(IT_STAFF_BLINK, actor_player);
+    context_act(&t, ACT_AIM, &a, 33, 20);
+    CHECK(t.reason == ACT_R_BLOCKED_ENTITY && target_cursor_bank(&t) == BANK_ORANGE);
+    CHECK(target_key(&t, EV(NGE_KEY_ENTER)) == TARGET_STEP_MOVING && said(0, "There is a rat in the way."));
+    context_act(&t, ACT_AIM, &a, 31, 21);                   /* free floor: green */
+    CHECK(t.reason == ACT_R_NONE && target_cursor_bank(&t) == BANK_GREEN);
+    context_act(&t, ACT_AIM, &a, 30, 22);                   /* the wall: no line, red */
+    CHECK(t.reason == ACT_R_NO_LINE && target_cursor_bank(&t) == BANK_RED);
 
     return test_summary("target");
 }

@@ -3,6 +3,11 @@
 Status: implemented (sections 5 to 7 describe the code as built). All the
 CSpect checks in section 7 passed on 2026-10-19.
 
+Section 9 (T2, the cursor coloured by the action's check): implemented
+2026-11-13 (9.7 lists the differences); all the CSpect checks in 9.6
+passed on 2026-11-13. It
+replaces the purposes and changes R5, R7, R10 and R12.
+
 Changed since by the game loop's redesign ([game_loop.md](game_loop.md)):
 targeting is now one of several choosers. It waits with `game_wait_key()`
 instead of a frame loop of its own, and the cursor is overlay sprite
@@ -64,7 +69,8 @@ Section 4 gives the reasons.
   I3 (built, [items_aimed.md](items_aimed.md) R14): with a radius in the context
   (`target_t.radius`, a ball's area), a tile in range within that radius of the origin is
   amber (`BANK_ORANGE`): aimed there, the player would be caught. ENTER still chooses it.
-  `target_cursor_bank()` gives the colour.
+  `target_cursor_bank()` gives the colour. T2 (section 9, R20, D4) replaces this: amber
+  then means "reachable but refused", and the radius goes.
 - **R5a** **New:** every range and distance test in the game uses
   `nge_map_within()`, so a range means the same tiles everywhere. That
   covers ranged attacks, spells, and later a monster's reach and sight
@@ -421,3 +427,223 @@ CSpect checks (reported separately):
     `NGE_MAP_STRIDE` and `NGE_MAP_HEIGHT_MAX` keeps them off every map if
     the map's size changes.
   - Nothing uses the tilemap constants yet.
+
+## 9. The cursor coloured by the action's check (T2)
+
+Status: proposed 2026-11-13; revised after review the same day (R20, D3,
+D4 changed, D7 to D9 added); implemented the same day (9.7). All the CSpect
+checks passed on 2026-11-13.
+
+### 9.1 Goal
+
+The cursor should say whether ENTER will work and, if not, why. Today it
+knows only the range, so a green cursor on a wall, behind a closed door or
+on a monster hidden behind another can still lead to a refused action
+("no line"), and after the refusal the player is out of targeting.
+
+The action already decides this in its check mode: `act_line()` and
+`act_shape_find()` (game/actions/act_shared.c) test the range, the line,
+the tile and who is reached. Check mode changes nothing, posts no events and
+draws no random numbers (actions.md R5). So targeting asks the action,
+instead of a second copy of its rules.
+
+### 9.2 Requirements
+
+- **R19** **New:** the caller may give targeting an action (`ACT_*`) and its
+  context (`act_t`, filled in as for the action: actor, item, spell). Then
+  each time the cursor moves, and at the start, targeting runs that
+  action's check (`act_do(action, copy, ACT_CHECK)`) on a copy of the
+  context with x and y set to the cursor's tile. The caller's context is
+  not changed. Without an action (look), targeting uses the range alone, as
+  now (look becomes an action later, D7).
+- **R20** **Changed (R5):** with an action, the cursor's colour comes from
+  the check's reason. Green: ENTER will work. Red: the tile can't be
+  reached. Amber: it can be reached, but ENTER will be refused.
+
+  | Check's reason | Cursor | ENTER |
+  |---|---|---|
+  | `ACT_R_NONE` | Green | Chooses |
+  | `ACT_R_OUT_OF_RANGE`, `ACT_R_NO_LINE` | Red | Refused |
+  | `ACT_R_NO_TARGET` | Amber (D3) | Refused |
+  | `ACT_R_BLOCKED`, `ACT_R_BLOCKED_ENTITY` | Amber (D8) | Refused |
+  | Any other reason | Amber | Refused |
+
+  Without an action: red out of range, green in range.
+- **R21** **Changed (R7):** ENTER or SPACE on a refused tile gives the
+  action's own message (`messages_act_failed()` with the check's context)
+  and targeting goes on. Without an action, out of range still says
+  "That is out of range.".
+- **R22** **Changed (R10, R12):** the purpose goes. The context holds, in:
+  the action (or `ACT_NONE`) and its context, the origin, the range (read
+  only without an action) and the start; out: the tile chosen or
+  the invalid tile. Every caller gets the same prompt, "Select target", and
+  the same help, "Arrows: move  ENTER: target  Other: back".
+- **R23** **New:** the line of sight that colours the cursor is the
+  action's (`act_line()`: the walk from the actor, with the chosen tile
+  tested too), so the cursor and the action never disagree.
+
+### 9.3 Decisions
+
+- **D1 The action's check, not fields for line of sight, blocking and target
+  type.** The requested fields (whether line of sight is needed, the
+  blocking flags that make a tile invalid, a target type) would copy the
+  rules in `act_line()` and `act_shape_find()`, and get some cases wrong:
+  - a bolt hits the first creature on its line, so with an orc in front of
+    a goblin, a cursor on the goblin is a valid creature tile but the bolt
+    hits the orc;
+  - a ball is refused when nobody but the user is in its area, which the
+    cursor's own tile doesn't decide;
+  - the tile shape (blink) tests `nge_block_can_enter()` with the user's
+    pass flags, so creatures and door entities count, not just the map
+    tile's flags; `nge_block_line()` doesn't test the line's ends, so it
+    would pass a wall as the target.
+  New shapes and actions bring their own rules, and targeting doesn't
+  change. *Rejected:* the fields, for the reasons above.
+- **D2 No purpose.** It existed so that targeting, not the banked caller,
+  owned the prompts (section 4). One prompt and help for all removes the
+  need; the player knows which command they gave. The place for
+  per-action behaviour later is the action number. *Rejected:* keeping the
+  purposes for their wording ("Fire at what?").
+- **D3 "No target" is amber.** An empty tile in reach shows amber and is
+  refused with the action's message ("nothing there"), as is any reason
+  not in the red row. Each colour then answers one question: green, will it
+  work; red, can it reach; amber, it reaches but won't work. Changed in
+  review. *Rejected:* green for "no target" (the first proposal), which
+  made green mean "reachable" and left the player to find out on ENTER.
+  *Rejected:* a fourth colour.
+- **D4 No warning for an area that would catch the player.** Not hitting
+  themselves is the player's job. Amber now means "refused" (R20), so a
+  warning there would have two meanings. The `radius` field goes from
+  `target_t` and `choose_tile()`, and `target_cursor_bank()` loses its
+  radius test. This replaces items_aimed.md R14 and D12 (built). Changed in
+  review. *Rejected:* keeping the warning in amber (the first proposal);
+  a colour of its own for it.
+- **D5 The chosen entity is not an output, for now.** Actions find their
+  target again from x and y in validation, so an entity passed in would be
+  ignored or could disagree. It will be wanted for T1 (the last target),
+  when the check's `a->target` gives it.
+- **D6 One check per cursor move, kept in the context.** `target_key()`
+  runs the check after a move and keeps the reason in a private field;
+  `target_cursor_bank()` and ENTER read it, so a move costs one check (a
+  line walk of at most the range, about 10 tiles), not two. *Rejected:*
+  the check in `target_cursor_bank()`, run again on ENTER.
+- **D7 Look becomes an action, later and not in T2.** As an action
+  (`ACT_LOOK`, using no turn) look gets the same check as the others, so
+  blindness and line of sight (L1) refuse and colour it with no special
+  case in targeting, and the "without an action" path can then go. It is
+  left out of T2 because it needs line of sight for look and a
+  "no turn used" result from `act_do()`, which T2 doesn't. Logged as L1.3
+  in todo.md. *Rejected:* building it in T2.
+- **D8 Blocked is amber.** `ACT_R_BLOCKED` and `ACT_R_BLOCKED_ENTITY` reach
+  targeting only from the tile shape (blink), after `act_line()` has passed
+  the range and the line: the tile is reached but occupied. A wall at the
+  end of the line is `ACT_R_NO_LINE` first, so it stays red. Agreed in
+  review. *Rejected:* red for them (the first table).
+- **D9 Green means "it will fire", not "it will hit what's under the
+  cursor".** A bolt aimed past a nearer creature checks `ACT_R_NONE` with
+  the nearer one as `a->target`, so the cursor on the far one is green.
+  Agreed in review; to be looked at again with T1, which uses the check's
+  target. *Rejected:* amber when the check's target isn't on the cursor's
+  tile, which would give amber a second meaning (chooses, not refused).
+
+### 9.4 Design
+
+```c
+typedef struct target {
+    uint8_t action;     /* In: ACT_* to check at the cursor's tile, or ACT_NONE: the range alone */
+    const act_t *act;   /* In: the action's context (actor, item, spell...), or NULL; not changed */
+    uint8_t origin_x;   /* In: the tile the range is measured from, without an action */
+    uint8_t origin_y;
+    uint8_t range;      /* In: without an action, the furthest range, or TARGET_RANGE_ANY */
+    uint8_t x;          /* In: the cursor's start. Out: the tile chosen, or NGE_MAP_X_INVALID */
+    uint8_t y;
+    uint8_t reason;     /* Private: the last check's ACT_R_*, or ACT_R_OUT_OF_RANGE / ACT_R_NONE */
+} target_t;
+```
+
+- `ACT_NONE` (0xFF) goes in `act.h` beside `ACT_COUNT`.
+- `act_do()` is in common memory, so page 124 can call it. The check runs on
+  a local copy of `*act`, on targeting's stack (common memory).
+- The deepest banked chain becomes main loop → `player_command()` →
+  `target_choose()` → `target_key()` → `act_fire()` (through `act_do()`) →
+  `nge_block_can_enter()`: 5 levels, inside the 8-level limit. To be
+  confirmed from the code when built.
+- `player_bank.c`: `choose_tile()` takes the action and `&a` in place of the
+  purpose and the radius; `look()` passes `ACT_NONE`. Fire, aim and cast already build `a`
+  before choosing a tile.
+- The prompts table and `TARGET_*` purposes go; "Never mind." stays.
+
+### 9.5 Scope
+
+In: R19 to R23, the context change, the callers, `ACT_NONE`, removing the
+radius (D4), the tests, this section, a note at items_aimed.md R14 and D12
+that T2 replaces them, and the help screen's text if it names a purpose's
+words.
+
+Later:
+
+- L1.3: look as an action (D7);
+- T1.1: the cursor starts on the last target, if it is still alive and in
+  view (the entity from D5);
+- T1.2: a key to cycle the cursor through the targets in view;
+- L1: line of sight for look (with field of view).
+
+### 9.6 Tests
+
+PC tests (`tests/test_target.c`, with `act_do()` faked to return a reason
+set by the test, and `messages_act_failed()` faked to record it):
+
+- R19: the check runs at the start and after each move, with x and y the
+  cursor's tile, and the caller's context is unchanged;
+- R20: each reason in the table gives its bank, and a reason not in the
+  table (`ACT_R_NO_CHARGES`, say) gives amber; without an action, red out
+  of range and green in range, with no amber;
+- R21: ENTER on a refused reason returns `MOVING` and passes the reason to
+  the message; on `ACT_R_NONE` it returns `CHOSEN`;
+- R22: without an action, range alone, as the existing tests.
+
+CSpect checks (reported separately):
+
+- fire at a monster behind a wall: red; ENTER says why and targeting stays;
+- fire at a monster in the open: green; at an empty floor tile in reach:
+  amber, and ENTER says there is nothing there;
+- a bolt wand aimed past a nearer monster: green on the far one, and ENTER
+  hits the nearer one (D9);
+- blink onto a monster: amber, and ENTER says why; onto a wall: red; onto
+  free floor: green;
+- a fireball centred next to the player with a monster in the area: green,
+  and ENTER fires (the player is caught); with nobody else in the area:
+  amber, and ENTER is refused;
+- look: "Select target", green everywhere on the map;
+- holding a cursor key repeats with no visible lag.
+
+### 9.7 As built
+
+Differences from 9.4 and 9.6:
+
+- **The check is its own function, `target_check()`** (banked, page 124):
+  `target_key()` calls it after a move and `target_choose()` at the start.
+  The tests call it too, after setting the cursor by hand.
+- **A refused ENTER runs the check once more** (in `refused()`), for its
+  outputs: `messages_act_failed()` names `a->target` ("There is a rat in
+  the way."), which the context doesn't keep. Only on a refused ENTER, so a
+  move still costs one check (D6).
+- **`choose_tile()` sets `a->actor`** before targeting: the check needs it,
+  and `player_act()` used to set it only afterwards. `t.range` is
+  `TARGET_RANGE_ANY` with an action, as nothing reads it.
+- **`target_choose()` asserts** the action is `ACT_NONE`, or below
+  `ACT_COUNT` with a context.
+- **The tests use the real actions, not a fake `act_do()`:** `test_target`
+  already links them. Fire with a bow at a rat in the open (green, chosen),
+  behind a wall (red, "Something is in the way."), out of the bow's range
+  (red) and at empty floor (amber, "There is nothing there to attack.");
+  a staff of blinking onto the rat (amber, "There is a rat in the way."),
+  onto free floor (green) and onto the wall (red). The caller's context is
+  compared byte for byte before and after.
+- **The banked chain** is at most main loop → `player_command()` →
+  `target_choose()` → `target_key()` → `target_check()` → `act_cast()`
+  (through `act_do()`) → `spell_get()`: 6 levels, inside the 8 limit.
+  `act_line()`, `act_shape_find()` and `nge_block_can_enter()` are not
+  banked calls.
+- Sizes: page 124 is 1453 bytes; common memory is unchanged (the program
+  still ends at $AD80).

@@ -11,6 +11,8 @@
 
 #include "game/target/target.h"
 
+#include <stddef.h>
+
 #include "core/nge_util.h"
 #include "data/sprite_data.h"
 #include "ecs/components/nge_location.h"
@@ -19,6 +21,7 @@
 
 #include "game/actors.h"
 #include "game/game.h"
+#include "game/messages/messages.h"
 #include "game/player/player.h"
 #include "game/ui/screen.h"
 #include "game/ui/screen_main.h"
@@ -27,36 +30,44 @@
 #define CHAR_ENTER  13
 #define CHAR_SPACE  ' '
 
-/* What each purpose asks, and its keys on the help bar */
-typedef struct target_purpose {
-    const char *prompt;
-    const char *help;
-} target_purpose_t;
-
-static const target_purpose_t purposes[TARGET_PURPOSE_COUNT] = {
-    [TARGET_LOOK] = { "Look at what?", "Arrows: move  ENTER: look  Other: back" },
-    [TARGET_FIRE] = { "Fire at what?", "Arrows: move  ENTER: fire  Other: back" },
-    [TARGET_AIM]  = { "Aim at what?", "Arrows: move  ENTER: aim  Other: back" },
-    [TARGET_CAST] = { "Cast at what?", "Arrows: move  ENTER: cast  Other: back" },
-    [TARGET_CAST_TILE] = { "Cast to where?", "Arrows: move  ENTER: cast  Other: back" },
-    [TARGET_AIM_TILE] = { "Aim to where?", "Arrows: move  ENTER: aim  Other: back" },
-};
+/* Every caller's prompt and keys (docs/targeting.md D2) */
+static const char prompt[] = "Select target";
+static const char help[] = "Arrows: move  ENTER: target  Other: back";
 
 uint8_t target_in_range(const target_t *t) NGE_BANKED
 {
     return nge_map_within(t->origin_x, t->origin_y, t->x, t->y, t->range);
 }
 
+/* One check a move, kept for the cursor's colour and ENTER (D6). The check changes nothing (act.h), so a copy is
+   enough to keep the caller's context as it was */
+void target_check(target_t *t) NGE_BANKED
+{
+    act_t a;
+    uint8_t action = t->action;   /* in locals (T-ZSDCC-1) */
+
+    if (action == ACT_NONE) {
+        t->reason = target_in_range(t) ? ACT_R_NONE : ACT_R_OUT_OF_RANGE;
+        return;
+    }
+    a = *t->act;
+    a.x = t->x;
+    a.y = t->y;
+    act_do(action, &a, ACT_CHECK);
+    t->reason = a.reason;
+}
+
 uint8_t target_cursor_bank(const target_t *t) NGE_BANKED
 {
-    uint8_t ox = t->origin_x;   /* in locals (T-ZSDCC-1) */
-    uint8_t oy = t->origin_y;
-    uint8_t radius = t->radius;
+    uint8_t reason = t->reason;   /* in locals (T-ZSDCC-1) */
 
-    if (!target_in_range(t)) {
-        return BANK_RED;
+    if (reason == ACT_R_NONE) {
+        return BANK_GREEN;
     }
-    return (radius != 0 && nge_map_within(ox, oy, t->x, t->y, radius)) ? BANK_ORANGE : BANK_GREEN;
+    if (reason == ACT_R_OUT_OF_RANGE || reason == ACT_R_NO_LINE) {
+        return BANK_RED;   /* can't be reached */
+    }
+    return BANK_ORANGE;    /* reached, but refused: no target, occupied (blink, D8), anything else */
 }
 
 /*
@@ -84,6 +95,23 @@ static void scroll(const target_t *t)
     }
 }
 
+/* Why ENTER was refused: the action's own message, with the check's context, or the range without an action */
+static void refused(const target_t *t)
+{
+    act_t a;
+    uint8_t action = t->action;   /* in locals (T-ZSDCC-1) */
+
+    if (action == ACT_NONE) {
+        screen_message("That is out of range.");
+        return;
+    }
+    a = *t->act;
+    a.x = t->x;
+    a.y = t->y;
+    act_do(action, &a, ACT_CHECK);   /* again, for its outputs (a->target, a->item): the message names them */
+    messages_act_failed(&a);
+}
+
 /* The cursor's keys: described in the help screen (game/ui/screen_guide_pdata.c) */
 uint8_t target_key(target_t *t, nge_key_event_t ev) NGE_BANKED
 {
@@ -100,15 +128,16 @@ uint8_t target_key(target_t *t, nge_key_event_t ev) NGE_BANKED
             t->x = (uint8_t)x;
             t->y = (uint8_t)y;
             scroll(t);
+            target_check(t);
         }
         return TARGET_STEP_MOVING;
     }
     c = nge_key_ascii(ev);
     if (c == CHAR_ENTER || c == CHAR_SPACE) {
-        if (target_in_range(t)) {
+        if (t->reason == ACT_R_NONE) {
             return TARGET_STEP_CHOSEN;
         }
-        screen_message("That is out of range.");
+        refused(t);
         return TARGET_STEP_MOVING;
     }
     screen_message("Never mind.");
@@ -133,12 +162,13 @@ uint8_t target_choose(target_t *t) NGE_BANKED
 {
     uint8_t step = TARGET_STEP_MOVING;
 
-    nge_util_assert(t->purpose < TARGET_PURPOSE_COUNT);
+    nge_util_assert(t->action == ACT_NONE || (t->action < ACT_COUNT && t->act != NULL));
     nge_util_assert(t->x < nge_map.width && t->y < nge_map.height);
 
     nge_key_flush();   /* keys typed for play don't move the cursor */
-    screen_message(purposes[t->purpose].prompt);
-    screen_help(purposes[t->purpose].help);
+    screen_message(prompt);
+    screen_help(help);
+    target_check(t);
     place(t);
 
     /* Frames that only draw, so no time passes (game_wait_key(), game/game.h) */

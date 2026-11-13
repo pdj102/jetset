@@ -114,6 +114,7 @@ typedef struct act {
 #define ACT_DISARM  19
 #define ACT_LEARN   20
 #define ACT_COUNT   21
+#define ACT_NONE    0xFF   /**< No action: for a caller that may give one (targeting, game/target/target.h). */
 
 /** How far an aimed item reaches (nge_map_within()): a kind has no range of its own. */
 #define ACT_AIM_RANGE  8

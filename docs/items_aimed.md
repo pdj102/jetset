@@ -110,7 +110,8 @@ spell uses a ball or a burst yet: a Fireball spell or a dragon's breath will be 
 - **R13** A tile or ball item asks for a tile with the targeting cursor; a burst item asks
   for none, and goes as soon as it is chosen in the aim list. A tile item's prompt is "Aim
   to where?"; a ball's is "Aim at what?", as now.
-- **R14** **New:** aiming a ball, the cursor is amber on a tile in range within
+- **R14** *Replaced by targeting.md section 9 (T2, R20, D4): no warning; amber now means
+  "reachable but refused".* **New:** aiming a ball, the cursor is amber on a tile in range within
   `ACT_BALL_RADIUS` of the user: aimed there, the user would be caught. It is still green
   further away and red out of range (targeting.md R5). The amber is a warning, and ENTER
   still chooses the tile.
@@ -412,7 +413,7 @@ B is `LEVEL_DEPTH_BOTTOM`.
   (items.md 4.4), and the aim hook says an item reaches others (items.md D8). The player
   chooses it with `a` and it goes without a prompt. *Rejected:* a use hook with a shape,
   which would give `ACT_USE` a second meaning.
-- **D12 The amber cursor warns; it doesn't refuse.** A cornered player may choose to be
+- **D12** *Replaced by targeting.md section 9 (T2, D4).* **The amber cursor warns; it doesn't refuse.** A cornered player may choose to be
   caught. It is exact, as the centre is the chosen tile (D10). *Rejected:*
   refusing a ball that would catch the user. *Rejected:* drawing the area, 9 overlay sprites
   for a radius-1 ball.

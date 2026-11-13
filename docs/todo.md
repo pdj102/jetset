@@ -285,7 +285,8 @@ mapping and enchanting (E2).
 ## L — Look around
 ### L1 Look around line of sight
 - L1.1 Look checks for line of sight of sight
-- L1.2 Target cursor is green if there is  LoS and red if no LoS
+- L1.2 Target cursor is green if there is  LoS and red if no LoS (fire, aim and cast: T2)
+- L1.3 Look as an action (`ACT_LOOK`, uses no turn): targeting colours and refuses it by its check like the others, so blindness and LoS need no special case; then targeting's "without an action" path goes (targeting.md D7)
 ## M
 ## N
 ## O
@@ -330,6 +331,11 @@ mapping and enchanting (E2).
 ## T - Targetting action
 T1 - Selecting previous target
 - T1.1 the player character targetting action should select the previous target, if one exists and it is still alive
+- T1.2 A key cycles the cursor through the targets in view
+
+T2 - Cursor feedback from the action's check `[done]` (2026-11-13) [spec](targeting.md) (section 9)
+- T2.1 Fire, aim and cast colour the cursor and refuse ENTER by the action's check (range, line of sight, blocked) `[done]`
+- T2.2 One prompt and help for every command: no purposes `[done]`
 
 ## U — UI
 
