@@ -24,6 +24,8 @@ Topic codes: `C` Character creation, `E` Effects, `G` Game rules, `I` Items, `U`
 
 ---
 
+## A
+## B
 ## C — Character creation
 
 ### C1 Create a new character at game start `[done]` (2026-11-08) [spec](character_creation.md), [plan](character_creation_plan.md)
@@ -34,7 +36,7 @@ Topic codes: `C` Character creation, `E` Effects, `G` Game rules, `I` Items, `U`
 - C1.4 Randomised stats
 
 ## D - Difficulty scaling
-D1 - Create a roadmap guide for game mechanic scaling `[spec]` [spec](difficulty.md)
+### D1 - Create a roadmap guide for game mechanic scaling `[spec]` [spec](difficulty.md)
 - D1.1 Define key parameters that are key inputs to  scaling game mechanics e.g. maximum dungeon depth, maximum character level
 - D1.2 Define key principles e.g. player character should on average gain 1 level per dungeon depth fully cleared - when going down
 
@@ -97,7 +99,7 @@ New rows in `effects_pdata.c` using attributes and ops that already work.
 - E3.10 Tidy names: `EF_STRENGTH` beside `EF_RAISE_DEX` and the other
   `EF_RAISE_*` `[done]`
 
-### E4 New statuses (4 of the 8 bits free) [spec](effects_extensions.md), [plan](effects_extensions_plan.md) (E4.1 to E4.6 done)
+### E4 New statuses (all 8 bits now used) [spec](effects_extensions.md), [plan](effects_extensions_plan.md) (E4.1 to E4.6 done)
 
 - E4.1 Confused: `act_move()` sometimes goes a random direction `[done]`
 - E4.2 Frightened: no melee, the AI flees; a use for Cha (G1) `[done]`
@@ -107,9 +109,12 @@ New rows in `effects_pdata.c` using attributes and ops that already work.
 - E4.5 Asleep wakes when damaged (attributes.md, "Not built yet") `[done]`
 - E4.6 Unconscious and blinded read by the rules: an unconscious creature
   loses its turns; the main screen shows every condition, not only poisoned `[done]`
-- E4.7 Silenced: can't cast spells. Uses the last free bit if E4.1 to E4.4
-  are all built (low)
+- E4.7 Silenced: can't cast spells. No bit left: needs E5.8 (low)
 - E4.8 Invisible and see invisible: AI, targeting and drawing all change (low)
+- E4.9 A blinded player can't fire, aim or cast: `act_fire()`, `act_aim()`
+  and `act_cast()` refuse with `ACT_R_BLIND`, as `act_look()` already does,
+  so the cursor and ENTER follow (T2). Today only the AI is blinded
+  (attributes.md section 6, effects_extensions.md D5, which this replaces)
 
 ### E5 New ops and attributes [spec](effects_extensions.md), [plan](effects_extensions_plan.md) (E5.1 to E5.4 done)
 
@@ -127,9 +132,18 @@ New rows in `effects_pdata.c` using attributes and ops that already work.
 - E5.7 Lightning, necrotic and radiant damage: all 8 damage-type bits are
   used, so the immune, resist and vulnerable masks become `uint16_t` (low)
 - E5.8 More than 8 statuses: the status mask and the definitions' `status`
-  field become `uint16_t` (low)
+  field become `uint16_t`. Needed by silenced (E4.7) and invisible (E4.8) (low)
 - E5.9 Condition immunities (free action, poison immunity): a status mask
   attribute that blocks conditions (low)
+- E5.10 Saving throw when a condition is applied: today the target saves
+  only at each firing, after the tick (attributes.md R15, section 6)
+- E5.11 Ending messages by reason: `EV_EFFECT_ENDED`'s p2 already says
+  expired, cured or saved, but every ending shows the effect's one text
+  ("You shake off the poison" against "The poison wears off")
+- E5.12 A table-driven `store()` in the attributes module: the clamps,
+  pools within their maximum and the speed timer are special cases in code
+  (low)
+## F — 
 ## G — Game rules
 
 ### G1 Abilities in attacks [done] 
@@ -147,8 +161,8 @@ clock gives food its purpose and a cost to farming new levels on the stairs
   (a timer, as regeneration is)
 - G2.2 Stages: fed, hungry, weak (an ability penalty), fainting (turns
   lost), starving (damage). Shown on the main screen; a message as each
-  stage starts. A pc variable, not a status: the status bits are nearly
-  full (E5.8)
+  stage starts. A pc variable, not a status: all the status bits are used
+  (E5.8)
 - G2.3 Eating restores satiety by the food's power; whether food still
   heals is for the spec
 - G2.4 Food rarity and depth bands checked against the clock, so a careful
@@ -249,8 +263,8 @@ shapes (`SPELL_*`), items didn't.
 ### I6 Restoring and gaining
 
 - I6.1 Potion of restoration: ends drain effects (`EF_DRAIN_*`). Needs an op
-  that ends effects by kind, or the drains to share a status (the status
-  bits are nearly full, E5.8)
+  that ends effects by kind, or the drains to share a status (all the
+  status bits are used, E5.8)
 - I6.2 Potion of experience: an op that adds XP or a level
 
 ### I7 Light and fuel (with E2.2)
@@ -358,7 +372,7 @@ T2 - Cursor feedback from the action's check `[done]` (2026-11-13) [spec](target
 - U3.2 Change key r **r**emove to t **t**akeoff
 - U3.3 Implement key **r**ead scrolls 
 - U3.4 Implement key q **q**uaff potions
-- U3.5 Implement key l **l**ook around
+- U3.5 Change key **x** to key l **l**ook around
 - U3.6 Change key o  **o**perate to A **A**ctivate feature  e.g. shrine, trap 
 - U3.7 Implement o **o**pen
 - U3.8 Implement key E **E**at  
