@@ -20,7 +20,7 @@ detail goes in a spec when an item is picked up.
 - To pick one up, ask: *"Write a spec for U1"* (whole objective) or
   *"Write a spec and plan for U1.3"* (one feature).
 
-Topic codes: `C` Character creation, `E` Effects, `G` Game rules, `I` Items, `K` Knowledge, `U` UI, `V` Visual effects.
+Topic codes: `C` Character creation, `E` Effects, `G` Game rules, `I` Items, `K` Knowledge, `M` Monsters, `U` UI, `V` Visual effects.
 
 ---
 
@@ -350,7 +350,49 @@ Identified by use and by magic; appearances shuffled each game (answered
 - L1.1 Look checks for line of sight of sight `[done]`
 - L1.2 Target cursor is green if there is  LoS and red if no LoS (fire, aim and cast: T2) `[done]`
 - L1.3 Look as an action (`ACT_LOOK`, uses no turn): targeting colours and refuses it by its check like the others, so blindness and LoS need no special case; then targeting's "without an action" path goes (targeting.md D7) `[done]`
-## M
+## M — Monsters
+
+New kinds and the mechanics that make them work: [spec](creature_extensions.md), [plan](creature_extensions_plan.md).
+
+### M1 Ranged and armed monsters `[plan]` [spec](creature_extensions.md), [plan](creature_extensions_plan.md)
+
+- M1.1 Kit: two item kinds a creature is generated with, and equips
+- M1.2 Natural ranged attack (spit, gaze, boulder); its hit in `GEN_HOOK_AIM`
+- M1.3 Skirmishers: `ai_can_t` to 16 bits, `AI_CAN_SKIRMISH` from a kind's trait; archers and casters step back, then shoot
+- M1.4 Erratic movers: innate `EF_ERRATIC` (bat, will-o'-wisp)
+
+### M2 Monster abilities as spells `[plan]` [spec](creature_extensions.md), [plan](creature_extensions_plan.md)
+
+- M2.1 Monster-only spells: breaths, wail, song, summon undead, shriek, war cry; `SPELL_AI_SEEN`; `opt_cast()` past 16 spells
+- M2.2 Spells on allies: `SPELL_AI_ALLY`, `AI_CAN_SUPPORT`, `SPELL_F_ALLIES`
+
+### M3 Bands `[plan]` [spec](creature_extensions.md), [plan](creature_extensions_plan.md)
+
+- M3.1 The band table: leader and members
+- M3.2 The level generator places a band in one room
+- M3.3 `balance.py` counts bands
+
+### M4 Reactive monsters `[plan]` [spec](creature_extensions.md), [plan](creature_extensions_plan.md)
+
+- M4.1 Death hook (`GEN_HOOK_USE`): the gas spore's burst
+- M4.2 Struck hook (`GEN_HOOK_WORN`): the floating eye's gaze, burning, corrosion
+- M4.3 Families (undead, beast, giant, dragon) and mindless
+
+### M5 Later monster mechanics (low) [spec](creature_extensions.md)
+
+- M5.1 Life drain (= E5.5): the vampire
+- M5.2 Passing through walls: the ghost
+- M5.3 Splitting: slimes and puddings
+- M5.4 Steal and teleport: the bandit ([action_steal.md](action_steal.md))
+- M5.5 Disguise (= K4.2): the mimic
+- M5.6 Webs: the giant spider
+
+### M6 The roster `[plan]` [spec](creature_extensions.md), [plan](creature_extensions_plan.md)
+
+- M6.1 Phase 1 kinds (28), the older kinds' narrower depths, and other changes to existing kinds
+- M6.2 Phase 2 kinds: gas spore, orc warlord, necromancer, salamander, black pudding, lich
+- M6.3 Six new shapes: kobold, dog, bug, zombie, robe, lizard
+
 ## N
 ## O
 ## P — Performance optimisations
