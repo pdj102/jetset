@@ -128,7 +128,9 @@ def load():
         if rarity == 0:
             continue   # never at random: placed by hand (not counted, R10)
         melee = re.search(r"\.melee\s*=\s*\{[^}]*\.dice\s*=\s*(\d+),\s*\.sides\s*=\s*(\d+),"
-                          r"\s*\.bonus\s*=\s*(-?\d+)", b)
+                          r"\s*\.to_damage\s*=\s*(-?\d+)", b)
+        if melee is None and re.search(r"\.melee\s*=", b):
+            raise ParseError(f"{kind}: .melee found but its dice, sides and to_damage not read (R12)")
         creatures.append({
             "kind": kind, "d0": d0, "d1": d1, "rarity": rarity,
             "xp": field(b, r"\.xp\s*=\s*(\d+)", "xp", kind),
