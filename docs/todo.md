@@ -20,7 +20,7 @@ detail goes in a spec when an item is picked up.
 - To pick one up, ask: *"Write a spec for U1"* (whole objective) or
   *"Write a spec and plan for U1.3"* (one feature).
 
-Topic codes: `C` Character creation, `E` Effects, `G` Game rules, `I` Items, `U` UI, `V` Visual effects.
+Topic codes: `C` Character creation, `E` Effects, `G` Game rules, `I` Items, `K` Knowledge, `U` UI, `V` Visual effects.
 
 ---
 
@@ -74,7 +74,7 @@ Defined and used by items and traps, but they do nothing yet
 - E2.1 Teleport (within the level; goes with E1) `[done]`
 - E2.2 Light
 - E2.3 Map
-- E2.4 Identify (see S10)
+- E2.4 Identify (see K2.4)
 - E2.5 Enchant
 - E2.6 Summon `[done]`
 
@@ -291,11 +291,60 @@ shapes (`SPELL_*`), items didn't.
 
 Items in other objectives: amulet of life saving (E5.6), ring of free action
 (E5.9), invisibility and see invisible (E4.8), a vampiric weapon (E5.5),
-lightning wands and weapons (E5.7), telepathy (E5.2), identify (S10), light,
+lightning wands and weapons (E5.7), telepathy (E5.2), identify (K), light,
 mapping and enchanting (E2).
 
 ## J — 
-## K — 
+## K — Knowledge
+
+What the player knows about each kind of creature, item and feature. Kept
+per kind, not per entity: levels aren't kept (a fountain's flag would go
+with its level), and identifying one potion of healing names them all.
+Names are read through `gen_name()`, so every screen follows. Entity flags
+(4 left) are only for what differs between items of one kind (K2.5).
+Identified by use and by magic; appearances shuffled each game (answered
+2026-11-13).
+
+### K1 Kind knowledge
+
+- K1.1 A knowledge table: seen, tried and known bits per kind for each
+  class, indexed as the kind component is (`kind_class`, `kind_index`).
+  It lasts across levels (about 21 bytes a bit for the 166 item kinds)
+- K1.2 A flag in the kind record for kinds that need identifying; every
+  other kind is always known (a sword, food, gold)
+- K1.3 `gen_name()` gives the unknown name ("a murky potion") until the
+  kind is known; a tried kind says so ("{tried}")
+
+### K2 Unidentified items
+
+- K2.1 Flavours: a writable table, 1 byte per kind that needs identifying,
+  shuffled within each subclass by an init function at game start (potion
+  colours, parchment titles, wand woods, ring stones). Not the kind records
+  themselves: they are `const` (read-only memory in the PC tests)
+- K2.2 The flavour picks the sprite's palette bank as well as the name, or
+  the sprite gives the kind away. 40 potion kinds against 16 banks: two
+  potion sprites, or looks shared by names (for the spec)
+- K2.3 Identify by use: an effect the player sees makes its kind known;
+  otherwise the kind is marked tried
+- K2.4 `OP_IDENTIFY` (E2.4): one item, or the whole pack at high power; a
+  parchment of identify, and the spell (S10)
+- K2.5 What differs between items of one kind: a curse is known only once
+  the item is worn or identified (an entity flag beside `ITEM_UNCURSED`);
+  later, rolled enchantment (I2.4) and charges (I5)
+- K2.6 Naming a kind yourself ("call") (low)
+
+### K3 Unidentified features
+
+- K3.1 Fountains and shrines go by an appearance ("a bubbling fountain")
+  until used or identified, shuffled as in K2.1
+- K3.2 A found trap shows only as "a trap" until it goes off, or is
+  disarmed or identified? (for the spec)
+
+### K4 Creature lore (low)
+
+- K4.1 Look shows a creature's HP range, attacks and resistances once
+  known: learned from kills of its kind or a probe spell
+- K4.2 Mimics: a creature that looks like an item or feature until touched
 ## L — Look around
 ### L1 Look around line of sight `[done]` (2026-11-13) [spec](action_look.md)
 - L1.1 Look checks for line of sight of sight `[done]`
@@ -337,11 +386,9 @@ mapping and enchanting (E2).
 - S3.2 The Spell Book UI shows all the spells the book contains and highlights which spells the PlayerCharacter  already knows, which spells they could learn (based on available spell slots) and which spells they cannot learn (no spell slot) `[done]`
 - S3.3 The Player can select a spell to learn `[done]`
 - S3.4 The Player Character can learn a spell if they have an free Spell Slot `[done]`
- ### S10 - Implement identify spell
-- S10.1 Each item has an identified flag, default unidentified
-- S10.2 An unidentified item's name does not reveal its effects in the UI (e.g. in the inventory screen, messages)
-- S10.3 An identified item's name reveals its effects 
-- S10.4 The identify spell identifies a single item in the inventory, setting its identified flag
+ ### S10 - Implement identify spell (needs K1, K2)
+- S10.1 to S10.3 Moved to K: knowledge is kept per kind, not by a flag on each item (K1, K2.5)
+- S10.4 The identify spell identifies a single item in the inventory (`OP_IDENTIFY`, K2.4)
 ## T - Targetting action
 T1 - Selecting previous target
 - T1.1 the player character targetting action should select the previous target, if one exists and it is still alive
