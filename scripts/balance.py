@@ -88,7 +88,7 @@ def kind_blocks(text, prefix):
     """The designated initialisers [PREFIX_X] = { ... } of a table, by name."""
     parts = re.split(rf"\[({prefix}_[A-Z0-9_]+)\]\s*=\s*\{{", text)
     return {parts[i]: parts[i + 1] for i in range(1, len(parts) - 1, 2)
-            if not parts[i].endswith("_COUNT")}   # the table's own size, [CR_COUNT] = {
+            if not parts[i].endswith(("_COUNT", "_NONE"))}   # the table's size, and the blank row 0
 
 
 def where(block, kind, bottom):

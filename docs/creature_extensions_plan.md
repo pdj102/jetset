@@ -4,7 +4,8 @@ The steps that build topic M ([todo.md](todo.md)) as
 [creature_extensions.md](creature_extensions.md) specifies it. The spec says what and why;
 this file says in what order, what changes, and how each step is checked.
 
-Status: planned (2026-11-13). Step 1 done the same day.
+Status: planned (2026-11-13). Step 1 done the same day. Step 1b added 2026-11-14
+(spec D11).
 
 ## 1. How the steps work
 
@@ -38,7 +39,7 @@ Status: planned (2026-11-13). Step 1 done the same day.
   step that adds kinds or kits.
 
 ```text
-Phase 1:  1 balance fix --> 2 kit, natural ranged --> 3 skirmishers --> 4 ability spells
+Phase 1:  1 balance fix --> 1b kind 0 is none --> 2 kit, natural ranged --> 3 skirmishers --> 4 ability spells
                                                                               |
                             5 the six shapes (art) ----------------------> 6 kinds, depths 1-6
                                                                               |
@@ -64,15 +65,47 @@ Spec Q7, section 10.
   at depth 1 (warns), 5.8 to 8.9 elsewhere (ok). C1 still fails at depths 2 to 8, as
   before.
 
+### Step 1b: kind 0 means none (D11) `[built, CSpect check pending]` (2026-11-14)
+
+Spec D11. A renumber only: the game plays as before. One commit per class, in this
+order, each built and tested on its own.
+
+- **Change:**
+  - `gen_kinds.h`: `CR_NONE`, `IT_NONE` and `FT_NONE` 0, and every kind of the class
+    moves up by 1, done by a script. `CR_COUNT` 24, `IT_COUNT` 219, `FT_COUNT` 24.
+    The comments that say "so no number moves" are reworded: numbers moved once here.
+  - `gen_creature_pdata.c`, `gen_item_pdata.c`, `gen_feature_pdata.c`: a blank row 0,
+    `[CR_NONE] = { 0 }` and so on, as `[SP_NONE]` in `spells_pdata.c`. Rarity 0, so
+    `GEN_PICK` never picks it.
+  - Loops over a class's kinds from 0 start at 1 (`anim_bank.c`'s over `CR_COUNT`,
+    and any other found by `grep "= 0; .* < \(CR\|IT\|FT\)_COUNT"`), so the blank row
+    gets no animation sequences and isn't checked for a name.
+  - A field that holds a kind and leans on 0 meaning the player, the club or the door
+    is found by grepping for kind fields (`chargen_internal.h`, `actors.c`, level gen
+    tables) and literal `0` passed as a kind. None is known; any found is fixed here.
+  - `scripts/balance.py` skips the blank rows (it already skips `*_COUNT`).
+  - `KIND_INVALID` (0xFF) stays as it is.
+- **Tests:**
+  - **`test_gen`:** the loops over every kind start at 1. A new check: row 0 of each
+    table has rarity 0 and no name, and `GEN_PICK` over many seeds never returns 0.
+  - All existing tests pass unchanged apart from the loops: they name kinds by
+    constant, not by number.
+  - `make balance` prints the same numbers as before.
+- **Docs:** the passages that quote item numbers: items.md 4.8, items_extensions.md D2,
+  spells.md 10.5.3, effects_extensions.md (a reword: "the numbers at the time").
+- **Memory:** page 109, 22 bytes (196 free). Page 107, about 59 bytes. Page 123, one
+  feature row. Page 127, 6 bytes.
+- **CSpect (check 1b):** a new game as each class plays as before: the starting kit,
+  monsters and features on depths 1 and 2, a chest opened, a door opened.
+
 ### Step 2: the kit and the natural ranged attack (M1.1, M1.2)
 
 Spec M1.1, M1.2, R6, R7, R12, R15, D2 to D4.
 
 - **Change:**
   - `gen_internal.h`: `uint8_t kit[GEN_KIT_MAX]` (2) and `attack_kind_t ranged` in
-    `gen_creature_kind_t`. A kit entry holds the item kind **plus 1**, written
-    `GEN_KIT(IT_SHORT_BOW)`, and 0 means none. An entry left out of a row is 0, and 0
-    is `IT_CLUB`, so the +1 lets the rows without a kit (most of them) say nothing.
+    `gen_creature_kind_t`. A kit entry is an item kind, `IT_NONE` for none (step 1b),
+    so the rows without a kit (most of them) say nothing.
   - `gen_creature_bank.c` (page 106), `create()`:
     - The ranged part gives `ATTACK_RANGED` (`attack_add()`), as the melee part does.
     - Each kit entry is made with `gen_item(kind, id)`, owned by the creature, then
@@ -81,7 +114,7 @@ Spec M1.1, M1.2, R6, R7, R12, R15, D2 to D4.
   - `act_shared.c` (`BANK_56`), `act_strike()`: the hook it reads is `GEN_HOOK_AIM`
     when `use` is `ATTACK_RANGED` and `hooks` is a creature (`kind_class[]`), else
     `GEN_HOOK_HIT` as now. About 15 bytes.
-  - `gen_kinds.h`: `CR_GOBLIN_ARCHER` 23, `CR_COUNT` 24.
+  - `gen_kinds.h`: `CR_GOBLIN_ARCHER` 24, `CR_COUNT` 25.
   - `gen_creature_pdata.c`:
     - The goblin archer, from spec 6.1, with its kit (short bow, arrows) and slots
       `SLOT_WEAPON | SLOT_RANGED | SLOT_AMMO`.
@@ -222,7 +255,7 @@ Spec 6.1, 6.3, R1 to R4.
 
 - **Before:** `make balance` noted.
 - **Change:**
-  - `gen_kinds.h`: `CR_KOBOLD` 24 to `CR_SKELETON_ARCHER` 37 (14 kinds), `CR_COUNT` 38.
+  - `gen_kinds.h`: `CR_KOBOLD` 25 to `CR_SKELETON_ARCHER` 38 (14 kinds), `CR_COUNT` 39.
   - `gen_creature_pdata.c`:
     - The 14 rows from spec 6.1 (all but the goblin archer and the gas spore), with
       the `SHAPE_KOBOLD`, `SHAPE_DOG`, `SHAPE_BUG` and `SHAPE_ZOMBIE` macros.
@@ -242,7 +275,7 @@ Spec 6.1, 6.3, R1 to R4.
 Spec 6.2, R1, R2.
 
 - **Change:**
-  - `gen_kinds.h`: `CR_OWLBEAR` 38 to `CR_VAMPIRE` 50 (13 kinds), `CR_COUNT` 51.
+  - `gen_kinds.h`: `CR_OWLBEAR` 39 to `CR_VAMPIRE` 51 (13 kinds), `CR_COUNT` 52.
   - `gen_creature_pdata.c`: the 13 rows from spec 6.2 (all but the orc warlord,
     necromancer, salamander, black pudding and lich), with `SHAPE_LIZARD`, `SHAPE_ROBE`
     and the `fx.orb` pattern for the will-o'-wisp.
@@ -273,7 +306,7 @@ Spec M4.3, M2.1's summons row, R13, Q4.
     entities are free (R13).
   - `SP_SUMMON_UNDEAD` 17 (self, `SPELL_AI_SEEN`), `SPELL_COUNT` 18.
   - `gen_creature_pdata.c`: the families in spec 6.1 to 6.3 on every kind. The
-    necromancer and the lich rows (`CR_NECROMANCER` 51, `CR_LICH` 52, `CR_COUNT` 53).
+    necromancer and the lich rows (`CR_NECROMANCER` 52, `CR_LICH` 53, `CR_COUNT` 54).
 - **Tests:**
   - **`test_effects`:** a mindless creature refuses sleep, confusion and fear, and still
     gets held and paralysed (Q4). `EF_SUMMON_UNDEAD` makes only undead kinds, and stops
@@ -299,8 +332,8 @@ Spec M4.1, M4.2, D3.
     `GEN_HOOK_WORN`. That is one call and its test, about 15 bytes in `BANK_56`.
   - `gen_creature_pdata.c`:
     - The floating eye's struck `EF_PARALYSE` 2.
-    - The gas spore, salamander and black pudding rows (`CR_GAS_SPORE` 53 to
-      `CR_BLACK_PUDDING` 55, `CR_COUNT` 56).
+    - The gas spore, salamander and black pudding rows (`CR_GAS_SPORE` 54 to
+      `CR_BLACK_PUDDING` 56, `CR_COUNT` 57).
 - **Tests:**
   - **`test_act`:** hitting a floating eye in melee paralyses the attacker. A shot at
     it doesn't. A salamander struck sets its attacker burning.
@@ -333,7 +366,7 @@ Spec M2.2, D6, R9.
     hurt monster in sight at half its HP or less (a loop over the AI entities in
     sight), skipping itself.
   - `gen_creature_pdata.c`: the goblin shaman learns `SP_MEND`, and the orc warlord row
-    goes in (`CR_ORC_WARLORD` 56, `CR_COUNT` 57: the full roster).
+    goes in (`CR_ORC_WARLORD` 57, `CR_COUNT` 58: the full roster).
 - **Tests:** **`test_ai`:** a shaman mends a hurt goblin it sees, and not the player. A
   war cry blesses the monsters around and never the player (R9). A caster with no ally
   spell has no `AI_CAN_SUPPORT`.
@@ -399,10 +432,12 @@ Free bytes before the plan (2026-11-13), and the expected total cost:
 | `BANK_56` (actions) | 16,280 | 104 | about 45 bytes | 2, 9, 10 |
 | 102 (level generator) | 8,017 | 175 | about 0.1K, or 0 if moved to 136 | 11 |
 | 106 (creature generator) | 1,578 | 6.6K | about 0.5K | 2, 8, 11 |
-| 107 (creature kinds) | 1,524 | 6.7K | about 3K | 2 to 11 |
+| 107 (creature kinds) | 1,524 | 6.7K | about 3K | 1b to 11 |
+| 109 (item kinds) | 7,996 | 196 | 22 bytes | 1b |
 | 120 (effects) | 4,774 | 3.4K | about 0.4K | 4, 8, 9 |
 | 121 (effect definitions) | 5,597 | 2.6K | 3 rows | 4, 8 |
-| 127 (sequences) | 144 | 8K | 204 bytes | 2 to 11 |
+| 123 (feature kinds) | about 1K | about 7K | one row | 1b |
+| 127 (sequences) | 144 | 8K | 210 bytes | 1b to 11 |
 | 130 (AI) | 6,173 | 2.0K | about 0.6K | 3, 4, 10 |
 | 131 (AI tables) | 900 | 7.3K | 150 bytes | 3 |
 | 134 (spells) | 2,374 | 5.8K | a little | 4 |

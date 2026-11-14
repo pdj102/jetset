@@ -880,8 +880,8 @@ const uint8_t spell_slots_table[PC_CLASS_COUNT][PC_LEVEL_MAX][SPELL_LEVEL_MAX];
 const uint8_t spell_books[SPELL_BOOK_COUNT][SPELL_BOOK_MAX];   /* page 135: 24 bytes */
 ```
 
-The items, in `gen_kinds.h` after `IT_QUEST`, so no number moves: `IT_BOOK_BASIC` 160,
-`IT_BOOK_ADEPT` 161, `IT_BOOK_MASTER` 162, `IT_COUNT` 163. `ITEM_BOOK` 16, `ITEM_COUNT` 17.
+The items, in `gen_kinds.h` after `IT_QUEST`: `IT_BOOK_BASIC` 161,
+`IT_BOOK_ADEPT` 162, `IT_BOOK_MASTER` 163 (160 to 162 until `IT_NONE` 0, creature_extensions.md D11). `ITEM_BOOK` 16, `ITEM_COUNT` 17.
 Each row has `.subclass = ITEM_BOOK`, `.data.book_spells = SPELL_BOOK_*`, the new `SPRITE_BOOK` in its
 colourway, no hook and no slot, and the band of D28.
 

@@ -21,6 +21,8 @@
 #define ITEM_RENDER(sprite, bank)  { (sprite), NGE_SPRITE_PALETTE(bank) }
 
 const gen_item_kind_t gen_items[IT_COUNT] = {
+    [IT_NONE] = { 0 },   /* none: rarity 0, never generated */
+
     /* ---- Melee ---- */
     [IT_CLUB] = {
         .name = "club",

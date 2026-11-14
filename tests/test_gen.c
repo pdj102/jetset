@@ -337,13 +337,13 @@ int main(void)
     /* ---- every kind: its components match its kind record ---- */
     reset();
     ok = 1;
-    for (kind = 0; kind < CR_COUNT; kind++) {
+    for (kind = CR_NONE + 1; kind < CR_COUNT; kind++) {
         id = gen_creature(kind, AREA);
         ok = ok && creature_ok(id, AREA, kind);
     }
     CHECK(ok);
     ok = 1;
-    for (kind = 0; kind < IT_COUNT; kind++) {
+    for (kind = IT_NONE + 1; kind < IT_COUNT; kind++) {
         id = gen_item(kind, AREA);
         ok = ok && item_ok(id, AREA, kind) && gen_item_fits(kind) == gen_items[kind].fits;
         nge_entity_destroy(id);                       /* more kinds than entities */
@@ -360,7 +360,7 @@ int main(void)
     /* ---- hooks and subclasses: what the records say, by kind and by entity ---- */
     reset();
     ok = 1;
-    for (kind = 0; kind < IT_COUNT; kind++) {
+    for (kind = IT_NONE + 1; kind < IT_COUNT; kind++) {
         id = gen_item(kind, AREA);
         attack_kind_t attack;
 
@@ -376,7 +376,7 @@ int main(void)
         nge_entity_destroy(id);
         nge_entity_release(nge_entity_next_dying());
     }
-    for (kind = 0; kind < CR_COUNT; kind++) {
+    for (kind = CR_NONE + 1; kind < CR_COUNT; kind++) {
         for (i = 0; i < GEN_HOOK_COUNT; i++) {
             ok = ok && hook_is(gen_creature_hook(kind, (uint8_t)i), &gen_creatures[kind].hooks[i]) &&
                  gen_creatures[kind].hooks[i].ef < EF_COUNT;
@@ -384,7 +384,7 @@ int main(void)
     }
     CHECK(ok);
     /* Features: names, hooks and info from their records; a door is a closed, openable, solid feature */
-    for (kind = 0; kind < FT_COUNT; kind++) {
+    for (kind = FT_NONE + 1; kind < FT_COUNT; kind++) {
         gen_feature_info_t info;
 
         id = gen_feature(kind, AREA);
@@ -413,14 +413,14 @@ int main(void)
 
     /* A worn hook names a worn effect; the other hooks name effects that can be applied */
     ok = 1;
-    for (kind = 0; kind < IT_COUNT; kind++) {
+    for (kind = IT_NONE + 1; kind < IT_COUNT; kind++) {
         const gen_item_hook_t *h = &gen_items[kind].hook;
 
         ok = ok && h->ef < EF_COUNT && h->hook < GEN_HOOK_COUNT && h->hook != GEN_HOOK_INNATE;
         ok = ok && (h->ef == EF_NONE || ((effect_defs[h->ef].duration == EFFECT_WORN) == (h->hook == GEN_HOOK_WORN) &&
                                          h->power != 0));
     }
-    for (kind = 0; kind < CR_COUNT; kind++) {
+    for (kind = CR_NONE + 1; kind < CR_COUNT; kind++) {
         for (i = 0; i < GEN_HOOK_COUNT; i++) {
             uint8_t ef = gen_creatures[kind].hooks[i].ef;
 
@@ -452,12 +452,12 @@ int main(void)
      * docs/items_extensions.md)
      */
     ok = 1;
-    for (kind = 0; kind < IT_COUNT; kind++) {
+    for (kind = IT_NONE + 1; kind < IT_COUNT; kind++) {
         ok = ok && (gen_item_flags(kind) & ITEMF_SHAPE) <= ITEMF_BURST;
     }
     CHECK(ok);
     ok = 1;
-    for (kind = 0; kind < IT_COUNT; kind++) {
+    for (kind = IT_NONE + 1; kind < IT_COUNT; kind++) {
         ok = ok && ((gen_item_flags(kind) & ITEMF_SHAPE) == ITEMF_DIRECT) ==
                        (kind == IT_SP_SLEEP || kind == IT_WAND_SLOW || kind == IT_WAND_SLEEP ||
                         kind == IT_WAND_TELEPORT || kind == IT_STAFF_HEALING ||
@@ -467,7 +467,7 @@ int main(void)
     CHECK(ok);
     /* gen_item_shape(): the field's value as a SPELL_*, for every aim kind */
     ok = 1;
-    for (kind = 0; kind < IT_COUNT; kind++) {
+    for (kind = IT_NONE + 1; kind < IT_COUNT; kind++) {
         if (GEN_HOOK_EF(gen_item_hook(kind, GEN_HOOK_AIM)) != EF_NONE) {
             uint8_t field = gen_item_flags(kind) & ITEMF_SHAPE;
 
@@ -485,7 +485,7 @@ int main(void)
      * has one, and it is aimed (docs/items_aimed.md R20)
      */
     ok = 1;
-    for (kind = 0; kind < IT_COUNT; kind++) {
+    for (kind = IT_NONE + 1; kind < IT_COUNT; kind++) {
         const gen_item_hook_t *h = &gen_items[kind].hook;
         int tile = (gen_items[kind].flags & ITEMF_SHAPE) == ITEMF_TILE;
 
@@ -499,7 +499,7 @@ int main(void)
           strcmp(gen_items[IT_STAFF_BLINK].name, "staff of blinking") == 0);
     /* Every ball and burst kind is aimed; the four of docs/items_aimed.md 4.10 */
     ok = 1;
-    for (kind = 0; kind < IT_COUNT; kind++) {
+    for (kind = IT_NONE + 1; kind < IT_COUNT; kind++) {
         uint8_t field = gen_items[kind].flags & ITEMF_SHAPE;
 
         ok = ok && ((field != ITEMF_BALL && field != ITEMF_BURST) || gen_items[kind].hook.hook == GEN_HOOK_AIM);
@@ -524,7 +524,7 @@ int main(void)
         int used = i == EF_REGEN || i == EF_ROOT || i == EF_HOLD || i == EF_MANA_REGEN ||
                    (i >= EF_DRAIN_STR && i <= EF_DRAIN_CHA);
 
-        for (kind = 0; kind < IT_COUNT && !used; kind++) {
+        for (kind = IT_NONE + 1; kind < IT_COUNT && !used; kind++) {
             used = gen_items[kind].hook.ef == i;
         }
         ok = ok && used;
@@ -554,7 +554,7 @@ int main(void)
     CHECK(nge_owner_count(id) == 0);                           /* no innate effect */
     /* Rooted when made: these four, and no other; a lichen's hold gets its save before its next hit */
     ok = 1;
-    for (kind = 0; kind < CR_COUNT; kind++) {
+    for (kind = CR_NONE + 1; kind < CR_COUNT; kind++) {
         reset();
         nge_event_init();
         id = gen_creature(kind, AREA);
@@ -564,7 +564,7 @@ int main(void)
     CHECK(ok);
     /* Mana regeneration: a rule for every kind with mana, after its innate hook (docs/spells.md, D12) */
     ok = 1;
-    for (kind = 0; kind < CR_COUNT; kind++) {
+    for (kind = CR_NONE + 1; kind < CR_COUNT; kind++) {
         nge_entity_id_t owned;
         uint8_t i;
         int n = 0;
@@ -668,7 +668,7 @@ int main(void)
     for (i = 1; i <= LEVEL_DEPTH_BOTTOM; i++) {
         int kinds = 0;
 
-        for (kind = 0; kind < CR_COUNT; kind++) {
+        for (kind = CR_NONE + 1; kind < CR_COUNT; kind++) {
             const gen_where_t *w = &gen_creatures[kind].where;
 
             kinds += i >= w->depth && i <= w->depth_max && w->rarity != 0;
@@ -721,9 +721,29 @@ int main(void)
     }
     CHECK(ok && nge_entity_free_count() == NGE_ENTITY_MAX);
 
+    /* ---- kind 0 of each class is none: a blank row, never generated (docs/creature_extensions.md D11) ---- */
+    CHECK(gen_creatures[CR_NONE].name == NULL && gen_creatures[CR_NONE].where.rarity == 0);
+    CHECK(gen_items[IT_NONE].name == NULL && gen_items[IT_NONE].where.rarity == 0);
+    CHECK(gen_features[FT_NONE].name == NULL && gen_features[FT_NONE].where.rarity == 0);
+    ok = 1;
+    for (i = 0; i < 1000 && ok; i++) {
+        lo = 1 + i % LEVEL_DEPTH_BOTTOM;
+        reset();                                               /* a lichen owns its roots too */
+        nge_event_init();
+        id = gen_creature_random((uint8_t)lo, AREA);
+        ok = id == NGE_ENTITY_INVALID || kind_index[id] != CR_NONE;
+        id = gen_item_random((uint8_t)lo, AREA);
+        ok = ok && (id == NGE_ENTITY_INVALID || kind_index[id] != IT_NONE);
+        id = gen_feature_random((uint8_t)lo, AREA);
+        ok = ok && (id == NGE_ENTITY_INVALID || kind_index[id] != FT_NONE);
+    }
+    CHECK(ok);
+    reset();
+    nge_event_init();
+
     /* ---- the catalogue: every kind well formed, every subclass as its mechanics will need ---- */
     ok = 1;
-    for (kind = 0; kind < IT_COUNT; kind++) {
+    for (kind = IT_NONE + 1; kind < IT_COUNT; kind++) {
         ok = ok && kind_ok(kind);
     }
     CHECK(ok);
@@ -732,7 +752,7 @@ int main(void)
     for (i = 1; i < SLOT_COUNT; i++) {
         int fits = 0;
 
-        for (kind = 0; kind < IT_COUNT; kind++) {
+        for (kind = IT_NONE + 1; kind < IT_COUNT; kind++) {
             fits = fits || (gen_items[kind].fits & SLOT_BIT(i)) != 0;
         }
         ok = ok && fits;
@@ -745,7 +765,7 @@ int main(void)
         int total = 0;
         int s;
 
-        for (kind = 0; kind < IT_COUNT; kind++) {
+        for (kind = IT_NONE + 1; kind < IT_COUNT; kind++) {
             const gen_where_t *w = &gen_items[kind].where;
 
             if (i >= w->depth && i <= w->depth_max) {
@@ -764,7 +784,7 @@ int main(void)
     CHECK(gen_item_subclass(IT_BOOK_ADEPT) == ITEM_BOOK && gen_item_book_spells(IT_BOOK_ADEPT) == SPELL_BOOK_ADEPT);
     CHECK(gen_item_subclass(IT_BOOK_MASTER) == ITEM_BOOK && gen_item_book_spells(IT_BOOK_MASTER) == SPELL_BOOK_MASTER);
     ok = 1;
-    for (kind = 0; kind < IT_COUNT; kind++) {
+    for (kind = IT_NONE + 1; kind < IT_COUNT; kind++) {
         ok = ok && (gen_items[kind].subclass == ITEM_BOOK) == (kind >= IT_BOOK_BASIC && kind <= IT_BOOK_MASTER);
     }
     CHECK(ok);

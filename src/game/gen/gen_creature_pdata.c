@@ -67,6 +67,7 @@
                               NGE_SPRITE_PALETTE(bank), LAYER_MONSTERS }
 
 const gen_creature_kind_t gen_creatures[CR_COUNT] = {
+    [CR_NONE] = { 0 },                                  /* none: rarity 0, never generated */
     [CR_PLAYER] = {                                     /* the Dev class (game/chargen): medium abilities */
         .name = "you",
         .render = { SPRITE_PLAYER_IDLE, SPRITE_PLAYER_IDLE_COUNT, SPRITE_PLAYER_IDLE_RATE,

@@ -315,12 +315,15 @@ again to find the one rolled. It is a macro, expanded in the code page of the
 table it reads, so that page's data is mapped and nothing is copied (R20).
 Creatures use the same macro, and every class has the same `gen_where_t`.
 
-Kinds added after the catalogue are numbered at the end, so no number moves: the spell
-books (after `IT_QUEST`), then the stairway parchment (`EF_LEVEL_TELEPORT`), the
-levitation potion (`EF_LEVITATE`) and boots of levitation (`EF_WORN_FLY`), from
-[effects_extensions.md](effects_extensions.md), then I1's 42 kinds (166 to 207,
-[items_extensions.md](items_extensions.md)), then I2's four armour kinds (208 to
-211, section 4.11), then I3's six (212 to 217, 4.12). `IT_COUNT` is 218.
+Kind 0 is `IT_NONE`: a blank row with rarity 0, never generated, so a field that
+holds an item kind or none can leave it out (creature_extensions.md D11). Every kind
+moved up by 1 when it came in (2026-11-14). Kinds added after the catalogue are
+numbered at the end, so no number moves: the spell books (after `IT_QUEST`), then the
+stairway parchment (`EF_LEVEL_TELEPORT`), the levitation potion (`EF_LEVITATE`) and
+boots of levitation (`EF_WORN_FLY`), from [effects_extensions.md](effects_extensions.md),
+then I1's 42 kinds (167 to 208, [items_extensions.md](items_extensions.md)), then I2's
+four armour kinds (209 to 212, section 4.11), then I3's six (213 to 218, 4.12).
+`IT_COUNT` is 219.
 
 ### 4.9 Names and messages
 
@@ -373,10 +376,10 @@ iron gauntlets instead of giving up their AC.
 
 | ID | Name | Look | AC | Hook | Band, rarity |
 |---|---|---|---|---|---|
-| `IT_MAIL_FIRE_WARD` 208 | mail of fire ward | mail, `BANK_ORANGE` | 5, as chain mail | worn `EF_WORN_RES_FIRE` 1 | 5-B, 1 |
-| `IT_DRAGON_MAIL` 209 | dragon scale mail | mail, `BANK_RED` | 6, as scale mail +2 | worn `EF_WORN_IMMUNE_FIRE` 1 | 8-B, 1 |
-| `IT_ELVEN_CLOAK` 210 | elven cloak | cloak, `BANK_GREEN` | 1, as a cloak | worn `EF_WORN_DEX` 1 | 4-B, 1 |
-| `IT_SHIELD_WARDING` 211 | shield of warding | shield, `BANK_PURPLE` | 2, as an iron shield | worn `EF_WORN_RES_MAGIC` 1 | 5-B, 1 |
+| `IT_MAIL_FIRE_WARD` 209 | mail of fire ward | mail, `BANK_ORANGE` | 5, as chain mail | worn `EF_WORN_RES_FIRE` 1 | 5-B, 1 |
+| `IT_DRAGON_MAIL` 210 | dragon scale mail | mail, `BANK_RED` | 6, as scale mail +2 | worn `EF_WORN_IMMUNE_FIRE` 1 | 8-B, 1 |
+| `IT_ELVEN_CLOAK` 211 | elven cloak | cloak, `BANK_GREEN` | 1, as a cloak | worn `EF_WORN_DEX` 1 | 4-B, 1 |
+| `IT_SHIELD_WARDING` 212 | shield of warding | shield, `BANK_PURPLE` | 2, as an iron shield | worn `EF_WORN_RES_MAGIC` 1 | 5-B, 1 |
 
 B is `LEVEL_DEPTH_BOTTOM`. Each look is a pattern and bank no other kind uses.
 "Mail of fire ward" follows "amulet of acid ward" (a resistance); "fireproof"
@@ -429,12 +432,12 @@ returns the `SPELL_*` shape from the flags:
 
 | ID | Name | Look | Count | Flags | Hook | Band, rarity |
 |---|---|---|---|---|---|---|
-| `IT_SP_BLINK` 212 | blink parchment | parchment, `BANK_BLUE` | - | `ITEMF_TILE` | aim `EF_BLINK` 1 | 2-B, 3 |
-| `IT_STAFF_BLINK` 213 | staff of blinking | staff, `BANK_BLUE` | 6 | `ITEMF_TILE` | aim `EF_BLINK` 1 | 5-B, 1 |
-| `IT_WAND_FIREBALL` 214 | wand of fireballs | wand, `BANK_RED` | 4 | `ITEMF_BALL` | aim `EF_BOLT_FIRE` 4 | 6-B, 1 |
-| `IT_WAND_FROSTBALL` 215 | wand of frost balls | wand, `BANK_BLUE` | 4 | `ITEMF_BALL` | aim `EF_BOLT_COLD` 4 | 6-B, 1 |
-| `IT_SP_FIREBALL` 216 | fireball parchment | parchment, `BANK_ORANGE` | - | `ITEMF_BALL` | aim `EF_BOLT_FIRE` 5 | 4-B, 2 |
-| `IT_SP_PANIC` 217 | panic parchment | parchment, `BANK_RED` | - | `ITEMF_BURST` | aim `EF_FEAR` 1 | 3-B, 2 |
+| `IT_SP_BLINK` 213 | blink parchment | parchment, `BANK_BLUE` | - | `ITEMF_TILE` | aim `EF_BLINK` 1 | 2-B, 3 |
+| `IT_STAFF_BLINK` 214 | staff of blinking | staff, `BANK_BLUE` | 6 | `ITEMF_TILE` | aim `EF_BLINK` 1 | 5-B, 1 |
+| `IT_WAND_FIREBALL` 215 | wand of fireballs | wand, `BANK_RED` | 4 | `ITEMF_BALL` | aim `EF_BOLT_FIRE` 4 | 6-B, 1 |
+| `IT_WAND_FROSTBALL` 216 | wand of frost balls | wand, `BANK_BLUE` | 4 | `ITEMF_BALL` | aim `EF_BOLT_COLD` 4 | 6-B, 1 |
+| `IT_SP_FIREBALL` 217 | fireball parchment | parchment, `BANK_ORANGE` | - | `ITEMF_BALL` | aim `EF_BOLT_FIRE` 5 | 4-B, 2 |
+| `IT_SP_PANIC` 218 | panic parchment | parchment, `BANK_RED` | - | `ITEMF_BURST` | aim `EF_FEAR` 1 | 3-B, 2 |
 
 A burst item has an aim hook, not a use hook: a use hook reaches its user
 (4.4). "scare monsters parchment" would be over R19's 19 characters, so it is

@@ -2,7 +2,8 @@
 
 Status: agreed (2026-11-13). D1 to D6 and D8 to D10 agreed as proposed. D7 was
 revised on review: `ai_can_t` widens to 16 bits. Q1 to Q7 were answered
-(section 12). The plan is [creature_extensions_plan.md](creature_extensions_plan.md).
+(section 12). D11 was added on 2026-11-14: kind 0 means none in every class.
+The plan is [creature_extensions_plan.md](creature_extensions_plan.md).
 Nothing is built yet, except the `balance.py` fix from Q7 (section 10).
 
 Builds on [creatures.md](creatures.md) (the roster of 21 random kinds and rooted
@@ -83,7 +84,7 @@ What the roster lacks:
 | `xp` is a `uint16_t`, `hp_max` a `uint8_t` | the kind record | 65,535 XP, 255 HP a kind: enough for a lich |
 | The spell set is `SPELL_SET_BYTES` (4) bits | spells.h, compile check | 32 spells: 12 in use, 20 with this spec |
 | `opt_cast()` picks a start spell with `rand() & 15` | ai_think.c | **Breaks above 16 spells.** It must change to `& 31` (R11) |
-| The item kinds are `uint8_t` too | gen_kinds.h | 218 of 255 in use: **37 left**. No kit needs a new item |
+| The item kinds are `uint8_t` too | gen_kinds.h | 218 of 255 in use, 219 with `IT_NONE` (D11): **36 left**. No kit needs a new item |
 | Statuses: 8 bits, all used | stats.h | No new status without E5.8 |
 | Damage types: 8 bits, all used | health.h | No lightning, necrotic or holy without E5.7. Use `DMG_MAGIC` |
 | AI capabilities (`ai_can_t`): 8 bits, all used | ai.h | Widened to 16 bits (D7): 2 used here, 2 kept for M5, 4 spare |
@@ -140,8 +141,7 @@ Phase 1 is data and small code changes. Phase 2 adds new rules. Phase 3 is
 ### M1 Ranged and armed monsters (phase 1)
 
 - **M1.1 Kit.** `uint8_t kit[2]` in the kind record: item kinds,
-  stored as the item kind plus 1 (`GEN_KIT(IT_SHORT_BOW)`), with 0 for none:
-  an entry a row leaves out is 0, and item kind 0 is the club. Each is made
+  `IT_NONE` (0) for none, so an entry a row leaves out is none (D11). Each is made
   in the creature's inventory when it is generated, and equipped there
   with `act_equip(..., ACT_DO)`, as chargen equips the player's starting
   items. A sleeping archer then wakes with its bow in hand, and the player gets the kit as loot. Costs 2 bytes a kind.
@@ -504,10 +504,26 @@ shape 5. With the narrower depths, no more than 4 of a shape share a depth.
 - **D10 Classic, generic monsters only (agreed).** Names and ideas from the
   open D&D reference and common roguelike folklore (kobolds, wights,
   basilisks). No trademarked creature from any game, and no copied art.
+- **D11 Kind 0 means none, in every class (agreed 2026-11-14).**
+  `CR_NONE`, `IT_NONE` and `FT_NONE` are 0, and every kind moves up by 1,
+  as `SP_NONE` and `EF_NONE` already are 0. Each table gets a blank row 0
+  with rarity 0, so `GEN_PICK` never picks it. A field that holds "a kind
+  or none" can then leave it out of a row: the kit (M1.1), a band's members
+  (M3.1), and later chest contents or loot. Before, an empty kit entry was
+  the club, an empty band member the player, and an empty feature the
+  door. It is safe because nothing saves a kind number, and the tables use
+  designated initialisers. Costs a row in each table: 22 bytes in page 109
+  (196 free), about 59 in page 107, the feature row in page 123, and 6
+  bytes in page 127. `KIND_INVALID` (0xFF) stays: it is `kind_index[]`'s
+  "no kind" for every class, and what `GEN_PICK` returns.
+  **Rejected:** storing the kit as the item kind plus 1 (`GEN_KIT()`): a
+  trick each such field would repeat. **Rejected:** an `ITEM_NONE`
+  subclass: every item kind has a subclass, and no field holds "a
+  subclass or none", so it would only add a state that is never valid.
 
 ## 9. Scope and phases
 
-- **Phase 1** (M1, M2.1, R11): the kit, natural ranged attacks,
+- **Phase 1** (M1, M2.1, R11, D11): kind 0 as none, the kit, natural ranged attacks,
   skirmishers with the wider `ai_can_t`, erratic movers and ability spells.
   With them, the 28 phase-1 kinds in section 6, the narrower depths and the
   phase-1 changes to existing kinds. **To-do M1, M2.1, M6.1, M6.3.**
@@ -520,9 +536,9 @@ shape 5. With the narrower depths, no more than 4 of a shape share a depth.
 - **Not in scope:** rebalancing XP pacing (section 10), new statuses or
   damage types (E5.7, E5.8), and the shapes' attack and dead frames.
 
-Kinds are added at the end of `gen_kinds.h` before `CR_COUNT`. The player
-kinds (`CR_FIGHTER`, `CR_MAGE`) keep their numbers, because nothing may
-renumber.
+Every kind moves up by 1 once, before the kit (D11). After that, kinds are
+added at the end of `gen_kinds.h` before `CR_COUNT`, so no number moves
+again and the docs' numbers stay right.
 
 ## 10. Balance (difficulty.md R13)
 
@@ -597,3 +613,18 @@ CSpect checks (the user runs them):
 - **Q5** Yes: the older kinds' depths narrow (6.3).
 - **Q6** The natural ranged attack takes 6 bytes (D4).
 - **Q7** Yes: `balance.py`'s melee damage is fixed (section 10).
+
+## 13. As built
+
+### Step 1b: kind 0 means none (2026-11-14)
+
+- As D11. `make test` passes, and `make balance` prints the same as before it.
+- `anim_init()` still copies every creature kind from 0: the blank row's
+  sequences have count 0, which is none, and the init stays complete. Only the
+  tests' loops over every kind start at `*_NONE + 1`.
+- `balance.py` skips the `_NONE` rows, as it skips `_COUNT`.
+- Pages: 107 +59 bytes (1,583), 109 +22 (8,018, 174 free), 123 +36 (1,114),
+  127 +6 (150). No new library routine in common memory.
+- Docs: items.md 4.8 and its tables, spells.md 10.5.3 and features.md give the
+  new numbers. Finished specs and plans (items_aimed, items_armour_plan,
+  spells_plan, winning.md and others) keep the numbers of their day.

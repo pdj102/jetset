@@ -13,6 +13,7 @@
 #include "data/tile_data.h"
 
 const gen_feature_kind_t gen_features[FT_COUNT] = {
+    [FT_NONE] = { 0 },   /* none: rarity 0, never generated */
     [FT_DOOR] = {
         .name = "door",
         .info = {

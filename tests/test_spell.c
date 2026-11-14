@@ -229,7 +229,7 @@ int main(void)
 
     /* ---- the kinds' lists: valid; the player's Magic Bolt, the shaman's three ---- */
     ok = 1;
-    for (kind = 0; kind < CR_COUNT; kind++) {
+    for (kind = CR_NONE + 1; kind < CR_COUNT; kind++) {
         for (i = 0; i < GEN_SPELLS_MAX; i++) {
             ok = ok && gen_creatures[kind].spells[i] < SPELL_COUNT;
         }

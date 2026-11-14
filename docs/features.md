@@ -714,7 +714,7 @@ CSpect checks:
 - **Numbers.** Actions `ACT_OPERATE` 17, `ACT_SEARCH` 18, `ACT_DISARM` 19.
   Reasons `ACT_R_CANT_OPERATE` 40, `ACT_R_SPENT` 41, `ACT_R_CANT_DISARM` 42,
   and the attempted `ACT_R_DISARM_FAILED` 43 and `ACT_R_SET_OFF` 44. Kinds
-  `FT_BOULDER` 3 to `FT_TRAPDOOR` 21, 22 in all.
+  `FT_BOULDER` 3 to `FT_TRAPDOOR` 21, 22 in all (each one higher since `FT_NONE` 0, creature_extensions.md D11).
 
 ### Code
 
