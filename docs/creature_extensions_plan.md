@@ -163,7 +163,7 @@ gains or loses an effect.
 - **CSpect (check 1c):** a green snake's bite poisons, a venom dagger poisons, a dart
   trap hits and poisons, a fountain heals when operated, and a troll regenerates.
 
-### Step 2: the kit and the natural ranged attack (M1.1, M1.2)
+### Step 2: the kit and the natural ranged attack (M1.1, M1.2) `[done]` (2026-11-14)
 
 Spec M1.1, M1.2, R6, R7, R12, R15, R17, D2 to D4.
 

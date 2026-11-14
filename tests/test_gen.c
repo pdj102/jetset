@@ -19,6 +19,7 @@
 #include "game/effects/effects_defs.h"
 #include "game/gen/gen_internal.h"
 #include "game/level/level.h"
+#include "game/level/level_internal.h"
 #include "game/spells/spells.h"
 #include "game/timers.h"
 #include "game/effects/effects.h"
@@ -56,6 +57,83 @@ static int melee_is(nge_entity_id_t id, const attack_kind_t *m)
            attack_range[ATTACK_MELEE][id] == 1;
 }
 
+/* A creature's ranged attack component matches its record's natural ranged part: none if its dice are 0 */
+static int ranged_is(nge_entity_id_t id, const attack_kind_t *r)
+{
+    if (!ATTACK_KIND_HAS(r)) {
+        return !ATTACK_HAS(id, ATTACK_RANGED);
+    }
+    return ATTACK_HAS(id, ATTACK_RANGED) && attack_to_hit[ATTACK_RANGED][id] == r->to_hit &&
+           attack_dice[ATTACK_RANGED][id] == r->dice && attack_sides[ATTACK_RANGED][id] == r->sides &&
+           attack_to_damage[ATTACK_RANGED][id] == r->to_damage && attack_type[ATTACK_RANGED][id] == r->type &&
+           attack_range[ATTACK_RANGED][id] == r->range;
+}
+
+/* The items id owns are its kit, each equipped, and nothing else (R6) */
+static int kit_equipped(nge_entity_id_t id, const gen_creature_kind_t *b)
+{
+    nge_entity_id_t owned;
+    uint8_t found[GEN_KIT_MAX] = { 0 };
+    uint8_t i;
+    uint8_t k;
+
+    NGE_OWNER_FOR_EACH_OWNED(i, owned, id) {
+        if (!ITEM_IS(owned)) {
+            continue;
+        }
+        for (k = 0; k < GEN_KIT_MAX; k++) {
+            if (!found[k] && b->kit[k] != IT_NONE && kind_index[owned] == b->kit[k]) {
+                break;
+            }
+        }
+        if (k == GEN_KIT_MAX || item_slot[owned] == SLOT_NONE) {
+            return 0;
+        }
+        found[k] = 1;
+    }
+    for (k = 0; k < GEN_KIT_MAX; k++) {
+        if (found[k] != (b->kit[k] != IT_NONE)) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+/*
+ * A creature kind's kit fits it: real item kinds, each fitting a slot the
+ * kind has or ammo for its kit's launcher, and room for all (R6)
+ */
+static int kit_ok(uint8_t kind)
+{
+    const gen_creature_kind_t *b = &gen_creatures[kind];
+    uint8_t k;
+    uint8_t j;
+    uint8_t item;
+    uint8_t n = 0;
+    int ammo;
+
+    for (k = 0; k < GEN_KIT_MAX; k++) {
+        item = b->kit[k];
+        if (item == IT_NONE) {
+            continue;
+        }
+        if (item >= IT_COUNT) {
+            return 0;
+        }
+        n++;
+        ammo = 0;
+        for (j = 0; j < GEN_KIT_MAX; j++) {
+            ammo = ammo || (gen_items[item].subclass == ITEM_AMMO && b->kit[j] != IT_NONE && b->kit[j] < IT_COUNT &&
+                            gen_items[b->kit[j]].subclass == ITEM_RANGED &&
+                            gen_item_ammo_group(b->kit[j]) == gen_item_ammo_group(item));
+        }
+        if ((gen_items[item].fits & b->inventory.slots) == 0 && !ammo) {
+            return 0;
+        }
+    }
+    return n <= b->inventory.capacity;
+}
+
 static int creature_ok(nge_entity_id_t id, nge_owner_t owner, uint8_t kind)
 {
     const gen_creature_kind_t *b = &gen_creatures[kind];
@@ -72,7 +150,11 @@ static int creature_ok(nge_entity_id_t id, nge_owner_t owner, uint8_t kind)
         health_hp[id] != b->health.hp_max || health_hp_max[id] != b->health.hp_max ||
         health_immune[id] != b->health.immune || health_resist[id] != b->health.resist ||
         health_vuln[id] != b->health.vuln || health_ac[id] != b->health.ac ||
-        stats_speed[id] != b->stats.speed || !melee_is(id, &b->melee)) {
+        stats_speed[id] != b->stats.speed || !melee_is(id, &b->melee) || !ranged_is(id, &b->ranged)) {
+        return 0;
+    }
+    /* Its kit, equipped (R6) */
+    if (!kit_ok(kind) || !kit_equipped(id, b)) {
         return 0;
     }
     /* AI unless it is the player: its kind's brain, in its start state */
@@ -342,8 +424,18 @@ int main(void)
     for (kind = CR_NONE + 1; kind < CR_COUNT; kind++) {
         id = gen_creature(kind, AREA);
         ok = ok && creature_ok(id, AREA, kind);
+        /* A monster's kit, innate effects and mana regeneration fit in what it may own (R12) */
+        ok = ok && (PC_IS(id) || nge_owner_count(id) <= LEVEL_CREATURE_OWNED);
     }
     CHECK(ok);
+    /* The goblin archer: its bow ready, its arrows in the quiver */
+    reset();
+    nge_event_init();
+    id = gen_creature(CR_GOBLIN_ARCHER, AREA);
+    CHECK(inv_equipped(id, SLOT_RANGED) != NGE_ENTITY_INVALID && kind_index[inv_equipped(id, SLOT_RANGED)] == IT_SHORT_BOW &&
+          inv_equipped(id, SLOT_AMMO) != NGE_ENTITY_INVALID && kind_index[inv_equipped(id, SLOT_AMMO)] == IT_ARROWS &&
+          nge_owner_count(id) == 2 && !ATTACK_HAS(id, ATTACK_RANGED));   /* it shoots with the bow, not its own attack */
+    CHECK(gen_creatures[CR_GOBLIN_ARCHER].where.rarity != 0);
     ok = 1;
     for (kind = IT_NONE + 1; kind < IT_COUNT; kind++) {
         id = gen_item(kind, AREA);
@@ -380,7 +472,7 @@ int main(void)
         nge_entity_destroy(id);
         nge_entity_release(nge_entity_next_dying());
     }
-    /* A creature's hit hook is its melee attack's, set only with one; none for a ranged hit yet (R17) */
+    /* A creature's hit hooks are its attacks', each set only with its attack; a ranged part reaches 2 or more (R7, R17) */
     for (kind = CR_NONE + 1; kind < CR_COUNT; kind++) {
         const gen_creature_kind_t *k = &gen_creatures[kind];
 
@@ -388,10 +480,11 @@ int main(void)
         nge_event_init();
         id = gen_creature(kind, AREA);
         ok = ok && hook_ok(&k->melee_hit) && hook_ok(&k->innate) &&
-             (k->melee_hit.ef == EF_NONE || k->melee.dice != 0) &&
+             hook_ok(&k->ranged_hit) && (k->melee_hit.ef == EF_NONE || k->melee.dice != 0) &&
+             (k->ranged_hit.ef == EF_NONE || k->ranged.dice != 0) && (k->ranged.dice == 0 || k->ranged.range >= 2) &&
              hook_is(gen_creature_hit(kind, ATTACK_MELEE), &k->melee_hit) &&
-             GEN_HOOK_EF(gen_creature_hit(kind, ATTACK_RANGED)) == EF_NONE &&
-             hook_is(gen_hit_of(id, ATTACK_MELEE), &k->melee_hit) && GEN_HOOK_EF(gen_hit_of(id, ATTACK_RANGED)) == EF_NONE;
+             hook_is(gen_creature_hit(kind, ATTACK_RANGED), &k->ranged_hit) &&
+             hook_is(gen_hit_of(id, ATTACK_MELEE), &k->melee_hit) && hook_is(gen_hit_of(id, ATTACK_RANGED), &k->ranged_hit);
     }
     reset();
     CHECK(ok);

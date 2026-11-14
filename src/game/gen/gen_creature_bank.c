@@ -15,13 +15,37 @@
 #include <stdlib.h>
 
 #include "core/nge_util.h"
+#include "game/actions/act.h"
 #include "ecs/systems/nge_timer.h"
 #include "game/timers.h"
+
+/*
+ * Make an item of kind in id's inventory and equip it, as chargen equips the
+ * player's kit. A refused equip leaves it carried. With no entity free, id
+ * goes without: the level's budget allows for a kit (R12)
+ */
+static void equip(nge_entity_id_t id, uint8_t kind)
+{
+    act_t a = { 0 };
+    uint8_t ok;
+
+    a.item = gen_item(kind, id);
+    if (a.item == NGE_ENTITY_INVALID) {
+        return;
+    }
+    a.actor = id;
+    a.slot = SLOT_NONE;   /* the first free slot it fits */
+    ok = act_equip(&a, ACT_DO);
+    nge_util_assert(ok == ACT_SUCCESS);
+    (void)ok;
+}
 
 static nge_entity_id_t create(uint8_t kind, nge_owner_t owner)
 {
     gen_creature_kind_t b;   /* a copy on the stack: the calls below map other pages */
     nge_entity_id_t id;
+    uint8_t item;
+    uint8_t i;
 
     memcpy(&b, &gen_creatures[kind], sizeof(b));
     id = gen_begin(CLASS_CREATURE, kind, owner);
@@ -41,6 +65,9 @@ static nge_entity_id_t create(uint8_t kind, nge_owner_t owner)
     if (ATTACK_KIND_HAS(&b.melee)) {
         attack_add(id, ATTACK_MELEE, &b.melee);
     }
+    if (ATTACK_KIND_HAS(&b.ranged)) {
+        attack_add(id, ATTACK_RANGED, &b.ranged);
+    }
     if (b.flags & CREATURE_PLAYER) {
         nge_entity_set_flags(id, NGE_ENTITY_PERSISTENT);   /* at 0 hp the game ends instead (EV_DIED) */
         pc_add(id);                                        /* a new character: level 1 */
@@ -54,6 +81,13 @@ static nge_entity_id_t create(uint8_t kind, nge_owner_t owner)
     }
     /* Its turns, every speed ticks: the player's wait for a command (player_turn), a monster's are the AI's */
     nge_timer_add(id, (b.flags & CREATURE_PLAYER) ? TIMER_PLAYER : TIMER_AI, stats_speed[id], 0);
+    /* Its kit, equipped: once it has every component, as equipping recomputes its attributes */
+    for (i = 0; i < GEN_KIT_MAX; i++) {
+        item = b.kit[i];   /* in a local before branching on it (T-ZSDCC-1) */
+        if (item != IT_NONE) {
+            equip(id, item);
+        }
+    }
     if (b.innate.ef != EF_NONE) {
         effect_apply(b.innate.ef, b.innate.power, id, NGE_ENTITY_INVALID);   /* an entity of its own, owned by it */
     }
@@ -91,10 +125,7 @@ uint16_t gen_creature_hit(uint8_t kind, uint8_t use) NGE_BANKED
 
     nge_util_assert(kind < CR_COUNT);
 
-    if (use != ATTACK_MELEE) {
-        return GEN_HOOK_PACK(EF_NONE, 0);   /* no natural ranged attack has a hook yet */
-    }
-    h = gen_creatures[kind].melee_hit;
+    h = (use == ATTACK_MELEE) ? gen_creatures[kind].melee_hit : gen_creatures[kind].ranged_hit;
     return GEN_HOOK_PACK(h.ef, h.power);
 }
 

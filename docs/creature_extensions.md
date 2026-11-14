@@ -7,7 +7,8 @@ revised on review: `ai_can_t` widens to 16 bits. Q1 to Q7 were answered
 the part it belongs to, and the creature and feature records lose their array
 of hook slots (R17, plan step 1c).
 The plan is [creature_extensions_plan.md](creature_extensions_plan.md).
-Built: the `balance.py` fix from Q7 (section 10, plan step 1), D11 (plan step 1b) and D3 (plan step 1c).
+Built: the `balance.py` fix from Q7 (section 10, plan step 1), D11 (plan step 1b), D3 (plan step 1c),
+and M1.1 and M1.2 (plan step 2).
 
 Builds on [creatures.md](creatures.md) (the roster of 21 random kinds and rooted
 creatures), [ai.md](ai.md) and [ai_default_brain.md](ai_default_brain.md),
@@ -727,3 +728,38 @@ CSpect checks (the user runs them):
   inventory screen) −6, 126 (the animation) +41, 130 (the AI) +10, 138 (the
   attributes) +6, 101 (common files' assert messages) +22. Common memory is
   the same size. No new library routine in common memory.
+
+### Step 2: the kit and the natural ranged attack (2026-11-14)
+
+- As M1.1 and M1.2. `make test` passes.
+- CSpect (check 2a): the goblin archer wakes with its bow, shoots, and its
+  body drops the bow and the arrows left. The gold snake spits from 3 tiles,
+  and a hit blinds. A blinded player can still fire: that is E4.9, not yet
+  built.
+- The kit is equipped in `create()` after the timer is added, as equipping
+  recomputes attributes, and before the innate effect. Each entry goes
+  through a small `equip()` beside `create()`. If no entity is free, the
+  creature goes without its kit.
+- **Bank depth:** a summoned goblin archer's kit makes the summon chain 8
+  deep (`gen_creature_random()`, `act_equip()`, `effects_recompute()`,
+  `gen_item_hook()`), the most allowed, the same as its innate effect
+  already was. The comment in `effects_bank.c` says so.
+- **Tests linking the generator** now link the actions too (`tests/Makefile`:
+  `GEN_ACT_SRCS`), since `create()` calls `act_equip()`. The AI's thinking
+  stays with the action tests.
+- **Event queue (R15):** over 20 seeds at every depth, generating a level
+  queued at most 11 events of the 32, with 84 kit items equipped.
+  `test_level` checks the peak at every level, and that generating posts
+  only `EV_EFFECT_STARTED`, `EV_ATTRS_CHANGED` and `EV_EQUIPPED`.
+- **`make balance`** (R14): 20 random kinds before, 21 after. C1 still fails
+  at depths 2 to 8; the XP gained by the end is 17,350, 10 less. C5 now warns at depth 4
+  as well: 9.0 hits to kill the player, at the edge of 5 to 9.
+  `balance.py` reads only melee damage, so it counts the archer's d3 knife
+  and not its bow. The model reads neither kits nor natural ranged attacks
+  yet: step 11, which changes the model for bands, is the place for it.
+- Pages: 107 +317 bytes (1,756), 106 +223 (1,753: `equip()` and the kit
+  loop, more than the plan's 0.1K), 127 +6 (156). Page 102 +114 (8,129, 63
+  free) for the dev kit's archer and snake, removed again once check 2a
+  passed.
+  `BANK_56` and common memory are unchanged. No new library routine in
+  common memory.

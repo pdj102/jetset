@@ -61,12 +61,14 @@ LEVEL_GAME_SRCS := $(addprefix $(GAMEDIR)/,level/level.c level/level_bank.c leve
 DATADIR := ../src/data
 LEVEL_ONLY_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(LEVEL_GAME_SRCS)) \
                    $(BUILD)/data/tile_rules_data.o
-# The effects send creatures to other levels (a level teleport): the generators' tests link the level module too
-GEN_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(GEN_GAME_SRCS)) $(LEVEL_ONLY_OBJS)
+# The effects send creatures to other levels (a level teleport), and the creature generator equips a
+# kind's kit (act_equip()): the generators' tests link the level module and the actions too. The
+# stairs actions send entities between levels: the actions need the level module
+GEN_ACT_SRCS := $(wildcard $(GAMEDIR)/actions/*.c)
+GEN_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(GEN_GAME_SRCS) $(GEN_ACT_SRCS)) $(LEVEL_ONLY_OBJS)
 LEVEL_GAME_OBJS := $(GEN_GAME_OBJS)
-# The stairs actions send entities between levels: the actions need the level module
-ACT_GAME_SRCS := $(wildcard $(GAMEDIR)/actions/*.c) $(addprefix $(GAMEDIR)/ai/,ai_act.c ai_sense.c ai_think.c) \
-                 $(GAMEDIR)/components/feature_event.c
+# The monsters' thinking and the features' reactions, with the actions they choose
+ACT_GAME_SRCS := $(addprefix $(GAMEDIR)/ai/,ai_act.c ai_sense.c ai_think.c) $(GAMEDIR)/components/feature_event.c
 ACT_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(ACT_GAME_SRCS)) $(LEVEL_GAME_OBJS)
 UI_GAME_SRCS := $(wildcard $(GAMEDIR)/ui/*.c) \
                 $(addprefix $(GAMEDIR)/,player/player.c player/player_bank.c messages/messages_bank.c \

@@ -42,7 +42,8 @@
 #define CR_DRAGON         21
 #define CR_FIGHTER        22   /* the player as a Fighter (game/chargen); CR_PLAYER is the Dev */
 #define CR_MAGE           23   /* the player as a Mage */
-#define CR_COUNT          24
+#define CR_GOBLIN_ARCHER  24
+#define CR_COUNT          25
 
 /* Items (CLASS_ITEM): IT_QUEST is one a game, made by game/actors.c, never at random */
 #define IT_NONE              0   /* none: a blank row 0 in the kind table, never generated */

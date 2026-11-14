@@ -15,8 +15,9 @@
  * gen_item_hook(): 6 of the 8 allowed (T-STACK-2). Ops on a hit call from
  * the same place: level_send() (a level teleport) and its calls, 6; a
  * summon, gen_creature_random(), then effect_apply() again for the new
- * creature's innate effects, and their calls: 8, the most allowed. No hit
- * hook summons yet; a summoning rune's chain starts 1 shallower
+ * creature's innate effects, and their calls: 8, the most allowed. So is a
+ * summoned creature's kit: gen_creature_random(), act_equip(),
+ * effects_recompute(), gen_item_hook(). No hit hook summons yet; a summoning rune's chain starts 1 shallower
  * (feature_on_event(), act_spring(), effect_apply()).
  */
 #ifdef __SDCC

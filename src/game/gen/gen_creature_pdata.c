@@ -254,14 +254,15 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
         .where = { .depth = 3, .depth_max = 7, .rarity = 4 },
     },
-    [CR_GOLD_SNAKE] = {                                 /* later: spits at range */
+    [CR_GOLD_SNAKE] = {
         .name = "gold snake",
         .render = SHAPE_SNAKE(BANK_GOLD),
         .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
         .stats = { .speed = MONSTER_SPEED, .ability = { 8, 16, 11, 1, 12, 4 } },
         .health = { .hp_max = 13, .immune = DMG_BIT(DMG_POISON), .ac = 14 },
         .melee = { .to_hit = 3, .dice = 1, .sides = 6, .to_damage = 0, .type = DMG_PIERCE, .range = 1 },  /* bite */
-        .melee_hit = { EF_BLIND, 1 },
+        .ranged = { .to_hit = 3, .dice = 1, .sides = 3, .to_damage = 0, .type = DMG_POISON, .range = 3 }, /* spit */
+        .ranged_hit = { EF_BLIND, 1 },                  /* in the eyes */
         .inventory = { .capacity = 0, .slots = 0 },
         .xp = 50,                                       /* 3 hit dice, special */
         .flags = 0,
@@ -399,5 +400,19 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
             [GEN_SEQ_ATTACK] = { SPRITE_PLAYER_ATTACK, SPRITE_PLAYER_ATTACK_COUNT, SPRITE_PLAYER_ATTACK_RATE },
         },
         .where = { .depth = 0, .depth_max = 0, .rarity = 0 },          /* never at random */
+    },
+    [CR_GOBLIN_ARCHER] = {                              /* the goblin war band's (docs/creature_extensions.md 6.1) */
+        .name = "goblin archer",
+        .render = SHAPE_GOBLIN(BANK_ORANGE),
+        .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
+        .stats = { .speed = MONSTER_SPEED, .ability = { 8, 14, 10, 10, 8, 8 } },
+        .health = { .hp_max = 5, .resist = DMG_BIT(DMG_BLUNT), .vuln = DMG_BIT(DMG_FIRE), .ac = 13 },
+        .melee = { .to_hit = 0, .dice = 1, .sides = 3, .to_damage = 0, .type = DMG_SLASH, .range = 1 },   /* a knife */
+        .kit = { IT_SHORT_BOW, IT_ARROWS },
+        .inventory = { .capacity = 4, .slots = SLOT_BIT(SLOT_WEAPON) | SLOT_BIT(SLOT_RANGED) | SLOT_BIT(SLOT_AMMO) },
+        .xp = 10,                                       /* 1-1 hit dice, special */
+        .flags = 0,
+        .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
+        .where = { .depth = 2, .depth_max = 4, .rarity = 5 },
     },
 };

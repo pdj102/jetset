@@ -78,6 +78,9 @@ typedef struct gen_hook {
 /* The spells a kind starts with, at most (docs/spells.md, R7) */
 #define GEN_SPELLS_MAX  4
 
+/* The items a creature kind is generated with, equipped: a launcher and its ammo, or a weapon and armour (docs/creature_extensions.md D2) */
+#define GEN_KIT_MAX  2
+
 /* Creature flags */
 #define CREATURE_PLAYER  0x01   /* the player: its turns wait for commands */
 
@@ -91,6 +94,9 @@ typedef struct gen_creature_kind {
     uint8_t      spells[GEN_SPELLS_MAX];   /* SP_*, the first SP_NONE for none: then no spells component */
     attack_kind_t melee;      /* its natural melee attack (fists, a bite); dice 0 for none */
     gen_hook_t   melee_hit;   /* applied to what a hit by melee leaves alive (act_strike()); only with melee */
+    attack_kind_t ranged;     /* its natural ranged attack (a spit, a gaze): range 2 or more, no ammo; dice 0 for none */
+    gen_hook_t   ranged_hit;  /* the same for its ranged attack; only with ranged */
+    uint8_t      kit[GEN_KIT_MAX];   /* IT_*, IT_NONE for none: made in its inventory and equipped (R6) */
     gen_inventory_t inventory;
     uint16_t     xp;      /* XP the player gains for killing one (classic B/X, by hit dice); 0 for the player */
     uint8_t      flags;   /* CREATURE_* */

@@ -42,8 +42,10 @@
 
 /**
  * @brief Create a creature of kind (CR_*), owned by owner: sprite, block,
- *        stats, health, mana if its kind has some, timer (the player's or a
- *        monster's turn) and, if it can carry things, inventory; then its innate effect, if any
+ *        stats, health, mana if its kind has some, its natural attacks
+ *        (melee, ranged), timer (the player's or a monster's turn) and, if
+ *        it can carry things, inventory; then its kit, made in its inventory
+ *        and equipped (act_equip()), and its innate effect, if any
  *        (its record's innate hook). The player is persistent: at 0 hp it isn't
  *        destroyed (game over instead); and a new character, with the PC
  *        component (game/components/pc.h). Every other creature has the AI

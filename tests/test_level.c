@@ -230,6 +230,29 @@ static int recorded(uint8_t ev, nge_entity_id_t target)
     return -1;
 }
 
+/*
+ * level_generate() posted only what making its monsters does: their innate
+ * effects and their kits equipped (EV_ARRIVED is the game's). Counts the equips
+ */
+static int equips_seen;
+
+static int generation_events_ok(void)
+{
+    int n;
+
+    if (seen_count > (int)(sizeof(seen) / sizeof(seen[0]))) {
+        return 0;
+    }
+    for (n = 0; n < seen_count; n++) {
+        if (seen[n].id == EV_EQUIPPED) {
+            equips_seen++;
+        } else if (seen[n].id != EV_EFFECT_STARTED && seen[n].id != EV_ATTRS_CHANGED) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
 /* Handle the events posted since the last call, recording them, then the frame's clean-up */
 static void settle(void)
 {
@@ -899,6 +922,7 @@ int main(void)
     uint8_t d;
     uint8_t arrival;
     uint8_t i;
+    uint8_t peak = 0;   /* the most events queued while generating a level */
     nge_entity_id_t id;
     nge_entity_id_t monster;
     nge_entity_id_t potion;
@@ -926,11 +950,15 @@ int main(void)
     for (seed = 0; seed < SEEDS && ok; seed++) {
         level_dev_seed = (uint16_t)(seed * 100);
         for (depth = 1; depth <= LEVEL_DEPTH_BOTTOM && ok; depth++) {
+            nge_event_init();   /* the peak, for this level only */
             go((uint8_t)depth, (uint8_t)((seed + depth) % 3));
-            ok = check_level(depth);
+            ok = check_level(depth) && generation_events_ok();
+            peak = (nge_event_peak() > peak) ? nge_event_peak() : peak;
         }
     }
     CHECK(ok);
+    /* Generating never fills the event queue, kits and all (R15); some kits were equipped */
+    CHECK(peak < NGE_EVENT_QUEUE && equips_seen > 0);
     level_dev_seed = 0;
     /* About a third of doorways get doors, about half of them open */
     CHECK(doors_open + doors_shut > doorways_seen / 5 && doors_open + doors_shut < doorways_seen / 2);
@@ -957,12 +985,7 @@ int main(void)
     CHECK(check_level(4) && is_floor(NGE_LOCATION_X(player), NGE_LOCATION_Y(player)));
     go(LEVEL_DEPTH_BOTTOM, LEVEL_ARRIVE_DOWN_STAIRS);   /* no down stairs: free floor instead */
     CHECK(check_level(LEVEL_DEPTH_BOTTOM) && is_floor(NGE_LOCATION_X(player), NGE_LOCATION_Y(player)));
-    /* level_generate() posts only the monsters' innate effects: EV_ARRIVED is the game's */
-    ok = seen_count <= (int)(sizeof(seen) / sizeof(seen[0]));
-    for (n = 0; n < seen_count && ok; n++) {
-        ok = seen[n].id == EV_EFFECT_STARTED || seen[n].id == EV_ATTRS_CHANGED;
-    }
-    CHECK(ok);
+    CHECK(generation_events_ok());
 
     /* ---- debug seeding: a depth is the same whatever happened before, parked entities aside (R7, R7a) ---- */
     go(7, LEVEL_ARRIVE_ANY);

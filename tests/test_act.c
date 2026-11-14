@@ -2761,6 +2761,52 @@ int main(void)
         }
         CHECK(r1 >= 3 && r2 == 0);
     }
+    /* ---- a natural ranged attack (M1.2): the gold snake's spit uses no ammo and blinds, its bite doesn't (R17) ---- */
+    {
+        nge_entity_id_t snake;
+        nge_entity_id_t owned;
+        uint8_t i8;
+
+        nge_entity_init();
+        nge_render_init();
+        nge_timer_init();
+        nge_event_init();
+        player = creature(CR_PLAYER, 0, 2);
+        snake = creature(CR_GOLD_SNAKE, 3, 2);
+        CHECK(ATTACK_HAS(snake, ATTACK_RANGED) && nge_owner_count(snake) == 0);   /* nothing to use up */
+        events();
+        srand(seed_for_roll(20));
+        CHECK(fire(snake, 0, 2, ACT_DO) == ACT_SUCCESS && last.target == player && last.item == NGE_ENTITY_INVALID &&
+              last.damage == DMG_POISON);
+        CHECK(STATUS_HAS(player, STATUS_BLINDED) && nge_owner_count(snake) == 0);
+        /* Its bite, next to the player, applies nothing */
+        effect_apply(EF_CURE_ALL, 1, player, NGE_ENTITY_INVALID);
+        health_hp[player] = health_hp_max[player];
+        nge_location_set(snake, 1, 2);
+        events();
+        srand(seed_for_roll(20));
+        a = ctx(snake);
+        a.target = player;
+        CHECK(act_melee(&a, ACT_DO) == ACT_SUCCESS && !STATUS_HAS(player, STATUS_BLINDED) &&
+              !STATUS_HAS(player, STATUS_POISONED));
+        /* An arrow shot by a creature with a hit of its own applies the arrow's hook, not its bite's: a rat's fire arrow burns */
+        biter = creature(CR_RAT, 3, 2);
+        nge_entity_destroy(snake);
+        level_release_dying();
+        inv_add(biter, 4, SLOT_BIT(SLOT_RANGED) | SLOT_BIT(SLOT_AMMO));
+        equipped(IT_SHORT_BOW, biter, SLOT_RANGED);
+        equipped(IT_FIRE_ARROWS, biter, SLOT_AMMO);
+        health_hp[player] = health_hp_max[player];
+        events();
+        srand(seed_for_roll(20));
+        CHECK(fire(biter, 0, 2, ACT_DO) == ACT_SUCCESS && last.target == player);
+        r2 = 0;
+        NGE_OWNER_FOR_EACH_OWNED(i8, owned, player) {
+            r2 += NGE_ENTITY_HAS_COMPONENT(owned, NGE_COMPONENT_EFFECT) && EFFECT_KIND_OF(owned) == EF_BURNING;
+        }
+        CHECK(r2 == 1 && !STATUS_HAS(player, STATUS_POISONED));
+        events();
+    }
 
     /* ---- stacks: the player at (0, 2), arrows stowed ---- */
     nge_entity_init();
