@@ -1087,3 +1087,65 @@ CSpect checks (the user runs them):
   (4,356: 4 bytes a kind and 3 rows), 106 +211 (2,329), 127 +18, `BANK_56`
   +21, common memory +10. Page 102 is as before once the dev kit went. No
   new library routine in common memory.
+
+### Step 10: spells on allies (2026-11-14)
+
+- As M2.2, D6 and R9. `make test` passes.
+- CSpect (check 10): the shaman mends a goblin the player has hurt, and the
+  warlord casts War Cry on his party. In the first two tries he didn't: the
+  dev kit placed him asleep, and in the dev build he acts every other turn,
+  so he hadn't woken by the time the fight was over. A PC trace of the same
+  scene, awake, has him notice the player, close to 2 tiles and cry.
+- **An allies-only burst is a shape, `SPELL_ALLIES` (6), not a flag.** The
+  plan carried `SPELL_F_ALLIES` to the area code through `act_shape_t`. A
+  field there, or a local for the flag, made zsdcc spill the shape pointer
+  through `act_area()` or `act_shape_apply()`: +48 to +65 bytes, and
+  `BANK_56` full. A shape needs neither: `act_shape_find()` treats it as a
+  burst, and `act_shape_apply()` tests the `shape` it already holds,
+  passing over creatures with no AI component. `SPELL_F_ALLIES`, reserved
+  in step 4 and never read, is gone. Items map their shapes through a table
+  and the player never casts one at a tile, so nothing else changes.
+  `BANK_56` came out **37 bytes smaller** (103 free): zsdcc allocated
+  `act_shape_apply()` better with the test than without (asm read: the
+  shape test hoisted out of the loop, then bit 7 of the AI component's row).
+- **The skip is in the applying, not the finding**, so the AI's check still
+  finds the player as a target: a war cry with no monster around is cast and
+  blesses nobody. Filtering in `act_area()` would have kept it from casting
+  for nothing, but cost 48 bytes there.
+- **The war cry** is cast as a burst is: when the target is within
+  `ACT_BURST_RADIUS`, so in a fight, with its party around. It doesn't
+  bless the warlord, as a burst passes over the caster.
+- **The spells' numbers:** `SP_WAR_CRY` level 3 (4 MP), `SPELL_ALLIES`,
+  `EF_BLESS` 1 (+1 to hit), `SPELL_AI_SEEN`, monster-only. `SP_MEND` level
+  1 (1 MP), direct, `EF_HEALING` 4 (Cure Wounds' power), range 6,
+  `SPELL_AI_ALLY`, monster-only. The warlord's 6 MP make one war cry and
+  most of the next.
+- **The most hurt ally** is the monster in sight at half its HP or less
+  that has lost the most HP, not the smallest share: comparing shares needs
+  a multiply, which would link a routine into common memory. It skips the
+  caster, which heals itself in the "hurt" pass first. The ally pass comes
+  next, whether or not the caster sees its target, then the target and seen
+  spells. Sight is `ai_in_sight()`, tile to tile, as the skirmisher's.
+- **`AI_CAN_SUPPORT`** is set in `ai_can()` when a caster knows a
+  `SPELL_AI_ALLY` spell (`spell_next()`). Asm read: `set 1` of the mask's
+  high byte, and `opt_cast()` tests bit 1 of `can`'s high byte.
+- **The orc warlord** (`CR_ORC_WARLORD` 57): kit battle axe and chain mail,
+  fighter's slots, `SP_WAR_CRY`, 6 MP. `CR_COUNT` 58: the full roster.
+- **Tests:** `test_ai`: a shaman mends the most hurt of two goblins, then
+  the other, never the hurt player, and not one behind a wall; with none at
+  half its HP it mends nobody. A war cry blesses the goblin beside the
+  warlord, not the player or the warlord; with no monster around, nobody.
+  `test_gen`: the shaman's mask has `AI_CAN_SUPPORT`, the warlord's kit is
+  equipped and it has none. `test_spell`: the monster spells, the wider
+  learn-all mask, and no range on an allies burst.
+- **`make balance`**: random kinds 53 before, 54 after. Kinds at depths 6 to
+  8: 18, 16, 16. C1 still fails at depths 2 to 8, depth 9 still warns, C5
+  within 5 to 9 everywhere but depth 1. The XP gained by the end is 25,966,
+  from 26,100.
+- **Dev kit:** for check 10, `level_dev_bandit()` puts the warlord with a
+  goblin each side and a shaman below on an interior tile, which may be in
+  sight. Removed once check 10 passed.
+- Pages: 130 +455 bytes (7,072, 1.1K free: the ally pass in `opt_cast()`
+  +201, `hurt_ally()` 223, `ai_can()` +31; the plan said about 0.2K), 107
+  +80, 135 +31, 127 +6, `BANK_56` −37 (16,281). Page 102 is as before
+  once the dev kit went. No new library routine in common memory.

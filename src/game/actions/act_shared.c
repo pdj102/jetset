@@ -16,6 +16,7 @@
 #include "ecs/components/nge_block.h"
 #include "ecs/components/nge_location.h"
 #include "event/nge_event.h"
+#include "game/ai/ai.h"
 #include "game/components/attack.h"
 #include "game/components/feature.h"
 #include "game/components/health.h"
@@ -191,8 +192,8 @@ uint8_t act_shape_find(act_t *a, act_shape_t *s, uint8_t range)
         a->target = actor;
         return ACT_R_NONE;
     }
-    if (shape == SPELL_BURST) {
-        /* Around the actor, not the actor: no tile is read */
+    if (shape == SPELL_BURST || shape == SPELL_ALLIES) {
+        /* Around the actor, not the actor: no tile is read. Allies are passed over in the applying */
         s->cx = NGE_LOCATION_X(actor);
         s->cy = NGE_LOCATION_Y(actor);
         return act_area(a, s, ACT_BURST_RADIUS, 0);
@@ -236,11 +237,15 @@ void act_shape_apply(act_t *a, const act_shape_t *s, uint8_t ef, int8_t power)
     if (shape == SPELL_TILE) {
         effect_apply_at(ef, power, actor, actor, s->cx, s->cy);
     } else if (SPELL_IS_AREA(shape)) {
-        /* The area, then each creature found, if an effect before hasn't killed it (D13) */
+        /*
+         * The area, then each creature found, if an effect before hasn't
+         * killed it (D13); for SPELL_ALLIES only those with AI, so a war
+         * cry never reaches the player (R9)
+         */
         nge_event_post(NGE_EVENT_NONE, EV_AREA, actor, s->cx, s->cy);
         for (i = 0; i < count; i++) {
             id = s->ids[i];
-            if (NGE_ENTITY_IS_ALIVE(id)) {
+            if (NGE_ENTITY_IS_ALIVE(id) && (shape != SPELL_ALLIES || AI_IS(id))) {
                 effect_apply(ef, power, id, actor);
             }
         }

@@ -112,6 +112,33 @@ static uint8_t hurt(nge_entity_id_t id)
     return NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_HEALTH) && (uint16_t)health_hp[id] * 2 <= health_hp_max[id];
 }
 
+/*
+ * The most hurt monster other than id that id sees from (x, y), at half its
+ * hit points or less: the most hit points lost, not the smallest share, as
+ * that needs a multiply. NGE_ENTITY_INVALID if none
+ */
+static nge_entity_id_t hurt_ally(nge_entity_id_t id, uint8_t x, uint8_t y)
+{
+    nge_owner_t area = NGE_OWNER_OF(id);
+    nge_entity_id_t best = NGE_ENTITY_INVALID;
+    nge_entity_id_t other;
+    uint8_t most = 0;
+    uint8_t lost;
+    uint8_t i;
+
+    NGE_ENTITY_FOR_EACH_ALIVE(i, other) {
+        if (other != id && AI_IS(other) && NGE_ENTITY_HAS_COMPONENT(other, NGE_COMPONENT_LOCATION) &&
+            NGE_OWNER_OF(other) == area && hurt(other)) {
+            lost = (uint8_t)(health_hp_max[other] - health_hp[other]);
+            if (lost > most && ai_in_sight(area, x, y, NGE_LOCATION_X(other), NGE_LOCATION_Y(other))) {
+                most = lost;
+                best = other;
+            }
+        }
+    }
+    return best;
+}
+
 /* A mask, not %: a multiply-free fold of 0 to 31 below SPELL_COUNT, past SP_NONE (R11) */
 typedef char ai_spell_start_check[(SPELL_COUNT >= 2 && SPELL_COUNT <= 32) ? 1 : -1];
 
@@ -127,11 +154,13 @@ uint8_t ai_spell_start(uint8_t r)
 
 /*
  * Cast a spell (docs/spells.md, 4.9). Hurt, each spell it uses when hurt,
- * on itself. Seeing its target, each spell it casts at one or when it sees
+ * on itself. A healer (AI_CAN_SUPPORT), each spell it casts on allies, at
+ * the most hurt monster it sees (hurt_ally()), checked by hand as below so
+ * the cast reaches that one (docs/creature_extensions.md M2.2). Seeing its target, each spell it casts at one or when it sees
  * one, from a random one, so a necromancer summons as often as it bolts.
  * At the target (SPELL_AI_TARGET): checked by hand, as opt_shoot() does,
  * so it holds a spell that would reach someone else. When it sees it
- * (SPELL_AI_SEEN): on itself, or a burst only with the target in reach
+ * (SPELL_AI_SEEN): on itself, or a burst (SPELL_ALLIES too) only with the target in reach
  * (docs/creature_extensions.md M2.1). ACT_CAST refuses what it can't
  * afford, so out of MP it falls back on its other options. The random
  * start is drawn out of the action (actions.md, R5)
@@ -146,6 +175,8 @@ static uint8_t opt_cast(const ai_ctx_t *c)
     uint8_t sees = c->sees;
     uint8_t x = c->x;
     uint8_t y = c->y;
+    ai_can_t can = c->can;
+    nge_entity_id_t ally;
     uint8_t first;
     uint8_t sp;
     uint8_t use;
@@ -153,7 +184,7 @@ static uint8_t opt_cast(const ai_ctx_t *c)
     spell_def_t def;   /* a copy: the table is in the spells' page */
     act_t a = { 0 };
 
-    if (!(c->can & AI_CAN_CAST)) {
+    if (!(can & AI_CAN_CAST)) {
         return 0;
     }
     a.actor = id;
@@ -170,6 +201,26 @@ static uint8_t opt_cast(const ai_ctx_t *c)
             sp = spell_next(id, sp, SPELL_AI_HURT);
             if (sp == first) {
                 break;
+            }
+        }
+    }
+    if (can & AI_CAN_SUPPORT) {
+        ally = hurt_ally(id, x, y);
+        if (ally != NGE_ENTITY_INVALID) {
+            first = spell_next(id, SP_NONE, SPELL_AI_ALLY);
+            sp = first;
+            while (sp != SP_NONE) {
+                a.spell = sp;
+                a.x = NGE_LOCATION_X(ally);
+                a.y = NGE_LOCATION_Y(ally);
+                if (act_do(ACT_CAST, &a, ACT_CHECK) == ACT_SUCCESS && a.target == ally) {
+                    act_do(ACT_CAST, &a, ACT_DO);
+                    return a.used;
+                }
+                sp = spell_next(id, sp, SPELL_AI_ALLY);
+                if (sp == first) {
+                    break;
+                }
             }
         }
     }
@@ -190,7 +241,7 @@ static uint8_t opt_cast(const ai_ctx_t *c)
                 act_do(ACT_CAST, &a, ACT_DO);
                 return a.used;
             }
-        } else if (use == SPELL_AI_SEEN && (shape != SPELL_BURST || nge_map_within(x, y, gx, gy, ACT_BURST_RADIUS))) {
+        } else if (use == SPELL_AI_SEEN && (shape < SPELL_BURST || nge_map_within(x, y, gx, gy, ACT_BURST_RADIUS))) {
             a.x = x;
             a.y = y;
             if (ai_try(ACT_CAST, &a)) {

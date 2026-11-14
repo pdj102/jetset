@@ -89,7 +89,7 @@ typedef uint16_t ai_can_t;    /**< A mask of AI_CAN_*: 16 bits (docs/creature_ex
 #define AI_CAN_CAST    0x40   /**< Casts spells: knows some (game/spells/spells.h); ACT_CAST says which it can afford. */
 #define AI_CAN_MOVE    0x80   /**< Leaves its tile: not rooted (STATUS_ROOTED). */
 #define AI_CAN_SKIRMISH  0x0100   /**< Steps back to shoot or cast: AI_TRAIT_SKIRMISH, AI_CAN_MOVE, and AI_CAN_RANGED or AI_CAN_CAST. */
-#define AI_CAN_SUPPORT   0x0200   /**< Casts on its allies: knows a SPELL_AI_ALLY spell. Not set yet (creature_extensions_plan.md, step 10). */
+#define AI_CAN_SUPPORT   0x0200   /**< Casts on its allies: AI_CAN_CAST, and knows a SPELL_AI_ALLY spell. */
 /* Reserved for later: AI_CAN_STEAL 0x0400, AI_CAN_PHASE 0x0800 (docs/creature_extensions.md M5) */
 
 /* Traits: bits of a kind's ai_kind_t traits, how it fights when it can (ai_can()) */

@@ -79,7 +79,9 @@
 #define CR_GAS_SPORE      54
 #define CR_SALAMANDER     55
 #define CR_BLACK_PUDDING  56
-#define CR_COUNT          57
+/* docs/creature_extensions.md 6.2: the war cry (plan step 10): the full roster */
+#define CR_ORC_WARLORD    57
+#define CR_COUNT          58
 
 /* Items (CLASS_ITEM): IT_QUEST is one a game, made by game/actors.c, never at random */
 #define IT_NONE              0   /* none: a blank row 0 in the kind table, never generated */

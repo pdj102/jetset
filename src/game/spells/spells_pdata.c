@@ -34,6 +34,9 @@ const spell_def_t spell_defs[SPELL_COUNT] = {
     [SP_WAIL]         = { "Wail",         3, SPELL_BURST,  EF_FEAR,      1, 0, SPELL_AI_SEEN,   SPELL_F_MONSTER },
     [SP_SHRIEK]       = { "Shriek",       2, SPELL_SELF,   EF_WAKE,      8, 0, SPELL_AI_SEEN,   SPELL_F_MONSTER },
     [SP_SUMMON_UNDEAD] = { "Summon Undead", 5, SPELL_SELF, EF_SUMMON_UNDEAD, 2, 0, SPELL_AI_SEEN, SPELL_F_MONSTER },
+    /* On monsters (M2.2): a war cry reaches only them, and mending is aimed at a hurt one */
+    [SP_WAR_CRY]      = { "War Cry",      3, SPELL_ALLIES, EF_BLESS,     1, 0, SPELL_AI_SEEN,   SPELL_F_MONSTER },
+    [SP_MEND]         = { "Mend",         1, SPELL_DIRECT, EF_HEALING,   4, 6, SPELL_AI_ALLY,   SPELL_F_MONSTER },
 };
 
 /* MP by spell level (docs/spells.md, 4.2): rising with every level above 0, an ability's */

@@ -153,8 +153,9 @@ int main(void)
         ok = ok && d->shape < SPELL_SHAPE_COUNT && d->ai < SPELL_AI_COUNT;
         ok = ok && d->ef != EF_NONE && d->ef < EF_COUNT && effect_defs[d->ef].duration != EFFECT_WORN;   /* R2 */
         ok = ok && d->power > 0;                                    /* never a negative power (section 8) */
-        ok = ok && (d->range != 0) == (d->shape != SPELL_SELF && d->shape != SPELL_BURST);   /* a range only on a line */
-        ok = ok && (d->flags & ~(SPELL_F_MONSTER | SPELL_F_ALLIES)) == 0;
+        ok = ok && (d->range != 0) == (d->shape != SPELL_SELF && d->shape != SPELL_BURST &&
+                                       d->shape != SPELL_ALLIES);   /* a range only on a line */
+        ok = ok && (d->flags & ~SPELL_F_MONSTER) == 0;
         ok = ok && (!(d->flags & SPELL_F_MONSTER) || d->level >= 1);   /* an ability costs MP: its cooldown (M2.1) */
     }
     CHECK(ok);
@@ -199,7 +200,7 @@ int main(void)
         spell_learn(b, sp);
     }
     CHECK(known(b) == (BIT(SPELL_COUNT) - 2) && events() == SPELL_COUNT - 2);
-    CHECK(spell_known[b][0] == 0xFE && spell_known[b][1] == 0xFF && spell_known[b][2] == 0x03 && spell_known[b][3] == 0);
+    CHECK(spell_known[b][0] == 0xFE && spell_known[b][1] == 0xFF && spell_known[b][2] == 0x0F && spell_known[b][3] == 0);
     CHECK(known(a) == (BIT(SP_HASTE) | BIT(SP_HOLD)));               /* another caster's set untouched */
 
     /* ---- next: wrapping round to itself, filtered by when the AI casts it; none known ---- */
@@ -252,7 +253,7 @@ int main(void)
     }
     CHECK(ok);
     b = gen_creature(CR_GOBLIN_SHAMAN, AREA);
-    CHECK(SPELLS_IS(b) && known(b) == (BIT(SP_MAGIC_BOLT) | BIT(SP_CURE_WOUNDS) | BIT(SP_ENFEEBLE)));
+    CHECK(SPELLS_IS(b) && known(b) == (BIT(SP_MAGIC_BOLT) | BIT(SP_CURE_WOUNDS) | BIT(SP_ENFEEBLE) | BIT(SP_MEND)));
     b = gen_creature(CR_GOBLIN, AREA);
     CHECK(!SPELLS_IS(b) && !spell_knows(b, SP_MAGIC_BOLT));
 
@@ -336,7 +337,7 @@ int main(void)
         }
     }
     CHECK(monster == (BIT(SP_FIRE_BREATH) | BIT(SP_FROST_BREATH) | BIT(SP_CONFUSE) | BIT(SP_WAIL) | BIT(SP_SHRIEK) |
-                     BIT(SP_SUMMON_UNDEAD)));
+                     BIT(SP_SUMMON_UNDEAD) | BIT(SP_WAR_CRY) | BIT(SP_MEND)));
     CHECK(all == ((BIT(SPELL_COUNT) - 2) & ~monster) && (all & monster) == 0);
     CHECK(levels_of(book_mask(SPELL_BOOK_BASIC)) == ((1u << 1) | (1u << 2)));
     CHECK(levels_of(book_mask(SPELL_BOOK_ADEPT)) == ((1u << 3) | (1u << 4)));

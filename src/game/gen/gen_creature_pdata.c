@@ -265,7 +265,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .stats = { .speed = MONSTER_SPEED, .ability = { 8, 12, 10, 13, 14, 10 } },
         .health = { .hp_max = 9, .resist = DMG_BIT(DMG_BLUNT), .vuln = DMG_BIT(DMG_FIRE), .ac = 12 },
         .mana = { .mp_max = 6 },
-        .spells = { SP_MAGIC_BOLT, SP_CURE_WOUNDS, SP_ENFEEBLE },
+        .spells = { SP_MAGIC_BOLT, SP_CURE_WOUNDS, SP_ENFEEBLE, SP_MEND },   /* Mend: its hurt allies (M2.2) */
         .melee = { .to_hit = 1, .dice = 1, .sides = 4, .to_damage = 0, .type = DMG_BLUNT, .range = 1 },   /* a stick */
         .inventory = { .capacity = 4, .slots = SLOT_BIT(SLOT_WEAPON) },
         .xp = 25,                                       /* 2 hit dice, special */
@@ -896,5 +896,21 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
         .struck = { EF_CORROSION, 1 },                  /* acid on what strikes it */
         .where = { .depth = 8, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 3 },
+    },
+    [CR_ORC_WARLORD] = {                                /* later: leads a war party (bands) */
+        .name = "orc warlord",
+        .render = SHAPE_GOBLIN(BANK_DARK),
+        .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
+        .stats = { .speed = MONSTER_SPEED, .ability = { 16, 11, 14, 10, 10, 13 } },
+        .health = { .hp_max = 23, .vuln = DMG_BIT(DMG_FIRE), .ac = 12 },
+        .mana = { .mp_max = 6 },                        /* a war cry, and most of the next */
+        .spells = { SP_WAR_CRY },
+        .melee = { .to_hit = 5, .dice = 1, .sides = 8, .to_damage = 0, .type = DMG_SLASH, .range = 1 },   /* claws */
+        .kit = { IT_BATTLE_AXE, IT_CHAIN_MAIL },
+        .inventory = { .capacity = 4, .slots = SLOTS_FIGHTER },   /* drinks potions: Int 10 */
+        .xp = 225,                                      /* 5 hit dice, special */
+        .flags = 0,
+        .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
+        .where = { .depth = 6, .depth_max = 8, .rarity = 2 },
     },
 };

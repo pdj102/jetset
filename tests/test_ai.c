@@ -1078,6 +1078,60 @@ int main(void)
         CHECK(summons > 0 && at_target > 0 && other == 0);
     }
 
+    /*
+     * ---- spells on allies (M2.2): a shaman mends the most hurt monster it
+     * sees, never the player; a war cry blesses the monsters around, never
+     * the player (R9) ----
+     */
+    scene(0, 5);
+    health_hp[actor_player] = 1;                            /* hurt too: no matter */
+    a = hunter(CR_GOBLIN_SHAMAN, 5, 5, 0, 5);
+    b = creature(CR_GOBLIN, 6, 6);                          /* 5 lost: the most hurt */
+    goblin = creature(CR_GOBLIN, 6, 4);                     /* 3 lost */
+    health_hp[b] = 1;
+    health_hp[goblin] = 3;
+    events();
+    CHECK((ai_can(a) & AI_CAN_SUPPORT) && !(ai_can(goblin) & AI_CAN_SUPPORT));
+    ai_on_turn(a);
+    CHECK(health_hp[b] > 1 && health_hp[goblin] == 3 && health_hp[actor_player] == 1 && mana_mp[a] == 5);
+    CHECK(events() >= 1 && is(0, b, EV_CAST, a) && seen[0].p1 == SP_MEND);
+    ai_on_turn(a);
+    CHECK(health_hp[goblin] > 3 && events() >= 1 && is(0, goblin, EV_CAST, a) && seen[0].p1 == SP_MEND);
+    /* No monster hurt enough (half or less): no mending, whatever the player's hit points */
+    health_hp[b] = health_hp_max[b];
+    health_hp[goblin] = health_hp_max[goblin];
+    events();
+    ai_on_turn(a);
+    CHECK(events() >= 1 && !(seen[0].id == EV_CAST && seen[0].p1 == SP_MEND));
+    /* Out of its sight, behind a wall: not mended */
+    scene(0, 5);
+    a = hunter(CR_GOBLIN_SHAMAN, 5, 5, 0, 5);
+    b = creature(CR_GOBLIN, 8, 5);
+    health_hp[b] = 1;
+    NGE_MAP_TILE(7, 5).tile_id = WALL;
+    NGE_MAP_TILE(7, 4).tile_id = WALL;
+    NGE_MAP_TILE(7, 6).tile_id = WALL;
+    events();
+    ai_on_turn(a);
+    CHECK(health_hp[b] == 1);
+    events();
+    /* The war cry: the goblin beside the warlord blessed, the player not, nor the warlord (a burst) */
+    scene(0, 5);
+    a = hunter(CR_ORC_WARLORD, 2, 5, 0, 5);
+    goblin = creature(CR_GOBLIN, 3, 5);
+    events();
+    CHECK(!(ai_can(a) & AI_CAN_SUPPORT) && spell_knows(a, SP_WAR_CRY));
+    ai_on_turn(a);
+    CHECK(stats_to_hit[goblin] == 1 && stats_to_hit[actor_player] == 0 && stats_to_hit[a] == 0 && mana_mp[a] == 2);
+    CHECK(events() >= 1 && seen[0].id == EV_CAST && seen[0].source == a && seen[0].p1 == SP_WAR_CRY);
+    /* With no monster around, the player alone in reach: nobody blessed */
+    scene(0, 5);
+    a = hunter(CR_ORC_WARLORD, 2, 5, 0, 5);
+    events();
+    ai_on_turn(a);
+    CHECK(stats_to_hit[actor_player] == 0);
+    events();
+
     /* ---- a hell hound's breath catches its packmate, unhurt (R9: immune to its element) ---- */
     scene(0, 5);
     effects_set_base(actor_player, ATTR_HP_MAX, 200);

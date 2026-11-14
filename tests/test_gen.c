@@ -712,7 +712,7 @@ int main(void)
     id = gen_creature(CR_GOBLIN_SHAMAN, AREA);
     CHECK(MANA_IS(id) && mana_mp[id] == 6);
     CHECK(ai_can(id) == (AI_CAN_MOVE | AI_CAN_MELEE | AI_CAN_PICKUP | AI_CAN_EQUIP | AI_CAN_USE | AI_CAN_OPEN |
-                         AI_CAN_CAST | AI_CAN_SKIRMISH));      /* Int 13, a skirmisher (M1.3) */
+                         AI_CAN_CAST | AI_CAN_SKIRMISH | AI_CAN_SUPPORT));   /* Int 13, a skirmisher (M1.3) that mends (M2.2) */
     id = gen_creature(CR_GOBLIN_ARCHER, AREA);
     CHECK(ai_can(id) == (AI_CAN_MOVE | AI_CAN_MELEE | AI_CAN_PICKUP | AI_CAN_EQUIP | AI_CAN_USE | AI_CAN_OPEN |
                          AI_CAN_RANGED | AI_CAN_SKIRMISH));    /* its kit's arrows */
@@ -779,6 +779,11 @@ int main(void)
           inv_equipped(id, SLOT_BODY) != NGE_ENTITY_INVALID && kind_index[inv_equipped(id, SLOT_BODY)] == IT_ROBE);
     CHECK(spell_knows(id, SP_SUMMON_UNDEAD) && spell_knows(id, SP_HOLD) && mana_mp[id] == 14 &&
           (ai_can(id) & (AI_CAN_CAST | AI_CAN_USE | AI_CAN_SKIRMISH)) == (AI_CAN_CAST | AI_CAN_USE | AI_CAN_SKIRMISH));
+    /* The orc warlord: its battle axe wielded and its chain mail worn; a war cry, no ally spell (M2.2) */
+    id = gen_creature(CR_ORC_WARLORD, AREA);
+    CHECK(inv_equipped(id, SLOT_WEAPON) != NGE_ENTITY_INVALID && kind_index[inv_equipped(id, SLOT_WEAPON)] == IT_BATTLE_AXE &&
+          inv_equipped(id, SLOT_BODY) != NGE_ENTITY_INVALID && kind_index[inv_equipped(id, SLOT_BODY)] == IT_CHAIN_MAIL &&
+          spell_knows(id, SP_WAR_CRY) && !(ai_can(id) & AI_CAN_SUPPORT));
     id = gen_creature(CR_LICH, AREA);
     CHECK(spell_knows(id, SP_SUMMON_UNDEAD) && mana_mp[id] == 30 && GEN_HOOK_EF(gen_hit_of(id, ATTACK_MELEE)) == EF_PARALYSE &&
           !INV_HAS(id));

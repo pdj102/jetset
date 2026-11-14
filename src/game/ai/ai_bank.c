@@ -119,6 +119,9 @@ ai_can_t ai_can(nge_entity_id_t id) NGE_BANKED
     }
     if (SPELLS_IS(id)) {
         can |= AI_CAN_CAST;
+        if (spell_next(id, SP_NONE, SPELL_AI_ALLY) != SP_NONE) {
+            can |= AI_CAN_SUPPORT;   /* a healer: opt_cast() looks for a hurt ally */
+        }
     }
     if (!rooted) {
         can |= AI_CAN_MOVE;

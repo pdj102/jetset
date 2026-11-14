@@ -134,7 +134,8 @@ typedef struct act_shape {
  * @brief Validate a shape: who it reaches from the actor.
  *
  * Self reaches the actor. A burst reaches the creatures around the actor,
- * not the actor. Bolt and direct are act_line(). A tile must be free, and a
+ * not the actor, and so does SPELL_ALLIES, whose applying passes over
+ * those with no AI. Bolt and direct are act_line(). A tile must be free, and a
  * ball catches every creature around the chosen tile, the actor too. Uses no
  * random numbers, so a check gets the same answer as the action.
  *
@@ -156,7 +157,8 @@ uint8_t act_shape_find(act_t *a, act_shape_t *s, uint8_t range);
  * @brief Apply an effect to whom act_shape_find() found, with the actor as its source.
  *
  * A tile applies it to the actor at that tile (effect_apply_at(): blink). An area posts EV_AREA,
- * then applies to each creature found that an effect before hasn't killed.
+ * then applies to each creature found that an effect before hasn't killed: for SPELL_ALLIES,
+ * only those with AI.
  * Self, bolt and direct apply to a->target.
  *
  * @param a      The action that act_shape_find() validated: a->actor is the

@@ -55,7 +55,9 @@
 #define SP_WAIL         15   /**< Level 3 burst: frightened (the banshee). */
 #define SP_SHRIEK       16   /**< Level 2, self: wakes the monsters around (the shrieker). */
 #define SP_SUMMON_UNDEAD 17  /**< Level 5, self: undead around the caster (the necromancer, the lich). */
-#define SPELL_COUNT     18
+#define SP_WAR_CRY      18   /**< Level 3 burst, allies only: blessed (the orc warlord). */
+#define SP_MEND         19   /**< Level 1, direct: heals a hurt ally (the goblin shaman). */
+#define SPELL_COUNT     20
 
 /* Shapes: who a spell or an aimed item reaches (an item's: gen_item_shape()) */
 #define SPELL_SELF    0   /**< The caster. */
@@ -64,7 +66,8 @@
 #define SPELL_TILE    3   /**< A free tile in range and line, never a creature: its effect on the caster, there (effect_apply_at()). */
 #define SPELL_BALL    4   /**< Every creature within ACT_BALL_RADIUS of the chosen tile, the caster too (ACT_LINE_DIRECT). */
 #define SPELL_BURST   5   /**< Every creature within ACT_BURST_RADIUS of the caster, not the caster. */
-#define SPELL_SHAPE_COUNT  6
+#define SPELL_ALLIES  6   /**< A burst on the monsters only: those with AI, never the player (R9, a war cry). */
+#define SPELL_SHAPE_COUNT  7
 
 /** 1 if shape s reaches an area (SPELL_BALL, SPELL_BURST): the last shapes, so one compare. */
 #define SPELL_IS_AREA(s)  ((s) >= SPELL_BALL)
@@ -74,7 +77,8 @@
 #define SPELL_AI_HURT    1   /**< When hurt: on itself. */
 #define SPELL_AI_TARGET  2   /**< At the creature it hunts. */
 #define SPELL_AI_SEEN    3   /**< On itself, or around itself (a burst within reach of its target), when it sees its target. */
-#define SPELL_AI_COUNT   4
+#define SPELL_AI_ALLY    4   /**< At the most hurt monster it sees, at half its hit points or less, not itself. */
+#define SPELL_AI_COUNT   5
 #define SPELL_AI_ANY     0xFF   /**< For spell_next(): any of them. */
 
 /* Spell levels: 0 is an ability, which costs nothing */
@@ -107,7 +111,6 @@ typedef struct spell_def {
 
 /* Spell flags: bits of spell_def_t flags */
 #define SPELL_F_MONSTER  0x01   /**< A monster's ability: in no book, and the player can't learn it (R10). */
-#define SPELL_F_ALLIES   0x02   /**< An area spell that reaches only creatures with AI. Not read yet (creature_extensions_plan.md, step 10). */
 
 /** Entity id has the spells component: it knows some spells (a caster). */
 #define SPELLS_IS(id)  NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_SPELLS)

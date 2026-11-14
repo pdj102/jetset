@@ -7,7 +7,8 @@ this file says in what order, what changes, and how each step is checked.
 Status: planned (2026-11-13). Step 1 done the same day. Step 1b added and done 2026-11-14
 (spec D11). Step 1c added 2026-11-14 (spec D3 revised, R17), agreed and done the same day;
 steps 2, 8, 9 and 12 changed to match. Steps 2 to 7 done 2026-11-14. Step 8 done
-2026-11-14. Step 9 done 2026-11-14.
+2026-11-14. Step 9 done 2026-11-14. Step 10 done
+2026-11-14.
 
 ## 1. How the steps work
 
@@ -416,7 +417,7 @@ Spec M4.1, M4.2, D3.
 - **CSpect (check 3):** hitting a floating eye in melee paralyses the player. A gas spore
   shot from range burns the goblins next to it.
 
-### Step 10: spells on allies (M2.2)
+### Step 10: spells on allies (M2.2) `[done]` (2026-11-14)
 
 Spec M2.2, D6, R9.
 
