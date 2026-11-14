@@ -10,7 +10,7 @@ The plan is [creature_extensions_plan.md](creature_extensions_plan.md).
 Built: the `balance.py` fix from Q7 (section 10, plan step 1), D11 (plan step 1b), D3 (plan step 1c),
 M1.1 and M1.2 (plan step 2), M1.3 (plan step 3),
 M1.4 and M2.1's phase-1 spells (plan step 4), the six
-shapes (plan step 5) and the kinds of 6.1 (plan step 6).
+shapes (plan step 5), the kinds of 6.1 (plan step 6) and those of 6.2 (plan step 7).
 
 Builds on [creatures.md](creatures.md) (the roster of 21 random kinds and rooted
 creatures), [ai.md](ai.md) and [ai_default_brain.md](ai_default_brain.md),
@@ -901,3 +901,46 @@ CSpect checks (the user runs them):
   table: the shaman, a kobold, jackal, fire beetle, zombie, harpy, ghoul and
   orc archer. Removed once the check passed.
 - Pages: 107 +1,030 bytes (2,811), 127 +84 (240). Page 102 unchanged once the dev kit went. No new library routine in common memory.
+
+### Step 7: phase-1 kinds, depths 5 to 10 (2026-11-14)
+
+- The 13 kinds of 6.2 other than the orc warlord (step 10), necromancer and
+  lich (step 8), salamander and black pudding (step 9): `CR_OWLBEAR` 39 to
+  `CR_VAMPIRE` 51, with `SHAPE_ROBE`, `SHAPE_LIZARD` and `SHAPE_ORB` (the
+  VFX's `fx.orb`, one still frame). "Speed 8" (the warg, the minotaur) is
+  `MONSTER_QUICK`, four fifths of `MONSTER_SPEED`. `make test` passes.
+- The mimic, ogre, ghost and wraith narrow now, as step 6 left them (6.3).
+- **Monsters don't take each other's harm as an attack (D6).** A hell hound
+  caught in its packmate's breath took no damage, but made the packmate its
+  target, so it turned on it. `ai_on_event()` now ignores a hit, miss,
+  damage or spell whose source is another AI entity, as it already ignored
+  one a creature does to itself (step 4). `test_ai` checks the packmate
+  takes no damage and still hunts the player. Common memory 28 bytes
+  smaller.
+- **The wight has no sword, and carries nothing.** A creature wielding a
+  weapon strikes with it, and the hit applies the weapon's hook, not the
+  creature's `melee_hit` (R17), so with 6.2's kit sword the wight's
+  `EF_DRAIN_CON` never landed. On review the sword was dropped, and its
+  inventory with it, so it can't pick one up either: it drains with its
+  touch.
+- `test_gen`: the loop that makes every kind drains the event queue for
+  each, as 51 kinds' start-up events no longer fit it together (generation
+  itself stays within the queue: `test_level`, R15). New checks: every depth
+  has 6 to 22 random kinds (R1), and from depth 2 one that attacks from
+  afar (R2). The bottom's kinds are those whose depths reach it.
+- **`make balance`** (R14): random kinds 35 before, 48 after. Kinds a depth,
+  1 to 10: 10, 15, 21, 20, 20, 17, 14, 12, 10, 9. Mean XP a monster at
+  depths 5 to 10: 73, 175, 396, 549, 903, 952 (from 59, 134, 389, 389, 600,
+  854). C1 still fails at depths 2 to 8, depth 9 still warns, and C5 is
+  within 5 to 9 everywhere but depth 1. The XP gained by the end is 24,897,
+  from 19,924.
+- CSpect (check 7): the hill giant throws, and the new shapes show. The
+  hell hound's breath on its packmate and the basilisk's gaze weren't met
+  in play: their PC tests stand for them (`test_ai`: the packmate unhurt
+  and still hunting the player; the basilisk gazing from 4 tiles, without
+  ammo, until it paralyses).
+- **Dev kit:** for the check, placed from the table: the shaman, two hell
+  hounds, a basilisk, a hill giant, a vampire and a will-o'-wisp. Removed
+  once the check passed.
+- Pages: 107 +945 bytes (3,756), 127 +78 (318). No new library routine in
+  common memory.

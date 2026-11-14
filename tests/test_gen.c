@@ -21,6 +21,7 @@
 #include "game/level/level.h"
 #include "game/level/level_internal.h"
 #include "game/spells/spells.h"
+#include "game/spells/spells_internal.h"
 #include "game/timers.h"
 #include "game/effects/effects.h"
 
@@ -429,6 +430,7 @@ int main(void)
     reset();
     ok = 1;
     for (kind = CR_NONE + 1; kind < CR_COUNT; kind++) {
+        nge_event_init();   /* each kind's start (effects, its kit) on its own: they don't all fit the queue */
         id = gen_creature(kind, AREA);
         ok = ok && creature_ok(id, AREA, kind);
         /* A monster's kit, innate effects and mana regeneration fit in what it may own (R12) */
@@ -842,8 +844,42 @@ int main(void)
     }
     reset();
     nge_event_init();
-    CHECK(seen[CR_WRAITH] > 0 && seen[CR_TROLL] > 0 && seen[CR_DRAGON] > 0);
-    CHECK(seen[CR_WRAITH] + seen[CR_TROLL] + seen[CR_DRAGON] == 300);           /* nothing else at the bottom */
+    /* At the bottom, only the kinds whose depths reach it: the deep ones, and not the wraith (6.3) */
+    ok = seen[CR_TROLL] > 0 && seen[CR_DRAGON] > 0 && seen[CR_WRAITH] == 0 && seen[CR_RAT] == 0;
+    for (kind = CR_NONE + 1; kind < CR_COUNT; kind++) {
+        ok = ok && (seen[kind] == 0 || gen_creatures[kind].where.depth_max == LEVEL_DEPTH_BOTTOM);
+    }
+    CHECK(ok);
+
+    /*
+     * Every depth has 6 to 22 random kinds (docs/creature_extensions.md R1), and
+     * from depth 2 one that attacks from afar: a ranged part, a ranged kit or a
+     * spell cast at a target (R2)
+     */
+    ok = 1;
+    for (i = 1; i <= LEVEL_DEPTH_BOTTOM; i++) {
+        int kinds = 0;
+        int far = 0;
+
+        for (kind = CR_NONE + 1; kind < CR_COUNT; kind++) {
+            const gen_creature_kind_t *k = &gen_creatures[kind];
+            uint8_t j;
+
+            if (k->where.rarity == 0 || i < k->where.depth || i > k->where.depth_max) {
+                continue;
+            }
+            kinds++;
+            far = far || k->ranged.dice != 0;
+            for (j = 0; j < GEN_KIT_MAX; j++) {
+                far = far || (k->kit[j] != IT_NONE && gen_items[k->kit[j]].subclass == ITEM_RANGED);
+            }
+            for (j = 0; j < GEN_SPELLS_MAX; j++) {
+                far = far || (k->spells[j] != SP_NONE && spell_defs[k->spells[j]].ai == SPELL_AI_TARGET);
+            }
+        }
+        ok = ok && kinds >= 6 && kinds <= 22 && (i == 1 || far);
+    }
+    CHECK(ok);
 
     memset(seen, 0, sizeof(seen));
     for (i = 0; i < 3000; i++) {

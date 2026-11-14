@@ -58,7 +58,21 @@
 #define CR_SHADOW         36
 #define CR_ORC_ARCHER     37
 #define CR_SKELETON_ARCHER 38
-#define CR_COUNT          39
+/* docs/creature_extensions.md 6.2: depths 5 to 10 (plan step 7) */
+#define CR_OWLBEAR        39
+#define CR_WISP           40   /* the will-o'-wisp */
+#define CR_WARG           41
+#define CR_WIGHT          42
+#define CR_BASILISK       43
+#define CR_WYVERN         44
+#define CR_MUMMY          45
+#define CR_HILL_GIANT     46
+#define CR_HELL_HOUND     47
+#define CR_BANSHEE        48
+#define CR_MINOTAUR       49
+#define CR_FROST_DRAKE    50
+#define CR_VAMPIRE        51
+#define CR_COUNT          52
 
 /* Items (CLASS_ITEM): IT_QUEST is one a game, made by game/actors.c, never at random */
 #define IT_NONE              0   /* none: a blank row 0 in the kind table, never generated */

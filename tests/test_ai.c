@@ -1050,6 +1050,35 @@ int main(void)
     events();
     CHECK(ai_get_state(a) == AI_STATE_HUNT && ai_target[a] == actor_player);
 
+    /* ---- a hell hound's breath catches its packmate, unhurt (R9: immune to its element) ---- */
+    scene(0, 5);
+    effects_set_base(actor_player, ATTR_HP_MAX, 200);
+    health_hp[actor_player] = 200;
+    a = hunter(CR_HELL_HOUND, 3, 5, 0, 5);
+    b = hunter(CR_HELL_HOUND, 1, 4, 0, 5);                  /* next to the player: in the ball */
+    hp = health_hp[b];
+    events();
+    ai_on_turn(a);
+    CHECK(mana_mp[a] == 2 && health_hp[actor_player] < 200 && health_hp[b] == hp);
+    CHECK(events() >= 1 && seen[0].id == EV_CAST && seen[0].p1 == SP_FIRE_BREATH);
+    /* ...and still after the player: another monster's spell is no attack (D6: monsters are allies) */
+    CHECK(ai_target[b] == actor_player && ai_get_state(b) == AI_STATE_HUNT);
+
+    /* ---- the basilisk's gaze: from 4 tiles, its own ranged attack, no ammo; a hit paralyses (M1.2) ---- */
+    scene(0, 5);
+    effects_set_base(actor_player, ATTR_HP_MAX, 200);
+    health_hp[actor_player] = 200;
+    a = hunter(CR_BASILISK, 4, 5, 0, 5);
+    events();
+    CHECK((ai_can(a) & AI_CAN_RANGED) && nge_owner_count(a) == 0);
+    for (s = 0, t = 0; s < 20 && !t; s++) {                 /* until a gaze hits and the save fails */
+        ai_on_turn(a);
+        r = events();
+        CHECK(at(a, 4, 5));                                   /* it stays and gazes */
+        t = STATUS_HAS(actor_player, STATUS_PARALYSED);
+    }
+    CHECK(t && seen[0].id == EV_FIRED && seen[0].source == a);
+
     /* ---- a target gone (on another level, or dead) is dropped; hurt by no one, it hunts no one ---- */
     scene(0, 0);
     wall_column(3, 0, 9);

@@ -336,7 +336,7 @@ Spec 6.1, 6.3, R1 to R4.
   pack and a stirge at depth 1. A harpy's song confuses, a ghoul's claws paralyse, and
   an orc archer skirmishes.
 
-### Step 7: phase 1 kinds, depths 5 to 10 (M6.1)
+### Step 7: phase 1 kinds, depths 5 to 10 (M6.1) `[done]` (2026-11-14)
 
 Spec 6.2, R1, R2.
 
