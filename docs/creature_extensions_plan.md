@@ -208,7 +208,7 @@ Spec M1.1, M1.2, R6, R7, R12, R15, R17, D2 to D4.
   its body drops the bow and the arrows left. The gold snake spits from 3 tiles, and a
   hit blinds.
 
-### Step 3: skirmishers, and `ai_can_t` to 16 bits (M1.3)
+### Step 3: skirmishers, and `ai_can_t` to 16 bits (M1.3) `[done]` (2026-11-14)
 
 Spec M1.3, D7, R5, R16.
 

@@ -690,6 +690,19 @@ int main(void)
     CHECK(gen_creatures[CR_TROLL].innate.ef == EF_REGEN && nge_owner_count(id) == 1);   /* regenerates */
     id = gen_creature(CR_GOBLIN_SHAMAN, AREA);
     CHECK(MANA_IS(id) && mana_mp[id] == 6);                    /* the one monster with mana */
+    CHECK(ai_can(id) == (AI_CAN_MOVE | AI_CAN_MELEE | AI_CAN_PICKUP | AI_CAN_EQUIP | AI_CAN_USE | AI_CAN_OPEN |
+                         AI_CAN_CAST | AI_CAN_SKIRMISH));      /* Int 13, a skirmisher (M1.3) */
+    id = gen_creature(CR_GOBLIN_ARCHER, AREA);
+    CHECK(ai_can(id) == (AI_CAN_MOVE | AI_CAN_MELEE | AI_CAN_PICKUP | AI_CAN_EQUIP | AI_CAN_USE | AI_CAN_OPEN |
+                         AI_CAN_RANGED | AI_CAN_SKIRMISH));    /* its kit's arrows */
+    id = gen_creature(CR_GOLD_SNAKE, AREA);
+    CHECK(ai_can(id) == (AI_CAN_MOVE | AI_CAN_MELEE | AI_CAN_RANGED));   /* spits, but stands its ground */
+    /* Only the archer and the shaman are skirmishers */
+    ok = 1;
+    for (kind = CR_NONE + 1; kind < CR_COUNT; kind++) {
+        ok = ok && (gen_creatures[kind].ai.traits == AI_TRAIT_SKIRMISH) == (kind == CR_GOBLIN_ARCHER || kind == CR_GOBLIN_SHAMAN);
+    }
+    CHECK(ok);
     id = gen_creature(CR_SHRIEKER, AREA);
     CHECK(ai_can(id) == 0);                                    /* Int 1, no attack, carries nothing */
     id = gen_creature(CR_OGRE, AREA);

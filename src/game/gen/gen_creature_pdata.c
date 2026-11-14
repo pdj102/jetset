@@ -251,7 +251,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .inventory = { .capacity = 4, .slots = SLOT_BIT(SLOT_WEAPON) },
         .xp = 25,                                       /* 2 hit dice, special */
         .flags = 0,
-        .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
+        .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP, .traits = AI_TRAIT_SKIRMISH },
         .where = { .depth = 3, .depth_max = 7, .rarity = 4 },
     },
     [CR_GOLD_SNAKE] = {
@@ -412,7 +412,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .inventory = { .capacity = 4, .slots = SLOT_BIT(SLOT_WEAPON) | SLOT_BIT(SLOT_RANGED) | SLOT_BIT(SLOT_AMMO) },
         .xp = 10,                                       /* 1-1 hit dice, special */
         .flags = 0,
-        .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
+        .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP, .traits = AI_TRAIT_SKIRMISH },
         .where = { .depth = 2, .depth_max = 4, .rarity = 5 },
     },
 };

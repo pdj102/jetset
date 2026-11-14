@@ -46,6 +46,7 @@ extern uint8_t ai_goal_x[NGE_ENTITY_MAX];           /* where it thinks the targe
 extern uint8_t ai_goal_y[NGE_ENTITY_MAX];           /* nowhere */
 extern uint8_t ai_track[NGE_ENTITY_MAX];            /* turns the goal may follow the target unseen; */
                                                     /* below AI_TRACK: following started */
+extern uint8_t ai_traits[NGE_ENTITY_MAX];           /* AI_TRAIT_*, from its kind (ai_add()) */
 
 /* What an AI entity knows on this turn: ai_sense() fills it, on the stack */
 typedef struct ai_ctx {

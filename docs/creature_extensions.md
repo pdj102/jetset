@@ -8,7 +8,7 @@ the part it belongs to, and the creature and feature records lose their array
 of hook slots (R17, plan step 1c).
 The plan is [creature_extensions_plan.md](creature_extensions_plan.md).
 Built: the `balance.py` fix from Q7 (section 10, plan step 1), D11 (plan step 1b), D3 (plan step 1c),
-and M1.1 and M1.2 (plan step 2).
+M1.1 and M1.2 (plan step 2), and M1.3 (plan step 3).
 
 Builds on [creatures.md](creatures.md) (the roster of 21 random kinds and rooted
 creatures), [ai.md](ai.md) and [ai_default_brain.md](ai_default_brain.md),
@@ -763,3 +763,30 @@ CSpect checks (the user runs them):
   passed.
   `BANK_56` and common memory are unchanged. No new library routine in
   common memory.
+
+### Step 3: skirmishers, and `ai_can_t` to 16 bits (2026-11-14)
+
+- As M1.3 and D7. `make test` passes, and `make balance` prints the same as
+  before it (no kinds added). The existing exact `ai_can()` masks pass
+  unchanged at 16 bits.
+- CSpect: the goblin archer backs away when the player closes, then shoots;
+  the shaman does the same and casts. A dev-kit archer was placed on depth 1
+  for the check, and removed after it.
+- **A step back leaves the target's reach.** `opt_stand_off()` takes only a
+  tile 2 or more from the target (`STAND_OFF_SCORE`). `opt_flee()`'s
+  scoring alone also counts a step sideways, still next to the target, as
+  further (the sum breaks ties), and a test caught the archer doing that.
+  `opt_flee()` keeps its own rule: any step further away.
+- **Sight from the new tile** uses `ai_in_sight()` (tile to tile, in page
+  130), not `ai_sees()` (entity to entity, banked): the same rule as R16,
+  with no banked call for each tile tried. It is tried last, after the
+  score and whether the tile is free.
+- `ai_can()` asks `AI_IS(id)` before reading `ai_traits[]`, since it is
+  asked of any entity. `ai_remove()` clears the traits.
+- A skirmisher that the player follows step for step keeps stepping back and
+  doesn't shoot. With no tile left (a wall, a corner) it fights in melee.
+- Asm read: `ai_can()` returns its mask in HL, `AI_CAN_SKIRMISH` is
+  `set 0, b`, and `opt_stand_off()` tests bit 0 of `can`'s high byte.
+- Pages: 130 +316 bytes (6,499; the plan said about 0.2K), 131 +150
+  (`ai_traits[]`), 107 +25 (a byte a kind), 106 +25 (the record's copy in
+  `create()`). No new library routine in common memory.

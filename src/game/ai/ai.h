@@ -56,7 +56,7 @@
 typedef uint8_t ai_state_t;   /**< AI_STATE_*. */
 typedef uint8_t ai_stim_t;    /**< AI_STIM_*. */
 typedef uint8_t ai_brain_t;   /**< AI_BRAIN_*. */
-typedef uint8_t ai_can_t;     /**< A mask of AI_CAN_*. */
+typedef uint16_t ai_can_t;    /**< A mask of AI_CAN_*: 16 bits (docs/creature_extensions.md D7). */
 
 /* States */
 #define AI_STATE_NONE    0   /**< No state: never an entity's. */
@@ -88,6 +88,12 @@ typedef uint8_t ai_can_t;     /**< A mask of AI_CAN_*. */
 #define AI_CAN_RANGED  0x20   /**< Shoots: its own ranged attack, or something in its ammo slot. */
 #define AI_CAN_CAST    0x40   /**< Casts spells: knows some (game/spells/spells.h); ACT_CAST says which it can afford. */
 #define AI_CAN_MOVE    0x80   /**< Leaves its tile: not rooted (STATUS_ROOTED). */
+#define AI_CAN_SKIRMISH  0x0100   /**< Steps back to shoot or cast: AI_TRAIT_SKIRMISH, AI_CAN_MOVE, and AI_CAN_RANGED or AI_CAN_CAST. */
+#define AI_CAN_SUPPORT   0x0200   /**< Casts on its allies: knows a SPELL_AI_ALLY spell. Not set yet (creature_extensions_plan.md, step 10). */
+/* Reserved for later: AI_CAN_STEAL 0x0400, AI_CAN_PHASE 0x0800 (docs/creature_extensions.md M5) */
+
+/* Traits: bits of a kind's ai_kind_t traits, how it fights when it can (ai_can()) */
+#define AI_TRAIT_SKIRMISH  0x01   /**< Keeps its distance: next to its target, it steps back to a tile that still sees it. */
 
 /* The least Intelligence for the AI's own rules (the player needs none) */
 #define AI_INT_USE   5
@@ -103,6 +109,7 @@ typedef uint8_t ai_can_t;     /**< A mask of AI_CAN_*. */
 typedef struct ai_kind {
     ai_brain_t brain;   /**< AI_BRAIN_*; AI_BRAIN_NONE for no AI. */
     ai_state_t state;   /**< AI_STATE_* it starts in. */
+    uint8_t    traits;  /**< AI_TRAIT_*: 0 for none. */
 } ai_kind_t;
 
 /** The kind record k names a brain: the creature has AI. */
@@ -112,8 +119,8 @@ typedef struct ai_kind {
 #define AI_IS(id)  NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_AI)
 
 /**
- * @brief Give an entity in use the AI component, with the brain and the
- *        start state of k: the game decides its turns.
+ * @brief Give an entity in use the AI component, with the brain, the
+ *        start state and the traits of k: the game decides its turns.
  * @param k In common memory (a copy on the stack). Its brain isn't
  *          AI_BRAIN_NONE; its state isn't AI_STATE_NONE.
  */

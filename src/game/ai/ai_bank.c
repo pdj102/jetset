@@ -54,6 +54,7 @@ void ai_add(nge_entity_id_t id, const ai_kind_t *k) NGE_BANKED
     ai_goal_x[id] = NGE_MAP_X_INVALID;
     ai_goal_y[id] = NGE_MAP_Y_INVALID;
     ai_track[id] = 0;
+    ai_traits[id] = k->traits;
 }
 
 void ai_remove(nge_entity_id_t id) NGE_BANKED
@@ -61,6 +62,7 @@ void ai_remove(nge_entity_id_t id) NGE_BANKED
     check_entity(id);
 
     NGE_ENTITY_REMOVE_COMPONENT(id, COMPONENT_AI);
+    ai_traits[id] = 0;
 }
 
 ai_state_t ai_get_state(nge_entity_id_t id) NGE_BANKED
@@ -113,6 +115,11 @@ ai_can_t ai_can(nge_entity_id_t id) NGE_BANKED
     }
     if (!rooted) {
         can |= AI_CAN_MOVE;
+    }
+    /* A skirmisher keeps its distance only while it can move and has something to do from there */
+    if (AI_IS(id) && (ai_traits[id] & AI_TRAIT_SKIRMISH) && (can & AI_CAN_MOVE) &&
+        (can & (AI_CAN_RANGED | AI_CAN_CAST))) {
+        can |= AI_CAN_SKIRMISH;
     }
     return can;
 }

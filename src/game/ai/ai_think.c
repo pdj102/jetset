@@ -10,7 +10,8 @@
  * 2. think: the state's handler, think_<state>(c), tries its options in
  *    order of priority and stops at the first that uses the turn:
  *
- *        return opt_cast(c) || opt_attack(c) || opt_drink(c) || opt_shoot(c) || opt_approach(c);
+ *        return opt_stand_off(c) || opt_cast(c) || opt_attack(c) || opt_drink(c) || opt_shoot(c) ||
+ *               opt_approach(c);
  *
  * 3. wait: if none did, the entity waits (ai_wait()), so every turn is
  *    exactly one action;
@@ -239,16 +240,21 @@ static uint8_t opt_approach(ai_ctx_t *c)
     return used;
 }
 
+/* The least flee_score() out of reach of the goal: 2 tiles away on the larger axis */
+#define STAND_OFF_SCORE  (2 << 3)
+
 /*
- * Frightened: a step to the free tile next to it that is furthest from
- * its goal (where its target is, or was last seen), if one is further
- * than where it stands (docs/effects_extensions.md R14). Distance: the
- * larger axis first, then the sum, so of two steps that reach as far the
- * one further on both axes wins
+ * A step to the free tile next to it that is furthest from its goal
+ * (where its target is, or was last seen), if one is further than where it
+ * stands; with keep_sight, only to a tile out of the goal's reach from
+ * which it still sees it (R16). Distance: the larger axis first, then the
+ * sum, so of two steps that reach as far the one further on both axes
+ * wins. 1 if it stepped
  */
-static uint8_t opt_flee(const ai_ctx_t *c)
+static uint8_t step_away(const ai_ctx_t *c, uint8_t keep_sight)
 {
     nge_entity_id_t id = c->id;   /* the fields in locals (T-ZSDCC-1) */
+    nge_owner_t area = c->area;
     uint8_t x = c->x;
     uint8_t y = c->y;
     uint8_t gx = c->gx;
@@ -261,18 +267,47 @@ static uint8_t opt_flee(const ai_ctx_t *c)
     uint8_t ny;
 
     if (gx == NGE_MAP_X_INVALID) {
-        return 0;   /* nothing to flee from */
+        return 0;   /* nothing to step away from */
+    }
+    if (keep_sight && best < STAND_OFF_SCORE - 1) {
+        best = STAND_OFF_SCORE - 1;   /* a step that leaves it next to the goal is no use */
     }
     for (d = 0; d < AI_DIRS; d++) {
         nx = (uint8_t)(x + ai_dir_x(d));
         ny = (uint8_t)(y + ai_dir_y(d));
         score = flee_score(nx, ny, gx, gy);
-        if (score > best && level_can_enter(id, nx, ny, NULL)) {
+        /* The cheap tests first: the line of sight walks the map */
+        if (score > best && level_can_enter(id, nx, ny, NULL) && (!keep_sight || ai_in_sight(area, nx, ny, gx, gy))) {
             best = score;
             best_d = d;
         }
     }
     return best_d != AI_DIRS && ai_step(c, best_d, 0);
+}
+
+/* Frightened: a step away from its goal (docs/effects_extensions.md R14) */
+static uint8_t opt_flee(const ai_ctx_t *c)
+{
+    return step_away(c, 0);
+}
+
+/*
+ * A skirmisher next to its target, and seeing it, steps back to a tile from
+ * which it still sees it, to shoot or cast next turn (docs/creature_extensions.md
+ * M1.3, R16). With no such tile the turn goes on to its other options. Never
+ * while rooted: ai_can() sets AI_CAN_SKIRMISH only with AI_CAN_MOVE
+ */
+static uint8_t opt_stand_off(const ai_ctx_t *c)
+{
+    uint8_t x = c->x;   /* the fields in locals (T-ZSDCC-1) */
+    uint8_t y = c->y;
+    uint8_t gx = c->gx;
+    uint8_t gy = c->gy;
+
+    if (!(c->can & AI_CAN_SKIRMISH) || !c->sees || !nge_map_within(x, y, gx, gy, 1)) {
+        return 0;
+    }
+    return step_away(c, 1);
 }
 
 /* Pick up the first item here, if it can carry things and one is here */
@@ -333,7 +368,7 @@ static uint8_t think_hunt(ai_ctx_t *c)
     if (NGE_ENTITY_HAS_COMPONENT(c->id, COMPONENT_STATS) && STATUS_HAS(c->id, STATUS_FRIGHTENED)) {
         return opt_flee(c);   /* nothing else while it is afraid: cornered, it waits */
     }
-    return opt_cast(c) || opt_attack(c) || opt_drink(c) || opt_shoot(c) || opt_approach(c);
+    return opt_stand_off(c) || opt_cast(c) || opt_attack(c) || opt_drink(c) || opt_shoot(c) || opt_approach(c);
 }
 
 /* ---- The turn ---- */

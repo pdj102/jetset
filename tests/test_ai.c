@@ -851,6 +851,64 @@ int main(void)
     ai_on_turn(rat);
     CHECK(at(rat, 4, 5) && events() >= 2 && is(0, actor_player, EV_FIRED, rat) && seen[0].p1 == NGE_EVENT_NONE);
 
+    /* ---- skirmishers (docs/creature_extensions.md M1.3): next to its target it steps back to a tile that sees it, then shoots ---- */
+    scene(4, 5);
+    a = hunter(CR_GOBLIN_ARCHER, 5, 5, 4, 5);
+    potion = inv_equipped(a, SLOT_AMMO);                    /* its kit's arrows */
+    hp = (uint8_t)item_count[potion];
+    events();
+    CHECK(ai_traits[a] == AI_TRAIT_SKIRMISH &&
+          ai_can(a) == (AI_CAN_MOVE | AI_CAN_MELEE | AI_CAN_PICKUP | AI_CAN_EQUIP | AI_CAN_USE | AI_CAN_OPEN |
+                        AI_CAN_RANGED | AI_CAN_SKIRMISH));
+    ai_on_turn(a);
+    CHECK(NGE_LOCATION_X(a) == 6 && NGE_LOCATION_Y(a) != 5 && item_count[potion] == hp &&   /* the diagonal: further on both axes */
+          events() == 1 && seen[0].id == EV_MOVED);
+    CHECK(ai_in_sight(AREA, NGE_LOCATION_X(a), NGE_LOCATION_Y(a), 4, 5));
+    ai_on_turn(a);
+    CHECK(NGE_LOCATION_X(a) == 6 && item_count[potion] == hp - 1 && events() >= 2 && is(0, actor_player, EV_FIRED, a));
+    /* Rooted: no stepping back, it fights where it stands (R16) */
+    scene(4, 5);
+    a = hunter(CR_GOBLIN_ARCHER, 5, 5, 4, 5);
+    effect_apply(EF_ROOT, 1, a, NGE_ENTITY_INVALID);
+    events();
+    CHECK(!(ai_can(a) & AI_CAN_SKIRMISH));
+    ai_on_turn(a);
+    CHECK(at(a, 5, 5) && events() >= 1 && (is(0, actor_player, EV_HIT, a) || is(0, actor_player, EV_MISSED, a)));
+    /* No tile behind it that still sees the target: it fights */
+    scene(2, 5);
+    wall_column(0, 0, 9);
+    a = hunter(CR_GOBLIN_ARCHER, 1, 5, 2, 5);
+    events();
+    CHECK(ai_can(a) & AI_CAN_SKIRMISH);
+    ai_on_turn(a);
+    CHECK(at(a, 1, 5) && events() >= 1 && (is(0, actor_player, EV_HIT, a) || is(0, actor_player, EV_MISSED, a)));
+    /* Its arrows gone: no longer a skirmisher, it closes to melee */
+    scene(4, 5);
+    a = hunter(CR_GOBLIN_ARCHER, 5, 5, 4, 5);
+    nge_entity_destroy(inv_equipped(a, SLOT_AMMO));
+    nge_entity_release(nge_entity_next_dying());
+    events();
+    CHECK(!(ai_can(a) & (AI_CAN_RANGED | AI_CAN_SKIRMISH)));
+    ai_on_turn(a);
+    CHECK(at(a, 5, 5) && events() >= 1 && (is(0, actor_player, EV_HIT, a) || is(0, actor_player, EV_MISSED, a)));
+    /* A ranged attack without the trait: the gold snake never steps back, it bites */
+    scene(4, 5);
+    a = hunter(CR_GOLD_SNAKE, 5, 5, 4, 5);
+    events();
+    CHECK((ai_can(a) & AI_CAN_RANGED) && !(ai_can(a) & AI_CAN_SKIRMISH));
+    ai_on_turn(a);
+    CHECK(at(a, 5, 5) && events() >= 1 && (is(0, actor_player, EV_HIT, a) || is(0, actor_player, EV_MISSED, a)));
+    /* A caster skirmishes too: the shaman steps back from the player next to it */
+    scene(4, 5);
+    a = hunter(CR_GOBLIN_SHAMAN, 5, 5, 4, 5);
+    events();
+    CHECK(ai_can(a) & AI_CAN_SKIRMISH);
+    ai_on_turn(a);
+    CHECK(NGE_LOCATION_X(a) == 6 && events() == 1 && seen[0].id == EV_MOVED);
+    /* The trait goes with the component */
+    ai_remove(a);
+    CHECK(ai_traits[a] == 0);
+
     /* ---- hunting: a healing potion at half hit points or less, with the wit to use it ---- */
     scene(0, 5);
     goblin = hunter(CR_GOBLIN, 5, 5, 0, 5);
