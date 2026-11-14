@@ -129,6 +129,13 @@ void ai_add(nge_entity_id_t id, const ai_kind_t *k) NGE_BANKED;
 /** @brief Remove the AI component. */
 void ai_remove(nge_entity_id_t id) NGE_BANKED;
 
+/**
+ * @brief Alert AI entity id, as a noise does (AI_STIM_NOISE): a sleeper
+ *        wakes to idle, as when it hears the player, and nothing else
+ *        changes (the shriek, EF_WAKE).
+ */
+void ai_alert(nge_entity_id_t id) NGE_BANKED;
+
 /** @brief An AI entity's state (AI_STATE_*). */
 ai_state_t ai_get_state(nge_entity_id_t id) NGE_BANKED;
 

@@ -137,6 +137,7 @@ int main(void)
     uint8_t i;
     uint8_t list[SPELL_BOOK_MAX];
     uint32_t all;
+    uint32_t monster;   /* the monsters' abilities, a bit each */
     int ok;
 
     test_init();
@@ -152,7 +153,9 @@ int main(void)
         ok = ok && d->shape < SPELL_SHAPE_COUNT && d->ai < SPELL_AI_COUNT;
         ok = ok && d->ef != EF_NONE && d->ef < EF_COUNT && effect_defs[d->ef].duration != EFFECT_WORN;   /* R2 */
         ok = ok && d->power > 0;                                    /* never a negative power (section 8) */
-        ok = ok && (d->range != 0) == (d->shape != SPELL_SELF);     /* a range only on a line */
+        ok = ok && (d->range != 0) == (d->shape != SPELL_SELF && d->shape != SPELL_BURST);   /* a range only on a line */
+        ok = ok && (d->flags & ~(SPELL_F_MONSTER | SPELL_F_ALLIES)) == 0;
+        ok = ok && (!(d->flags & SPELL_F_MONSTER) || d->level >= 1);   /* an ability costs MP: its cooldown (M2.1) */
     }
     CHECK(ok);
     CHECK(SPELL_COUNT <= SPELL_SET_BYTES * 8);
@@ -196,7 +199,7 @@ int main(void)
         spell_learn(b, sp);
     }
     CHECK(known(b) == (BIT(SPELL_COUNT) - 2) && events() == SPELL_COUNT - 2);
-    CHECK(spell_known[b][0] == 0xFE && spell_known[b][1] == 0x0F && spell_known[b][2] == 0 && spell_known[b][3] == 0);
+    CHECK(spell_known[b][0] == 0xFE && spell_known[b][1] == 0xFF && spell_known[b][2] == 0x01 && spell_known[b][3] == 0);
     CHECK(known(a) == (BIT(SP_HASTE) | BIT(SP_HOLD)));               /* another caster's set untouched */
 
     /* ---- next: wrapping round to itself, filtered by when the AI casts it; none known ---- */
@@ -240,6 +243,9 @@ int main(void)
     events();
     CHECK(SPELLS_IS(a) && known(a) == BIT(SP_MAGIC_BOLT));
     CHECK(seen_count > 0);
+    /* The player can't learn a monster's ability (R10): it asserts, and nothing changes */
+    TEST_EXPECT_HALT(spell_learn(a, SP_FIRE_BREATH));
+    CHECK(test_halt_count == 1 && known(a) == BIT(SP_MAGIC_BOLT));
     ok = 1;
     for (i = 0; i < seen_count; i++) {
         ok = ok && seen[i].id != EV_SPELL_LEARNED;                   /* a new game learns nothing */
@@ -322,7 +328,15 @@ int main(void)
         CHECK(book_mask(i) != 0);
         all |= book_mask(i);
     }
-    CHECK(all == BIT(SPELL_COUNT) - 2);
+    /* ...but the monsters' abilities, in none (R10) */
+    monster = 0;
+    for (sp = 1; sp < SPELL_COUNT; sp++) {
+        if (spell_defs[sp].flags & SPELL_F_MONSTER) {
+            monster |= BIT(sp);
+        }
+    }
+    CHECK(monster == (BIT(SP_FIRE_BREATH) | BIT(SP_FROST_BREATH) | BIT(SP_CONFUSE) | BIT(SP_WAIL) | BIT(SP_SHRIEK)));
+    CHECK(all == ((BIT(SPELL_COUNT) - 2) & ~monster) && (all & monster) == 0);
     CHECK(levels_of(book_mask(SPELL_BOOK_BASIC)) == ((1u << 1) | (1u << 2)));
     CHECK(levels_of(book_mask(SPELL_BOOK_ADEPT)) == ((1u << 3) | (1u << 4)));
     CHECK(levels_of(book_mask(SPELL_BOOK_MASTER)) == (1u << 5));

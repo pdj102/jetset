@@ -34,6 +34,7 @@
 #include "ecs/components/nge_location.h"
 #include "ecs/nge_owner.h"
 #include "event/nge_event.h"
+#include "game/ai/ai.h"
 #include "game/components/health.h"
 #include "game/components/feature.h"
 #include "game/components/item.h"
@@ -44,6 +45,7 @@
 #include "game/gen/gen.h"
 #include "game/level/level.h"
 #include "game/timers.h"
+#include "map/nge_map.h"
 
 typedef char effects_flags_check[!(EFFECT_STACK & EFFECT_INNATE) ? 1 : -1];
 typedef char effects_around_check[(EFFECTS_AROUND & (EFFECTS_AROUND - 1)) == 0 ? 1 : -1];   /* wrapped with a mask */
@@ -282,6 +284,31 @@ static void detect(nge_entity_id_t target, uint8_t what, int8_t radius)
     }
 }
 
+/*
+ * Every AI entity on the level within radius of target (nge_map_within())
+ * is alerted (ai_alert()): a sleeper wakes, as if it heard the player, and
+ * anything awake carries on. Nothing to wake is no fizzle: a shriek is heard
+ */
+static void wake(nge_entity_id_t target, int8_t radius)
+{
+    nge_entity_id_t id;
+    uint8_t i;
+    uint8_t tx;
+    uint8_t ty;
+
+    if (radius <= 0 || !level_holds(target) || !NGE_ENTITY_HAS_COMPONENT(target, NGE_COMPONENT_LOCATION)) {
+        return;
+    }
+    tx = NGE_LOCATION_X(target);
+    ty = NGE_LOCATION_Y(target);
+    NGE_ENTITY_FOR_EACH_ALIVE(i, id) {
+        if (AI_IS(id) && NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_LOCATION) && NGE_OWNER_OF(id) == LEVEL_AREA &&
+            nge_map_within(tx, ty, NGE_LOCATION_X(id), NGE_LOCATION_Y(id), (uint8_t)radius)) {
+            ai_alert(id);
+        }
+    }
+}
+
 /* The tile effect_apply_at() was given, while its effect runs (blink_given 1; uninitialised data, so 0 means none) */
 static uint8_t blink_given;
 static uint8_t blink_x;
@@ -371,6 +398,9 @@ static void run_op(const effect_op_t *op, int8_t power, nge_entity_id_t target, 
         break;
     case OP_SUMMON:
         summon(target, amount);
+        break;
+    case OP_WAKE:
+        wake(target, amount);
         break;
     case OP_LIGHT:
     case OP_IDENTIFY:

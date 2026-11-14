@@ -627,7 +627,7 @@ int main(void)
     ok = 1;
     for (i = 1; i < EF_COUNT; i++) {
         int used = i == EF_REGEN || i == EF_ROOT || i == EF_HOLD || i == EF_MANA_REGEN ||
-                   (i >= EF_DRAIN_STR && i <= EF_DRAIN_CHA);
+                   (i >= EF_DRAIN_STR && i <= EF_DRAIN_CHA) || i == EF_ERRATIC || i == EF_WAKE;   /* the bat's, the shriek's */
 
         for (kind = IT_NONE + 1; kind < IT_COUNT && !used; kind++) {
             used = gen_items[kind].hook.ef == i;
@@ -689,7 +689,7 @@ int main(void)
     id = gen_creature(CR_TROLL, AREA);
     CHECK(gen_creatures[CR_TROLL].innate.ef == EF_REGEN && nge_owner_count(id) == 1);   /* regenerates */
     id = gen_creature(CR_GOBLIN_SHAMAN, AREA);
-    CHECK(MANA_IS(id) && mana_mp[id] == 6);                    /* the one monster with mana */
+    CHECK(MANA_IS(id) && mana_mp[id] == 6);
     CHECK(ai_can(id) == (AI_CAN_MOVE | AI_CAN_MELEE | AI_CAN_PICKUP | AI_CAN_EQUIP | AI_CAN_USE | AI_CAN_OPEN |
                          AI_CAN_CAST | AI_CAN_SKIRMISH));      /* Int 13, a skirmisher (M1.3) */
     id = gen_creature(CR_GOBLIN_ARCHER, AREA);
@@ -704,7 +704,11 @@ int main(void)
     }
     CHECK(ok);
     id = gen_creature(CR_SHRIEKER, AREA);
-    CHECK(ai_can(id) == 0);                                    /* Int 1, no attack, carries nothing */
+    CHECK(ai_can(id) == AI_CAN_CAST && spell_knows(id, SP_SHRIEK));   /* Int 1, no attack, carries nothing: it shrieks */
+    id = gen_creature(CR_DRAGON, AREA);
+    CHECK(spell_knows(id, SP_FIRE_BREATH) && mana_mp[id] == 12 && (health_immune[id] & DMG_BIT(DMG_FIRE)));   /* R9 */
+    id = gen_creature(CR_BAT, AREA);
+    CHECK(STATUS_HAS(id, STATUS_CONFUSED));                    /* erratic flight (M1.4) */
     id = gen_creature(CR_OGRE, AREA);
     CHECK(ai_can(id) == (AI_CAN_MOVE | AI_CAN_MELEE | AI_CAN_PICKUP | AI_CAN_EQUIP | AI_CAN_USE | AI_CAN_OPEN));   /* Int 6 */
     id = gen_creature(CR_SKELETON, AREA);

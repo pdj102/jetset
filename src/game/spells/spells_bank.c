@@ -14,6 +14,7 @@
 #include "core/nge_util.h"
 #include "event/nge_event.h"
 #include "game/components/mana.h"
+#include "game/components/pc.h"
 #include "game/events.h"
 
 /* Spell sp's byte and bit in a set: the cast keeps zsdcc from making 1 << 7 a negative int (T-INT-2) */
@@ -66,6 +67,10 @@ void spell_learn(nge_entity_id_t id, uint8_t sp) NGE_BANKED
 {
     check_caster(id);
     nge_util_assert(sp != SP_NONE && sp < SPELL_COUNT);
+    if (PC_IS(id) && (spell_defs[sp].flags & SPELL_F_MONSTER)) {
+        nge_util_abort("monster spell");   /* no book has one: a bug (R10) */
+        return;
+    }
     if (knows(id, sp)) {
         return;
     }

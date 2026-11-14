@@ -27,6 +27,12 @@ const spell_def_t spell_defs[SPELL_COUNT] = {
     [SP_POWER_BOLT]  = { "Power Bolt",  5, SPELL_BOLT,   EF_BOLT_MAGIC, 16, 8, SPELL_AI_TARGET },
     [SP_RENEWAL]     = { "Renewal",     5, SPELL_SELF,   EF_RENEW,      2,  0, SPELL_AI_HURT },
     [SP_BLINK]       = { "Blink",       2, SPELL_TILE,   EF_BLINK,      1,  6, SPELL_AI_NEVER },
+    /* Monsters' abilities (docs/creature_extensions.md M2.1): a breath is a ball, so it catches the breather (R9) */
+    [SP_FIRE_BREATH]  = { "Fire Breath",  3, SPELL_BALL,   EF_BOLT_FIRE, 6, 6, SPELL_AI_TARGET, SPELL_F_MONSTER },
+    [SP_FROST_BREATH] = { "Frost Breath", 4, SPELL_BALL,   EF_BOLT_COLD, 8, 6, SPELL_AI_TARGET, SPELL_F_MONSTER },
+    [SP_CONFUSE]      = { "Confuse",      2, SPELL_DIRECT, EF_CONFUSE,   1, 6, SPELL_AI_TARGET, SPELL_F_MONSTER },
+    [SP_WAIL]         = { "Wail",         3, SPELL_BURST,  EF_FEAR,      1, 0, SPELL_AI_SEEN,   SPELL_F_MONSTER },
+    [SP_SHRIEK]       = { "Shriek",       2, SPELL_SELF,   EF_WAKE,      8, 0, SPELL_AI_SEEN,   SPELL_F_MONSTER },
 };
 
 /* MP by spell level (docs/spells.md, 4.2): rising with every level above 0, an ability's */

@@ -8,7 +8,8 @@ the part it belongs to, and the creature and feature records lose their array
 of hook slots (R17, plan step 1c).
 The plan is [creature_extensions_plan.md](creature_extensions_plan.md).
 Built: the `balance.py` fix from Q7 (section 10, plan step 1), D11 (plan step 1b), D3 (plan step 1c),
-M1.1 and M1.2 (plan step 2), and M1.3 (plan step 3).
+M1.1 and M1.2 (plan step 2), M1.3 (plan step 3),
+and M1.4 and M2.1's phase-1 spells (plan step 4).
 
 Builds on [creatures.md](creatures.md) (the roster of 21 random kinds and rooted
 creatures), [ai.md](ai.md) and [ai_default_brain.md](ai_default_brain.md),
@@ -790,3 +791,60 @@ CSpect checks (the user runs them):
 - Pages: 130 +316 bytes (6,499; the plan said about 0.2K), 131 +150
   (`ai_traits[]`), 107 +25 (a byte a kind), 106 +25 (the record's copy in
   `create()`). No new library routine in common memory.
+
+### Step 4: ability spells, erratic movers and waking (2026-11-14)
+
+- As M1.4 and M2.1 (phase 1 rows). `make test` passes, and `make balance`
+  prints the same as before it (no kinds added; it reads neither spells nor
+  mana).
+- CSpect (check 2b): the dragon breathes, unhurt by its own fire, and keeps
+  hunting (after the fix below). The shriek wakes the goblin beside the
+  shrieker. A bat sometimes flies off its line.
+- **The spells' numbers**, which the spec left open, follow the existing
+  spells and the MP the spec gives each kind (the cost is the cooldown):
+
+  | Spell | Level (MP) | Shape | Effect, power | Range | AI |
+  |---|---|---|---|---|---|
+  | `SP_FIRE_BREATH` | 3 (4) | ball | `EF_BOLT_FIRE` 6 | 6 | target |
+  | `SP_FROST_BREATH` | 4 (6) | ball | `EF_BOLT_COLD` 8 | 6 | target |
+  | `SP_CONFUSE` | 2 (2) | direct | `EF_CONFUSE` 1 | 6 | target |
+  | `SP_WAIL` | 3 (4) | burst | `EF_FEAR` 1 | 0 | seen |
+  | `SP_SHRIEK` | 2 (2) | self | `EF_WAKE` 8 | 0 | seen |
+
+  The dragon's 12 MP make three breaths, the shrieker's 4 two shrieks.
+- **A burst has range 0**, as a self spell has: `test_spell`'s "a range
+  only on a line" now says so. No burst spell existed before.
+- **`spell_learn()`** aborts on a monster's spell for the player
+  (`nge_util_abort()`), and with NDEBUG returns with nothing changed.
+- **The start pick** is `ai_spell_start()` in page 130, a loop that folds
+  `rand() & 31` below `SPELL_COUNT` for any count from 2 to 32 (a
+  compile-time check holds the range). Its test is in `test_ai`, not
+  `test_spell`, as `test_spell` doesn't link the AI's thinking.
+- **`EF_WAKE`** alerts every AI entity on the level within power tiles
+  (`nge_map_within()`, as the AI's senses measure), awake or not: the brain
+  wakes only a sleeper. Nothing woken is not a fizzle. `EF_WAKE` goes after
+  `EF_BLINK`, so the worn effects are numbered again, as `EF_ERRATIC`
+  renumbers the instants. Every table names effects by constant.
+- **Dev kit:** for the check, the out-of-sight monsters were placed from a
+  table (the shaman, the dragon, the shrieker) to fit page 102; three
+  separate placements overflowed it by 77 bytes. A sleeping goblin went 2
+  tiles east of the shrieker. All of it went once the check passed: the dev
+  kit is as it was.
+- **A breather hunted itself.** In CSpect the dragon breathed, then went
+  idle and stopped attacking. Next to the player its ball catches it too:
+  immune, it takes 0, but `EV_DAMAGED` still names it as its own attacker,
+  so `ai_on_event()` made it its own target, and with no way to reach
+  itself it lost the target. `ai_on_event()` now ignores a hit, miss or
+  damage whose source is the target, as it already ignored a creature's
+  spell on itself (17 bytes of common memory). `test_ai` checks a dragon
+  next to the player breathes twice and keeps hunting. The same would have
+  turned hell hounds on each other (step 7) from their own breath, but not
+  from a packmate's: a packmate caught by another's breath still takes it
+  as an attack. That is for step 7's check, or D6.
+- Asm read: `opt_cast()`'s pass for `SPELL_AI_SEEN` reads `def.shape` from
+  its copy at the right offset, and passes `nge_map_within()` its arguments
+  in order.
+- Pages: 120 +231 bytes (5,005, `wake()`; the plan said a little), 121 +64
+  (2 rows), 130 +165, 134 +76, 135 +102 (5 rows, a byte for each row's
+  flags, and names). Page 102 +115 for the dev kit while the check ran, back
+  to 8,015 after it. No new library routine in common memory.

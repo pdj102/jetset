@@ -63,6 +63,13 @@ typedef struct ai_ctx {
 } ai_ctx_t;
 
 /*
+ * The spell opt_cast() starts its search from, for a random r: below
+ * SPELL_COUNT, and any spell reachable, for any SPELL_COUNT up to 32 (R11).
+ * In page 130, not banked: its own for the tests
+ */
+uint8_t ai_spell_start(uint8_t r);
+
+/*
  * Stimulus stim for AI entity id, caused by source (or NGE_EVENT_NONE).
  * Hurt by a source in its area: that is its target, its tile the goal,
  * tracked for AI_TRACK turns. Lost: no goal, no tracking. Then its brain's next state, and EV_AI_CHANGED if that

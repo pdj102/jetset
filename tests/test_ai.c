@@ -979,6 +979,77 @@ int main(void)
     CHECK(health_hp[rat] == hp && events() >= 1 && is(0, actor_player, EV_CAST, a) && seen[0].p1 == SP_ENFEEBLE);
     events();
 
+    /* ---- abilities (docs/creature_extensions.md M2.1): the start pick reaches every spell, for any count up to 32 (R11) ---- */
+    {
+        uint8_t reached[SPELL_COUNT] = { 0 };
+        int all = 1;
+
+        for (r = 0; r < 256; r++) {
+            s = ai_spell_start((uint8_t)r);
+            all = all && s < SPELL_COUNT;
+            if (s < SPELL_COUNT) {
+                reached[s] = 1;
+            }
+        }
+        for (s = 1; s < SPELL_COUNT; s++) {
+            all = all && reached[s];
+        }
+        CHECK(all);
+    }
+    /* A shrieker that sees the player shrieks: a sleeping goblin nearby wakes */
+    scene(4, 5);
+    a = hunter(CR_SHRIEKER, 6, 5, 4, 5);
+    goblin = creature(CR_GOBLIN, 9, 9);
+    events();
+    CHECK(ai_get_state(goblin) == AI_STATE_ASLEEP && mana_mp[a] == 4);
+    ai_on_turn(a);
+    CHECK(at(a, 6, 5) && mana_mp[a] == 2 && ai_get_state(goblin) == AI_STATE_IDLE);
+    CHECK(events() >= 1 && seen[0].id == EV_CAST && seen[0].source == a && seen[0].p1 == SP_SHRIEK);
+    /* A burst ability is cast only with the target within ACT_BURST_RADIUS: a goblin given the wail */
+    scene(0, 5);
+    a = hunter(CR_GOBLIN, 3, 5, 0, 5);
+    {
+        static const uint8_t wail[1] = { SP_WAIL };
+        static const mana_kind_t mp = { .mp_max = 8 };
+
+        spell_add(a, wail, 1);
+        mana_add(a, &mp);
+    }
+    events();
+    ai_on_turn(a);
+    CHECK(at(a, 2, 5) && mana_mp[a] == 8);                  /* 3 tiles: out of a burst's reach, it comes on */
+    events();
+    ai_on_turn(a);
+    CHECK(at(a, 2, 5) && mana_mp[a] == 4);                  /* 2 tiles: it wails */
+    CHECK(events() >= 1 && seen[0].id == EV_CAST && seen[0].source == a && seen[0].p1 == SP_WAIL);
+    /* A dragon breathes at the player, and its own fire can't hurt it */
+    scene(0, 5);
+    effects_set_base(actor_player, ATTR_HP_MAX, 200);
+    health_hp[actor_player] = 200;
+    a = hunter(CR_DRAGON, 4, 5, 0, 5);
+    hp = health_hp[a];
+    events();
+    ai_on_turn(a);
+    CHECK(at(a, 4, 5) && mana_mp[a] == 8 && health_hp[actor_player] < 200 && health_hp[a] == hp);
+    CHECK(events() >= 1 && seen[0].id == EV_CAST && seen[0].source == a && seen[0].p1 == SP_FIRE_BREATH);
+    /* Next to the player, its breath catches it too: unhurt, and still after the player (CSpect check 2b) */
+    scene(0, 5);
+    effects_set_base(actor_player, ATTR_HP_MAX, 200);
+    health_hp[actor_player] = 200;
+    a = hunter(CR_DRAGON, 1, 5, 0, 5);
+    hp = health_hp[a];
+    events();
+    ai_on_turn(a);
+    CHECK(mana_mp[a] == 8 && health_hp[a] == hp && events() >= 1 && seen[0].p1 == SP_FIRE_BREATH);
+    for (r = 0, s = 0; r < seen_count; r++) {
+        s += seen[r].id == EV_DAMAGED && seen[r].target == a && seen[r].source == a;   /* caught, immune */
+    }
+    CHECK(s == 1 && ai_get_state(a) == AI_STATE_HUNT && ai_target[a] == actor_player);
+    ai_on_turn(a);
+    CHECK(at(a, 1, 5) && mana_mp[a] == 4);                  /* and breathes again */
+    events();
+    CHECK(ai_get_state(a) == AI_STATE_HUNT && ai_target[a] == actor_player);
+
     /* ---- a target gone (on another level, or dead) is dropped; hurt by no one, it hunts no one ---- */
     scene(0, 0);
     wall_column(3, 0, 9);

@@ -48,7 +48,13 @@
 #define SP_POWER_BOLT   9    /**< Level 5 bolt: more magic damage. */
 #define SP_RENEWAL      10   /**< Level 5, self: heals over time. */
 #define SP_BLINK        11   /**< Level 2, tile: the caster to a free tile in sight. */
-#define SPELL_COUNT     12
+/* Monsters' abilities (SPELL_F_MONSTER): in no book (docs/creature_extensions.md M2.1) */
+#define SP_FIRE_BREATH  12   /**< Level 3 ball: fire damage (the dragon, the hell hound). */
+#define SP_FROST_BREATH 13   /**< Level 4 ball: cold damage (the frost drake). */
+#define SP_CONFUSE      14   /**< Level 2, direct: confused (the harpy's song). */
+#define SP_WAIL         15   /**< Level 3 burst: frightened (the banshee). */
+#define SP_SHRIEK       16   /**< Level 2, self: wakes the monsters around (the shrieker). */
+#define SPELL_COUNT     17
 
 /* Shapes: who a spell or an aimed item reaches (an item's: gen_item_shape()) */
 #define SPELL_SELF    0   /**< The caster. */
@@ -66,7 +72,8 @@
 #define SPELL_AI_NEVER   0   /**< Never: the AI can't use it well. */
 #define SPELL_AI_HURT    1   /**< When hurt: on itself. */
 #define SPELL_AI_TARGET  2   /**< At the creature it hunts. */
-#define SPELL_AI_COUNT   3
+#define SPELL_AI_SEEN    3   /**< On itself, or around itself (a burst within reach of its target), when it sees its target. */
+#define SPELL_AI_COUNT   4
 #define SPELL_AI_ANY     0xFF   /**< For spell_next(): any of them. */
 
 /* Spell levels: 0 is an ability, which costs nothing */
@@ -94,7 +101,12 @@ typedef struct spell_def {
     int8_t      power;   /**< The effect's power: above 0. */
     uint8_t     range;   /**< A bolt's or direct spell's reach (nge_map_within()); 0 for SPELL_SELF. */
     uint8_t     ai;      /**< SPELL_AI_*. */
+    uint8_t     flags;   /**< SPELL_F_*. */
 } spell_def_t;
+
+/* Spell flags: bits of spell_def_t flags */
+#define SPELL_F_MONSTER  0x01   /**< A monster's ability: in no book, and the player can't learn it (R10). */
+#define SPELL_F_ALLIES   0x02   /**< An area spell that reaches only creatures with AI. Not read yet (creature_extensions_plan.md, step 10). */
 
 /** Entity id has the spells component: it knows some spells (a caster). */
 #define SPELLS_IS(id)  NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_SPELLS)
@@ -113,7 +125,9 @@ uint8_t spell_knows(nge_entity_id_t id, uint8_t sp) NGE_BANKED;
 /**
  * @brief Teach caster id spell sp: posts EV_SPELL_LEARNED (p1: sp), unless
  *        it is known already, when nothing changes. The only way to add a
- *        spell, whatever the cause (docs/spells.md, R8).
+ *        spell, whatever the cause (docs/spells.md, R8). The player can't
+ *        learn a monster's ability (SPELL_F_MONSTER): it asserts, and with
+ *        NDEBUG nothing changes.
  */
 void spell_learn(nge_entity_id_t id, uint8_t sp) NGE_BANKED;
 

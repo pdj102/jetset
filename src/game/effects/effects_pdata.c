@@ -466,6 +466,14 @@ const effect_def_t effect_defs[EF_COUNT] = {
         .period = TURNS(10),
         .cycles = 3,
     },
+    [EF_ERRATIC] = {
+        .name = "Erratic",
+        .duration = EFFECT_TIMED,
+        .flags = EFFECT_INNATE,  /* the bat's flight (docs/creature_extensions.md M1.4) */
+        .status = STATUS_CONFUSED,
+        .period = 255,           /* the longest: its firings do nothing */
+        .cycles = 0,             /* for ever */
+    },
     [EF_HEALING] = {
         .duration = EFFECT_INSTANT,
         .start_text = "You feel much better.",
@@ -596,6 +604,10 @@ const effect_def_t effect_defs[EF_COUNT] = {
     [EF_BLINK] = {
         .duration = EFFECT_INSTANT,
         .on_start = { OP_BLINK, 0, 1 },
+    },
+    [EF_WAKE] = {
+        .duration = EFFECT_INSTANT,
+        .on_start = { OP_WAKE, 0, 1 },   /* the shriek: what wakes, wakes quietly (docs/creature_extensions.md M2.1) */
     },
     [EF_WORN_HP] = {
         .duration = EFFECT_WORN,

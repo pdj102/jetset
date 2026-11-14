@@ -65,6 +65,13 @@ void ai_remove(nge_entity_id_t id) NGE_BANKED
     ai_traits[id] = 0;
 }
 
+void ai_alert(nge_entity_id_t id) NGE_BANKED
+{
+    check_ai(id);
+
+    ai_stimulus(id, AI_STIM_NOISE, NGE_EVENT_NONE);
+}
+
 ai_state_t ai_get_state(nge_entity_id_t id) NGE_BANKED
 {
     check_ai(id);

@@ -112,13 +112,28 @@ static uint8_t hurt(nge_entity_id_t id)
     return NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_HEALTH) && (uint16_t)health_hp[id] * 2 <= health_hp_max[id];
 }
 
+/* A mask, not %: a multiply-free fold of 0 to 31 below SPELL_COUNT, past SP_NONE (R11) */
+typedef char ai_spell_start_check[(SPELL_COUNT >= 2 && SPELL_COUNT <= 32) ? 1 : -1];
+
+uint8_t ai_spell_start(uint8_t r)
+{
+    uint8_t sp = (uint8_t)(r & 31);
+
+    while (sp >= SPELL_COUNT) {
+        sp = (uint8_t)(sp - (SPELL_COUNT - 1));
+    }
+    return sp;
+}
+
 /*
  * Cast a spell (docs/spells.md, 4.9). Hurt, each spell it uses when hurt,
  * on itself. Seeing its target, each spell it casts at one, from a random
  * one: checked by hand, as opt_shoot() does, so it holds a spell that
- * would reach someone else. ACT_CAST refuses what it can't afford, so out
- * of MP it falls back on its other options. The random start is drawn out
- * of the action (actions.md, R5)
+ * would reach someone else. Then each spell it casts when it sees its
+ * target (SPELL_AI_SEEN): on itself, or a burst only with the target in
+ * reach (docs/creature_extensions.md M2.1). ACT_CAST refuses what it can't
+ * afford, so out of MP it falls back on its other options. The random
+ * start is drawn out of the action (actions.md, R5)
  */
 static uint8_t opt_cast(const ai_ctx_t *c)
 {
@@ -128,8 +143,11 @@ static uint8_t opt_cast(const ai_ctx_t *c)
     uint8_t gx = c->gx;
     uint8_t gy = c->gy;
     uint8_t sees = c->sees;
+    uint8_t x = c->x;
+    uint8_t y = c->y;
     uint8_t first;
     uint8_t sp;
+    spell_def_t def;   /* a copy: the table is in the spells' page */
     act_t a = { 0 };
 
     if (!(c->can & AI_CAN_CAST)) {
@@ -141,8 +159,8 @@ static uint8_t opt_cast(const ai_ctx_t *c)
         sp = first;
         while (sp != SP_NONE) {
             a.spell = sp;
-            a.x = c->x;
-            a.y = c->y;
+            a.x = x;
+            a.y = y;
             if (ai_try(ACT_CAST, &a)) {
                 return 1;
             }
@@ -155,11 +173,7 @@ static uint8_t opt_cast(const ai_ctx_t *c)
     if (!sees) {
         return 0;
     }
-    sp = (uint8_t)(rand() & 15);   /* a mask, not %: 11 to 15 fold back to 1 to 5 */
-    if (sp >= SPELL_COUNT) {
-        sp = (uint8_t)(sp - (SPELL_COUNT - 1));
-    }
-    first = spell_next(id, sp, SPELL_AI_TARGET);
+    first = spell_next(id, ai_spell_start((uint8_t)rand()), SPELL_AI_TARGET);
     sp = first;
     while (sp != SP_NONE) {
         a.spell = sp;
@@ -170,6 +184,23 @@ static uint8_t opt_cast(const ai_ctx_t *c)
             return a.used;
         }
         sp = spell_next(id, sp, SPELL_AI_TARGET);
+        if (sp == first) {
+            break;
+        }
+    }
+    first = spell_next(id, SP_NONE, SPELL_AI_SEEN);
+    sp = first;
+    while (sp != SP_NONE) {
+        spell_get(sp, &def);
+        if (def.shape != SPELL_BURST || nge_map_within(x, y, gx, gy, ACT_BURST_RADIUS)) {
+            a.spell = sp;
+            a.x = x;
+            a.y = y;
+            if (ai_try(ACT_CAST, &a)) {
+                return 1;
+            }
+        }
+        sp = spell_next(id, sp, SPELL_AI_SEEN);
         if (sp == first) {
             break;
         }

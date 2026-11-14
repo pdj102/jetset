@@ -117,7 +117,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
         .where = { .depth = 1, .depth_max = 6, .rarity = 6 },
     },
-    [CR_BAT] = {                                        /* later: erratic flight */
+    [CR_BAT] = {
         .name = "bat",
         .render = SHAPE_BAT(BANK_PURPLE),
         .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NO_FLOOR },   /* flies: over holes and traps */
@@ -128,6 +128,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .xp = 5,                                        /* below 1 hit die */
         .flags = 0,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
+        .innate = { EF_ERRATIC, 1 },                    /* erratic flight */
         .where = { .depth = 1, .depth_max = 4, .rarity = 8 },
     },
     [CR_GREEN_SNAKE] = {
@@ -173,12 +174,14 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
         .where = { .depth = 2, .depth_max = 6, .rarity = 6 },
     },
-    [CR_SHRIEKER] = {                                   /* later: its shriek wakes the level */
+    [CR_SHRIEKER] = {
         .name = "shrieker",
         .render = SHAPE_SHRIEKER(BANK_PURPLE),
         .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
         .stats = { .speed = MONSTER_SLOW, .ability = { 1, 1, 8, 1, 8, 1 } },
         .health = { .hp_max = 5, .immune = DMG_BIT(DMG_POISON), .vuln = DMG_BIT(DMG_FIRE), .ac = 7 },
+        .mana = { .mp_max = 4 },                        /* two shrieks */
+        .spells = { SP_SHRIEK },                        /* wakes what sleeps around it */
         .inventory = { .capacity = 0, .slots = 0 },     /* no attack */
         .xp = 13,                                       /* 1 hit die, special */
         .flags = 0,
@@ -350,12 +353,14 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .innate = { EF_REGEN, 1 },
         .where = { .depth = 7, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 6 },
     },
-    [CR_DRAGON] = {                                     /* later: fire breath */
+    [CR_DRAGON] = {
         .name = "dragon",
         .render = SHAPE_DRAGON(BANK_RED),
         .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
         .stats = { .speed = MONSTER_SPEED, .ability = { 22, 10, 20, 14, 14, 16 } },
-        .health = { .hp_max = 60, .immune = DMG_BIT(DMG_FIRE), .vuln = DMG_BIT(DMG_COLD), .ac = 18 },
+        .health = { .hp_max = 60, .immune = DMG_BIT(DMG_FIRE), .vuln = DMG_BIT(DMG_COLD), .ac = 18 },   /* its own breath can't hurt it (R9) */
+        .mana = { .mp_max = 12 },                       /* three breaths */
+        .spells = { SP_FIRE_BREATH },
         .melee = { .to_hit = 9, .dice = 3, .sides = 6, .to_damage = 3, .type = DMG_PIERCE, .range = 1 },  /* bite */
         .inventory = { .capacity = 0, .slots = 0 },
         .xp = 1750,                                     /* 10 hit dice, special */

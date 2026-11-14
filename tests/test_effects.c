@@ -4,11 +4,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "ecs/components/nge_location.h"
 #include "ecs/nge_entity.h"
 #include "ecs/nge_owner.h"
 #include "ecs/systems/nge_timer.h"
 #include "event/nge_event.h"
 
+#include "game/ai/ai_internal.h"
 #include "game/attrs/attrs_internal.h"
 #include "game/components/health.h"
 #include "game/components/inventory.h"
@@ -587,6 +589,9 @@ int main(void)
     /* ---- mana regeneration: 1 MP every 20 turns, stopping at the maximum; innate, so no cure ends it ---- */
     e = effect_on(player, EF_MANA_REGEN);
     CHECK(effect_defs[EF_MANA_REGEN].flags == EFFECT_INNATE && effect_defs[EF_MANA_REGEN].cycles == 0);
+    /* Erratic flight (M1.4): innate, so the loop over the definitions holds it to timed, for ever, no save */
+    CHECK(effect_defs[EF_ERRATIC].flags == EFFECT_INNATE && effect_defs[EF_ERRATIC].status == STATUS_CONFUSED &&
+          EF_ERRATIC < EF_TIMED_COUNT);
     mana_spend(player, 2);
     events();
     while (mana_mp[player] < 4 && nge_timer_turns < 100) {
@@ -889,6 +894,33 @@ int main(void)
     CHECK(effect_on(g, EF_DESCENT) == NGE_ENTITY_INVALID && NGE_ENTITY_IS_ALIVE(g) && !level_pending());
     events();
     CHECK(find_event(0, EV_FIZZLED) < 0 && find_event(0, EV_LEFT_LEVEL) < 0 && find_event(0, EV_EFFECT_ENDED) >= 0);
+
+    /* ---- waking (EF_WAKE, the shriek; docs/creature_extensions.md M2.1): sleepers within power tiles, none further ---- */
+    reset();
+    level_depth = 5;
+    {
+        nge_entity_id_t shrieker = gen_creature(CR_SHRIEKER, LEVEL_AREA);
+        nge_entity_id_t near = gen_creature(CR_GOBLIN, LEVEL_AREA);
+        nge_entity_id_t far = gen_creature(CR_GOBLIN, LEVEL_AREA);
+        nge_entity_id_t elsewhere = gen_creature(CR_GOBLIN, NGE_OWNER_AREA(6));
+
+        nge_location_set(shrieker, 10, 10);
+        nge_location_set(near, 15, 13);                    /* within 8 */
+        nge_location_set(far, 19, 10);                     /* 9 away */
+        nge_location_set(elsewhere, 11, 10);               /* on another level */
+        events();
+        CHECK(ai_get_state(near) == AI_STATE_ASLEEP && ai_get_state(far) == AI_STATE_ASLEEP);
+        CHECK(effect_apply(EF_WAKE, 8, shrieker, NGE_ENTITY_INVALID) == 1);
+        CHECK(ai_get_state(near) == AI_STATE_IDLE && ai_get_state(far) == AI_STATE_ASLEEP &&
+              ai_get_state(elsewhere) == AI_STATE_ASLEEP);
+        events();
+        CHECK(find_event(0, EV_AI_CHANGED) >= 0 && find_event(0, EV_FIZZLED) < 0);
+        /* Awake already: nothing changes */
+        ai_stimulus(far, AI_STIM_SEEN, NGE_EVENT_NONE);
+        ai_alert(near);
+        CHECK(ai_get_state(near) == AI_STATE_IDLE);
+        events();
+    }
     level_depth = 0;   /* AREA again, for what follows */
 
     /* ---- the bonus to hit (docs/effects_extensions.md 3.7): signed, 0 at creation, -20 to +20 ---- */

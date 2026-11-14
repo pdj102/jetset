@@ -248,7 +248,7 @@ Spec M1.3, D7, R5, R16.
 - **CSpect (check 1):** the goblin archer backs away when the player closes, then
   shoots. The shaman does the same and casts.
 
-### Step 4: ability spells, erratic movers and waking (M1.4, M2.1)
+### Step 4: ability spells, erratic movers and waking (M1.4, M2.1) `[done]` (2026-11-14)
 
 Spec M1.4, M2.1, R10, R11.
 

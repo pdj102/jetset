@@ -539,6 +539,17 @@ static void test_traps(void)
     bat = gen_creature(CR_BAT, AREA);
     nge_location_set(bat, 1, 4);
     nge_block_add(bat, NGE_BLOCK_OCCUPIED, NGE_BLOCK_NO_FLOOR);
+    {
+        nge_entity_id_t e;
+        uint8_t k;
+
+        NGE_OWNER_FOR_EACH_OWNED(k, e, bat) {
+            if (NGE_ENTITY_HAS_COMPONENT(e, NGE_COMPONENT_EFFECT) && EFFECT_KIND_OF(e) == EF_ERRATIC) {
+                effect_end(e);   /* its erratic flight: these steps go where they are sent */
+            }
+        }
+        CHECK(!STATUS_HAS(bat, STATUS_CONFUSED));
+    }
     a = move(bat, 1, -1);
     CHECK(act_move(&a, ACT_DO) == ACT_FAIL);                        /* the bandit is there: step aside first */
     nge_location_set(h, 5, 5);
