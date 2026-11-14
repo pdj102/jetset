@@ -5,7 +5,8 @@ The steps that build topic M ([todo.md](todo.md)) as
 this file says in what order, what changes, and how each step is checked.
 
 Status: planned (2026-11-13). Step 1 done the same day. Step 1b added and done 2026-11-14
-(spec D11).
+(spec D11). Step 1c added 2026-11-14 (spec D3 revised, R17), agreed the same day;
+steps 2, 8, 9 and 12 changed to match.
 
 ## 1. How the steps work
 
@@ -28,7 +29,7 @@ Status: planned (2026-11-13). Step 1 done the same day. Step 1b added and done 2
 ### 1.1 Tight spots
 
 - **`BANK_56` (the actions) has 104 bytes free.** The steps change the actions only by
-  a call or two (steps 2, 9, 10). The work goes in the pages that own it: gen (106),
+  a call or two (steps 1c, 9, 10). The work goes in the pages that own it: gen (106),
   effects (120), AI (130). If a step still doesn't fit, it stops and asks. Making room
   in `BANK_56` (a file moved to a second section) is a change of its own.
 - **Page 102 (the level generator) has 175 bytes free.** Step 11 picks bands in page
@@ -39,7 +40,8 @@ Status: planned (2026-11-13). Step 1 done the same day. Step 1b added and done 2
   step that adds kinds or kits.
 
 ```text
-Phase 1:  1 balance fix --> 1b kind 0 is none --> 2 kit, natural ranged --> 3 skirmishers --> 4 ability spells
+Phase 1:  1 balance fix --> 1b kind 0 is none --> 1c hooks beside their parts --> 2 kit, natural ranged
+                                                     --> 3 skirmishers --> 4 ability spells
                                                                               |
                             5 the six shapes (art) ----------------------> 6 kinds, depths 1-6
                                                                               |
@@ -98,28 +100,92 @@ order, each built and tested on its own.
 - **CSpect (check 1b):** a new game as each class plays as before: the starting kit,
   monsters and features on depths 1 and 2, a chest opened, a door opened.
 
-### Step 2: the kit and the natural ranged attack (M1.1, M1.2)
+### Step 1c: hooks beside their parts (D3)
 
-Spec M1.1, M1.2, R6, R7, R12, R15, D2 to D4.
+Spec D3 (revised), R17. A change of layout only: the game plays as before, and no row
+gains or loses an effect.
 
 - **Change:**
-  - `gen_internal.h`: `uint8_t kit[GEN_KIT_MAX]` (2) and `attack_kind_t ranged` in
-    `gen_creature_kind_t`. A kit entry is an item kind, `IT_NONE` for none (step 1b),
-    so the rows without a kit (most of them) say nothing.
+  - `gen.h`: `GEN_HOOK_INNATE` goes. `GEN_HOOK_USE` 0, `GEN_HOOK_HIT` 1,
+    `GEN_HOOK_WORN` 2, `GEN_HOOK_AIM` 3, `GEN_HOOK_COUNT` 4, each comment saying it is
+    an item's trigger (and `USE` a feature's too). Nothing stores a `GEN_HOOK_*`, and
+    the item rows name them by constant, so `AIM` moving from 4 to 3 is safe.
+  - `gen.h`, `gen.c` (common memory): `uint16_t gen_hit_of(nge_entity_id_t id, uint8_t
+    use)` in place of `gen_hook_of()`, with the same packed answer. A creature asks
+    `gen_creature_hit(kind, use)`, an item `gen_item_hook(kind, GEN_HOOK_HIT)` whatever
+    the use, and a feature `gen_feature_hit(kind)`.
+  - `gen_hook_of()` goes. Its callers ask their class's banked accessor, with the kind
+    in a local before the call (T-ZSDCC-1):
+    - `gen_item_hook(kind, hook)`, declared in `gen.h` now, not `gen_internal.h`:
+      `act_use.c`, `act_aim.c`, `ai_think.c` (potions), `attrs_bank.c` (worn),
+      `screen_inv_bank.c` (5 places), `anim_vfx.c` (`EV_AIMED`).
+    - `gen_feature_use(kind)`, declared in `gen.h`: `act_operate.c`.
+  - `gen_internal.h`:
+    - `gen_creature_kind_t`: `hooks[]` goes. `gen_hook_t melee_hit` follows `melee`,
+      and `gen_hook_t innate` takes the array's place.
+    - `gen_feature_kind_t`: `hooks[]` goes. `gen_hook_t use` and, after `attack`,
+      `gen_hook_t hit`.
+    - `gen_creature_hook()` and `gen_feature_hook()` give way to `gen_creature_hit(kind,
+      use)`, `gen_feature_use(kind)` and `gen_feature_hit(kind)`.
+  - `gen_creature_bank.c` (page 106): `create()` reads `b.innate`. `gen_creature_hit()`
+    answers `melee_hit` for `ATTACK_MELEE` and none for any other use, until step 2.
+  - `gen_feature_bank.c`: the two accessors.
+  - `act_shared.c` (`BANK_56`), `act_strike()`: `gen_hit_of(hooks, use)` in place of
+    `gen_hook_of(hooks, GEN_HOOK_HIT)`. `act_spring.c`, the trap with no attack:
+    `gen_hit_of(trap, ATTACK_MELEE)`. A byte or two each, for the extra argument.
+  - `gen_creature_pdata.c`: each `.hooks = { [GEN_HOOK_HIT] = {...} }` becomes
+    `.melee_hit = {...}`, and `[GEN_HOOK_INNATE]` becomes `.innate`, by a script.
+    11 rows. `gen_feature_pdata.c` the same: `.use` (7 rows) and `.hit` (8 rows).
+  - `effects_bank.c`'s stack-depth comment (T-STACK-2) names `gen_hit_of()`: the same
+    depth as `gen_hook_of()`.
+- **Tests:**
+  - The tests that name `.hooks[...]`, `GEN_HOOK_INNATE`, `gen_hook_of()` or the old
+    accessors (`test_gen`, `test_effects`, `test_feature`, `test_stream`,
+    `support/test.c`: about 56 places, 9 of them `gen_hook_of()`) use the new fields and
+    accessors.
+  - **`test_gen`:** new checks. A creature's `melee_hit` is set only with a melee part,
+    and a feature's `hit` only on a trap (R17). `gen_hit_of()` answers the item's hook
+    for `ATTACK_MELEE` and `ATTACK_RANGED`, a creature's `melee_hit` for `ATTACK_MELEE`,
+    and a trap's `hit`.
+  - **`test_act`:** the existing hit-effect tests pass unchanged: a venom dagger
+    poisons, a fire arrow burns, a green snake's bite poisons, a trap holds.
+  - `make balance` prints the same as before.
+- **Asm:** `gen_hit_of()`, and `act_strike()` around the call (the `hooks` and `use`
+  arguments, 2 of 8 bytes on the stack).
+- **Docs:** the hook passages that describe the array: items.md 4.4 (the hooks table:
+  `INNATE` goes, `AIM` is 3), creatures.md (the record), features.md (the record),
+  effects.md (where innate and hit effects come from), actions.md if it names
+  `gen_hook_of()` for hits. Finished specs keep their wording.
+- **Memory:** page 107 about −144 bytes (6 a row, 24 rows), page 123 about −144. Pages
+  106 and 122 about the same (accessors swapped). Common memory about the same:
+  `gen_hit_of()` replaces `gen_hook_of()`. `BANK_56` a few bytes. The callers that now
+  call a banked accessor directly lose one call level, not gain one.
+- **CSpect (check 1c):** a green snake's bite poisons, a venom dagger poisons, a dart
+  trap hits and poisons, a fountain heals when operated, and a troll regenerates.
+
+### Step 2: the kit and the natural ranged attack (M1.1, M1.2)
+
+Spec M1.1, M1.2, R6, R7, R12, R15, R17, D2 to D4.
+
+- **Change:**
+  - `gen_internal.h`: `uint8_t kit[GEN_KIT_MAX]` (2), and `attack_kind_t ranged` with
+    `gen_hook_t ranged_hit` after it, in `gen_creature_kind_t`. A kit entry is an item
+    kind, `IT_NONE` for none (step 1b), so the rows without a kit (most of them) say
+    nothing.
   - `gen_creature_bank.c` (page 106), `create()`:
     - The ranged part gives `ATTACK_RANGED` (`attack_add()`), as the melee part does.
     - Each kit entry is made with `gen_item(kind, id)`, owned by the creature, then
       equipped with `act_equip(&a, ACT_DO)`, as `chargen_bank.c` does. A refused equip
       leaves the item carried, and asserts in a debug build.
-  - `act_shared.c` (`BANK_56`), `act_strike()`: the hook it reads is `GEN_HOOK_AIM`
-    when `use` is `ATTACK_RANGED` and `hooks` is a creature (`kind_class[]`), else
-    `GEN_HOOK_HIT` as now. About 15 bytes.
+  - `gen_creature_bank.c`, `gen_creature_hit()`: answers `ranged_hit` for
+    `ATTACK_RANGED`. `act_strike()` doesn't change: it already asks `gen_hit_of(hooks,
+    use)` (step 1c).
   - `gen_kinds.h`: `CR_GOBLIN_ARCHER` 24, `CR_COUNT` 25.
   - `gen_creature_pdata.c`:
     - The goblin archer, from spec 6.1, with its kit (short bow, arrows) and slots
       `SLOT_WEAPON | SLOT_RANGED | SLOT_AMMO`.
     - The gold snake's spit (range 3, d3 poison). Its `EF_BLIND` moves from
-      `GEN_HOOK_HIT` to `GEN_HOOK_AIM`.
+      `melee_hit` to `ranged_hit`.
   - Dev kit: a goblin archer and a gold snake out of sight.
 - **Tests:**
   - **`test_gen`:**
@@ -130,14 +196,14 @@ Spec M1.1, M1.2, R6, R7, R12, R15, D2 to D4.
     - Kit, innate effects and mana regeneration fit in `LEVEL_CREATURE_OWNED` for
       every kind (R12).
     - A ranged part has range 2 or more and gives `ATTACK_RANGED`.
-    - A creature's `GEN_HOOK_AIM` is set only with a ranged part.
+    - A creature's `ranged_hit` is set only with a ranged part (R17).
   - **`test_act`:** the gold snake's shot uses no ammo, and applies `EF_BLIND` (its
-    `GEN_HOOK_AIM`) and nothing from its bite. An archer's arrow still applies the
-    arrow's hook.
+    `ranged_hit`). Its bite applies nothing. An archer's arrow still applies the
+    arrow's hook, not the archer's `melee_hit`.
   - **`test_level`:** levels at every depth over many seeds don't fill the event queue
     (R15). The events allowed while generating include the equip's.
-- **Memory:** page 107 grows by 8 bytes a kind plus the new row (about 0.3K). Page 106
-  by about 0.1K. `BANK_56` by about 15 bytes.
+- **Memory:** page 107 grows by 10 bytes a kind plus the new row (about 0.3K). Page 106
+  by about 0.1K. `BANK_56` not at all.
 - **CSpect (check 2a):** on depth 1, the goblin archer wakes with its bow, shoots, and
   its body drops the bow and the arrows left. The gold snake spits from 3 tiles, and a
   hit blinds.
@@ -296,7 +362,7 @@ Spec M4.3, M2.1's summons row, R13, Q4.
   - `gen_internal.h`: `CREATURE_UNDEAD 0x02`, `CREATURE_BEAST 0x04`, `CREATURE_GIANT
     0x08`, `CREATURE_DRAGON 0x10`, `CREATURE_MINDLESS 0x20`.
   - `gen.h`, `gen_creature_bank.c`: `gen_creature_flags(kind)`, beside
-    `gen_creature_hook()`.
+    `gen_creature_hit()`.
   - `effects_bank.c` (page 120), `effect_apply()`: refuses `EF_SLEEP`, `EF_CONFUSE` and
     `EF_FEAR` on a creature whose kind is `CREATURE_MINDLESS`, as a save would, with no
     event. Check the bank depth from `act_cast()` (effects_extensions.md 3.9).
@@ -323,13 +389,17 @@ Spec M4.1, M4.2, D3.
   - `effects.h`, `effects_bank.c` (page 120): `effect_apply_around(ef, power, x, y,
     radius, source)`, the effect on every creature within radius of a tile. A loop over
     the entities in use, as the level does.
-  - Death: in `game_on_event()` (`game.c`), on `EV_DIED` of a creature whose
-    `GEN_HOOK_USE` is set, it calls `effect_apply_around()` at the corpse's tile,
-    radius 1, before the corpse goes. The hook and the location are read first, while
-    the entity is still alive.
+  - `gen_internal.h`: `gen_hook_t death` and `gen_hook_t struck` in
+    `gen_creature_kind_t`, after `innate` (spec D3). `gen.h`, `gen_creature_bank.c`:
+    the banked accessors `gen_creature_death(kind)` and `gen_creature_struck(kind)`.
+  - Death: in `game_on_event()` (`game.c`), on `EV_DIED` of a creature whose `death`
+    is set, it calls `effect_apply_around()` at the corpse's tile, radius 1, before the
+    corpse goes. The hook and the location are read first, while the entity is still
+    alive.
   - Struck: `act_strike()` (`BANK_56`) calls a new `effect_on_struck(target, attacker)`
     (page 120) after a melee hit that leaves the attacker alive. It applies the target's
-    `GEN_HOOK_WORN`. That is one call and its test, about 15 bytes in `BANK_56`.
+    `struck`, when the target is a creature. That is one call and its test, about 15
+    bytes in `BANK_56`.
   - `gen_creature_pdata.c`:
     - The floating eye's struck `EF_PARALYSE` 2.
     - The gas spore, salamander and black pudding rows (`CR_GAS_SPORE` 54 to
@@ -339,9 +409,8 @@ Spec M4.1, M4.2, D3.
     it doesn't. A salamander struck sets its attacker burning.
   - **`test_effects`:** a gas spore's death burns every creature next to it, and none
     further away.
-  - **`test_gen`:** a creature's `GEN_HOOK_USE` and `GEN_HOOK_WORN` name instant or timed
-    effects.
-- **Memory:** `BANK_56` about 15 bytes, page 120 about 0.2K.
+  - **`test_gen`:** a creature's `death` and `struck` name instant or timed effects.
+- **Memory:** `BANK_56` about 15 bytes, page 120 about 0.2K, page 107 4 bytes a kind.
 - **CSpect (check 3):** hitting a floating eye in melee paralyses the player. A gas spore
   shot from range burns the goblins next to it.
 
@@ -416,8 +485,8 @@ Spec M3, R8, D5.
 - **spells.md:** the monster-only spells, `SPELL_F_*`, `SPELL_AI_SEEN` and
   `SPELL_AI_ALLY`.
 - **effects.md:** `EF_ERRATIC`, `EF_WAKE`, `EF_SUMMON_UNDEAD`, `OP_WAKE`, mindless refusal,
-  and the creature meanings of `GEN_HOOK_USE`, `WORN` and `AIM`. **items.md** 4.4, the
-  hooks table.
+  and the creature's `ranged_hit`, `death` and `struck`. **creatures.md**, the record's
+  hook fields.
 - **difficulty.md:** 5.1's kind count, and the band model in 5.2.
 - **memory_map.md:** pages 102 or 136, 106, 107, 120, 127, 130, 131 and 135, and
   `BANK_56`. **sprite_style.md** 6.8, the pattern count.
@@ -429,14 +498,15 @@ Free bytes before the plan (2026-11-13), and the expected total cost:
 
 | Page | Used now | Free | Expected cost | Steps |
 |---|---|---|---|---|
-| `BANK_56` (actions) | 16,280 | 104 | about 45 bytes | 2, 9, 10 |
+| `BANK_56` (actions) | 16,280 | 104 | about 35 bytes | 1c, 9, 10 |
 | 102 (level generator) | 8,017 | 175 | about 0.1K, or 0 if moved to 136 | 11 |
 | 106 (creature generator) | 1,578 | 6.6K | about 0.5K | 2, 8, 11 |
-| 107 (creature kinds) | 1,524 | 6.7K | about 3K | 1b to 11 |
+| 107 (creature kinds) | 1,524 | 6.7K | about 3K (step 1c saves about 0.1K) | 1b to 11 |
 | 109 (item kinds) | 7,996 | 196 | 22 bytes | 1b |
 | 120 (effects) | 4,774 | 3.4K | about 0.4K | 4, 8, 9 |
 | 121 (effect definitions) | 5,597 | 2.6K | 3 rows | 4, 8 |
-| 123 (feature kinds) | about 1K | about 7K | one row | 1b |
+| 123 (feature kinds) | about 1K | about 7K | one row, then about −144 bytes | 1b, 1c |
+| Common memory | | 4.7K (debug) | about 0 (`gen_hit_of()` replaces `gen_hook_of()`) | 1c |
 | 127 (sequences) | 144 | 8K | 210 bytes | 1b to 11 |
 | 130 (AI) | 6,173 | 2.0K | about 0.6K | 3, 4, 10 |
 | 131 (AI tables) | 900 | 7.3K | 150 bytes | 3 |

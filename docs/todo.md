@@ -356,8 +356,9 @@ New kinds and the mechanics that make them work: [spec](creature_extensions.md),
 
 ### M1 Ranged and armed monsters `[plan]` [spec](creature_extensions.md), [plan](creature_extensions_plan.md)
 
+- M1.0 Hooks beside their parts: creature and feature records lose `hooks[]` (spec D3, plan step 1c)
 - M1.1 Kit: two item kinds a creature is generated with, and equips
-- M1.2 Natural ranged attack (spit, gaze, boulder); its hit in `GEN_HOOK_AIM`
+- M1.2 Natural ranged attack (spit, gaze, boulder), with its own `ranged_hit`
 - M1.3 Skirmishers: `ai_can_t` to 16 bits, `AI_CAN_SKIRMISH` from a kind's trait; archers and casters step back, then shoot
 - M1.4 Erratic movers: innate `EF_ERRATIC` (bat, will-o'-wisp)
 
@@ -374,8 +375,8 @@ New kinds and the mechanics that make them work: [spec](creature_extensions.md),
 
 ### M4 Reactive monsters `[plan]` [spec](creature_extensions.md), [plan](creature_extensions_plan.md)
 
-- M4.1 Death hook (`GEN_HOOK_USE`): the gas spore's burst
-- M4.2 Struck hook (`GEN_HOOK_WORN`): the floating eye's gaze, burning, corrosion
+- M4.1 Death hook (`death`): the gas spore's burst
+- M4.2 Struck hook (`struck`): the floating eye's gaze, burning, corrosion
 - M4.3 Families (undead, beast, giant, dragon) and mindless
 
 ### M5 Later monster mechanics (low) [spec](creature_extensions.md)

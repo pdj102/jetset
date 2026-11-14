@@ -3,6 +3,9 @@
 Status: agreed (2026-11-13). D1 to D6 and D8 to D10 agreed as proposed. D7 was
 revised on review: `ai_can_t` widens to 16 bits. Q1 to Q7 were answered
 (section 12). D11 was added on 2026-11-14: kind 0 means none in every class.
+**D3 was revised on 2026-11-14 (agreed the same day):** each effect sits beside
+the part it belongs to, and the creature and feature records lose their array
+of hook slots (R17, plan step 1c).
 The plan is [creature_extensions_plan.md](creature_extensions_plan.md).
 Built: the `balance.py` fix from Q7 (section 10, plan step 1) and D11 (plan step 1b).
 
@@ -94,7 +97,7 @@ What the roster lacks:
 
 | Store | Per kind | Today | With this spec |
 |---|---|---|---|
-| Page 107: the kind records and names | 59 bytes and the name (about 66) | $5F4, 1,524 of 8,192 bytes, 23 kinds | about 4.5K: 57 kinds × 68 bytes (kit 2, ranged 6, traits 1), the names and the band table |
+| Page 107: the kind records and names | 59 bytes and the name (about 66) | $5F4, 1,524 of 8,192 bytes, 23 kinds | about 4.5K: 57 kinds × 68 bytes (hooks 6 fewer (D3), kit 2, ranged 6 and its hit 2, traits 1, death and struck 4), the names and the band table |
 | Page 127: the kinds' animation sequences (`anim_seqs[CR_COUNT]`) | 6 bytes | $90, 144 bytes | 348 bytes |
 | Page 106: the creature generator's code | none | $62A | plus the kit and the natural ranged attack: about 0.3K |
 | Page 102: the level generator | none | $1F51, 175 bytes free | **bands don't fit here**: their placing goes in page 103's code or a page of its own (plan, step 8) |
@@ -149,15 +152,16 @@ Phase 1 is data and small code changes. Phase 2 adds new rules. Phase 3 is
   the wight, the necromancer and the minotaur. The bandit keeps the dev kit's
   bow, which is placed beside it.
 - **M1.2 Natural ranged attack.** An `attack_kind_t ranged` in the record
-  (`dice` 0 for none). It gives the existing `ATTACK_RANGED` component, so
+  (`dice` 0 for none), and beside it `gen_hook_t ranged_hit`, the effect of
+  its hit (D3). It gives the existing `ATTACK_RANGED` component, so
   `ai_can()` sets `AI_CAN_RANGED` and `opt_shoot()` uses it. `act_fire()`
   already falls back to the actor's own ranged attack when it has no launcher,
-  and uses up no ammo then. The one change is in `act_strike()`: a creature's
-  own ranged attack takes its hit effect from the **`GEN_HOOK_AIM`** slot,
-  which creatures don't use (D3), not from its bite's `GEN_HOOK_HIT`. Costs
-  6 bytes a kind (Q6). Used by: the gold snake's spit (blinds), the
-  bombardier beetle's spray (corrodes), the basilisk's gaze (paralyses) and
-  the hill giant's boulder.
+  and uses up no ammo then. `act_strike()` needs no change: after plan step
+  1c it asks for the hit effect of the attack that was used
+  (`gen_hit_of(hooks, use)`), so a spit applies `ranged_hit` and a bite
+  `melee_hit`. Costs 8 bytes a kind (Q6). Used by: the gold snake's spit
+  (blinds), the bombardier beetle's spray (corrodes), the basilisk's gaze
+  (paralyses) and the hill giant's boulder.
 - **M1.3 Skirmishers (D7).** A trait, `AI_TRAIT_SKIRMISH`, in a new
   `traits` byte of `ai_kind_t`. `ai_add()` copies it into `ai_traits[]`
   (page 131). `ai_can()` sets the new capability **`AI_CAN_SKIRMISH`**
@@ -244,13 +248,14 @@ Phase 1 is data and small code changes. Phase 2 adds new rules. Phase 3 is
 
 ### M4 Reactive monsters (phase 2)
 
-- **M4.1 Death hook.** For creatures, the unused **`GEN_HOOK_USE`** slot means
-  *on death*. On `EV_DIED`, its effect is applied as a burst around the corpse,
+- **M4.1 Death hook.** A `gen_hook_t death` in the creature record (D3). On
+  `EV_DIED`, its effect is applied as a burst around the corpse,
   to every creature next to it, monsters included. Used by: the gas spore
   (`EF_BOLT_FIRE`, power 8). Kill it from a distance, or lure monsters next to
   it.
-- **M4.2 Struck hook.** The unused **`GEN_HOOK_WORN`** slot means *when hit in
-  melee*. Its effect goes to the attacker, in `act_strike()` after the damage.
+- **M4.2 Struck hook.** A `gen_hook_t struck` in the creature record (D3): its
+  effect, when the creature is hit in melee, goes to the attacker, in
+  `act_strike()` after the damage.
   Used by: the floating eye (`EF_PARALYSE`, the classic "don't hit it": this
   is its "paralysing gaze"), the salamander (`EF_BURNING`) and the black
   pudding (`EF_CORROSION`).
@@ -260,7 +265,7 @@ Phase 1 is data and small code changes. Phase 2 adds new rules. Phase 3 is
   bane weapons and a later "turn undead". Mindless is a monster-only part of
   E5.9: `effect_apply()` refuses `EF_SLEEP`, `EF_CONFUSE` and `EF_FEAR` on a
   mindless creature (Q4). It reads the flags through a banked accessor,
-  `gen_creature_flags(kind)`, beside `gen_creature_hook()`. Watch the bank
+  `gen_creature_flags(kind)`, beside `gen_creature_hit()`. Watch the bank
   depth (effects_extensions.md 3.9). Used by: zombies, skeletons, mummies,
   the shadow, and the existing skeleton ("never flees").
 
@@ -442,6 +447,10 @@ shape 5. With the narrower depths, no more than 4 of a shape share a depth.
   equipping a kit posts events, as rooted creatures do.
 - **R16 (New)** A skirmisher steps back only to a tile from which it still sees
   its target, and never while rooted. Reason: the review of D7.
+- **R17 (New)** A hit applies the effect of the attack that made it, and no
+  other: a creature's bite and its spit each have their own. A hook field means
+  the same in every row of its record, whatever the class. Reason: the review
+  of D3.
 
 ## 8. Decisions
 
@@ -457,12 +466,67 @@ shape 5. With the narrower depths, no more than 4 of a shape share a depth.
   on the body. **Rejected:** loot tables by depth: more data for little gain
   now. **Rejected:** placing items next to the monster as the dev kit does:
   the player could pick them up first.
-- **D3 Reuse the creature's empty hook slots (agreed).** `gen_hook_t hooks[5]`
-  uses 2 of 5 slots for creatures. `USE` becomes *on death*, `WORN` *when
-  struck*, and `AIM` the natural ranged attack's hit. That costs no bytes,
-  and the per-class reader (`gen_creature_hook()`) is the only place that
-  names them. **Rejected:** new hook numbers: `GEN_HOOK_COUNT` would grow for
-  every class.
+- **D3 (revised and agreed 2026-11-14) Each effect sits beside the part it
+  belongs to.** The first D3 reused the creature's empty slots of
+  `hooks[GEN_HOOK_COUNT]`: `USE` meant on death, `WORN` when struck, and
+  `AIM` the natural ranged attack's hit. On review, the slot array was the
+  cause of the problem, not a given. Its slots are named by when they fire, so
+  a creature has one `HIT` for all its attacks, most slots stay empty in
+  every class, and a reader has to know the class to know what a slot means.
+  So the creature and feature records drop the array and name each effect
+  beside its part:
+  - **Creature:** `melee_hit`, what its `melee` attack does on a hit (plan
+    step 1c). `ranged_hit`, the same for its `ranged` attack (step 2).
+    Apart from the attacks: `innate`, the effect it is born with, applied
+    once in `create()` and lasting for ever (the troll's `EF_REGEN`, the
+    lichen's `EF_ROOT`, step 1c), and `death` and `struck` (step 9).
+  - **Feature:** `use`, applied to the operator, and `hit` beside the trap's
+    `attack` (step 1c).
+  - **Item: unchanged.** An item has one hook, tagged with when it fires
+    (`gen_item_hook_t`), because an item does one thing: a weapon or ammo
+    hits, a potion is used, a ring is worn, a wand is aimed. A shot applies
+    the ammo's hook, as now. Arrows have no dice of their own (the bow's
+    roll), so their hook couldn't sit beside an attack, and needn't.
+  - **Readers:** `gen_hit_of(id, use)`, in common memory, is the hit effect
+    of the entity's attack of that use: a creature's `melee_hit` or
+    `ranged_hit`, an item's `GEN_HOOK_HIT` hook, a feature's `hit`.
+    `act_strike()` and `act_spring()` call it in place of
+    `gen_hook_of(..., GEN_HOOK_HIT)`, with no class test. It is the one
+    reader that crosses classes, because what hits can be a creature, an
+    item or a feature.
+  - **`gen_hook_of()` goes.** It asks any entity for its effect by trigger,
+    which is the slot model again. Kept, most of its answers would be
+    empty: nothing for any creature, and for a feature nothing but its use.
+    Nothing needs a reader that crosses classes for these: its callers
+    other than the hit each know their class already, so each asks its
+    class's accessor:
+    - an item's use, aim or worn effect (`act_use()`, `act_aim()`, the AI's
+      potions, worn modifiers, the inventory screen, the aim animation):
+      `gen_item_hook(kind, hook)`, which moves from `gen_internal.h` to
+      `gen.h`. It keeps its tag test, since an item's one hook is tagged
+      with when it fires.
+    - a feature's use (`act_operate()`): `gen_feature_use(kind)`.
+    - a creature's `innate`, `death` and `struck`: read in its own pages,
+      `innate` in `create()` and the other two through banked accessors
+      (step 9).
+  - **`GEN_HOOK_*`** then names only what triggers an item's hook (`USE`,
+    `HIT`, `WORN`, `AIM`). `GEN_HOOK_INNATE` goes, and `GEN_HOOK_COUNT` is 4.
+  - **Cost:** a creature's hooks go from 10 bytes to 4 (step 1c), then 6
+    with `ranged_hit`, and 10 with `death` and `struck`. A feature's go from
+    10 bytes to 4. Step 1c saves about 144 bytes in page 107 and 144 in page
+    123. Common memory about the same: `gen_hit_of()` takes
+    `gen_hook_of()`'s place. `act_strike()` stays the same size, and M1.2
+    needs no change in `BANK_56`.
+
+  **Rejected:** reusing the empty slots (the first D3): a slot's meaning
+  depends on the class, and a creature has one hit effect for all its
+  attacks. **Rejected:** a new trigger, `GEN_HOOK_HIT_RANGED`: it fixes the
+  spit, but keeps slots most kinds leave empty, grows every class by 2 bytes,
+  and the next part (a tail, a second melee attack) needs another.
+  **Rejected:** the hit effect inside `attack_kind_t`: all 219 item records
+  grow by 2 bytes (438, with 174 free in page 109), and items already have
+  their hook. **Rejected:** natural attacks as items the creature can't drop:
+  they use the owned entities that the kit needs (R12).
 - **D4 The natural ranged attack is a full `attack_kind_t` (agreed, Q6).** 6
   bytes, the type that the component and `act_fire()` already take.
   **Rejected:** packing it into 4 bytes: it saves 114 bytes over 57 kinds,
@@ -523,7 +587,7 @@ shape 5. With the narrower depths, no more than 4 of a shape share a depth.
 
 ## 9. Scope and phases
 
-- **Phase 1** (M1, M2.1, R11, D11): kind 0 as none, the kit, natural ranged attacks,
+- **Phase 1** (M1, M2.1, R11, D11, D3): kind 0 as none, hooks beside their parts, the kit, natural ranged attacks,
   skirmishers with the wider `ai_can_t`, erratic movers and ability spells.
   With them, the 28 phase-1 kinds in section 6, the narrower depths and the
   phase-1 changes to existing kinds. **To-do M1, M2.1, M6.1, M6.3.**
@@ -570,9 +634,10 @@ PC tests:
 - **`test_gen`:** every kit item exists and fits a slot the kind has, or is
   ammo for its launcher (R6). A generated archer has its bow and arrows
   equipped. A natural ranged attack has range 2 or more and gives
-  `ATTACK_RANGED`. A creature's `GEN_HOOK_AIM` names an effect only when the
-  kind has a ranged attack. `GEN_HOOK_USE` and `GEN_HOOK_WORN` on creatures
-  name instant or timed effects. Bands: sizes fit in `LEVEL_MONSTERS_MAX`.
+  `ATTACK_RANGED`. A creature's `melee_hit` names an effect only when the
+  kind has a melee attack, its `ranged_hit` only with a ranged attack, and a
+  feature's `hit` only on a trap (R17). `death` and `struck` name instant or
+  timed effects. Bands: sizes fit in `LEVEL_MONSTERS_MAX`.
   Every depth has 6 to 22 kinds (R1).
 - **`test_spell`:** ability spells are in no book, and `spell_learn()` refuses
   them (R10). The start pick reaches every spell with 20 (R11).
@@ -584,8 +649,8 @@ PC tests:
 - **`test_effects`:** `EF_ERRATIC` is innate. Mindless creatures refuse sleep,
   confusion and fear. `EF_WAKE` wakes sleepers in range only.
   `EF_SUMMON_UNDEAD` makes only undead kinds, and stops at R13's reserve.
-- **`test_act`:** firing a natural ranged attack uses no ammo, and applies the
-  `GEN_HOOK_AIM` effect, not the bite's. A struck hook reaches the attacker,
+- **`test_act`:** firing a natural ranged attack uses no ammo, and applies its
+  `ranged_hit`, not the bite's `melee_hit`. A struck hook reaches the attacker,
   a death burst reaches neighbours.
 - **`test_level`:** bands are placed in one room. A level with bands stays
   within the entity budget, and doesn't fill the event queue, at every
