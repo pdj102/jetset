@@ -4,7 +4,7 @@ Status: agreed (2026-11-13). D1 to D6 and D8 to D10 agreed as proposed. D7 was
 revised on review: `ai_can_t` widens to 16 bits. Q1 to Q7 were answered
 (section 12). D11 was added on 2026-11-14: kind 0 means none in every class.
 The plan is [creature_extensions_plan.md](creature_extensions_plan.md).
-Nothing is built yet, except the `balance.py` fix from Q7 (section 10).
+Built: the `balance.py` fix from Q7 (section 10, plan step 1) and D11 (plan step 1b).
 
 Builds on [creatures.md](creatures.md) (the roster of 21 random kinds and rooted
 creatures), [ai.md](ai.md) and [ai_default_brain.md](ai_default_brain.md),

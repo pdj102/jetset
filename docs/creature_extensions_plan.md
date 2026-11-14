@@ -4,7 +4,7 @@ The steps that build topic M ([todo.md](todo.md)) as
 [creature_extensions.md](creature_extensions.md) specifies it. The spec says what and why;
 this file says in what order, what changes, and how each step is checked.
 
-Status: planned (2026-11-13). Step 1 done the same day. Step 1b added 2026-11-14
+Status: planned (2026-11-13). Step 1 done the same day. Step 1b added and done 2026-11-14
 (spec D11).
 
 ## 1. How the steps work
@@ -65,7 +65,7 @@ Spec Q7, section 10.
   at depth 1 (warns), 5.8 to 8.9 elsewhere (ok). C1 still fails at depths 2 to 8, as
   before.
 
-### Step 1b: kind 0 means none (D11) `[built, CSpect check pending]` (2026-11-14)
+### Step 1b: kind 0 means none (D11) `[done]` (2026-11-14)
 
 Spec D11. A renumber only: the game plays as before. One commit per class, in this
 order, each built and tested on its own.
