@@ -75,7 +75,11 @@
 /* docs/creature_extensions.md 6.2: summoners of the dead (plan step 8) */
 #define CR_NECROMANCER    52
 #define CR_LICH           53
-#define CR_COUNT          54
+/* docs/creature_extensions.md 6.1, 6.2: death and struck hooks (plan step 9) */
+#define CR_GAS_SPORE      54
+#define CR_SALAMANDER     55
+#define CR_BLACK_PUDDING  56
+#define CR_COUNT          57
 
 /* Items (CLASS_ITEM): IT_QUEST is one a game, made by game/actors.c, never at random */
 #define IT_NONE              0   /* none: a blank row 0 in the kind table, never generated */

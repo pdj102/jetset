@@ -921,6 +921,43 @@ int main(void)
         CHECK(ai_get_state(near) == AI_STATE_IDLE);
         events();
     }
+    /*
+     * ---- a death effect (M4.1): a gas spore's death burns every creature
+     * next to it, monsters too, none further, nor one on another level ----
+     */
+    reset();
+    {
+        nge_entity_id_t spore = gen_creature(CR_GAS_SPORE, LEVEL_AREA);
+        nge_entity_id_t near = gen_creature(CR_GOBLIN, LEVEL_AREA);
+        nge_entity_id_t corner = gen_creature(CR_GOBLIN, LEVEL_AREA);
+        nge_entity_id_t far = gen_creature(CR_GOBLIN, LEVEL_AREA);
+        nge_entity_id_t elsewhere = gen_creature(CR_GOBLIN, NGE_OWNER_AREA(6));
+        nge_event_t ev = { 0 };
+        uint8_t hp = health_hp[near];
+
+        nge_location_set(spore, 10, 10);
+        nge_location_set(near, 11, 10);
+        nge_location_set(corner, 9, 9);
+        nge_location_set(far, 12, 10);                     /* 2 away */
+        nge_location_set(elsewhere, 10, 11);
+        health_damage(spore, NGE_ENTITY_INVALID, 10, DMG_BLUNT);
+        CHECK(health_hp[spore] == 0);
+        events();
+        ev.id = EV_DIED;                                   /* as the game's dispatch passes it: the spore dying, not yet released */
+        ev.target = spore;
+        ev.source = NGE_EVENT_NONE;
+        effects_on_event(&ev);
+        CHECK(health_hp[near] < hp && health_hp[corner] < hp && health_hp[far] == hp && health_hp[elsewhere] == hp);
+        events();
+        CHECK(find_event(0, EV_DAMAGED) >= 0);
+        /* A death with no death effect: nothing */
+        hp = health_hp[far];
+        health_damage(near, NGE_ENTITY_INVALID, 50, DMG_BLUNT);
+        events();
+        ev.target = near;
+        effects_on_event(&ev);
+        CHECK(health_hp[far] == hp && events() == 0);
+    }
     level_depth = 0;   /* AREA again, for what follows */
 
     /* ---- the bonus to hit (docs/effects_extensions.md 3.7): signed, 0 at creation, -20 to +20 ---- */

@@ -102,6 +102,8 @@ typedef struct gen_creature_kind {
     uint8_t      flags;   /* CREATURE_* */
     ai_kind_t    ai;      /* its brain and start state; brain AI_BRAIN_NONE for none (the player) */
     gen_hook_t   innate;      /* applied when generated, lasting for ever (the troll's regeneration) */
+    gen_hook_t   death;       /* on its death, to every creature next to it (the gas spore's burst) */
+    gen_hook_t   struck;      /* to what hits it in melee and lives (the floating eye's gaze, act_strike()) */
     gen_seq_t    seqs[GEN_SEQ_COUNT];     /* by GEN_SEQ_*: count 0 for none */
     gen_where_t  where;
 } gen_creature_kind_t;

@@ -288,7 +288,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
         .where = { .depth = 4, .depth_max = 6, .rarity = 5 },
     },
-    [CR_FLOATING_EYE] = {                               /* later: a paralysing gaze */
+    [CR_FLOATING_EYE] = {
         .name = "floating eye",
         .render = SHAPE_EYE(BANK_BLUE),
         .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
@@ -299,6 +299,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .flags = 0,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
         .innate = { EF_ROOT, 1 },
+        .struck = { EF_PARALYSE, 2 },                   /* a paralysing gaze: don't hit it */
         .where = { .depth = 4, .depth_max = 6, .rarity = 3 },
     },
     [CR_MIMIC] = {                                      /* later: poses as treasure until touched */
@@ -852,5 +853,48 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .flags = CREATURE_UNDEAD,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP, .traits = AI_TRAIT_SKIRMISH },
         .where = { .depth = LEVEL_DEPTH_BOTTOM, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 1 },
+    },
+    [CR_GAS_SPORE] = {
+        .name = "gas spore",
+        .render = SHAPE_EYE(BANK_IRON),
+        .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NO_FLOOR },   /* floats: over holes and traps */
+        .stats = { .speed = MONSTER_SLOW, .ability = { 1, 3, 10, 1, 8, 1 } },
+        .health = { .hp_max = 4, .immune = DMG_BIT(DMG_POISON), .ac = 10 },
+        .inventory = { .capacity = 0, .slots = 0 },     /* no attack: it drifts up to you */
+        .xp = 25,                                       /* 1 hit die, special */
+        .flags = 0,
+        .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
+        .death = { EF_BOLT_FIRE, 8 },                   /* bursts: kill it from afar */
+        .where = { .depth = 2, .depth_max = 5, .rarity = 3 },
+    },
+    [CR_SALAMANDER] = {
+        .name = "salamander",
+        .render = SHAPE_LIZARD(BANK_ORANGE),
+        .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
+        .stats = { .speed = MONSTER_SPEED, .ability = { 16, 14, 15, 6, 10, 8 } },
+        .health = { .hp_max = 32, .immune = DMG_BIT(DMG_FIRE), .vuln = DMG_BIT(DMG_COLD), .ac = 15 },
+        .melee = { .to_hit = 7, .dice = 1, .sides = 8, .to_damage = 0, .type = DMG_PIERCE, .range = 1 },  /* bite */
+        .melee_hit = { EF_BURNING, 2 },
+        .inventory = { .capacity = 0, .slots = 0 },
+        .xp = 850,                                      /* 7 hit dice, special */
+        .flags = 0,
+        .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
+        .struck = { EF_BURNING, 1 },                    /* hot to touch */
+        .where = { .depth = 8, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 4 },
+    },
+    [CR_BLACK_PUDDING] = {                              /* later: splits (M5.3) */
+        .name = "black pudding",
+        .render = SHAPE_SLIME(BANK_DARK),
+        .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
+        .stats = { .speed = MONSTER_SLOW, .ability = { 16, 3, 18, 1, 4, 1 } },
+        .health = { .hp_max = 45, .immune = DMG_BIT(DMG_ACID) | DMG_BIT(DMG_COLD) | DMG_BIT(DMG_POISON), .ac = 6 },
+        .melee = { .to_hit = 9, .dice = 2, .sides = 8, .to_damage = 0, .type = DMG_ACID, .range = 1 },    /* a dissolving touch */
+        .melee_hit = { EF_CORROSION, 2 },
+        .inventory = { .capacity = 0, .slots = 0 },
+        .xp = 1750,                                     /* 10 hit dice, special */
+        .flags = CREATURE_MINDLESS,
+        .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
+        .struck = { EF_CORROSION, 1 },                  /* acid on what strikes it */
+        .where = { .depth = 8, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 3 },
     },
 };

@@ -1028,3 +1028,62 @@ CSpect checks (the user runs them):
   records, and the accessor), 107 +145 (3,901), 120 +109 (5,114), 121 +28,
   127 +12, 135 +23, 130 −47, 126 +1, then 120 +22 for the wake (5,136). Page 102 and common memory are as before
   once the dev kit went. No new library routine in common memory.
+
+### Step 9: death and struck hooks (2026-11-14)
+
+- As M4.1 and M4.2. `make test` passes.
+- CSpect (check 3): hitting the floating eye in melee paralyses the player,
+  and the gas spore shot from range burns the goblin beside it.
+- **The death effect is the effects' reaction, not the game's.** The plan
+  put it in `game_on_event()`. It is in `effects_on_event()` (page 120)
+  instead, which the game's dispatch now calls for `EV_DIED` as well as
+  `EV_DAMAGED`: common memory gains only the filter (+10 bytes). The dying
+  creature keeps its kind and location until the frame's clean-up, so the
+  handler reads both from it. It posts its burst's events after the death's,
+  so "The gas spore dies." comes first, and a creature the burst kills
+  dies by its own event, so spores set each other off.
+- **`effect_apply_around()` is a static `around()`** in page 120: its only
+  caller is there. It applies to creatures on the level within the radius,
+  with their saving throws, the dying creature passed over (0 HP).
+- **`effect_on_struck(target, attacker)`** applies only when both are
+  creatures: a trap's hit also comes through `act_strike()` as a melee hit,
+  and a breakable trap has health. It applies whether or not the hit killed
+  the target: the floating eye's gaze catches whoever strikes it. The
+  attacker must live (`apply()` refuses the dead). `act_strike()` calls it
+  for every melee hit: `BANK_56` +21 bytes (66 free).
+- **The hooks' order in the record**: `innate`, `death`, `struck`, as D3.
+  Read through `gen_creature_death()` and `gen_creature_struck()` (page
+  106).
+- **The rows:** the gas spore (`CR_GAS_SPORE` 54: floats, slow, no attack,
+  death `EF_BOLT_FIRE` 8), the salamander (55: bite `EF_BURNING` 2, struck
+  `EF_BURNING` 1) and the black pudding (56: mindless, bite `EF_CORROSION`
+  2, struck `EF_CORROSION` 1). The floating eye's struck is `EF_PARALYSE`
+  2. `CR_COUNT` 57.
+- **A summon with no room lost its kit off the map.** `summon()` destroyed
+  a creature it couldn't place, but its kit items passed to the level with
+  no location (`level_release_dying()`), two entities lost each time. It
+  dates from step 2; `test_level`'s "no room" summon found it once the new
+  kinds changed the pick. `summon()` now destroys what the creature owns
+  with it.
+- **Tests:** `test_act`: a melee hit on a floating eye paralyses the
+  attacker, a shot at it doesn't, a salamander struck sets the attacker
+  burning, a rat struck gives nothing back. `test_effects`: a gas spore's
+  death burns the creatures next to it, a corner included, and none 2 away
+  or on another level; a death with no death effect does nothing.
+  `test_gen`: every kind's `death` and `struck` name instant or timed
+  effects, and match their accessors. Asm read: `act_strike()` tests `use`
+  and passes the target, then the actor.
+- **`make balance`**: random kinds 50 before, 53 after. Kinds a depth, 1 to
+  10: 10, 16, 22, 21, 21, 17, 15, 15, 13, 13. Mean XP a monster at depths 8
+  to 10: 627, 927, 997 (from 546, 872, 951). C1 still fails at depths 2 to
+  8, depth 9 still warns, C5 within 5 to 9 everywhere but depth 1. The XP
+  gained by the end is 26,100, from 24,669.
+- **Dev kit:** for check 3, `level_dev_bandit()` puts a floating eye out of
+  sight and a gas spore with a goblin beside it on an interior tile, which
+  may be in sight. A second goblin and an out-of-sight test overflowed page
+  102. Removed once check 3 passed.
+- Pages: 120 +630 bytes (5,766: `around()` 201, `effect_on_struck()` 217
+  with its assert's texts, the death reaction and the summon fix), 107 +455
+  (4,356: 4 bytes a kind and 3 rows), 106 +211 (2,329), 127 +18, `BANK_56`
+  +21, common memory +10. Page 102 is as before once the dev kit went. No
+  new library routine in common memory.

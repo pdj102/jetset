@@ -152,6 +152,26 @@ nge_entity_id_t gen_creature_random_flags(uint8_t depth, nge_owner_t owner, uint
     return NGE_ENTITY_INVALID;   /* not reached: the pick is within the total */
 }
 
+uint16_t gen_creature_death(uint8_t kind) NGE_BANKED
+{
+    gen_hook_t h;
+
+    nge_util_assert(kind < CR_COUNT);
+
+    h = gen_creatures[kind].death;
+    return GEN_HOOK_PACK(h.ef, h.power);
+}
+
+uint16_t gen_creature_struck(uint8_t kind) NGE_BANKED
+{
+    gen_hook_t h;
+
+    nge_util_assert(kind < CR_COUNT);
+
+    h = gen_creatures[kind].struck;
+    return GEN_HOOK_PACK(h.ef, h.power);
+}
+
 uint8_t gen_creature_flags(uint8_t kind) NGE_BANKED
 {
     nge_util_assert(kind < CR_COUNT);

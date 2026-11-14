@@ -7,7 +7,7 @@ this file says in what order, what changes, and how each step is checked.
 Status: planned (2026-11-13). Step 1 done the same day. Step 1b added and done 2026-11-14
 (spec D11). Step 1c added 2026-11-14 (spec D3 revised, R17), agreed and done the same day;
 steps 2, 8, 9 and 12 changed to match. Steps 2 to 7 done 2026-11-14. Step 8 done
-2026-11-14.
+2026-11-14. Step 9 done 2026-11-14.
 
 ## 1. How the steps work
 
@@ -383,7 +383,7 @@ Spec M4.3, M2.1's summons row, R13, Q4.
   so a summon there fizzles) summons undead, casts Hold, and keeps its distance. A zombie
   can't be put to sleep.
 
-### Step 9: death and struck hooks (M4.1, M4.2)
+### Step 9: death and struck hooks (M4.1, M4.2) `[done]` (2026-11-14)
 
 Spec M4.1, M4.2, D3.
 

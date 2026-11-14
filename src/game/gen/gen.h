@@ -80,6 +80,22 @@ nge_entity_id_t gen_creature_random(uint8_t depth, nge_owner_t owner) NGE_BANKED
  */
 nge_entity_id_t gen_creature_random_flags(uint8_t depth, nge_owner_t owner, uint8_t flags) NGE_BANKED;
 
+/**
+ * @brief A creature kind's (CR_*) death effect and power, packed as
+ *        gen_hit_of()'s: applied on its death to every creature next to it
+ *        (effects_on_event()). EF_NONE for none. Banked with the creature
+ *        table (page 106).
+ */
+uint16_t gen_creature_death(uint8_t kind) NGE_BANKED;
+
+/**
+ * @brief A creature kind's (CR_*) struck effect and power, packed as
+ *        gen_hit_of()'s: applied to a creature that hits it in melee and
+ *        lives (effect_on_struck()). EF_NONE for none. Banked with the
+ *        creature table (page 106).
+ */
+uint16_t gen_creature_struck(uint8_t kind) NGE_BANKED;
+
 /** @brief A creature kind's (CR_*) flags (CREATURE_*). Banked with the creature table (page 106). */
 uint8_t gen_creature_flags(uint8_t kind) NGE_BANKED;
 

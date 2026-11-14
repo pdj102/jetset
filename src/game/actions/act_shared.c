@@ -60,6 +60,9 @@ uint8_t act_strike(act_t *a, nge_entity_id_t attacker, uint8_t use, nge_entity_i
     if (GEN_HOOK_EF(hook) != EF_NONE) {
         effect_apply(GEN_HOOK_EF(hook), GEN_HOOK_POWER(hook), target, actor);   /* refused if the hit killed it */
     }
+    if (use == ATTACK_MELEE) {
+        effect_on_struck(target, actor);   /* the target's struck effect on the attacker (the floating eye's gaze) */
+    }
     return act_succeed(a);
 }
 

@@ -2818,6 +2818,64 @@ int main(void)
         CHECK(r2 == 1 && !STATUS_HAS(player, STATUS_POISONED));
         events();
     }
+    /*
+     * ---- struck hooks (M4.2): a melee hit on a floating eye paralyses the
+     * attacker, a shot at it doesn't; a salamander struck sets its attacker
+     * burning; a creature with none does nothing ----
+     */
+    {
+        static const attack_kind_t sling = { 0, 1, 2, 0, DMG_BLUNT, 5 };
+        nge_entity_id_t eye;
+        nge_entity_id_t sal;
+        nge_entity_id_t owned;
+        uint8_t i8;
+
+        nge_entity_init();
+        nge_render_init();
+        nge_timer_init();
+        nge_event_init();
+        player = creature(CR_PLAYER, 0, 2);
+        effects_set_base(player, ATTR_HP_MAX, 200);
+        health_hp[player] = 200;
+        eye = creature(CR_FLOATING_EYE, 1, 2);
+        events();
+        srand(seed_for_roll(20));
+        a = ctx(player);
+        a.target = eye;
+        CHECK(act_melee(&a, ACT_DO) == ACT_SUCCESS && health_hp[eye] < health_hp_max[eye] &&
+              STATUS_HAS(player, STATUS_PARALYSED));
+        effect_cure(player, STATUS_PARALYSED);
+        events();
+        attack_add(player, ATTACK_RANGED, &sling);
+        nge_location_set(eye, 3, 2);
+        srand(seed_for_roll(20));
+        CHECK(fire(player, 3, 2, ACT_DO) == ACT_SUCCESS && last.target == eye && !STATUS_HAS(player, STATUS_PARALYSED));
+        events();
+        sal = creature(CR_SALAMANDER, 1, 2);
+        events();
+        srand(seed_for_roll(20));
+        a = ctx(player);
+        a.target = sal;
+        CHECK(act_melee(&a, ACT_DO) == ACT_SUCCESS);
+        r2 = 0;
+        NGE_OWNER_FOR_EACH_OWNED(i8, owned, player) {
+            r2 += NGE_ENTITY_HAS_COMPONENT(owned, NGE_COMPONENT_EFFECT) && EFFECT_KIND_OF(owned) == EF_BURNING;
+        }
+        CHECK(r2 == 1);
+        events();
+        /* A rat struck: nothing comes back */
+        nge_entity_destroy(sal);
+        level_release_dying();
+        sal = tough_rat(1, 2);
+        effect_apply(EF_CURE_ALL, 1, player, NGE_ENTITY_INVALID);
+        r1 = nge_owner_count(player);
+        events();
+        srand(seed_for_roll(20));
+        a = ctx(player);
+        a.target = sal;
+        CHECK(act_melee(&a, ACT_DO) == ACT_SUCCESS && nge_owner_count(player) == r1 && stats_status[player] == 0);
+        events();
+    }
 
     /* ---- stacks: the player at (0, 2), arrows stowed ---- */
     nge_entity_init();

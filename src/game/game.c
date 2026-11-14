@@ -75,8 +75,8 @@ static void game_on_event(const nge_event_t *e)
         feature_on_event(e);   /* a container spills, a trap fires: filtered here, as the call is banked */
     }
     ai_on_event(e);      /* before the messages: its EV_AI_CHANGED comes after the attack's */
-    if (e->id == EV_DAMAGED) {
-        effects_on_event(e);   /* damage wakes the unconscious: filtered here, as the call is banked */
+    if (e->id == EV_DAMAGED || e->id == EV_DIED) {
+        effects_on_event(e);   /* damage wakes the unconscious, a death bursts: filtered here, as the call is banked */
     }
     messages_on_event(e);
     death_on_event(e);   /* last: the death message comes before "Game over" */

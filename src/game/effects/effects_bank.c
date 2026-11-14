@@ -224,6 +224,7 @@ static void teleport(nge_entity_id_t target)
 static void summon(nge_entity_id_t target, int8_t n, uint8_t flags)
 {
     nge_entity_id_t id;
+    nge_entity_id_t owned;
     uint8_t tx;
     uint8_t ty;
     uint8_t x;
@@ -256,7 +257,11 @@ static void summon(nge_entity_id_t target, int8_t n, uint8_t flags)
                 }
             }
             if (i == EFFECTS_AROUND) {
-                nge_entity_destroy(id);   /* no room left: the rest would find none either */
+                /* No room left: the rest would find none either. Its kit too, which would pass to the level, off the map */
+                NGE_OWNER_FOR_EACH_OWNED(i, owned, id) {
+                    nge_entity_destroy(owned);
+                }
+                nge_entity_destroy(id);
                 break;
             }
             nge_location_set(id, x, y);
@@ -608,16 +613,66 @@ uint8_t effect_cure(nge_entity_id_t target, uint8_t statuses) NGE_BANKED
     return cure(target, statuses);
 }
 
-/* A handler may apply effects (docs/effects.md R5): a cure here */
+/*
+ * ef at power, with its saving throw, to every creature on the level within
+ * radius of (x, y) (nge_map_within()) that effects act on: a burst around a
+ * tile, from source
+ */
+static void around(uint8_t ef, int8_t power, uint8_t x, uint8_t y, uint8_t radius, nge_entity_id_t source)
+{
+    nge_entity_id_t id;
+    uint8_t i;
+
+    NGE_ENTITY_FOR_EACH_ALIVE(i, id) {
+        if (KIND_IS(id, CLASS_CREATURE) && NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_LOCATION) &&
+            NGE_OWNER_OF(id) == LEVEL_AREA && affectable(id) &&
+            nge_map_within(x, y, NGE_LOCATION_X(id), NGE_LOCATION_Y(id), radius)) {
+            apply(ef, power, id, source, 1);   /* may kill it: dying, it stays in the list, and is passed over */
+        }
+    }
+}
+
+/*
+ * A handler may apply effects (docs/effects.md R5): a cure here, and a
+ * creature's death effect. The dying creature keeps its kind and location
+ * until the frame's clean-up, so its effect bursts from where it fell
+ */
 void effects_on_event(const nge_event_t *e) NGE_BANKED
 {
     nge_event_id_t id = e->id;            /* locals: see messages_on_event() */
     nge_entity_id_t target = e->target;
     uint8_t taken = e->p1;
+    uint16_t hook;
+    uint8_t kind;
 
     if (id == EV_DAMAGED && taken != 0 && affectable(target) &&
         NGE_ENTITY_HAS_COMPONENT(target, COMPONENT_STATS) && STATUS_HAS(target, STATUS_UNCONSCIOUS)) {
         cure(target, STATUS_UNCONSCIOUS);
+    }
+    if (id == EV_DIED && KIND_IS(target, CLASS_CREATURE) && NGE_ENTITY_HAS_COMPONENT(target, NGE_COMPONENT_LOCATION) &&
+        NGE_OWNER_OF(target) == LEVEL_AREA) {
+        kind = kind_index[target];   /* in a local before the banked call (T-ZSDCC-1) */
+        hook = gen_creature_death(kind);
+        if (GEN_HOOK_EF(hook) != EF_NONE) {
+            around(GEN_HOOK_EF(hook), GEN_HOOK_POWER(hook), NGE_LOCATION_X(target), NGE_LOCATION_Y(target), 1, target);
+        }
+    }
+}
+
+void effect_on_struck(nge_entity_id_t target, nge_entity_id_t attacker) NGE_BANKED
+{
+    uint16_t hook;
+    uint8_t kind;
+
+    nge_util_assert(target < NGE_ENTITY_MAX && attacker < NGE_ENTITY_MAX);
+
+    if (!KIND_IS(target, CLASS_CREATURE) || !KIND_IS(attacker, CLASS_CREATURE)) {
+        return;   /* a creature struck by a creature: not a trap's hit, nor a statue broken */
+    }
+    kind = kind_index[target];
+    hook = gen_creature_struck(kind);
+    if (GEN_HOOK_EF(hook) != EF_NONE) {
+        apply(GEN_HOOK_EF(hook), GEN_HOOK_POWER(hook), attacker, target, 1);   /* refused if the attacker is dead */
     }
 }
 

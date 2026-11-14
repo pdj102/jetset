@@ -246,12 +246,23 @@ void effect_end(nge_entity_id_t effect) NGE_BANKED;
 void effects_on_timer(nge_entity_id_t effect, uint8_t cycles) NGE_BANKED;
 
 /**
- * @brief The effects' reaction to an event (from the game's dispatch):
- *        damage taken (EV_DAMAGED, p1 above 0) wakes an unconscious
- *        target, ending its effects that grant STATUS_UNCONSCIOUS; a
- *        paralysed one stays so. Others are ignored.
+ * @brief The effects' reaction to an event (from the game's dispatch, which
+ *        passes only these two): damage taken (EV_DAMAGED, p1 above 0)
+ *        wakes an unconscious target, ending its effects that grant
+ *        STATUS_UNCONSCIOUS; a paralysed one stays so. A creature's death
+ *        (EV_DIED) applies its kind's death effect (gen_creature_death()),
+ *        with its saving throw, to every creature next to where it fell,
+ *        monsters too. Others are ignored.
  */
 void effects_on_event(const nge_event_t *e) NGE_BANKED;
+
+/**
+ * @brief A creature target hit in melee by a creature attacker: target's
+ *        kind's struck effect (gen_creature_struck()) on attacker, from
+ *        target, if attacker lives (act_strike()). Nothing for other
+ *        classes: a trap's hit, a feature broken.
+ */
+void effect_on_struck(nge_entity_id_t target, nge_entity_id_t attacker) NGE_BANKED;
 
 /**
  * @brief End target's active effects that grant any of statuses

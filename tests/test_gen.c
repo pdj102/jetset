@@ -494,7 +494,18 @@ int main(void)
              hook_is(gen_creature_hit(kind, ATTACK_MELEE), &k->melee_hit) &&
              hook_is(gen_creature_hit(kind, ATTACK_RANGED), &k->ranged_hit) &&
              hook_is(gen_hit_of(id, ATTACK_MELEE), &k->melee_hit) && hook_is(gen_hit_of(id, ATTACK_RANGED), &k->ranged_hit);
+        /* Its death and struck hooks: instant or timed effects, never worn (M4.1, M4.2) */
+        ok = ok && hook_ok(&k->death) && hook_ok(&k->struck) &&
+             (k->death.ef == EF_NONE || effect_defs[k->death.ef].duration != EFFECT_WORN) &&
+             (k->struck.ef == EF_NONE || effect_defs[k->struck.ef].duration != EFFECT_WORN) &&
+             hook_is(gen_creature_death(kind), &k->death) && hook_is(gen_creature_struck(kind), &k->struck);
     }
+    /* The kinds that have them: the gas spore's burst; the floating eye's, the salamander's and the pudding's struck */
+    ok = ok && GEN_HOOK_EF(gen_creature_death(CR_GAS_SPORE)) == EF_BOLT_FIRE && GEN_HOOK_POWER(gen_creature_death(CR_GAS_SPORE)) == 8 &&
+         GEN_HOOK_EF(gen_creature_struck(CR_FLOATING_EYE)) == EF_PARALYSE &&
+         GEN_HOOK_EF(gen_creature_struck(CR_SALAMANDER)) == EF_BURNING &&
+         GEN_HOOK_EF(gen_creature_struck(CR_BLACK_PUDDING)) == EF_CORROSION &&
+         GEN_HOOK_EF(gen_creature_death(CR_GOBLIN)) == EF_NONE && GEN_HOOK_EF(gen_creature_struck(CR_GOBLIN)) == EF_NONE;
     reset();
     CHECK(ok);
     /* Features: names, hooks and info from their records; a door is a closed, openable, solid feature */
@@ -750,6 +761,7 @@ int main(void)
             [CR_SKELETON] = CREATURE_UNDEAD | CREATURE_MINDLESS, [CR_ZOMBIE] = CREATURE_UNDEAD | CREATURE_MINDLESS,
             [CR_SHADOW] = CREATURE_UNDEAD | CREATURE_MINDLESS, [CR_MUMMY] = CREATURE_UNDEAD | CREATURE_MINDLESS,
             [CR_SKELETON_ARCHER] = CREATURE_UNDEAD | CREATURE_MINDLESS,
+            [CR_BLACK_PUDDING] = CREATURE_MINDLESS,
             [CR_OGRE] = CREATURE_GIANT, [CR_TROLL] = CREATURE_GIANT, [CR_HILL_GIANT] = CREATURE_GIANT,
             [CR_MINOTAUR] = CREATURE_GIANT,
             [CR_DRAGON] = CREATURE_DRAGON, [CR_WYVERN] = CREATURE_DRAGON, [CR_FROST_DRAKE] = CREATURE_DRAGON,
