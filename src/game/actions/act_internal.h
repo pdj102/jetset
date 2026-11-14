@@ -22,33 +22,71 @@ extern const uint8_t act_reason_flags[ACT_R_COUNT];
  * `return (a->reason = r, a->used = u, ACT_FAIL);`
  */
 
-/*
- * End an action that failed for reason: used if the reason is attempted,
- * not if refused. Validation (which check mode runs) fails only with
- * refused reasons. Returns ACT_FAIL
+/**
+ * @brief End an action that failed.
+ *
+ * Validation (what check mode runs) fails only with refused reasons, so a
+ * check never uses the turn.
+ *
+ * @param a       The action. Out: a->reason is set to reason, and a->used to
+ *                1 if the reason is attempted (ACT_RF_ATTEMPTED in
+ *                act_reason_flags[]), or 0 if it is refused.
+ * @param reason  Why it failed: an ACT_R_*, not ACT_R_NONE (asserted).
+ * @return ACT_FAIL, always.
  */
 uint8_t act_fail(act_t *a, uint8_t reason);
 
-/* End an action that succeeded: the turn is used. Returns ACT_SUCCESS */
+/**
+ * @brief End an action that succeeded: the turn is used.
+ *
+ * @param a  The action. Out: a->reason is set to ACT_R_NONE and a->used to 1.
+ * @return ACT_SUCCESS, always.
+ */
 uint8_t act_succeed(act_t *a);
 
-/* End a check (ACT_CHECK) that found the action possible: nothing used. Returns ACT_SUCCESS */
+/**
+ * @brief End a check (ACT_CHECK) that found the action possible: nothing is used.
+ *
+ * @param a  The action. Out: a->reason is set to ACT_R_NONE and a->used to 0.
+ * @return ACT_SUCCESS, always.
+ */
 uint8_t act_checked(act_t *a);
 
-/*
- * End an action that succeeded and uses no turn: look only (docs/action_look.md
- * D2). The same as act_checked(), so it costs nothing. A #define to a
- * function, not a comma expression (T-ZSDCC-2). Returns ACT_SUCCESS
+/**
+ * @brief End an action that succeeded and uses no turn: look only
+ *        (docs/action_look.md D2).
+ *
+ * The same as act_checked(), so it costs nothing. A #define to a function,
+ * not a comma expression (T-ZSDCC-2).
+ *
+ * @param a  The action. Out: a->reason is set to ACT_R_NONE and a->used to 0.
+ * @return ACT_SUCCESS, always.
  */
 #define act_succeed_free(a)  act_checked(a)
 
-/*
- * Steps 3 and 4 of an attack, on a->target by a->actor, once validated: the
- * d20 roll against attacker's attack of this use (ATTACK_MELEE, ATTACK_RANGED),
- * then on a hit the damage (sets a->damage and a->amount) and the hit effect of
- * hooks, the entity whose GEN_HOOK_HIT applies. to_hit and to_damage add to the
- * roll and the damage (attack_hits(), attack_damage()). The events carry
- * a->item. A miss fails with ACT_R_MISSED. Returns ACT_SUCCESS or ACT_FAIL
+/**
+ * @brief Steps 3 and 4 of an attack, once validated: resolve and apply.
+ *
+ * Rolls a d20 against a->target's AC with the attacker's attack of this use
+ * (attack_hits()). On a hit, it deals the damage (attack_damage(),
+ * health_damage()), then applies the hit effect of hooks, unless the hit
+ * killed the target. The events (EV_HIT, EV_MISSED) are posted to a->target,
+ * from a->actor, carrying a->item.
+ *
+ * @param a          The action: a->actor attacks a->target, and a->item is
+ *                   what the events name. Out: on a hit, a->damage is the
+ *                   damage type (DMG_*) and a->amount the damage taken.
+ *                   a->reason and a->used as act_succeed() or act_fail().
+ * @param attacker   The entity whose attack part is rolled: a->actor itself
+ *                   (fists, a bite, a natural ranged attack), its weapon or
+ *                   launcher, or a thrown item.
+ * @param use        Which of attacker's attacks: ATTACK_MELEE or ATTACK_RANGED.
+ * @param hooks      The entity whose GEN_HOOK_HIT effect a hit applies: the
+ *                   weapon, the shot (an arrow), or the creature itself.
+ * @param to_hit     Added to the roll: the actor's and the ammo's bonuses.
+ * @param to_damage  Added to the damage: the actor's and the ammo's bonuses.
+ * @return ACT_SUCCESS on a hit, or ACT_FAIL with ACT_R_MISSED on a miss. A
+ *         miss is attempted: the turn is used.
  */
 uint8_t act_strike(act_t *a, nge_entity_id_t attacker, uint8_t use, nge_entity_id_t hooks, int8_t to_hit,
                    int8_t to_damage);
@@ -58,14 +96,24 @@ uint8_t act_strike(act_t *a, nge_entity_id_t attacker, uint8_t use, nge_entity_i
 #define ACT_LINE_DIRECT  1   /* the creature on the chosen tile, past any on the way */
 #define ACT_LINE_COUNT   2
 
-/*
- * The line of fire, for validation: from the actor, placed in an area,
- * towards (a->x, a->y) within range (nge_map_within()). Sets a->target to the
- * first alive entity with health along it (ACT_LINE_BOLT) or on the chosen
- * tile (ACT_LINE_DIRECT), or NGE_ENTITY_INVALID. No random numbers, so a
- * check gets the same answer. Returns ACT_R_NONE, or why not:
- * ACT_R_OUT_OF_RANGE, ACT_R_NO_LINE (something solid first, the chosen tile
- * included), or ACT_R_NO_TARGET (nobody there, or the actor's own tile)
+/**
+ * @brief The line of fire, for validation: who a line from the actor reaches.
+ *
+ * Walks from a->actor, which must be placed in an area, towards the tile
+ * (a->x, a->y). Anything solid or off the map stops the line; pits don't.
+ * Uses no random numbers, so a check gets the same answer as the action.
+ *
+ * @param a      The action: from a->actor towards (a->x, a->y). Out:
+ *               a->target is the alive entity with health that the line
+ *               reaches, or NGE_ENTITY_INVALID.
+ * @param range  The farthest the chosen tile may be (nge_map_within()).
+ * @param how    Who the line reaches: ACT_LINE_BOLT, the first creature on
+ *               the way; ACT_LINE_DIRECT, only one on the chosen tile.
+ * @return ACT_R_NONE if it reaches a creature, or why not:
+ *         ACT_R_OUT_OF_RANGE (the tile is beyond range), ACT_R_NO_LINE
+ *         (something solid first, the chosen tile included), or
+ *         ACT_R_NO_TARGET (nobody there, or the chosen tile is the actor's
+ *         own).
  */
 uint8_t act_line(act_t *a, uint8_t range, uint8_t how);
 
@@ -81,31 +129,76 @@ typedef struct act_shape {
     nge_entity_id_t ids[ACT_AREA_MAX];   /* out: an area's creatures, nearest first */
 } act_shape_t;
 
-/*
- * Validate: who s->shape reaches from a->actor towards (a->x, a->y) within
- * range. Sets a->target (the actor for self and tile) and s's outputs. No
- * random numbers, so a check gets the same answer. Returns ACT_R_NONE, or
- * why not: act_line()'s reasons; for a tile, ACT_R_BLOCKED_ENTITY (a->target:
- * the creature) or ACT_R_BLOCKED, and ACT_R_NO_TARGET for the actor's own tile
+/**
+ * @brief Validate a shape: who it reaches from the actor.
+ *
+ * Self reaches the actor. A burst reaches the creatures around the actor,
+ * not the actor. Bolt and direct are act_line(). A tile must be free, and a
+ * ball catches every creature around the chosen tile, the actor too. Uses no
+ * random numbers, so a check gets the same answer as the action.
+ *
+ * @param a      The action: from a->actor towards (a->x, a->y), which self
+ *               and burst don't read. Out: a->target is the creature
+ *               reached (the actor for self and tile), or the creature in
+ *               the way for ACT_R_BLOCKED_ENTITY.
+ * @param s      In: s->shape, a SPELL_* (asserted). Out: s->count is 0, or
+ *               for an area the creatures in s->ids[]; s->cx, s->cy are the
+ *               centre for a tile or an area.
+ * @param range  The farthest the chosen tile may be. Self and burst ignore it.
+ * @return ACT_R_NONE, or why not: act_line()'s reasons; for a tile,
+ *         ACT_R_BLOCKED_ENTITY (a creature is on it) or ACT_R_BLOCKED, and
+ *         ACT_R_NO_TARGET for the actor's own tile.
  */
 uint8_t act_shape_find(act_t *a, act_shape_t *s, uint8_t range);
 
-/* Apply: effect ef at power to whom act_shape_find() found, with the actor as its source */
+/**
+ * @brief Apply an effect to whom act_shape_find() found, with the actor as its source.
+ *
+ * A tile applies it to the actor at that tile (effect_apply_at(): blink). An area posts EV_AREA,
+ * then applies to each creature found that an effect before hasn't killed.
+ * Self, bolt and direct apply to a->target.
+ *
+ * @param a      The action that act_shape_find() validated: a->actor is the
+ *               source, and a->target the creature for self, bolt and direct.
+ * @param s      The shape as act_shape_find() filled it.
+ * @param ef     The effect (EF_*).
+ * @param power  Multiplies the amounts in the effect's definition.
+ */
 void act_shape_apply(act_t *a, const act_shape_t *s, uint8_t ef, int8_t power);
 
-/* 1 if id can't leave its tile (STATUS_ROOTED): an actor without stats has no statuses */
+/**
+ * @brief Whether an entity can't leave its tile (STATUS_ROOTED).
+ *
+ * @param id  The entity. One without stats has no statuses.
+ * @return 1 if it is rooted, else 0.
+ */
 uint8_t act_rooted(nge_entity_id_t id);
 
-/* 1 if id has any of statuses s (STATUS_*): an actor without stats has none */
+/**
+ * @brief Whether an entity has any of some statuses.
+ *
+ * @param id  The entity. One without stats has no statuses.
+ * @param s   The statuses: a mask of STATUS_* bits.
+ * @return 1 if it has any of them, else 0.
+ */
 uint8_t act_status(nge_entity_id_t id, uint8_t s);
 
-/*
- * Steps 1 and 2 of the feature actions: the feature a->target, or (with
- * a->target NGE_ENTITY_INVALID) the one in direction a->dx, a->dy, put in
- * a->target. It must be alive, found (not FEAT_HIDDEN: unknown to the actor
- * is not there), able to do `can` (FCAN_*), in the actor's area, next to
- * the actor or on its tile. Returns ACT_R_NONE, or why not:
- * ACT_R_NOTHING_THERE, `cant` (it can't do that), ACT_R_OUT_OF_RANGE
+/**
+ * @brief Steps 1 and 2 of the feature actions: find and check the feature.
+ *
+ * The feature must be alive, found (not FEAT_HIDDEN: unknown to the actor is
+ * not there), able to do can, in the actor's area, and next to the actor or
+ * on its tile.
+ *
+ * @param a     The action: a->actor, which must be placed, and a->target, the
+ *              feature, or NGE_ENTITY_INVALID to look in direction a->dx,
+ *              a->dy (each -1 to 1). Out: a->target is the feature found
+ *              there, or NGE_ENTITY_INVALID.
+ * @param can   What the action needs it to do: an FCAN_* mask.
+ * @param cant  The reason (ACT_R_*) to return when it isn't a feature or
+ *              can't do that.
+ * @return ACT_R_NONE, or why not: ACT_R_NOTHING_THERE (no feature, or a
+ *         hidden one), cant, or ACT_R_OUT_OF_RANGE.
  */
 uint8_t act_find_feature(act_t *a, uint8_t can, uint8_t cant);
 
