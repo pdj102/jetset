@@ -136,6 +136,12 @@ static int hook_is(uint16_t h, const gen_hook_t *hook)
     return GEN_HOOK_EF(h) == hook->ef && GEN_HOOK_POWER(h) == hook->power;
 }
 
+/* A hook names a real effect, with a power exactly when it names one (items.md D3) */
+static int hook_ok(const gen_hook_t *h)
+{
+    return h->ef < EF_COUNT && (h->ef == EF_NONE) == (h->power == 0);
+}
+
 /* A packed hook is what an item kind's record says for that hook: its one hook, or none */
 static int item_hook_is(uint16_t h, uint8_t kind, uint8_t hook)
 {
@@ -235,10 +241,9 @@ static int kind_ok(uint8_t kind)
 static int feature_kind_ok(uint8_t kind)
 {
     const gen_feature_kind_t *k = &gen_features[kind];
-    const gen_hook_t *use = &k->hooks[GEN_HOOK_USE];
-    const gen_hook_t *hit = &k->hooks[GEN_HOOK_HIT];
+    const gen_hook_t *use = &k->use;
+    const gen_hook_t *hit = &k->hit;
     uint8_t can = k->info.can;
-    uint8_t i;
 
     if (strlen(k->name) > 19 || k->verb >= FVERB_COUNT || k->where.depth_max > LEVEL_DEPTH_BOTTOM) {
         return 0;
@@ -246,11 +251,8 @@ static int feature_kind_ok(uint8_t kind)
     if (k->where.rarity != 0 && (k->where.depth < 1 || k->where.depth > k->where.depth_max)) {
         return 0;
     }
-    for (i = 0; i < GEN_HOOK_COUNT; i++) {   /* a power for each effect named (items.md D3); only use and hit */
-        if (k->hooks[i].ef >= EF_COUNT || (k->hooks[i].ef == EF_NONE) != (k->hooks[i].power == 0) ||
-            (i != GEN_HOOK_USE && i != GEN_HOOK_HIT && k->hooks[i].ef != EF_NONE)) {
-            return 0;
-        }
+    if (!hook_ok(use) || !hook_ok(hit)) {
+        return 0;
     }
     /* Operated: a use hook and a verb; nothing else has a use hook */
     if (((can & FCAN_OPERATE) != 0) != (use->ef != EF_NONE) || ((can & FCAN_OPERATE) && k->verb == FVERB_NONE)) {
@@ -263,7 +265,7 @@ static int feature_kind_ok(uint8_t kind)
             return 0;
         }
     } else if (hit->ef != EF_NONE || k->attack.dice != 0 || (can & FCAN_DISARM)) {
-        return 0;
+        return 0;   /* a hit hook only on a trap (R17) */
     }
     /* Disarmed or found by a roll against a DC; a container holds something */
     if (((can & FCAN_DISARM) || (k->state & FEAT_HIDDEN)) && k->dc == 0) {
@@ -370,18 +372,28 @@ int main(void)
         gen_item_attack(kind, &attack);
         ok = ok && memcmp(&attack, &gen_items[kind].attack, sizeof(attack)) == 0;
         for (i = 0; i < GEN_HOOK_COUNT; i++) {
-            ok = ok && item_hook_is(gen_item_hook(kind, (uint8_t)i), kind, (uint8_t)i) &&
-                 item_hook_is(gen_hook_of(id, (uint8_t)i), kind, (uint8_t)i);
+            ok = ok && item_hook_is(gen_item_hook(kind, (uint8_t)i), kind, (uint8_t)i);
         }
+        /* A hit by it, melee or ranged, applies its hit hook (R17) */
+        ok = ok && item_hook_is(gen_hit_of(id, ATTACK_MELEE), kind, GEN_HOOK_HIT) &&
+             item_hook_is(gen_hit_of(id, ATTACK_RANGED), kind, GEN_HOOK_HIT);
         nge_entity_destroy(id);
         nge_entity_release(nge_entity_next_dying());
     }
+    /* A creature's hit hook is its melee attack's, set only with one; none for a ranged hit yet (R17) */
     for (kind = CR_NONE + 1; kind < CR_COUNT; kind++) {
-        for (i = 0; i < GEN_HOOK_COUNT; i++) {
-            ok = ok && hook_is(gen_creature_hook(kind, (uint8_t)i), &gen_creatures[kind].hooks[i]) &&
-                 gen_creatures[kind].hooks[i].ef < EF_COUNT;
-        }
+        const gen_creature_kind_t *k = &gen_creatures[kind];
+
+        reset();
+        nge_event_init();
+        id = gen_creature(kind, AREA);
+        ok = ok && hook_ok(&k->melee_hit) && hook_ok(&k->innate) &&
+             (k->melee_hit.ef == EF_NONE || k->melee.dice != 0) &&
+             hook_is(gen_creature_hit(kind, ATTACK_MELEE), &k->melee_hit) &&
+             GEN_HOOK_EF(gen_creature_hit(kind, ATTACK_RANGED)) == EF_NONE &&
+             hook_is(gen_hit_of(id, ATTACK_MELEE), &k->melee_hit) && GEN_HOOK_EF(gen_hit_of(id, ATTACK_RANGED)) == EF_NONE;
     }
+    reset();
     CHECK(ok);
     /* Features: names, hooks and info from their records; a door is a closed, openable, solid feature */
     for (kind = FT_NONE + 1; kind < FT_COUNT; kind++) {
@@ -392,10 +404,9 @@ int main(void)
         gen_name(id, buf, sizeof(buf));
         ok = ok && !AI_IS(id) && strcmp(buf, gen_features[kind].name) == 0 && feature_state[id] == gen_features[kind].state &&
              memcmp(&info, &gen_features[kind].info, sizeof(info)) == 0;
-        for (i = 0; i < GEN_HOOK_COUNT; i++) {
-            ok = ok && hook_is(gen_feature_hook(kind, (uint8_t)i), &gen_features[kind].hooks[i]) &&
-                 hook_is(gen_hook_of(id, (uint8_t)i), &gen_features[kind].hooks[i]);
-        }
+        ok = ok && hook_is(gen_feature_use(kind), &gen_features[kind].use) &&
+             hook_is(gen_feature_hit(kind), &gen_features[kind].hit) &&
+             hook_is(gen_hit_of(id, ATTACK_MELEE), &gen_features[kind].hit);
         /* Its parts: health if it can be broken, a melee attack if it strikes */
         ok = ok && feature_kind_ok(kind) &&
              (NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_HEALTH) != 0) == (gen_features[kind].health.hp_max != 0) &&
@@ -408,7 +419,9 @@ int main(void)
     CHECK(ok);
     CHECK(gen_features[FT_DOOR].info.can == FCAN_OPEN && gen_features[FT_DOOR].state == 0 &&
           gen_features[FT_DOOR].where.rarity == 0);
-    TEST_EXPECT_HALT(gen_feature_hook(FT_COUNT, GEN_HOOK_USE));
+    TEST_EXPECT_HALT(gen_feature_use(FT_COUNT));
+    CHECK(test_halt_count == 1);
+    TEST_EXPECT_HALT(gen_feature_hit(FT_COUNT));
     CHECK(test_halt_count == 1);
 
     /* A worn hook names a worn effect; the other hooks name effects that can be applied */
@@ -416,18 +429,17 @@ int main(void)
     for (kind = IT_NONE + 1; kind < IT_COUNT; kind++) {
         const gen_item_hook_t *h = &gen_items[kind].hook;
 
-        ok = ok && h->ef < EF_COUNT && h->hook < GEN_HOOK_COUNT && h->hook != GEN_HOOK_INNATE;
+        ok = ok && h->ef < EF_COUNT && h->hook < GEN_HOOK_COUNT;
         ok = ok && (h->ef == EF_NONE || ((effect_defs[h->ef].duration == EFFECT_WORN) == (h->hook == GEN_HOOK_WORN) &&
                                          h->power != 0));
     }
     for (kind = CR_NONE + 1; kind < CR_COUNT; kind++) {
-        for (i = 0; i < GEN_HOOK_COUNT; i++) {
-            uint8_t ef = gen_creatures[kind].hooks[i].ef;
+        uint8_t hit = gen_creatures[kind].melee_hit.ef;
+        uint8_t innate = gen_creatures[kind].innate.ef;
 
-            ok = ok && (ef == EF_NONE || (i != GEN_HOOK_WORN && i != GEN_HOOK_USE &&
-                                          effect_defs[ef].duration != EFFECT_WORN && gen_creatures[kind].hooks[i].power != 0));
-            ok = ok && (ef == EF_NONE || (i == GEN_HOOK_INNATE) == ((effect_defs[ef].flags & EFFECT_INNATE) != 0));
-        }
+        /* A hit names an effect that can be applied, and not an innate one; innate names only an innate one */
+        ok = ok && (hit == EF_NONE || (effect_defs[hit].duration != EFFECT_WORN && !(effect_defs[hit].flags & EFFECT_INNATE)));
+        ok = ok && (innate == EF_NONE || (effect_defs[innate].flags & EFFECT_INNATE));
     }
     CHECK(ok);
     CHECK(GEN_HOOK_EF(gen_item_hook(IT_HEAL_POTION, GEN_HOOK_USE)) == EF_HEALING && GEN_HOOK_EF(gen_item_hook(IT_RING_HEALTH_2, GEN_HOOK_WORN)) == EF_WORN_HP &&
@@ -542,7 +554,7 @@ int main(void)
     }
     CHECK(gen_item_subclass(IT_DEAD_RAT) == ITEM_FOOD && gen_item_subclass(IT_ELIXIR) == ITEM_POTION);
     id = gen_creature(CR_RAT, AREA);
-    CHECK(GEN_HOOK_EF(gen_hook_of(id, GEN_HOOK_HIT)) == EF_POISON && GEN_HOOK_EF(gen_hook_of(id, GEN_HOOK_INNATE)) == EF_NONE);
+    CHECK(GEN_HOOK_EF(gen_hit_of(id, ATTACK_MELEE)) == EF_POISON && gen_creatures[CR_RAT].innate.ef == EF_NONE);
     CHECK(!MANA_IS(id));                                       /* monsters have no mana yet */
     CHECK(!PC_IS(id) && AI_IS(id));                            /* a monster */
     CHECK(ai_brain[id] == AI_BRAIN_DEFAULT && ai_get_state(id) == AI_STATE_ASLEEP);
@@ -579,10 +591,10 @@ int main(void)
     }
     CHECK(ok);
     CHECK(effect_defs[EF_HOLD].period < gen_creatures[CR_LICHEN].stats.speed);
-    CHECK(GEN_HOOK_EF(gen_creature_hook(CR_LICHEN, GEN_HOOK_HIT)) == EF_HOLD);
+    CHECK(GEN_HOOK_EF(gen_creature_hit(CR_LICHEN, ATTACK_MELEE)) == EF_HOLD && gen_creatures[CR_LICHEN].innate.ef == EF_ROOT);
     reset();
     id = gen_creature(CR_TROLL, AREA);
-    CHECK(GEN_HOOK_EF(gen_hook_of(id, GEN_HOOK_INNATE)) == EF_REGEN && nge_owner_count(id) == 1);   /* regenerates */
+    CHECK(gen_creatures[CR_TROLL].innate.ef == EF_REGEN && nge_owner_count(id) == 1);   /* regenerates */
     id = gen_creature(CR_GOBLIN_SHAMAN, AREA);
     CHECK(MANA_IS(id) && mana_mp[id] == 6);                    /* the one monster with mana */
     id = gen_creature(CR_SHRIEKER, AREA);
@@ -592,19 +604,19 @@ int main(void)
     id = gen_creature(CR_SKELETON, AREA);
     CHECK(ai_can(id) == (AI_CAN_MOVE | AI_CAN_MELEE | AI_CAN_PICKUP | AI_CAN_EQUIP));   /* Int 3: mindless at doors */
     id = gen_creature(CR_PLAYER, AREA);
-    CHECK(GEN_HOOK_EF(gen_hook_of(id, GEN_HOOK_INNATE)) == EF_REGEN && nge_owner_count(id) == 2);   /* its innate effect, and mana regeneration */
+    CHECK(gen_creatures[CR_PLAYER].innate.ef == EF_REGEN && nge_owner_count(id) == 2);   /* its innate effect, and mana regeneration */
     CHECK(MANA_IS(id) && mana_mp[id] == 5 && mana_mp_max[id] == 5);                 /* full */
     CHECK(PC_IS(id) && pc_level == 1 && pc_xp == 0 && pc_gold == 0);                 /* a new character */
     CHECK(!AI_IS(id));
     CHECK(strcmp(pc_name, "Rogue") == 0 && pc_class == PC_CLASS_FIGHTER && pc_depth_max == 1);
     CHECK(gen_creature_xp(CR_RAT) == 5 && gen_creature_xp(CR_GOBLIN) == 5 && gen_creature_xp(CR_PLAYER) == 0);
     chest = nge_entity_create();                               /* no kind: no hooks */
-    CHECK(GEN_HOOK_EF(gen_hook_of(chest, GEN_HOOK_USE)) == EF_NONE);
-    TEST_EXPECT_HALT(gen_hook_of(id, GEN_HOOK_COUNT));
+    CHECK(GEN_HOOK_EF(gen_hit_of(chest, ATTACK_MELEE)) == EF_NONE);
+    TEST_EXPECT_HALT(gen_hit_of(id, ATTACK_USE_COUNT));
     CHECK(test_halt_count == 1);
     TEST_EXPECT_HALT(gen_item_hook(IT_COUNT, GEN_HOOK_USE));
     CHECK(test_halt_count == 1);
-    TEST_EXPECT_HALT(gen_creature_hook(CR_COUNT, GEN_HOOK_HIT));
+    TEST_EXPECT_HALT(gen_creature_hit(CR_COUNT, ATTACK_MELEE));
     CHECK(test_halt_count == 1);
 
     /* Any owner: an item in a chest, a creature not yet placed */

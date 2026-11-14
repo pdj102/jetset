@@ -69,7 +69,7 @@ uint8_t act_checked(act_t *a);
  *
  * Rolls a d20 against a->target's AC with the attacker's attack of this use
  * (attack_hits()). On a hit, it deals the damage (attack_damage(),
- * health_damage()), then applies the hit effect of hooks, unless the hit
+ * health_damage()), then applies hooks' hit effect for this use, unless the hit
  * killed the target. The events (EV_HIT, EV_MISSED) are posted to a->target,
  * from a->actor, carrying a->item.
  *
@@ -81,8 +81,9 @@ uint8_t act_checked(act_t *a);
  *                   (fists, a bite, a natural ranged attack), its weapon or
  *                   launcher, or a thrown item.
  * @param use        Which of attacker's attacks: ATTACK_MELEE or ATTACK_RANGED.
- * @param hooks      The entity whose GEN_HOOK_HIT effect a hit applies: the
- *                   weapon, the shot (an arrow), or the creature itself.
+ * @param hooks      The entity whose hit effect for this use a hit applies
+ *                   (gen_hit_of()): the weapon, the shot (an arrow), or the
+ *                   creature itself (its melee_hit for a melee hit).
  * @param to_hit     Added to the roll: the actor's and the ammo's bonuses.
  * @param to_damage  Added to the damage: the actor's and the ammo's bonuses.
  * @return ACT_SUCCESS on a hit, or ACT_FAIL with ACT_R_MISSED on a miss. A

@@ -56,7 +56,7 @@ uint8_t act_strike(act_t *a, nge_entity_id_t attacker, uint8_t use, nge_entity_i
     attack_get(attacker, use, &k);
     a->damage = k.type;
     a->amount = health_damage(target, actor, damage, a->damage);
-    hook = gen_hook_of(hooks, GEN_HOOK_HIT);
+    hook = gen_hit_of(hooks, use);   /* the hit effect of the attack used (R17) */
     if (GEN_HOOK_EF(hook) != EF_NONE) {
         effect_apply(GEN_HOOK_EF(hook), GEN_HOOK_POWER(hook), target, actor);   /* refused if the hit killed it */
     }

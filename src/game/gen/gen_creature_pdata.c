@@ -82,7 +82,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .xp = 0,
         .flags = CREATURE_PLAYER,
         .ai = { .brain = AI_BRAIN_NONE },               /* their turns wait for commands */
-        .hooks = { [GEN_HOOK_INNATE] = { EF_REGEN, 1 } },
+        .innate = { EF_REGEN, 1 },
         .seqs = {
             [GEN_SEQ_ATTACK] = { SPRITE_PLAYER_ATTACK, SPRITE_PLAYER_ATTACK_COUNT, SPRITE_PLAYER_ATTACK_RATE },
         },
@@ -96,11 +96,11 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .stats = { .speed = MONSTER_SPEED, .ability = { 2, 11, 9, 2, 10, 4 } },
         .health = { .hp_max = 3, .immune = DMG_BIT(DMG_POISON), .ac = 12 },
         .melee = { .to_hit = 0, .dice = 1, .sides = 3, .to_damage = 0, .type = DMG_PIERCE, .range = 1 },  /* bite */
+        .melee_hit = { EF_POISON, 1 },                  /* a poisonous bite */
         .inventory = { .capacity = 0, .slots = 0 },     /* carries nothing */
         .xp = 5,                                        /* below 1 hit die */
         .flags = 0,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
-        .hooks = { [GEN_HOOK_HIT] = { EF_POISON, 1 } },        /* a poisonous bite */
         .where = { .depth = 1, .depth_max = 4, .rarity = 10 },
     },
     [CR_GOBLIN] = {
@@ -137,11 +137,11 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .stats = { .speed = MONSTER_SPEED, .ability = { 6, 14, 10, 1, 10, 3 } },
         .health = { .hp_max = 5, .immune = DMG_BIT(DMG_POISON), .ac = 13 },
         .melee = { .to_hit = 1, .dice = 1, .sides = 3, .to_damage = 0, .type = DMG_PIERCE, .range = 1 },  /* bite */
+        .melee_hit = { EF_POISON, 1 },
         .inventory = { .capacity = 0, .slots = 0 },
         .xp = 13,                                       /* 1 hit die, special */
         .flags = 0,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
-        .hooks = { [GEN_HOOK_HIT] = { EF_POISON, 1 } },
         .where = { .depth = 1, .depth_max = 5, .rarity = 7 },
     },
     [CR_LICHEN] = {
@@ -151,11 +151,12 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .stats = { .speed = MONSTER_SLOW, .ability = { 2, 2, 10, 1, 6, 1 } },
         .health = { .hp_max = 4, .immune = DMG_BIT(DMG_POISON), .vuln = DMG_BIT(DMG_FIRE), .ac = 9 },
         .melee = { .to_hit = 1, .dice = 1, .sides = 1, .to_damage = 0, .type = DMG_BLUNT, .range = 1 },   /* a sticky touch */
+        .melee_hit = { EF_HOLD, 1 },
         .inventory = { .capacity = 0, .slots = 0 },
         .xp = 13,                                       /* 1 hit die, special */
         .flags = 0,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
-        .hooks = { [GEN_HOOK_HIT] = { EF_HOLD, 1 }, [GEN_HOOK_INNATE] = { EF_ROOT, 1 } },
+        .innate = { EF_ROOT, 1 },
         .where = { .depth = 1, .depth_max = 5, .rarity = 5 },
     },
     [CR_GREEN_SLIME] = {                                /* later: splits, corrodes gear */
@@ -182,7 +183,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .xp = 13,                                       /* 1 hit die, special */
         .flags = 0,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
-        .hooks = { [GEN_HOOK_INNATE] = { EF_ROOT, 1 } },
+        .innate = { EF_ROOT, 1 },
         .where = { .depth = 2, .depth_max = 6, .rarity = 4 },
     },
     [CR_BANDIT] = {                                     /* later: steals and runs */
@@ -218,11 +219,11 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .stats = { .speed = MONSTER_SPEED, .ability = { 8, 15, 10, 1, 10, 2 } },
         .health = { .hp_max = 13, .immune = DMG_BIT(DMG_POISON), .ac = 14 },
         .melee = { .to_hit = 3, .dice = 1, .sides = 6, .to_damage = 0, .type = DMG_PIERCE, .range = 1 },  /* bite */
+        .melee_hit = { EF_POISON, 2 },
         .inventory = { .capacity = 0, .slots = 0 },
         .xp = 50,                                       /* 3 hit dice, special */
         .flags = 0,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
-        .hooks = { [GEN_HOOK_HIT] = { EF_POISON, 2 } },
         .where = { .depth = 3, .depth_max = 7, .rarity = 6 },
     },
     [CR_SKELETON] = {                                   /* later: never flees */
@@ -260,11 +261,11 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .stats = { .speed = MONSTER_SPEED, .ability = { 8, 16, 11, 1, 12, 4 } },
         .health = { .hp_max = 13, .immune = DMG_BIT(DMG_POISON), .ac = 14 },
         .melee = { .to_hit = 3, .dice = 1, .sides = 6, .to_damage = 0, .type = DMG_PIERCE, .range = 1 },  /* bite */
+        .melee_hit = { EF_BLIND, 1 },
         .inventory = { .capacity = 0, .slots = 0 },
         .xp = 50,                                       /* 3 hit dice, special */
         .flags = 0,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
-        .hooks = { [GEN_HOOK_HIT] = { EF_BLIND, 1 } },
         .where = { .depth = 4, .depth_max = 8, .rarity = 5 },
     },
     [CR_FLOATING_EYE] = {                               /* later: a paralysing gaze */
@@ -277,7 +278,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .xp = 75,                                       /* 3+ hit dice, special */
         .flags = 0,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
-        .hooks = { [GEN_HOOK_INNATE] = { EF_ROOT, 1 } },
+        .innate = { EF_ROOT, 1 },
         .where = { .depth = 4, .depth_max = 8, .rarity = 3 },
     },
     [CR_MIMIC] = {                                      /* later: poses as treasure until touched */
@@ -291,7 +292,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .xp = 125,                                      /* 4 hit dice, special */
         .flags = 0,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
-        .hooks = { [GEN_HOOK_INNATE] = { EF_ROOT, 1 } },
+        .innate = { EF_ROOT, 1 },
         .where = { .depth = 4, .depth_max = 9, .rarity = 3 },
     },
     [CR_OGRE] = {
@@ -327,11 +328,11 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .stats = { .speed = MONSTER_SPEED, .ability = { 10, 15, 10, 12, 13, 14 } },
         .health = { .hp_max = 27, .immune = IMMUNE_UNDEAD | DMG_BIT(DMG_COLD), .resist = RESIST_WEAPONS, .ac = 16 },
         .melee = { .to_hit = 6, .dice = 1, .sides = 10, .to_damage = 0, .type = DMG_COLD, .range = 1 },   /* a draining touch */
+        .melee_hit = { EF_WEAKNESS, 2 },
         .inventory = { .capacity = 0, .slots = 0 },
         .xp = 500,                                      /* 6 hit dice, special */
         .flags = 0,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
-        .hooks = { [GEN_HOOK_HIT] = { EF_WEAKNESS, 2 } },
         .where = { .depth = 6, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 5 },
     },
     [CR_TROLL] = {
@@ -345,7 +346,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .xp = 850,                                      /* 7 hit dice, special */
         .flags = 0,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
-        .hooks = { [GEN_HOOK_INNATE] = { EF_REGEN, 1 } },
+        .innate = { EF_REGEN, 1 },
         .where = { .depth = 7, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 6 },
     },
     [CR_DRAGON] = {                                     /* later: fire breath */
@@ -373,7 +374,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .xp = 0,
         .flags = CREATURE_PLAYER,
         .ai = { .brain = AI_BRAIN_NONE },               /* their turns wait for commands */
-        .hooks = { [GEN_HOOK_INNATE] = { EF_REGEN, 1 } },
+        .innate = { EF_REGEN, 1 },
         .seqs = {
             [GEN_SEQ_ATTACK] = { SPRITE_PLAYER_ATTACK, SPRITE_PLAYER_ATTACK_COUNT, SPRITE_PLAYER_ATTACK_RATE },
         },
@@ -393,7 +394,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .xp = 0,
         .flags = CREATURE_PLAYER,
         .ai = { .brain = AI_BRAIN_NONE },               /* their turns wait for commands */
-        .hooks = { [GEN_HOOK_INNATE] = { EF_REGEN, 1 } },
+        .innate = { EF_REGEN, 1 },
         .seqs = {
             [GEN_SEQ_ATTACK] = { SPRITE_PLAYER_ATTACK, SPRITE_PLAYER_ATTACK_COUNT, SPRITE_PLAYER_ATTACK_RATE },
         },

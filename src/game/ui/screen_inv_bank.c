@@ -130,20 +130,21 @@ static const help_key_t help_keys[] = {
 /* An item in the pack belongs in list (LIST_STOWED, LIST_EQUIPPABLE or LIST_USABLE); slots: the player's */
 static uint8_t listed(uint8_t list, nge_entity_id_t id, uint16_t slots)
 {
+    uint8_t kind = kind_index[id];   /* in a local before the banked calls (T-ZSDCC-1) */
     uint8_t subclass;
 
     switch (list) {
     case LIST_EQUIPPABLE:
-        return (gen_item_fits(kind_index[id]) & slots) != 0;
+        return (gen_item_fits(kind) & slots) != 0;
     case LIST_USABLE:
-        return GEN_HOOK_EF(gen_hook_of(id, GEN_HOOK_USE)) != EF_NONE;
+        return GEN_HOOK_EF(gen_item_hook(kind, GEN_HOOK_USE)) != EF_NONE;
     case LIST_AIMABLE:
-        return GEN_HOOK_EF(gen_hook_of(id, GEN_HOOK_AIM)) != EF_NONE;
+        return GEN_HOOK_EF(gen_item_hook(kind, GEN_HOOK_AIM)) != EF_NONE;
     case LIST_TOOLS:
-        subclass = gen_item_subclass(kind_index[id]);
+        subclass = gen_item_subclass(kind);
         return subclass == ITEM_KEY || subclass == ITEM_TOOL;
     case LIST_BOOKS:
-        return gen_item_subclass(kind_index[id]) == ITEM_BOOK;
+        return gen_item_subclass(kind) == ITEM_BOOK;
     default:
         return 1;
     }
@@ -327,7 +328,7 @@ static void describe(nge_entity_id_t id, NGE_FILE *s)
     /* Armour's AC from its record, else jewellery's from an AC hook (docs/items.md R26) */
     ac = gen_item_armour_ac(kind);
     if (ac == 0) {
-        hook = gen_hook_of(id, GEN_HOOK_WORN);
+        hook = gen_item_hook(kind, GEN_HOOK_WORN);
         if (GEN_HOOK_EF(hook) != EF_WORN_AC) {
             return;
         }
@@ -549,17 +550,18 @@ static uint8_t try(uint8_t action)
 static uint8_t obvious_action(void)
 {
     nge_entity_id_t id = selected();
+    uint8_t kind = kind_index[id];   /* in a local before the banked calls (T-ZSDCC-1) */
 
     if (item_slot[id] != SLOT_NONE) {
         return ACT_UNEQUIP;
     }
-    if (GEN_HOOK_EF(gen_hook_of(id, GEN_HOOK_USE)) != EF_NONE) {
+    if (GEN_HOOK_EF(gen_item_hook(kind, GEN_HOOK_USE)) != EF_NONE) {
         return ACT_USE;
     }
-    if (GEN_HOOK_EF(gen_hook_of(id, GEN_HOOK_AIM)) != EF_NONE) {
+    if (GEN_HOOK_EF(gen_item_hook(kind, GEN_HOOK_AIM)) != EF_NONE) {
         return ACT_AIM;
     }
-    if (gen_item_subclass(kind_index[id]) == ITEM_BOOK) {
+    if (gen_item_subclass(kind) == ITEM_BOOK) {
         return ACT_LEARN;   /* read it: it closes the screen, as aim does */
     }
     return ACT_EQUIP;

@@ -331,6 +331,7 @@ void anim_vfx_event(nge_event_id_t ev, nge_entity_id_t target, nge_entity_id_t s
 {
     spell_def_t def;   /* a copy: the table is in the spells' page */
     uint8_t ef;
+    uint8_t kind;
 
     switch (ev) {
     case EV_FIRED:
@@ -351,7 +352,11 @@ void anim_vfx_event(nge_event_id_t ev, nge_entity_id_t target, nge_entity_id_t s
     case EV_AIMED:
         anim_area_held = 0;
         if (p1 < NGE_ENTITY_MAX) {
-            ef = GEN_HOOK_EF(gen_hook_of(p1, GEN_HOOK_AIM));
+            ef = EF_NONE;
+            if (KIND_IS(p1, CLASS_ITEM)) {   /* it may be gone: a parchment is used up */
+                kind = kind_index[p1];   /* in a local before the banked call (T-ZSDCC-1) */
+                ef = GEN_HOOK_EF(gen_item_hook(kind, GEN_HOOK_AIM));
+            }
             if (target == NGE_EVENT_NONE) {
                 anim_area_ef = ef;   /* an area: EV_AREA flies it */
             } else if (target != source) {

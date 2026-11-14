@@ -2741,12 +2741,25 @@ int main(void)
     /* A creature's own ranged attack: nothing used up, the event says so, no launcher */
     {
         static const attack_kind_t spit = { 0, 1, 4, 0, DMG_ACID, 5 };
+        int n;
 
         attack_add(player, ATTACK_RANGED, &spit);
         rat = creature(CR_RAT, 3, 2);
         srand(seed_for_roll(20));
         CHECK(fire(player, 3, 2, ACT_DO) == ACT_SUCCESS && last.item == NGE_ENTITY_INVALID && last.damage == DMG_ACID);
         CHECK(events() >= 3 && seen[0].id == EV_FIRED && seen[0].p1 == NGE_EVENT_NONE);
+        /* Its hit applies its own ranged hook, not its bite's (R17): a spitting rat doesn't poison */
+        attack_add(rat, ATTACK_RANGED, &spit);
+        health_hp[player] = health_hp_max[player];
+        srand(seed_for_roll(20));
+        CHECK(fire(rat, NGE_LOCATION_X(player), NGE_LOCATION_Y(player), ACT_DO) == ACT_SUCCESS &&
+              last.target == player && !STATUS_HAS(player, STATUS_POISONED));
+        r1 = events();
+        r2 = 0;
+        for (n = 0; n < r1; n++) {
+            r2 += seen[n].id == EV_EFFECT_STARTED;
+        }
+        CHECK(r1 >= 3 && r2 == 0);
     }
 
     /* ---- stacks: the player at (0, 2), arrows stowed ---- */

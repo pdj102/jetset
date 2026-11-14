@@ -5,7 +5,7 @@ The steps that build topic M ([todo.md](todo.md)) as
 this file says in what order, what changes, and how each step is checked.
 
 Status: planned (2026-11-13). Step 1 done the same day. Step 1b added and done 2026-11-14
-(spec D11). Step 1c added 2026-11-14 (spec D3 revised, R17), agreed the same day;
+(spec D11). Step 1c added 2026-11-14 (spec D3 revised, R17), agreed and done the same day;
 steps 2, 8, 9 and 12 changed to match.
 
 ## 1. How the steps work
@@ -100,7 +100,7 @@ order, each built and tested on its own.
 - **CSpect (check 1b):** a new game as each class plays as before: the starting kit,
   monsters and features on depths 1 and 2, a chest opened, a door opened.
 
-### Step 1c: hooks beside their parts (D3)
+### Step 1c: hooks beside their parts (D3) `[done]` (2026-11-14)
 
 Spec D3 (revised), R17. A change of layout only: the game plays as before, and no row
 gains or loses an effect.

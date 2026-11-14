@@ -158,7 +158,7 @@ static void derive(nge_entity_id_t id, derived_t *d)
         if (ITEM_IS(owned) && item_slot[owned] != SLOT_NONE) {
             kind = kind_index[owned];   /* in a local before the banked call (T-ZSDCC-1) */
             d->value[ATTR_AC] += gen_item_armour_ac(kind);   /* armour's AC, in its record (docs/items.md 4.11) */
-            hook = gen_hook_of(owned, GEN_HOOK_WORN);
+            hook = gen_item_hook(kind, GEN_HOOK_WORN);
             add(d, GEN_HOOK_EF(hook), GEN_HOOK_POWER(hook));
         } else if (NGE_ENTITY_HAS_COMPONENT(owned, NGE_COMPONENT_EFFECT)) {
             add(d, EFFECT_KIND_OF(owned), EFFECT_POWER_OF(owned));

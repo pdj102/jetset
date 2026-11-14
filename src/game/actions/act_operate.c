@@ -33,7 +33,7 @@ uint8_t act_operate(act_t *a, uint8_t mode) NGE_BANKED
     if (FEATURE_IS_SPENT(target)) {
         return act_fail(a, ACT_R_SPENT);
     }
-    hook = gen_hook_of(target, GEN_HOOK_USE);
+    hook = gen_feature_use(kind_index[target]);
     ef = GEN_HOOK_EF(hook);
     a->effect = ef;
     if (mode == ACT_CHECK) {

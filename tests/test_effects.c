@@ -583,7 +583,6 @@ int main(void)
     CHECK(count_effects(player, EF_REGEN) == 1 && count_effects(player, EF_MANA_REGEN) == 1);
     CHECK(events() == 2 && is(0, player, EV_EFFECT_STARTED, effect_on(player, EF_REGEN), EF_REGEN) &&
           is(1, player, EV_EFFECT_STARTED, effect_on(player, EF_MANA_REGEN), EF_MANA_REGEN));
-    CHECK(GEN_HOOK_EF(gen_hook_of(player, GEN_HOOK_INNATE)) == EF_REGEN);
 
     /* ---- mana regeneration: 1 MP every 20 turns, stopping at the maximum; innate, so no cure ends it ---- */
     e = effect_on(player, EF_MANA_REGEN);

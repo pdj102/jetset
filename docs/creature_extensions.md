@@ -7,7 +7,7 @@ revised on review: `ai_can_t` widens to 16 bits. Q1 to Q7 were answered
 the part it belongs to, and the creature and feature records lose their array
 of hook slots (R17, plan step 1c).
 The plan is [creature_extensions_plan.md](creature_extensions_plan.md).
-Built: the `balance.py` fix from Q7 (section 10, plan step 1) and D11 (plan step 1b).
+Built: the `balance.py` fix from Q7 (section 10, plan step 1), D11 (plan step 1b) and D3 (plan step 1c).
 
 Builds on [creatures.md](creatures.md) (the roster of 21 random kinds and rooted
 creatures), [ai.md](ai.md) and [ai_default_brain.md](ai_default_brain.md),
@@ -693,3 +693,37 @@ CSpect checks (the user runs them):
 - Docs: items.md 4.8 and its tables, spells.md 10.5.3 and features.md give the
   new numbers. Finished specs and plans (items_aimed, items_armour_plan,
   spells_plan, winning.md and others) keep the numbers of their day.
+
+### Step 1c: hooks beside their parts (2026-11-14)
+
+- As D3. `make test` passes, and `make balance` prints the same as before it.
+- CSpect: the game plays as before. The effects that could be met in play
+  were checked, not every one of the five the plan listed.
+- 14 creature hooks moved (13 rows: the lichen has both), not 11 as the plan
+  counted. Each `.melee_hit` sits beside its row's `.melee`.
+- `gen_hit_of()` asserts `use < ATTACK_USE_COUNT`. Its callers outside the
+  hit pass the kind straight to the class's accessor, as most banked calls
+  already did. Keeping the kind in a local costs nothing here, except in
+  `act_operate()`: there zsdcc put every local in the frame once `kind` had
+  to live across banked calls (+112 bytes), so it passes `kind_index[target]`
+  to both calls.
+- The aim animation (`EV_AIMED`) asks `KIND_IS(p1, CLASS_ITEM)` before
+  `gen_item_hook()`. `gen_hook_of()` did that for it, and a parchment may be
+  gone by then.
+- The stack-depth comment in `effects_bank.c` and effects.md 4.10 name
+  `gen_item_hook()`, not `gen_hit_of()`: the deepest chain reads a worn hook
+  (`effects_recompute()`), and that is now a banked call straight from
+  `attrs_bank.c`. The depth stays 6, as `gen_hook_of()` was in common memory.
+- New test (`test_act`): a rat given a ranged attack doesn't poison with it,
+  since a creature has no ranged hook until step 2. Before, its bite's hook
+  applied to any hit.
+- creatures.md has no record section, and its hook passages are decisions
+  of the rooted-creatures design, so it keeps its wording. items.md 4.4,
+  features.md (the record and 4.5), effects.md 4.3 and 4.10, and actions.md
+  (`act_strike()`) are updated.
+- Pages: 107 −144 bytes (1,439), 123 −144 (970), 106 −48 (1,530), 122 +66
+  (1,365: two accessors in place of one). `BANK_56` +17 (16,297, 87 free):
+  `act_operate()` +23 for its banked call, the rest less. Page 116 (the
+  inventory screen) −6, 126 (the animation) +41, 130 (the AI) +10, 138 (the
+  attributes) +6, 101 (common files' assert messages) +22. Common memory is
+  the same size. No new library routine in common memory.

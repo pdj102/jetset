@@ -25,6 +25,7 @@ uint8_t act_aim(act_t *a, uint8_t mode) NGE_BANKED
     nge_entity_id_t item = a->item;
     act_shape_t s;
     uint16_t hook;
+    uint8_t kind;
     uint8_t ef;
     uint8_t wand;
     uint8_t shape;
@@ -42,17 +43,18 @@ uint8_t act_aim(act_t *a, uint8_t mode) NGE_BANKED
     if (item_slot[item] != SLOT_NONE) {
         return act_fail(a, ACT_R_EQUIPPED);
     }
-    hook = gen_hook_of(item, GEN_HOOK_AIM);
+    kind = kind_index[item];   /* in a local before the banked call (T-ZSDCC-1) */
+    hook = gen_item_hook(kind, GEN_HOOK_AIM);
     ef = GEN_HOOK_EF(hook);
     if (ef == EF_NONE) {
         return act_fail(a, ACT_R_CANT_AIM);
     }
-    wand = gen_item_subclass(kind_index[item]) == ITEM_WAND;
+    wand = gen_item_subclass(kind) == ITEM_WAND;
     if (wand && item_count[item] == 0) {
         return act_fail(a, ACT_R_NO_CHARGES);
     }
     a->effect = ef;
-    shape = gen_item_shape(kind_index[item]);
+    shape = gen_item_shape(kind);
     s.shape = shape;
     if ((shape == SPELL_BOLT || shape == SPELL_DIRECT) && a->x == NGE_LOCATION_X(actor) &&
         a->y == NGE_LOCATION_Y(actor)) {

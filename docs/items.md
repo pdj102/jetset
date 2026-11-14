@@ -225,17 +225,22 @@ wider mask.
 
 ### 4.4 Hooks
 
+An item has one hook, tagged with when it fires:
+
 | Hook | Used by | Applied | To |
 |---|---|---|---|
-| `GEN_HOOK_USE` | Items | When used up: drunk, eaten or read | The user |
-| `GEN_HOOK_HIT` | Weapons, ammo, creatures | A hit that leaves its target alive | The target |
-| `GEN_HOOK_WORN` | Jewellery, lights, armour's property | Counts while equipped | The wearer |
-| `GEN_HOOK_INNATE` | Creatures | When generated: only `EFFECT_INNATE` effects | Itself |
-| `GEN_HOOK_AIM` | Wands, staves, parchments | Aimed (`ACT_AIM`, [action_aim.md](action_aim.md)), as its shape says (4.12) | The target, the user (a tile item) or each creature in an area |
+| `GEN_HOOK_USE` (0) | Potions, food, parchments read | When used up: drunk, eaten or read | The user |
+| `GEN_HOOK_HIT` (1) | Weapons, ammo | A hit that leaves its target alive | The target |
+| `GEN_HOOK_WORN` (2) | Jewellery, lights, armour's property | Counts while equipped | The wearer |
+| `GEN_HOOK_AIM` (3) | Wands, staves, parchments | Aimed (`ACT_AIM`, [action_aim.md](action_aim.md)), as its shape says (4.12) | The target, the user (a tile item) or each creature in an area |
 
-`gen_hook_of()` answers for any class, with the effect and power packed in 16
-bits, read with `GEN_HOOK_EF()` and `GEN_HOOK_POWER()`. An item has one hook;
-creatures and features have an array with one entry per hook.
+`gen_item_hook(kind, hook)` answers with the effect and power packed in 16
+bits, read with `GEN_HOOK_EF()` and `GEN_HOOK_POWER()`: none if the kind's hook
+fires on another. Creatures and features have no tagged hook: each of theirs
+sits beside the part it belongs to (a creature's `melee_hit` and `innate`, a
+feature's `use` and `hit`; creature_extensions.md D3). `gen_hit_of(id, use)`
+is the one reader across classes: the hit effect of an entity's attack of that
+use, an item's `GEN_HOOK_HIT` hook whatever the use.
 
 The hook also decides what is offered: an item is usable only if it has a use
 hook, and a healing potion is found by its effect, whatever its strength. That

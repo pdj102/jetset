@@ -235,8 +235,9 @@ skip it with `effects_apply_no_save` (`effects_internal.h`).
   recomputed and the event is posted. Its first `on_tick` comes a period later.
 
 The callers are `act_use()` (the use hook, before destroying the item),
-`act_melee()` (the hit hook, refused if the hit killed the target) and the creature
-generator (the innate hook, which names only innate effects).
+`act_strike()` (the hit effect of the attack used, from `gen_hit_of()`: an item's hit
+hook, a creature's `melee_hit`, a trap's `hit`; refused if the hit killed the target)
+and the creature generator (its record's `innate`, which names only innate effects).
 
 ### 4.4 Active effects
 
@@ -324,7 +325,7 @@ a row's statuses and modifiers.
 The deepest chain of banked calls is an AI's hit that starts a timed effect:
 `nge_timer_advance()`, `ai_on_turn()`, `act_melee()`, `effect_apply()`, then
 `nge_effect_create()` and its calls into nge, or `effects_recompute()` and
-`gen_hook_of()`. That is 6 of the 8 allowed (T-STACK-2).
+`gen_item_hook()`. That is 6 of the 8 allowed (T-STACK-2).
 
 ## 5. Decisions
 

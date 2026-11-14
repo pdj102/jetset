@@ -52,7 +52,7 @@ void act_spring(nge_entity_id_t trap, nge_entity_id_t victim) NGE_BANKED
         act_strike(&a, trap, ATTACK_MELEE, trap, 0, 0);
     } else {
         /* 4. Without one, it always hits: its hit hook at once (any saving throw is the effect's) */
-        hook = gen_hook_of(trap, GEN_HOOK_HIT);
+        hook = gen_hit_of(trap, ATTACK_MELEE);
         if (GEN_HOOK_EF(hook) != EF_NONE) {
             effect_apply(GEN_HOOK_EF(hook), GEN_HOOK_POWER(hook), victim, trap);
         }

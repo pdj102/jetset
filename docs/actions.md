@@ -475,7 +475,8 @@ creatures on the way, which matches what happens.
 `act_strike(a, attacker, use, hooks, to_hit, to_damage)` is steps 3 and 4 of every attack, once
 validated: melee, fire, and a trap going off. `attacker` is whose attack component is used
 (a weapon, a launcher, a thrown item, the actor, a trap), `use` is `ATTACK_MELEE` or
-`ATTACK_RANGED`, and `hooks` is the entity whose `GEN_HOOK_HIT` applies.
+`ATTACK_RANGED`, and `hooks` is the entity whose hit effect for that use applies
+(`gen_hit_of(hooks, use)`: a weapon's or ammo's hit hook, a creature's `melee_hit`).
 
 1. **Resolve:** 1d20, and `attack_hits()` with `to_hit` added. A miss posts `EV_MISSED`
    (p1 the roll, p2 `a->item`) and fails with `ACT_R_MISSED`.

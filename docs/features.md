@@ -186,8 +186,9 @@ the new fields marked:
 | `dc` *(new)* | To find it when hidden, and to disarm it |
 | `holds` *(new)* | A container's most random items, 1 or more; 0 if not a container |
 | `health` *(new)* | `health_kind_t`. `hp_max` 0 for none: not breakable |
+| `use` | `gen_hook_t`, applied to the operator (4.5) |
 | `attack` *(new)* | `attack_kind_t`. Dice 0 for none: a trap that always hits |
-| `hooks[]` | By `GEN_HOOK_*`. Features use `USE` (operated) and `HIT` (a trap's) |
+| `hit` | `gen_hook_t`, a trap's: applied to what its hit leaves alive (4.5) |
 | `where` | Band and rarity. 0 for kinds the generator places itself |
 
 The record grows from 22 bytes to 36. With about 20 kinds that is about
@@ -247,14 +248,12 @@ apart until they are used (D9).
 
 ### 4.5 Hooks
 
-A feature has the creature's hook array, `hooks[GEN_HOOK_COUNT]`, and
-`gen_hook_of()` already answers for it. Two hooks have a meaning for
-features:
+A feature has two hooks, each a field of its record (creature_extensions.md D3):
 
-| Hook | Applied | To |
-|---|---|---|
-| `GEN_HOOK_USE` | When operated | The operator |
-| `GEN_HOOK_HIT` | When a trap hits and leaves its target alive | The creature it fired at |
+| Hook | Applied | To | Read by |
+|---|---|---|---|
+| `use` | When operated | The operator | `gen_feature_use(kind)` |
+| `hit` | When a trap hits and leaves its target alive (beside its `attack`) | The creature it fired at | `gen_hit_of(trap, ATTACK_MELEE)` |
 
 The effect is applied with the feature as its source. Effects never act on a
 feature: it has no attributes (`affectable()` in `effects_bank.c`), so a fire bolt at

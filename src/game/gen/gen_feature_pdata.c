@@ -85,7 +85,7 @@ const gen_feature_kind_t gen_features[FT_COUNT] = {
             .block_shut = NGE_BLOCK_SOLID,
         },
         .verb = FVERB_PRAY,
-        .hooks = { [GEN_HOOK_USE] = { EF_HEALING, 15 } },
+        .use = { EF_HEALING, 15 },
         .where = { .depth = 1, .depth_max = 10, .rarity = 3 },
     },
     [FT_SHRINE_CLEANSING] = {
@@ -96,7 +96,7 @@ const gen_feature_kind_t gen_features[FT_COUNT] = {
             .block_shut = NGE_BLOCK_SOLID,
         },
         .verb = FVERB_PRAY,
-        .hooks = { [GEN_HOOK_USE] = { EF_CURE_ALL, 1 } },
+        .use = { EF_CURE_ALL, 1 },
         .where = { .depth = 2, .depth_max = 10, .rarity = 2 },
     },
     [FT_ALTAR_MIGHT] = {
@@ -107,7 +107,7 @@ const gen_feature_kind_t gen_features[FT_COUNT] = {
             .block_shut = NGE_BLOCK_SOLID,
         },
         .verb = FVERB_TOUCH,
-        .hooks = { [GEN_HOOK_USE] = { EF_MIGHT, 2 } },
+        .use = { EF_MIGHT, 2 },
         .where = { .depth = 3, .depth_max = 10, .rarity = 2 },
     },
     [FT_ALTAR_ANCIENT] = {
@@ -118,7 +118,7 @@ const gen_feature_kind_t gen_features[FT_COUNT] = {
             .block_shut = NGE_BLOCK_SOLID,
         },
         .verb = FVERB_TOUCH,
-        .hooks = { [GEN_HOOK_USE] = { EF_VITALITY, 2 } },
+        .use = { EF_VITALITY, 2 },
         .where = { .depth = 5, .depth_max = 10, .rarity = 1 },
     },
     [FT_FOUNTAIN_RENEW] = {
@@ -130,7 +130,7 @@ const gen_feature_kind_t gen_features[FT_COUNT] = {
             .block_shut = NGE_BLOCK_SOLID,
         },
         .verb = FVERB_DRINK,
-        .hooks = { [GEN_HOOK_USE] = { EF_RENEW, 1 } },
+        .use = { EF_RENEW, 1 },
         .where = { .depth = 1, .depth_max = 10, .rarity = 2 },
     },
     [FT_FOUNTAIN_MANA] = {
@@ -141,7 +141,7 @@ const gen_feature_kind_t gen_features[FT_COUNT] = {
             .block_shut = NGE_BLOCK_SOLID,
         },
         .verb = FVERB_DRINK,
-        .hooks = { [GEN_HOOK_USE] = { EF_MANA, 4 } },
+        .use = { EF_MANA, 4 },
         .where = { .depth = 1, .depth_max = 10, .rarity = 2 },
     },
     [FT_FOUNTAIN_FOUL] = {
@@ -152,7 +152,7 @@ const gen_feature_kind_t gen_features[FT_COUNT] = {
             .block_shut = NGE_BLOCK_SOLID,
         },
         .verb = FVERB_DRINK,
-        .hooks = { [GEN_HOOK_USE] = { EF_POISON, 1 } },
+        .use = { EF_POISON, 1 },
         .where = { .depth = 1, .depth_max = 10, .rarity = 2 },
     },
     /* A container that opens (docs/features.md 4.9): a door that holds items, which spill on its tile */
@@ -178,7 +178,7 @@ const gen_feature_kind_t gen_features[FT_COUNT] = {
         .verb = FVERB_STEP,
         .dc = 12,
         .attack = { .to_hit = 4, .dice = 1, .sides = 4, .type = DMG_PIERCE, .range = 1 },
-        .hooks = { [GEN_HOOK_HIT] = { EF_POISON, 1 } },
+        .hit = { EF_POISON, 1 },
         .where = { .depth = 1, .depth_max = 6, .rarity = 4 },
     },
     [FT_PIT] = {
@@ -192,7 +192,7 @@ const gen_feature_kind_t gen_features[FT_COUNT] = {
         .verb = FVERB_FALL,
         .dc = 10,
         .attack = { .to_hit = 8, .dice = 1, .sides = 6, .type = DMG_BLUNT, .range = 1 },
-        .hooks = { [GEN_HOOK_HIT] = { EF_HOLD, 1 } },
+        .hit = { EF_HOLD, 1 },
         .where = { .depth = 1, .depth_max = 10, .rarity = 4 },
     },
     [FT_FIRE_RUNE] = {
@@ -205,7 +205,7 @@ const gen_feature_kind_t gen_features[FT_COUNT] = {
         .state = FEAT_HIDDEN,
         .verb = FVERB_STEP,
         .dc = 14,
-        .hooks = { [GEN_HOOK_HIT] = { EF_BOLT_FIRE, 6 } },
+        .hit = { EF_BOLT_FIRE, 6 },
         .where = { .depth = 4, .depth_max = 10, .rarity = 3 },
     },
     [FT_WEB] = {
@@ -219,7 +219,7 @@ const gen_feature_kind_t gen_features[FT_COUNT] = {
         .verb = FVERB_STEP,
         .dc = 0,
         .health = { .hp_max = 3, .immune = DMG_BIT(DMG_POISON), .vuln = DMG_BIT(DMG_FIRE), .ac = 1 },
-        .hooks = { [GEN_HOOK_HIT] = { EF_HOLD, 1 } },
+        .hit = { EF_HOLD, 1 },
         .where = { .depth = 3, .depth_max = 7, .rarity = 3 },
     },
     /* Pending (D15): complete, but rarity 0 until sleep, teleport and summoning are built */
@@ -233,7 +233,7 @@ const gen_feature_kind_t gen_features[FT_COUNT] = {
         .state = FEAT_HIDDEN,
         .verb = FVERB_STEP,
         .dc = 13,
-        .hooks = { [GEN_HOOK_HIT] = { EF_SLEEP, 1 } },
+        .hit = { EF_SLEEP, 1 },
         .where = { .depth = 3, .depth_max = 10, .rarity = 0 },
     },
     [FT_TELEPORT_RUNE] = {
@@ -246,7 +246,7 @@ const gen_feature_kind_t gen_features[FT_COUNT] = {
         .state = FEAT_HIDDEN,
         .verb = FVERB_STEP,
         .dc = 13,
-        .hooks = { [GEN_HOOK_HIT] = { EF_TELEPORT, 1 } },
+        .hit = { EF_TELEPORT, 1 },
         .where = { .depth = 3, .depth_max = 10, .rarity = 0 },
     },
     [FT_SUMMON_RUNE] = {
@@ -259,7 +259,7 @@ const gen_feature_kind_t gen_features[FT_COUNT] = {
         .state = FEAT_HIDDEN,
         .verb = FVERB_STEP,
         .dc = 15,
-        .hooks = { [GEN_HOOK_HIT] = { EF_SUMMON, 1 } },
+        .hit = { EF_SUMMON, 1 },
         .where = { .depth = 5, .depth_max = 10, .rarity = 0 },
     },
     [FT_LEVEL_RUNE] = {
@@ -272,7 +272,7 @@ const gen_feature_kind_t gen_features[FT_COUNT] = {
         .state = FEAT_HIDDEN,
         .verb = FVERB_STEP,
         .dc = 15,
-        .hooks = { [GEN_HOOK_HIT] = { EF_LEVEL_TELEPORT, 1 } },
+        .hit = { EF_LEVEL_TELEPORT, 1 },
         .where = { .depth = 4, .depth_max = 10, .rarity = 0 },
     },
     /* A trap that leads down (docs/features.md 4.8, step 7): what it fires at falls to the next depth */

@@ -44,7 +44,7 @@
  * @brief Create a creature of kind (CR_*), owned by owner: sprite, block,
  *        stats, health, mana if its kind has some, timer (the player's or a
  *        monster's turn) and, if it can carry things, inventory; then its innate effect, if any
- *        (GEN_HOOK_INNATE). The player is persistent: at 0 hp it isn't
+ *        (its record's innate hook). The player is persistent: at 0 hp it isn't
  *        destroyed (game over instead); and a new character, with the PC
  *        component (game/components/pc.h). Every other creature has the AI
  *        component, with its kind's brain and start state (game/ai/ai.h),
@@ -151,27 +151,46 @@ void gen_creature_seqs(uint8_t kind, gen_seq_t *seq) NGE_BANKED;
  */
 uint16_t gen_creature_xp(uint8_t kind) NGE_BANKED;
 
-/* Hooks: the effect (EF_*, game/effects/effects.h) and power a kind record names for each */
-#define GEN_HOOK_USE     0   /**< Items: applied to the user when used up (act_use()); features: to the operator (act_operate()). */
-#define GEN_HOOK_HIT     1   /**< Weapons, ammo, creatures and traps: applied to what a hit leaves alive (act_strike(), act_spring()). */
-#define GEN_HOOK_WORN    2   /**< Items: its modifiers and statuses count while equipped. */
-#define GEN_HOOK_INNATE  3   /**< Creatures: applied when generated. */
-#define GEN_HOOK_AIM     4   /**< Items: sent at a chosen target (wands, staves, parchments): no action reads it yet. */
-#define GEN_HOOK_COUNT   5
+/*
+ * When an item's one hook fires: the effect (EF_*, game/effects/effects.h)
+ * and power its kind record names are tagged with one. Creatures and
+ * features name each hook beside its part instead (docs/creature_extensions.md D3)
+ */
+#define GEN_HOOK_USE     0   /**< Applied to the user when used up (act_use()). */
+#define GEN_HOOK_HIT     1   /**< Weapons and ammo: applied to what a hit leaves alive (act_strike()). */
+#define GEN_HOOK_WORN    2   /**< Its modifiers and statuses count while equipped. */
+#define GEN_HOOK_AIM     3   /**< Sent at a chosen target (act_aim(): wands, staves, parchments). */
+#define GEN_HOOK_COUNT   4
 
-/* gen_hook_of()'s answer: the effect in the low byte, its power in the high byte */
+/* A hook's packed answer (gen_hit_of() and the accessors): the effect in the low byte, its power in the high byte */
 #define GEN_HOOK_PACK(ef, power)  ((uint16_t)(((uint16_t)(uint8_t)(power) << 8) | (uint8_t)(ef)))
 #define GEN_HOOK_EF(h)            ((uint8_t)(h))
 #define GEN_HOOK_POWER(h)         ((int8_t)(uint8_t)((h) >> 8))
 
 /**
- * @brief The effect and power an entity's kind names for hook (GEN_HOOK_*),
- *        packed: read them with GEN_HOOK_EF() and GEN_HOOK_POWER(). The
- *        effect is EF_NONE (0) if the kind names none, or the entity has no
- *        kind. In common memory: it calls its class's banked copy (pages
- *        106, 108, 122).
+ * @brief The effect and power of a hit by an entity's attack of use
+ *        (ATTACK_*), packed: read them with GEN_HOOK_EF() and
+ *        GEN_HOOK_POWER(). A creature's hook for that attack (its melee_hit
+ *        for ATTACK_MELEE), an item's GEN_HOOK_HIT hook whatever the use (a
+ *        weapon, an arrow), a trap's hit. EF_NONE (0) if it names none, or
+ *        the entity has no kind. In common memory: it calls its class's
+ *        banked accessor (pages 106, 108, 122). The one reader of hooks that
+ *        crosses classes, as what hits can be any of them (R17).
  */
-uint16_t gen_hook_of(nge_entity_id_t id, uint8_t hook);
+uint16_t gen_hit_of(nge_entity_id_t id, uint8_t use);
+
+/**
+ * @brief An item kind's (IT_*) effect and power for hook (GEN_HOOK_*),
+ *        packed as gen_hit_of()'s: EF_NONE if its one hook fires on
+ *        another. Banked with the item table (page 108).
+ */
+uint16_t gen_item_hook(uint8_t kind, uint8_t hook) NGE_BANKED;
+
+/**
+ * @brief A feature kind's (FT_*) effect and power when operated, packed as
+ *        gen_hit_of()'s: EF_NONE for none. Banked with the feature table (page 122).
+ */
+uint16_t gen_feature_use(uint8_t kind) NGE_BANKED;
 
 /** @brief An item kind's (IT_*) subclass (ITEM_POTION...). Banked with the item table (page 108). */
 uint8_t gen_item_subclass(uint8_t kind) NGE_BANKED;

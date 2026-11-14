@@ -12,7 +12,7 @@
  * Banked calls nest deepest from an AI's hit that starts a timed effect:
  * nge_timer_advance(), ai_on_turn(), act_melee(), effect_apply(), then
  * nge_effect_create() and its calls, or effects_recompute() and
- * gen_hook_of(): 6 of the 8 allowed (T-STACK-2). Ops on a hit call from
+ * gen_item_hook(): 6 of the 8 allowed (T-STACK-2). Ops on a hit call from
  * the same place: level_send() (a level teleport) and its calls, 6; a
  * summon, gen_creature_random(), then effect_apply() again for the new
  * creature's innate effects, and their calls: 8, the most allowed. No hit

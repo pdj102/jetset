@@ -64,7 +64,12 @@ typedef struct gen_where {
     uint8_t rarity;
 } gen_where_t;
 
-/* A hook: the effect, and the power that multiplies the amounts in its definition (not 0 if ef is set) */
+/*
+ * A hook: the effect, and the power that multiplies the amounts in its
+ * definition (not 0 if ef is set). A creature's and a feature's sit beside
+ * the part they belong to, each named for it (docs/creature_extensions.md
+ * D3, R17); an item has one, tagged with when it fires (gen_item_hook_t)
+ */
 typedef struct gen_hook {
     uint8_t ef;      /* EF_*, EF_NONE for none */
     int8_t  power;
@@ -85,11 +90,12 @@ typedef struct gen_creature_kind {
     mana_kind_t  mana;        /* mp 0 for none */
     uint8_t      spells[GEN_SPELLS_MAX];   /* SP_*, the first SP_NONE for none: then no spells component */
     attack_kind_t melee;      /* its natural melee attack (fists, a bite); dice 0 for none */
+    gen_hook_t   melee_hit;   /* applied to what a hit by melee leaves alive (act_strike()); only with melee */
     gen_inventory_t inventory;
     uint16_t     xp;      /* XP the player gains for killing one (classic B/X, by hit dice); 0 for the player */
     uint8_t      flags;   /* CREATURE_* */
     ai_kind_t    ai;      /* its brain and start state; brain AI_BRAIN_NONE for none (the player) */
-    gen_hook_t   hooks[GEN_HOOK_COUNT];   /* by GEN_HOOK_*: hit, innate */
+    gen_hook_t   innate;      /* applied when generated, lasting for ever (the troll's regeneration) */
     gen_seq_t    seqs[GEN_SEQ_COUNT];     /* by GEN_SEQ_*: count 0 for none */
     gen_where_t  where;
 } gen_creature_kind_t;
@@ -146,8 +152,9 @@ typedef struct gen_feature_kind {
     uint8_t            dc;     /* to find it when hidden, and to disarm it */
     uint8_t            holds;  /* a container's most random items (FCAN_CONTAINER); 0 if not one */
     health_kind_t      health; /* hp_max 0 for none: else it can be broken (docs/features.md 4.10) */
+    gen_hook_t         use;    /* applied to the operator (act_operate()) */
     attack_kind_t      attack; /* a trap's (FCAN_TRAP); dice 0 for none: it always hits */
-    gen_hook_t         hooks[GEN_HOOK_COUNT];   /* by GEN_HOOK_*: use (operated), hit (a trap's) */
+    gen_hook_t         hit;    /* a trap's: applied to what its hit leaves alive (act_strike(), act_spring()) */
     gen_where_t        where;  /* band and rarity for gen_feature_random(); rarity 0: placed by the level generator */
 } gen_feature_kind_t;
 
@@ -170,11 +177,13 @@ void gen_creature_name(uint8_t kind, char *buf, uint8_t size) NGE_BANKED;
 void gen_item_name(uint8_t kind, char *buf, uint8_t size) NGE_BANKED;
 void gen_feature_name(uint8_t kind, char *buf, uint8_t size) NGE_BANKED;
 
-/* ---- Each class's hooks, packed (GEN_HOOK_PACK()), banked with its table (called by gen_hook_of()) ---- */
+/* ---- Each class's hit effect, packed (GEN_HOOK_PACK()), banked with its table (called by gen_hit_of()) ---- */
 
-uint16_t gen_creature_hook(uint8_t kind, uint8_t hook) NGE_BANKED;
-uint16_t gen_item_hook(uint8_t kind, uint8_t hook) NGE_BANKED;
-uint16_t gen_feature_hook(uint8_t kind, uint8_t hook) NGE_BANKED;
+/* A creature kind's hit effect for its attack of use (ATTACK_*): none for a use it has no hook for */
+uint16_t gen_creature_hit(uint8_t kind, uint8_t use) NGE_BANKED;
+
+/* A trap kind's hit effect */
+uint16_t gen_feature_hit(uint8_t kind) NGE_BANKED;
 
 /*
  * Set result to a random kind of table[count] whose band holds depth,

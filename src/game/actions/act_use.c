@@ -12,6 +12,7 @@
 #include "core/nge_util.h"
 #include "event/nge_event.h"
 #include "game/components/item.h"
+#include "game/components/kind.h"
 #include "game/effects/effects.h"
 #include "game/events.h"
 #include "game/gen/gen.h"
@@ -34,7 +35,7 @@ uint8_t act_use(act_t *a, uint8_t mode) NGE_BANKED
     if (item_slot[item] != SLOT_NONE) {
         return act_fail(a, ACT_R_EQUIPPED);
     }
-    hook = gen_hook_of(item, GEN_HOOK_USE);
+    hook = gen_item_hook(kind_index[item], GEN_HOOK_USE);
     ef = GEN_HOOK_EF(hook);
     if (ef == EF_NONE) {
         return act_fail(a, ACT_R_CANT_USE);
