@@ -115,6 +115,9 @@ New rows in `effects_pdata.c` using attributes and ops that already work.
   and `act_cast()` refuse with `ACT_R_BLIND`, as `act_look()` already does,
   so the cursor and ENTER follow (T2). Today only the AI is blinded
   (attributes.md section 6, effects_extensions.md D5, which this replaces)
+- E4.10 A helpless player's lost turn says so: "You are paralysed." (or
+  asleep) on each turn `player_on_turn()` skips. Today a lost turn shows
+  nothing, so paralysis seems to end at once (creature_extensions.md, step 6)
 
 ### E5 New ops and attributes [spec](effects_extensions.md), [plan](effects_extensions_plan.md) (E5.1 to E5.4 done)
 
