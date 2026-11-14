@@ -198,7 +198,8 @@ An op is a number, dispatched by a `switch` in `run_op()` (`effects_bank.c`):
 | `OP_MANA` | MP back, through `mana_restore()`, or drained to 0 if the amount is negative (`mana_spend()`); nothing without mana |
 | `OP_UNCURSE` | Lifts the curse of everything the target has equipped (`ITEM_UNCURSED`) |
 | `OP_TELEPORT` | To random free floor on the level (`level_free_floor()`), with `EV_MOVED` and no step ([effects_extensions.md](effects_extensions.md)) |
-| `OP_SUMMON` | 1 random creature for the depth per power, at most 3, on free tiles around the target |
+| `OP_SUMMON` | 1 random creature per power, at most 3, on free tiles around the target, awake (`ai_alert()`): `arg` 0 any kind for the depth (`EF_SUMMON`), else only kinds with every `CREATURE_*` flag in `arg`, first met at the depth or above and knowing no spell (`EF_SUMMON_UNDEAD`, `gen_creature_random_flags()`). It stops while fewer than 9 entities are free, so summons keep the level's reserve (creature_extensions.md R13). A creature with no room is destroyed with its kit |
+| `OP_WAKE` | Every AI entity on the level within the amount in tiles (`nge_map_within()`) is alerted (`ai_alert()`): a sleeper wakes, as when it hears the player (`EF_WAKE`, the shriek). Nothing woken is no fizzle |
 | `OP_LEVEL_TELEPORT` | Up, down or a random way (`LT_*` in `arg`) by the amount in levels: the player by a request, a monster by `level_send()` |
 | `OP_DETECT` | `DETECT_TRAPS`: the hidden features within the amount in tiles (Chebyshev) are found by the target |
 | `OP_BLINK` | To the tile given to `effect_apply_at()`, if the target can still enter it |
@@ -234,10 +235,24 @@ skip it with `effects_apply_no_save` (`effects_internal.h`).
   refused. Then `on_start` runs with the effect as its cause, the target is
   recomputed and the event is posted. Its first `on_tick` comes a period later.
 
+A **mindless** creature (its kind's `CREATURE_MINDLESS`, `gen_creature_flags()`) refuses
+`EF_SLEEP`, `EF_CONFUSE` and `EF_FEAR`, saved or not: `effect_apply()` returns 0 with no
+event. Hold and paralysis still take (creature_extensions.md M4.3, Q4). Only those three ask the
+creature table, so no innate effect does.
+
 The callers are `act_use()` (the use hook, before destroying the item),
 `act_strike()` (the hit effect of the attack used, from `gen_hit_of()`: an item's hit
-hook, a creature's `melee_hit`, a trap's `hit`; refused if the hit killed the target)
+hook, a creature's `melee_hit` or `ranged_hit`, a trap's `hit`; refused if the hit killed the target)
 and the creature generator (its record's `innate`, which names only innate effects).
+
+**Reactions** ([creature_extensions.md](creature_extensions.md) M4): a creature's record
+also names a `death` and a `struck` effect. On `EV_DIED`, `effects_on_event()` applies the
+dead creature's `death` effect, with its saving throw, to every creature on the level next to
+where it fell, monsters too (the gas spore's fire burst): the dying creature keeps its kind and
+location until the frame's clean-up. After a melee hit, `act_strike()` calls
+`effect_on_struck(target, attacker)`, which applies the target's `struck` effect to the
+attacker when both are creatures and the attacker lives (the floating eye's paralysing gaze),
+whether or not the hit killed the target.
 
 ### 4.4 Active effects
 
@@ -325,7 +340,27 @@ a row's statuses and modifiers.
 The deepest chain of banked calls is an AI's hit that starts a timed effect:
 `nge_timer_advance()`, `ai_on_turn()`, `act_melee()`, `effect_apply()`, then
 `nge_effect_create()` and its calls into nge, or `effects_recompute()` and
-`gen_item_hook()`. That is 6 of the 8 allowed (T-STACK-2).
+`gen_item_hook()`. That is 6 of the 8 allowed (T-STACK-2). A summon from such a hit
+goes deepest: `gen_creature_random()` (5), then `effect_apply()` again for the new
+creature's innate effects, and their calls: 8, the most allowed; so does a summoned
+creature's kit (`act_equip()`, `effects_recompute()`, `gen_item_hook()`). The summon's
+`nge_entity_free_count()` and `ai_alert()` are at depth 5, the mindless test
+(`gen_creature_flags()`) one below `effect_apply()`. The comment at the top of
+`effects_bank.c` keeps the count.
+
+### 4.11 Rows added for the creatures
+
+[creature_extensions.md](creature_extensions.md) (2026-11-14) added three rows, each named
+by constant in every table, so the numbers after them moved (nothing saves an `EF_*`):
+
+| Row | Kind | What it does |
+|---|---|---|
+| `EF_ERRATIC` | Timed, for ever, innate | `STATUS_CONFUSED`: the bat's erratic flight. Last of the timed rows, so `EF_TIMED_COUNT` moved |
+| `EF_WAKE` | Instant | `OP_WAKE` at power 8: the shriek (`SP_SHRIEK`) |
+| `EF_SUMMON_UNDEAD` | Instant | `OP_SUMMON` with `CREATURE_UNDEAD` as its `arg`, 1 undead per power: `SP_SUMMON_UNDEAD` |
+
+No item makes them: `test_gen`'s "every effect is made by some item" lists them with the
+other monsters' and innate rows.
 
 ## 5. Decisions
 

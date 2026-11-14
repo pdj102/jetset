@@ -1,16 +1,21 @@
 # Creature extensions: more classic monsters, and what makes them work
 
-Status: agreed (2026-11-13). D1 to D6 and D8 to D10 agreed as proposed. D7 was
+Status: **implemented (2026-11-14)**, phases 1 and 2: plan steps 1 to 12, each
+CSpect check passed; not yet tried on hardware. Phase 3 (M5) is left for specs
+of its own. Section 13 lists where the build differs from this design.
+
+Agreed (2026-11-13). D1 to D6 and D8 to D10 agreed as proposed. D7 was
 revised on review: `ai_can_t` widens to 16 bits. Q1 to Q7 were answered
 (section 12). D11 was added on 2026-11-14: kind 0 means none in every class.
 **D3 was revised on 2026-11-14 (agreed the same day):** each effect sits beside
 the part it belongs to, and the creature and feature records lose their array
 of hook slots (R17, plan step 1c).
 The plan is [creature_extensions_plan.md](creature_extensions_plan.md).
-Built: the `balance.py` fix from Q7 (section 10, plan step 1), D11 (plan step 1b), D3 (plan step 1c),
-M1.1 and M1.2 (plan step 2), M1.3 (plan step 3),
-M1.4 and M2.1's phase-1 spells (plan step 4), the six
-shapes (plan step 5), the kinds of 6.1 (plan step 6) and those of 6.2 (plan step 7).
+Built in order: the `balance.py` fix from Q7 (section 10, plan step 1), D11
+(step 1b), D3 (step 1c), M1.1 and M1.2 (step 2), M1.3 (step 3), M1.4 and
+M2.1's phase-1 spells (step 4), the six shapes (step 5), the kinds of 6.1
+(step 6) and 6.2 (step 7), M4.3 and summon undead (step 8), M4.1 and M4.2
+(step 9), M2.2 (step 10), M3 (step 11) and the closing docs (step 12).
 
 Builds on [creatures.md](creatures.md) (the roster of 21 random kinds and rooted
 creatures), [ai.md](ai.md) and [ai_default_brain.md](ai_default_brain.md),
@@ -1214,3 +1219,32 @@ CSpect checks (the user runs them):
   and 3 hold a war band is fixed too.
 - Pages: 106 +384 bytes (2,713), 107 +156 (4,592), 102 +138 (8,153, 39
   free), 103 +1. No new library routine in common memory.
+
+### Step 12: closing docs (2026-11-14)
+
+- **creatures.md:** section 1's roster is the 54 random kinds, made from
+  the table (depths, rarity, shape, bank, hit dice), with what each does
+  today and the "Later"s still open (all M5). The status says the roster
+  is kept current. It has no record section to take the hook fields (step
+  1c): `gen_internal.h` and effects.md 4.3 describe them.
+- **ai.md:** D3's capability table (with `AI_CAN_CAST`, which it lacked,
+  `AI_CAN_SKIRMISH` and `AI_CAN_SUPPORT`), R5c's 16-bit `ai_can_t`, R22's
+  traits and `ai_alert()`, and 6.1's listing. **ai_default_brain.md:** the
+  hunt state's options (R10), D3's example and 6.3's options table, with
+  `opt_stand_off()` and `opt_cast()`'s ally and seen passes.
+- **spells.md:** the definition's `shape`, `ai` and `flags`, the
+  `SPELL_ALLIES` shape (4.5), helping another creature, the AI's passes
+  (4.9), and a table of the monsters' abilities after 4.12.
+- **effects.md:** `OP_SUMMON`'s argument and reserve, `OP_WAKE`, the
+  mindless refusal, the creature's `ranged_hit`, death and struck effects
+  (4.3), the summon's depth of banked calls (4.10), and a new 4.11 for
+  `EF_ERRATIC`, `EF_WAKE` and `EF_SUMMON_UNDEAD`.
+- **difficulty.md:** 5.1's anchors, which were behind on more than the kinds
+  (rooms 7-11, monsters 6-10 and items 11-18, not 5-10, 2-5 and 9-15), the
+  bands, M1 and M2 with bands (5.2), and a new 7.1 with today's results.
+- **memory_map.md:** pages 102/103, 106/107, 120/121, 126/127, 130/131,
+  134/135 and `BANK_56` at today's sizes. **sprite_style.md** 6.8: 98 of
+  the 128 patterns in use.
+- **todo.md:** M1 to M4 and M6 `[done]` (2026-11-14), and M2.2 names the
+  `SPELL_ALLIES` shape. M5 stays open.
+

@@ -184,7 +184,7 @@ adds to it, with the reason.
   |---|---|---|
   | `AI_STATE_ASLEEP` | hears (R6) | none: it waits |
   | `AI_STATE_IDLE` | looks (R7) | pick up an item here; ready a weapon, launcher or ammo it carries; wander |
-  | `AI_STATE_HUNT` | looks (R7) | attack the target next to it; drink a healing potion if at half hit points or less; shoot the target; step towards the goal |
+  | `AI_STATE_HUNT` | looks (R7) | step back from a target next to it (a skirmisher); cast (on itself when hurt, on a hurt ally, at or near its target); attack the target next to it; drink a healing potion if at half hit points or less; shoot the target; step towards the goal. Frightened, it only flees |
 
   Reason (Changed): the request asked for basic actions. Flee and use of
   ranged attacks are left for later brains (section 7), so this step
@@ -310,9 +310,14 @@ adds to it, with the reason.
   ```c
   static uint8_t think_hunt(ai_ctx_t *c)
   {
-      return opt_cast(c) || opt_attack(c) || opt_drink(c) || opt_shoot(c) || opt_approach(c);
+      return opt_stand_off(c) || opt_cast(c) || opt_attack(c) || opt_drink(c) || opt_shoot(c) ||
+             opt_approach(c);
   }
   ```
+
+  `opt_stand_off()` and `opt_cast()`'s ally and seen passes came with
+  [creature_extensions.md](creature_extensions.md) (M1.3, M2.1, M2.2), as
+  options, with no change to the frame.
 
   An option has the same shape every time:
 
@@ -548,6 +553,8 @@ level, it sets the target and goal before the transition. On `SEEN`,
 
 | Option | Applies when | Action |
 |---|---|---|
+| `opt_stand_off` | `AI_CAN_SKIRMISH`, sees its target, the target next to it | `ACT_MOVE` to the free tile 2 or more from the target that `opt_flee()`'s scoring likes best and from which it still sees the target (creature_extensions.md M1.3, R16); none: the turn goes on |
+| `opt_cast` | `AI_CAN_CAST` | hurt: each `SPELL_AI_HURT` spell on itself; `AI_CAN_SUPPORT`: each `SPELL_AI_ALLY` spell at the monster in sight at half its HP or less that has lost the most; seeing its target: from a random spell, each target spell whose check reaches the target, and each seen spell (self, or a burst with the target in reach) (spells.md 4.9, creature_extensions.md M2) |
 | `opt_attack` | `AI_CAN_MELEE`, sees its target | `ACT_MELEE` on the target (the check refuses it out of reach) |
 | `opt_drink` | `AI_CAN_USE`, hp ≤ half, carries a healing item | `ACT_USE` |
 | `opt_shoot` | `AI_CAN_RANGED`, sees its target | `ACT_FIRE` at the goal, only if the check names the target as who a shot would hit |
@@ -558,7 +565,8 @@ level, it sets the target and goal before the transition. On `SEEN`,
 
 ```c
 static uint8_t think_idle(ai_ctx_t *c) { return opt_pickup(c) || opt_wield(c) || opt_wander(c); }
-static uint8_t think_hunt(ai_ctx_t *c) { return opt_attack(c) || opt_drink(c) || opt_shoot(c) || opt_approach(c); }
+static uint8_t think_hunt(ai_ctx_t *c) { return opt_stand_off(c) || opt_cast(c) || opt_attack(c) || opt_drink(c) ||
+                                                 opt_shoot(c) || opt_approach(c); }   /* frightened: opt_flee() only */
 ```
 
 `opt_pickup()` costs a goblin one `ACT_CHECK` banked call each idle turn;

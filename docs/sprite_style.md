@@ -260,6 +260,12 @@ The slot roles are sprite_import.md 5.2. In short:
 | Effects | 14: 12 used by the VFX (docs/vfx.md 5.4: `fx.arrow` 2, `fx.thrown` 1, `fx.orb` 1, `fx.glow` 3, `fx.splash` 3, `fx.puff` 2) |
 | UI | 6 (cursor, markers) |
 
+In use (2026-11-14): 98 of the 128, patterns 0 to 97. Monsters use 39 of their 50: 20
+shapes' rest art (`<shape>.idle`, 2 each, the last six from
+[creature_extensions.md](creature_extensions.md) 6.5, patterns 86 to 97) and the
+attack frames drawn so far. The 58 creature kinds share them by bank (the goblin's 7
+kinds, the ogre's 5), and the will-o'-wisp borrows `fx.orb`.
+
 ### 6.9 Masters
 
 None yet (D9). Once agreed, each is listed here by tag and frame, and new

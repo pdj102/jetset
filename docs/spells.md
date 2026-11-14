@@ -163,11 +163,12 @@ learned. Later ways of learning, such as a scroll or a shrine, call the same fun
 |---|---|
 | `name` | Shown in the list and in messages, 14 characters at most |
 | `level` | 0 to 5 |
-| `shape` | `SPELL_SELF`, `SPELL_BOLT`, `SPELL_DIRECT` or `SPELL_TILE` |
+| `shape` | `SPELL_SELF`, `SPELL_BOLT`, `SPELL_DIRECT`, `SPELL_TILE`, `SPELL_BALL`, `SPELL_BURST` or `SPELL_ALLIES` (section 4.5) |
 | `ef`, `power` | The effect and its power |
 | `range` | A bolt's or direct spell's reach, through `nge_map_within()`; 0 for `SPELL_SELF` |
 | ~~`learn`~~ | Goes (S1, D18): spells are learned from books |
-| `ai` | `SPELL_AI_NEVER`, `SPELL_AI_HURT` or `SPELL_AI_TARGET` |
+| `ai` | `SPELL_AI_NEVER`, `SPELL_AI_HURT`, `SPELL_AI_TARGET`, `SPELL_AI_SEEN` (on or around itself, seeing its target) or `SPELL_AI_ALLY` (at a hurt monster): section 4.9 |
+| `flags` | `SPELL_F_MONSTER`: a monster's ability, in no book, which the player can't learn (`spell_learn()` refuses it) ([creature_extensions.md](creature_extensions.md) M2.1, R10). Level 1 or more, so it costs MP: its cooldown |
 
 `SP_NONE` is 0, and its row is empty. `SPELL_COUNT` is at most 32 (section 4.3).
 
@@ -233,6 +234,7 @@ haven't the mana."
 | `SPELL_TILE` | The caster, sent to a free tile in range and line, never a creature's (`effect_apply_at()`, effects_extensions.md 3.6) | `act_line()`, then the effect |
 | `SPELL_BALL` (I3) | Every creature within 1 of the chosen tile, the caster too, from `act_line()` with `ACT_LINE_DIRECT` ([items_aimed.md](items_aimed.md)) | `act_line()`, then the area walk |
 | `SPELL_BURST` (I3) | Every creature within 2 of the caster, not the caster | Nobody |
+| `SPELL_ALLIES` | As a burst, applied only to creatures with AI, so never the player: a war cry ([creature_extensions.md](creature_extensions.md) M2.2, R9). Monsters only | Nobody |
 
 Items share these shapes (I3): an aimed item's shape is in its kind's flags (items.md 4.12).
 
@@ -242,8 +244,9 @@ Hold and Enfeeble are direct, as the wands of sleep and slowness are, and the da
 are bolts.
 
 A bolt or a direct spell can't target its caster. Aim allows that for a staff of healing, but a spell that
-helps the caster is `SPELL_SELF`, so the player gets no prompt. Helping another creature
-isn't possible yet, and no monster has an ally to help.
+helps the caster is `SPELL_SELF`, so the player gets no prompt. A monster helps another with a
+direct spell aimed at it (`SP_MEND`, `SPELL_AI_ALLY`), or a `SPELL_ALLIES` burst (`SP_WAR_CRY`);
+the player has no such spell.
 
 ### 4.6 Learning
 
@@ -301,10 +304,12 @@ on the status line. It lists spells, not entities, so `screen_inv_run()` can't s
 
 ### 4.9 The AI
 
-`ai_can()` sets `AI_CAN_CAST` for `SPELLS_IS(id)`. `opt_cast()` comes first in `think_hunt()`:
+`ai_can()` sets `AI_CAN_CAST` for `SPELLS_IS(id)`, and `AI_CAN_SUPPORT` too when it knows a
+`SPELL_AI_ALLY` spell. `opt_cast()` comes first in `think_hunt()`, after a skirmisher's step
+back ([ai_default_brain.md](ai_default_brain.md), 6.3):
 
 ```c
-return opt_cast(c) || opt_attack(c) || opt_drink(c) || opt_shoot(c) || opt_approach(c);
+return opt_stand_off(c) || opt_cast(c) || opt_attack(c) || opt_drink(c) || opt_shoot(c) || opt_approach(c);
 ```
 
 ```text
@@ -312,12 +317,20 @@ return opt_cast(c) || opt_attack(c) || opt_drink(c) || opt_shoot(c) || opt_appro
    not AI_CAN_CAST --> 0
    hurt (HP at half or less, as opt_drink()):
        each SPELL_AI_HURT spell known: ai_try(ACT_CAST) --> cast: 1
+   AI_CAN_SUPPORT, and a monster in sight at half its HP or less (the one that has lost most, not itself):
+       each SPELL_AI_ALLY spell known, at it:
+           check: passes, and a.target is that monster --> cast: 1
    sees its target:
-       start at a random spell (rand() & 31)
-       each SPELL_AI_TARGET spell known, from there:
-           check: passes, and a.target is the target --> cast: 1
+       start at a random spell (ai_spell_start(): rand() & 31, folded below SPELL_COUNT, R11 there)
+       each spell known, from there:
+           SPELL_AI_TARGET: check passes, and a.target is the target --> cast: 1
+           SPELL_AI_SEEN: self, or a burst (SPELL_ALLIES too) with the target within
+                          ACT_BURST_RADIUS: ai_try(ACT_CAST) --> cast: 1
    0
 ```
+
+Seen spells share the random start with target spells, so a necromancer summons as often as it
+bolts ([creature_extensions.md](creature_extensions.md), step 8 in "As built").
 
 The random start gives a shaman some variety for no extra rule, and draws outside the action,
 so R31 holds. It may refresh a timed effect already on the target, which wastes MP and
@@ -401,6 +414,23 @@ The powers follow the items: a wand of striking is 4, a wand of fire 6, a staff 
 
 **Creatures.** The goblin shaman knows Magic Bolt, Cure Wounds and Enfeeble, with its 6 MP.
 It is the only caster for now, and its "later: casts" comment goes.
+
+**Monsters' abilities (2026-11-14).** [creature_extensions.md](creature_extensions.md) M2
+added spells that no book lists (`SPELL_F_MONSTER`): the player can't learn them.
+
+| `SP_*` | Name | Level | MP | Shape | Range | Effect, power | AI | Kinds |
+|---|---|---|---|---|---|---|---|---|
+| `SP_FIRE_BREATH` | Fire Breath | 3 | 4 | Ball | 6 | `EF_BOLT_FIRE`, 6 | Target | dragon, hell hound |
+| `SP_FROST_BREATH` | Frost Breath | 4 | 6 | Ball | 6 | `EF_BOLT_COLD`, 8 | Target | frost drake |
+| `SP_CONFUSE` | Confuse | 2 | 2 | Direct | 6 | `EF_CONFUSE`, 1 | Target | harpy |
+| `SP_WAIL` | Wail | 3 | 4 | Burst | | `EF_FEAR`, 1 | Seen | banshee |
+| `SP_SHRIEK` | Shriek | 2 | 2 | Self | | `EF_WAKE`, 8 | Seen | shrieker |
+| `SP_SUMMON_UNDEAD` | Summon Undead | 5 | 9 | Self | | `EF_SUMMON_UNDEAD`, 2 | Seen | necromancer, lich |
+| `SP_WAR_CRY` | War Cry | 3 | 4 | Allies | | `EF_BLESS`, 1 | Seen | orc warlord |
+| `SP_MEND` | Mend | 1 | 1 | Direct | 6 | `EF_HEALING`, 4 | Ally | goblin shaman |
+
+A breath is a ball, so it catches the breather, which is immune to its element (R9 there).
+`SPELL_COUNT` is 20; `opt_cast()`'s start pick works up to 32.
 
 ### 4.13 Changes to other specs
 

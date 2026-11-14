@@ -2,43 +2,84 @@
 
 Status: implemented (2026-10-31): 21 kinds in
 [gen_creature_pdata.c](../src/game/gen/gen_creature_pdata.c), the new kinds
-drawn with their own rest sprites (section "Stand-ins"), and rooted creatures. D1 to D6 and Q1, Q2 agreed
-the same day. The CSpect checks in section 6 passed (2026-10-31), check 3
+drawn with their own rest sprites (section "Stand-ins"), and rooted creatures.
+D1 to D6 and Q1, Q2 agreed the same day. The roster in section 1 is kept
+current: 54 random kinds since [creature_extensions.md](creature_extensions.md)
+(2026-11-14). The CSpect checks in section 6 passed (2026-10-31), check 3
 after a fix (section 8), and the PC screen shows "Rooted" in red. Not yet tried
 on hardware. Section 8 lists where the build differs from the design.
 
 ## 1. The roster
 
-18 kinds join the player, the rat and the goblin. Depths run from 1 to 10
-(`LEVEL_DEPTH_BOTTOM`). The rat and the goblin were on every depth; they are
-now on 1-4 and 1-6, so the deep levels hold only deep creatures.
+54 kinds appear at random, with the player's three classes besides. Depths
+run from 1 to 10 (`LEVEL_DEPTH_BOTTOM`), and no depth holds fewer than 10 or
+more than 22 kinds. The first 18 joined the rat and the goblin in this
+design (2026-10-31); the other 34, and what makes many of them work, came
+with [creature_extensions.md](creature_extensions.md) (2026-11-14), which
+also narrowed the older kinds' depths so each depth keeps its character.
 
-A shape is one drawing, 2 rest patterns. New kinds have no attack or dead
-frames. The limit is 20 new shapes; the roster uses 10 (20 patterns). The
-goblin's, the player's and the coins' patterns are reused, in other banks.
+A shape is one drawing, 2 rest patterns. No shape has attack or dead frames
+yet. 20 drawn monster shapes carry the 54 kinds (the goblin's 7, the
+ogre's 5), with the player's for the bandit, the coins for the mimic and
+the VFX's orb for the will-o'-wisp. Kinds also come in bands: a leader and
+its members in one room (creature_extensions.md M3, `gen_bands[]`).
 
 | Depth | Rarity | Kind | Shape | Bank | Hit dice | Works today | Later |
 |---|---|---|---|---|---|---|---|
-| 1-4 | 10 | rat | rat | earth | <1 | Poison bite | |
-| 1-6 | 6 | goblin | goblin | green | 1-1 | Weak to fire, wields, opens doors | |
-| 1-4 | 8 | bat | bat (new) | purple | <1 | Fast; flies over holes and traps (features.md R15) | Erratic flight |
-| 1-5 | 7 | green snake | snake (new) | green | 1 | Poison bite | |
-| 1-5 | 5 | lichen | lichen (new) | bone | 1 | Rooted, a touch that holds, slow | |
-| 2-6 | 6 | green slime | slime (new) | lime | 2 | Acid touch, resists blunt and pierce, slow | Splits, corrodes gear |
-| 2-6 | 4 | shrieker | shrieker (new) | purple | 1 | Rooted, no attack, slow | A shriek that wakes the level |
-| 2-6 | 5 | bandit | player | earth | 2 | Wears all it finds | Steals and runs |
-| 3-7 | 8 | orc | goblin | iron | 2 | Wields and wears, opens doors | |
-| 3-7 | 6 | giant spider | spider (new) | dark | 3 | Strong poison | Webs |
-| 3-7 | 7 | skeleton | skeleton (new) | bone | 2 | Weak to blunt, resists pierce; no doors | Never flees |
-| 3-7 | 4 | goblin shaman | goblin | purple | 2 | Has mana (6 MP); knows Magic Bolt, Cure Wounds and Enfeeble (spells.md) | Casts them when hunting: bolts and Enfeeble, Cure Wounds when hurt |
-| 4-8 | 5 | gold snake | snake | gold | 3 | Bite blinds (no rule reads it yet) | Spits at range |
-| 4-8 | 3 | floating eye | eye (new) | blue | 3+ | Rooted, no attack, slow | A paralysing gaze |
-| 4-9 | 3 | mimic | coins | gold | 4 | Rooted, looks like treasure | Hidden until touched |
-| 5-8 | 8 | ogre | ogre (new) | earth | 5 | Hits hard, wields | |
-| 5-9 | 5 | ghost | ghost (new) | bone | 5 | Resists weapons, immune to cold; floats over holes and traps | Passes through walls |
-| 6-10 | 5 | wraith | ghost | dark | 6 | Touch weakens, resists weapons | |
-| 7-10 | 6 | troll | ogre | green | 7 | Regenerates; weak to fire and acid | |
-| 9-10 | 2 | dragon | dragon (new) | red | 10 | Immune to fire, weak to cold | Fire breath |
+| 1-2 | 10 | rat | rat | earth | <1 | Poison bite. Beast |  |
+| 1-3 | 8 | bat | bat | purple | <1 | Fast, flies, erratic flight (`EF_ERRATIC`) |  |
+| 1-3 | 5 | fire beetle | bug | orange | 1 | Hard shell, immune to fire. Beast |  |
+| 1-3 | 6 | goblin | goblin | green | 1-1 | Weak to fire, wields, opens doors. Leads a war band (2-3) |  |
+| 1-3 | 7 | green snake | snake | green | 1 | Poison bite |  |
+| 1-3 | 6 | jackal | dog | gold | <1 | Fast. Beast. Packs (band) |  |
+| 1-3 | 8 | kobold | kobold | red | <1 | Packs (band) |  |
+| 1-3 | 5 | kobold slinger | kobold | earth | <1 | Kit: sling, stones. Skirmisher |  |
+| 1-3 | 5 | lichen | lichen | bone | 1 | Rooted, a touch that holds, slow |  |
+| 1-3 | 5 | stirge | bat | red | 1 | Flies. Bite bleeds |  |
+| 2-4 | 5 | bandit | player | earth | 2 | Wears all it finds | Steals and runs (M5.4) |
+| 2-4 | 5 | goblin archer | goblin | orange | 1-1 | Kit: short bow, arrows. Skirmisher. War band |  |
+| 2-4 | 6 | green slime | slime | lime | 2 | Acid touch, resists blunt and pierce, slow | Splits (M5.3) |
+| 2-4 | 6 | zombie | zombie | green | 2 | Slow. Undead, mindless |  |
+| 2-5 | 3 | gas spore | eye | iron | 1 | Floats, slow, no attack. Death: a fire burst (power 8) |  |
+| 2-5 | 4 | shrieker | shrieker | purple | 1 | Rooted, no attack. `SP_SHRIEK` wakes the monsters around |  |
+| 3-5 | 4 | bombardier beetle | bug | gold | 2 | Spray: range 3, acid and corrosion. Immune to acid. Beast |  |
+| 3-5 | 5 | ghoul | zombie | iron | 2 | Claws paralyse. Undead. Leads a ghoul pack |  |
+| 3-5 | 6 | giant spider | spider | dark | 3 | Strong poison | Webs (M5.6) |
+| 3-5 | 4 | goblin shaman | goblin | purple | 2 | Magic Bolt, Cure Wounds, Enfeeble, Mend (hurt allies). Skirmisher |  |
+| 3-5 | 8 | orc | goblin | iron | 2 | Wields and wears, opens doors |  |
+| 3-5 | 7 | skeleton | skeleton | bone | 2 | Weak to blunt, resists pierce. Undead, mindless (never flees). Leads a bone patrol |  |
+| 3-5 | 6 | wolf | dog | iron | 2 | Beast. Packs (band) |  |
+| 4-6 | 3 | floating eye | eye | blue | 3+ | Rooted, no attack. Struck: paralyses who hits it |  |
+| 4-6 | 5 | gold snake | snake | gold | 3 | Spit: range 3, poison, blinds |  |
+| 4-6 | 4 | harpy | bat | flesh | 3 | Flies. Song: `SP_CONFUSE` |  |
+| 4-6 | 3 | hobgoblin | goblin | red | 2 | Kit: short sword, shield. Drinks potions. Leads a troop |  |
+| 4-6 | 5 | orc archer | goblin | earth | 2 | Kit: crossbow, bolts. Skirmisher. War party |  |
+| 4-6 | 4 | shadow | ghost | shadow | 3 | Touch drains Str, resists weapons. Undead, mindless |  |
+| 4-6 | 4 | skeleton archer | skeleton | iron | 2 | Kit: short bow, arrows. Skirmisher. Undead, mindless |  |
+| 4-7 | 3 | mimic | coins | gold | 4 | Rooted, looks like treasure | Hidden until touched (M5.5) |
+| 5-7 | 5 | ghost | ghost | bone | 5 | Resists weapons, floats. Undead | Passes through walls (M5.2) |
+| 5-7 | 8 | ogre | ogre | earth | 5 | Hits hard, wields. Giant |  |
+| 5-7 | 5 | owlbear | ogre | flesh | 5 | Hug holds. Beast |  |
+| 5-8 | 3 | will-o'-wisp | orb | blue | 5 | Fast, flies, erratic, hard to hit. Magic Bolt, Blink |  |
+| 6-8 | 3 | basilisk | lizard | green | 6 | Slow. Gaze: range 4, paralyses. Beast |  |
+| 6-8 | 2 | orc warlord | goblin | dark | 5 | Kit: battle axe, chain mail. War cry (`SP_WAR_CRY`). Leads a war party |  |
+| 6-8 | 5 | warg | dog | dark | 4 | Quick. Beast. Packs (band) |  |
+| 6-8 | 4 | wight | zombie | dark | 4 | Touch drains Con, resists weapons. Undead |  |
+| 6-8 | 5 | wraith | ghost | dark | 6 | Touch weakens, resists weapons. Undead | Passes through walls (M5.2) |
+| 6-9 | 4 | wyvern | dragon | green | 6 | Flies, sting poisons. Dragon |  |
+| 7-10 | 4 | hell hound | dog | orange | 6 | Fire breath, immune to fire, weak to cold. Beast. Packs |  |
+| 7-10 | 5 | hill giant | ogre | iron | 8 | Boulder: range 5. Wields. Giant |  |
+| 7-10 | 4 | mummy | zombie | bone | 7 | Slow, touch drains Con, resists blunt and pierce, weak to fire. Undead, mindless |  |
+| 7-10 | 3 | necromancer | robe | dark | 6 | Kit: quarterstaff, robe. Frost Bolt, Hold, Summon Undead, Blink. Skirmisher, drinks potions. Holds court |  |
+| 7-10 | 6 | troll | ogre | green | 7 | Regenerates; weak to fire and acid. Giant |  |
+| 8-10 | 3 | banshee | ghost | ice | 7 | Floats, resists weapons. Wail (`SP_WAIL`): a fear burst. Undead | Passes through walls (M5.2) |
+| 8-10 | 3 | black pudding | slime | dark | 10 | Slow, mindless. Immune to acid, cold and poison. Bite and struck corrode | Splits (M5.3) |
+| 8-10 | 4 | minotaur | ogre | red | 9 | Quick, hits hard. Giant |  |
+| 8-10 | 4 | salamander | lizard | orange | 7 | Bite and struck burn. Immune to fire, weak to cold |  |
+| 9-10 | 2 | dragon | dragon | red | 10 | Fire breath, immune to fire, weak to cold, flies. Dragon |  |
+| 9-10 | 3 | frost drake | dragon | ice | 9 | Frost breath, immune to cold, weak to fire, flies. Dragon |  |
+| 9-10 | 2 | vampire | robe | red | 9 | Regenerates, resists weapons, weak to fire. Hold, Blink. Undead | Life drain (M5.1) |
+| 10 | 1 | lich | robe | bone | 11 | Touch paralyses. Power Bolt, Frost Bolt, Hold, Summon Undead. Skirmisher. Undead. Its crypt |  |
 
 Numbers follow the rat and goblin: hit points about 4.5 a hit die, to-hit
 about the hit dice, XP from the classic B/X table with its bonus for a

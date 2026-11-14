@@ -357,30 +357,30 @@ Identified by use and by magic; appearances shuffled each game (answered
 
 New kinds and the mechanics that make them work: [spec](creature_extensions.md), [plan](creature_extensions_plan.md).
 
-### M1 Ranged and armed monsters `[plan]` [spec](creature_extensions.md), [plan](creature_extensions_plan.md)
+### M1 Ranged and armed monsters `[done]` (2026-11-14) [spec](creature_extensions.md), [plan](creature_extensions_plan.md)
 
-- M1.0 Hooks beside their parts: creature and feature records lose `hooks[]` (spec D3, plan step 1c)
-- M1.1 Kit: two item kinds a creature is generated with, and equips
-- M1.2 Natural ranged attack (spit, gaze, boulder), with its own `ranged_hit`
-- M1.3 Skirmishers: `ai_can_t` to 16 bits, `AI_CAN_SKIRMISH` from a kind's trait; archers and casters step back, then shoot
-- M1.4 Erratic movers: innate `EF_ERRATIC` (bat, will-o'-wisp)
+- M1.0 Hooks beside their parts: creature and feature records lose `hooks[]` (spec D3, plan step 1c) `[done]`
+- M1.1 Kit: two item kinds a creature is generated with, and equips `[done]`
+- M1.2 Natural ranged attack (spit, gaze, boulder), with its own `ranged_hit` `[done]`
+- M1.3 Skirmishers: `ai_can_t` to 16 bits, `AI_CAN_SKIRMISH` from a kind's trait; archers and casters step back, then shoot `[done]`
+- M1.4 Erratic movers: innate `EF_ERRATIC` (bat, will-o'-wisp) `[done]`
 
-### M2 Monster abilities as spells `[plan]` [spec](creature_extensions.md), [plan](creature_extensions_plan.md)
+### M2 Monster abilities as spells `[done]` (2026-11-14) [spec](creature_extensions.md), [plan](creature_extensions_plan.md)
 
-- M2.1 Monster-only spells: breaths, wail, song, summon undead, shriek, war cry; `SPELL_AI_SEEN`; `opt_cast()` past 16 spells
-- M2.2 Spells on allies: `SPELL_AI_ALLY`, `AI_CAN_SUPPORT`, `SPELL_F_ALLIES`
+- M2.1 Monster-only spells: breaths, wail, song, summon undead, shriek, war cry; `SPELL_AI_SEEN`; `opt_cast()` past 16 spells `[done]`
+- M2.2 Spells on allies: `SPELL_AI_ALLY`, `AI_CAN_SUPPORT`, the `SPELL_ALLIES` shape `[done]`
 
-### M3 Bands `[plan]` [spec](creature_extensions.md), [plan](creature_extensions_plan.md)
+### M3 Bands `[done]` (2026-11-14) [spec](creature_extensions.md), [plan](creature_extensions_plan.md)
 
-- M3.1 The band table: leader and members
-- M3.2 The level generator places a band in one room
-- M3.3 `balance.py` counts bands
+- M3.1 The band table: leader and members `[done]`
+- M3.2 The level generator places a band in one room `[done]`
+- M3.3 `balance.py` counts bands `[done]`
 
-### M4 Reactive monsters `[plan]` [spec](creature_extensions.md), [plan](creature_extensions_plan.md)
+### M4 Reactive monsters `[done]` (2026-11-14) [spec](creature_extensions.md), [plan](creature_extensions_plan.md)
 
-- M4.1 Death hook (`death`): the gas spore's burst
-- M4.2 Struck hook (`struck`): the floating eye's gaze, burning, corrosion
-- M4.3 Families (undead, beast, giant, dragon) and mindless
+- M4.1 Death hook (`death`): the gas spore's burst `[done]`
+- M4.2 Struck hook (`struck`): the floating eye's gaze, burning, corrosion `[done]`
+- M4.3 Families (undead, beast, giant, dragon) and mindless `[done]`
 
 ### M5 Later monster mechanics (low) [spec](creature_extensions.md)
 
@@ -391,11 +391,11 @@ New kinds and the mechanics that make them work: [spec](creature_extensions.md),
 - M5.5 Disguise (= K4.2): the mimic
 - M5.6 Webs: the giant spider
 
-### M6 The roster `[plan]` [spec](creature_extensions.md), [plan](creature_extensions_plan.md)
+### M6 The roster `[done]` (2026-11-14) [spec](creature_extensions.md), [plan](creature_extensions_plan.md)
 
-- M6.1 Phase 1 kinds (28), the older kinds' narrower depths, and other changes to existing kinds
-- M6.2 Phase 2 kinds: gas spore, orc warlord, necromancer, salamander, black pudding, lich
-- M6.3 Six new shapes: kobold, dog, bug, zombie, robe, lizard
+- M6.1 Phase 1 kinds (28), the older kinds' narrower depths, and other changes to existing kinds `[done]`
+- M6.2 Phase 2 kinds: gas spore, orc warlord, necromancer, salamander, black pudding, lich `[done]`
+- M6.3 Six new shapes: kobold, dog, bug, zombie, robe, lizard `[done]`
 
 ## N
 ## O

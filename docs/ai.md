@@ -144,7 +144,9 @@ adds to it, with the reason.
   actions' checks, which `ai_can()` mirrors without replacing.
 - **R5c (New)** The AI's numbers have types of their own: `ai_state_t`,
   `ai_stim_t`, `ai_brain_t`, `ai_can_t`, each a `uint8_t`. Reason: a
-  field or argument says what it holds.
+  field or argument says what it holds. `ai_can_t` became a `uint16_t` when
+  its eight bits ran out ([creature_extensions.md](creature_extensions.md)
+  D7, 2026-11-14).
 
 ### Events
 
@@ -218,7 +220,12 @@ adds to it, with the reason.
   brain.
 - **R22** `AI_CAN_RANGED` is built ([action_fire.md](action_fire.md)).
   `AI_CAN_CAST` is built: a creature that knows spells, `opt_cast()` first
-  in the hunt ([spells.md](spells.md), 4.9).
+  in the hunt ([spells.md](spells.md), 4.9). `AI_CAN_SKIRMISH` and
+  `AI_CAN_SUPPORT` are built ([creature_extensions.md](creature_extensions.md)
+  M1.3, M2.2): a kind's traits (`ai_kind_t traits`, copied to
+  `ai_traits[]` in page 131) say how it fights, and `ai_can()` combines
+  them with what it can do this turn. `ai_alert(id)` wakes a sleeper as a
+  noise does (the shriek, `EF_WAKE`, and summoned creatures).
 
 ## 5. Decisions
 
@@ -260,7 +267,13 @@ adds to it, with the reason.
   | `AI_CAN_USE` | it has an inventory and Int `AI_INT_USE` (5) or more | `act_use()`, plus the AI's rule |
   | `AI_CAN_OPEN` | it has stats and Int `AI_INT_OPEN` (6) or more | `act_open()`, plus the AI's rule |
   | `AI_CAN_RANGED` | it has a ranged attack, or something in its ammo slot, a slot only some kinds have | `act_fire()`, which decides (arrows with no bow) |
+  | `AI_CAN_CAST` | it knows spells ([spells.md](spells.md)) | `act_cast()`, which decides what it can afford |
   | `AI_CAN_MOVE` | it isn't rooted ([creatures.md](creatures.md), D1) | `act_move()` |
+  | `AI_CAN_SKIRMISH` (`0x0100`) | its kind has `AI_TRAIT_SKIRMISH`, and it can move and shoot or cast ([creature_extensions.md](creature_extensions.md) M1.3) | `opt_stand_off()` |
+  | `AI_CAN_SUPPORT` (`0x0200`) | it can cast and knows a `SPELL_AI_ALLY` spell (M2.2) | `opt_cast()`'s ally pass |
+
+  The mask is 16 bits since creature_extensions.md D7; `AI_CAN_STEAL`
+  (`0x0400`) and `AI_CAN_PHASE` (`0x0800`) are kept for its M5.
 
   The scores come from the current ability values (`stats_ability[]`,
   slot 0), so effects count. The rat (Int 2, no inventory) can melee; the
@@ -386,7 +399,7 @@ adds to it, with the reason.
 typedef uint8_t ai_state_t;   /**< AI_STATE_*. */
 typedef uint8_t ai_stim_t;    /**< AI_STIM_*. */
 typedef uint8_t ai_brain_t;   /**< AI_BRAIN_*. */
-typedef uint8_t ai_can_t;     /**< A mask of AI_CAN_*. */
+typedef uint16_t ai_can_t;    /**< A mask of AI_CAN_*: 16 bits since creature_extensions.md D7. */
 
 /* States */
 #define AI_STATE_ASLEEP  0   /**< Does nothing; wakes when hurt. */
@@ -412,6 +425,12 @@ typedef uint8_t ai_can_t;     /**< A mask of AI_CAN_*. */
 #define AI_CAN_OPEN    0x10   /**< Opens and closes doors: Int AI_INT_OPEN. */
 #define AI_CAN_RANGED  0x20   /**< Shoots: its own ranged attack, or something in its ammo slot. */
 #define AI_CAN_CAST    0x40   /**< Casts spells: knows some (game/spells/spells.h); ACT_CAST says which it can afford. */
+#define AI_CAN_MOVE    0x80   /**< Leaves its tile: not rooted. */
+#define AI_CAN_SKIRMISH  0x0100   /**< Steps back to shoot or cast: AI_TRAIT_SKIRMISH, AI_CAN_MOVE, and AI_CAN_RANGED or AI_CAN_CAST. */
+#define AI_CAN_SUPPORT   0x0200   /**< Casts on its allies: AI_CAN_CAST, and knows a SPELL_AI_ALLY spell. */
+
+/* Traits: bits of a kind's ai_kind_t traits (creature_extensions.md D7) */
+#define AI_TRAIT_SKIRMISH  0x01   /**< Keeps its distance from its target. */
 
 /* The least Intelligence for the AI's own rules */
 #define AI_INT_USE   5
@@ -426,6 +445,7 @@ void       ai_on_turn(nge_entity_id_t id) NGE_BANKED;
 void       ai_on_event(const nge_event_t *e);                           /* common */
 ai_state_t ai_get_state(nge_entity_id_t id) NGE_BANKED;
 ai_can_t   ai_can(nge_entity_id_t id) NGE_BANKED;
+void       ai_alert(nge_entity_id_t id) NGE_BANKED;                     /* wakes a sleeper, as a noise (AI_STIM_NOISE) */
 ```
 
 `ai_add()` asserts the entity is in use, the brain is in range and not

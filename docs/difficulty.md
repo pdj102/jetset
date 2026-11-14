@@ -150,10 +150,11 @@ table: D6 there) and the generator tables in `game/gen`. The check is
 | Highest level | 10 | `PC_LEVEL_MAX` (game/components/pc.h) |
 | XP for each level | 0, 20, 40, 80, 160, 320, 640, 1200, 2000, 3000 | `level_xp[]` (game/components/pc.c) |
 | HP die per level | d8 | `PC_HIT_DIE` |
-| Rooms per level | 5-10 | `LEVEL_ROOMS_MIN/MAX` (game/level/level_internal.h) |
-| Monsters per level | 2-5 | `LEVEL_MONSTERS_MIN/MAX` |
-| Items per level | 9-15 (4-10 until 2026-11-10, raised so spell books are found: [spells.md](spells.md) D28), plus locked rooms and containers | `LEVEL_ITEMS_*`, `LEVEL_LOCKS_MAX`, `LEVEL_FEATURES_MAX`, `LEVEL_CONTENTS_MAX` |
-| Kinds, bands, rarity, XP, HP | 20 random creature kinds, 159 item kinds | `gen_creature_pdata.c`, `gen_item_pdata.c`, `gen_feature_pdata.c` |
+| Rooms per level | 7-11 | `LEVEL_ROOMS_MIN/MAX` (game/level/level_internal.h) |
+| Monsters per level | 6-10 | `LEVEL_MONSTERS_MIN/MAX` |
+| Items per level | 11-18 (4-10 until 2026-11-10, raised so spell books are found: [spells.md](spells.md) D28), plus locked rooms and containers | `LEVEL_ITEMS_*`, `LEVEL_LOCKS_MAX`, `LEVEL_FEATURES_MAX`, `LEVEL_CONTENTS_MAX` |
+| Kinds, bands of depths, rarity, XP, HP | 54 random creature kinds (since [creature_extensions.md](creature_extensions.md), 2026-11-14), 212 item kinds | `gen_creature_pdata.c`, `gen_item_pdata.c`, `gen_feature_pdata.c` |
+| Monster bands | 12, a draw a band 1 time in 4 where one is in the pool | `gen_bands[]` (`gen_creature_pdata.c`), `gen_band_pick()`'s test (`gen_creature_bank.c`) |
 | Pace | level *d* at depth *d* | `TARGETS` (D2) |
 
 The rooms per level don't change the results today, because monsters and
@@ -165,9 +166,18 @@ plan is to scale counts with them (D10).
 What an average level at depth *d* holds:
 
 - **M1 Monsters:** the mean of `roll_between(LEVEL_MONSTERS_MIN,
-  LEVEL_MONSTERS_MAX)`, i.e. (min + max) / 2.
-- **M2 A monster's XP:** the rarity-weighted mean XP of the creature
-  pool at *d*.
+  LEVEL_MONSTERS_MAX)`, i.e. (min + max) / 2. A band uses as many of these
+  draws as it has creatures, so bands don't change the count; a band cut
+  short by the last draws is left out of the model.
+- **M2 A monster's XP (Changed, 2026-11-14):** per creature, not per draw.
+  A draw is a band with chance *p* (1/4) where the band pool at *d* (bands
+  whose depths hold *d*, by rarity) isn't empty, else one kind of the
+  creature pool by rarity. A band holds its leader and each member's mean
+  count, (min + max) / 2, whatever the members' own depths. The mean XP a
+  creature is (*p* × a band's XP + (1 − *p*) × a kind's XP) / (*p* × a
+  band's size + (1 − *p*)). C5's HP, damage and AC are means the same way.
+  Bands bring weaker members below their own depths, so they lower the
+  mean ([creature_extensions.md](creature_extensions.md), step 11 in "As built").
 - **M3 Item draws:** (items min + max) / 2, plus `LEVEL_LOCKS_MAX` / 2
   in locked rooms, plus container contents. Contents are the features per
   level (0 to `LEVEL_FEATURES_MAX`), times the share of containers in the
@@ -244,6 +254,26 @@ each slot: the spell books are found from those depths (D28).
   90th percentile from depth 4 down.
 
 These are findings, not changes. Tuning is for later to-do items.
+
+### 7.1 After the creature extensions (2026-11-14)
+
+`make balance` with the 54 kinds and the bands of
+[creature_extensions.md](creature_extensions.md): 7 failed, 2 warnings. The counts per
+level rose since section 7 (monsters 6-10, items 11-18), which is what put C1 ahead before
+that spec started (its section 10).
+
+| Depth | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Level on arrival | 1.00 | 3.26 | 4.50 | 5.46 | 6.35 | 7.27 | 8.56 | 10.00 | 10.00 | 10.00 |
+| Monster kinds | 10 | 16 | 22 | 21 | 21 | 18 | 16 | 16 | 13 | 13 |
+| Mean XP a monster | 6 | 9 | 14 | 25 | 44 | 107 | 276 | 385 | 623 | 716 |
+| Hits to kill the player | 4.0 | 6.0 | 6.8 | 7.3 | 8.0 | 7.6 | 6.7 | 7.5 | 7.8 | 8.2 |
+
+- **C1:** fails at depths 2 to 8, the player 1 to 2 levels ahead; depth 9 warns. Retuning
+  the pace (the monster count, the level table or XP) is a task of its own.
+- **C2:** level 10 is reached while clearing depth 7; 83% of the XP comes after it.
+- **C3:** 10 kinds at depth 1, the fewest.
+- **C5:** within 5 to 9 everywhere but depth 1 (4.0, WARN).
 
 ## 8. Questions
 

@@ -4,11 +4,11 @@ The steps that build topic M ([todo.md](todo.md)) as
 [creature_extensions.md](creature_extensions.md) specifies it. The spec says what and why;
 this file says in what order, what changes, and how each step is checked.
 
-Status: planned (2026-11-13). Step 1 done the same day. Step 1b added and done 2026-11-14
-(spec D11). Step 1c added 2026-11-14 (spec D3 revised, R17), agreed and done the same day;
-steps 2, 8, 9 and 12 changed to match. Steps 2 to 7 done 2026-11-14. Step 8 done
-2026-11-14. Step 9 done 2026-11-14. Step 10 done
-2026-11-14. Step 11 done 2026-11-14.
+Status: **done (2026-11-14)**: every step built, and each CSpect check passed. Planned
+2026-11-13, with step 1 done the same day. Steps 1b (spec D11) and 1c (spec D3 revised,
+R17) were added and done 2026-11-14, and steps 2, 8, 9 and 12 changed to match; steps 2
+to 12 were done the same day. Where the build differs from a step, the spec's "As built"
+says so.
 
 ## 1. How the steps work
 
@@ -477,7 +477,7 @@ Spec M3, R8, D5.
   Depth 10 with the dev seed: about 13 kinds over several levels, and the frame time
   with a full band holds.
 
-### Step 12: closing docs
+### Step 12: closing docs `[done]` (2026-11-14)
 
 - **creature_extensions.md:** status, and "As built" with every step's differences and
   balance numbers.
