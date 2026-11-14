@@ -978,6 +978,32 @@ int main(void)
         CHECK(STATUS_HAS(g, STATUS_UNCONSCIOUS));
     }
 
+    /*
+     * ---- mindless (docs/creature_extensions.md M4.3, Q4): no sleep,
+     * confusion or fear, refused with nothing said; held and paralysed as
+     * any other. Undead with a mind (the ghoul) take all three ----
+     */
+    reset();
+    {
+        nge_entity_id_t zombie = gen_creature(CR_ZOMBIE, AREA);
+        nge_entity_id_t ghoul = gen_creature(CR_GHOUL, AREA);
+
+        events();
+        CHECK(effect_apply(EF_SLEEP, 1, zombie, NGE_ENTITY_INVALID) == 0 &&
+              effect_apply(EF_CONFUSE, 1, zombie, NGE_ENTITY_INVALID) == 0 &&
+              effect_apply(EF_FEAR, 1, zombie, NGE_ENTITY_INVALID) == 0 &&
+              effect_apply_unsaved(EF_FEAR, 1, zombie, NGE_ENTITY_INVALID) == 0);
+        CHECK(!STATUS_HAS(zombie, STATUS_UNCONSCIOUS | STATUS_CONFUSED | STATUS_FRIGHTENED) && events() == 0);
+        CHECK(effect_apply(EF_HOLD, 1, zombie, NGE_ENTITY_INVALID) == 1 &&
+              effect_apply(EF_PARALYSE, 1, zombie, NGE_ENTITY_INVALID) == 1 &&
+              STATUS_HAS(zombie, STATUS_ROOTED) && STATUS_HAS(zombie, STATUS_PARALYSED));
+        CHECK(effect_apply(EF_SLEEP, 1, ghoul, NGE_ENTITY_INVALID) == 1 &&
+              effect_apply(EF_CONFUSE, 1, ghoul, NGE_ENTITY_INVALID) == 1 &&
+              effect_apply(EF_FEAR, 1, ghoul, NGE_ENTITY_INVALID) == 1);
+        CHECK(STATUS_HAS(ghoul, STATUS_UNCONSCIOUS) && STATUS_HAS(ghoul, STATUS_CONFUSED) &&
+              STATUS_HAS(ghoul, STATUS_FRIGHTENED));
+    }
+
     /* ---- the table's new rows (3.8): a few through their attributes and ops ---- */
     reset();
     g = goblin();

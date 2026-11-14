@@ -199,7 +199,7 @@ int main(void)
         spell_learn(b, sp);
     }
     CHECK(known(b) == (BIT(SPELL_COUNT) - 2) && events() == SPELL_COUNT - 2);
-    CHECK(spell_known[b][0] == 0xFE && spell_known[b][1] == 0xFF && spell_known[b][2] == 0x01 && spell_known[b][3] == 0);
+    CHECK(spell_known[b][0] == 0xFE && spell_known[b][1] == 0xFF && spell_known[b][2] == 0x03 && spell_known[b][3] == 0);
     CHECK(known(a) == (BIT(SP_HASTE) | BIT(SP_HOLD)));               /* another caster's set untouched */
 
     /* ---- next: wrapping round to itself, filtered by when the AI casts it; none known ---- */
@@ -335,7 +335,8 @@ int main(void)
             monster |= BIT(sp);
         }
     }
-    CHECK(monster == (BIT(SP_FIRE_BREATH) | BIT(SP_FROST_BREATH) | BIT(SP_CONFUSE) | BIT(SP_WAIL) | BIT(SP_SHRIEK)));
+    CHECK(monster == (BIT(SP_FIRE_BREATH) | BIT(SP_FROST_BREATH) | BIT(SP_CONFUSE) | BIT(SP_WAIL) | BIT(SP_SHRIEK) |
+                     BIT(SP_SUMMON_UNDEAD)));
     CHECK(all == ((BIT(SPELL_COUNT) - 2) & ~monster) && (all & monster) == 0);
     CHECK(levels_of(book_mask(SPELL_BOOK_BASIC)) == ((1u << 1) | (1u << 2)));
     CHECK(levels_of(book_mask(SPELL_BOOK_ADEPT)) == ((1u << 3) | (1u << 4)));

@@ -1050,6 +1050,34 @@ int main(void)
     events();
     CHECK(ai_get_state(a) == AI_STATE_HUNT && ai_target[a] == actor_player);
 
+    /*
+     * A necromancer that sees the player summons as well as casting at
+     * them: its seen spells share the random start with its target spells
+     * (creature_extensions_plan.md step 8). Blink it never casts
+     */
+    {
+        int summons = 0;
+        int at_target = 0;
+        int other = 0;
+
+        for (r = 0; r < 32; r++) {
+            scene(0, 5);
+            effects_set_base(actor_player, ATTR_HP_MAX, 200);
+            health_hp[actor_player] = 200;
+            a = hunter(CR_NECROMANCER, 3, 5, 0, 5);
+            events();
+            ai_on_turn(a);
+            if (events() >= 1 && seen[0].id == EV_CAST && seen[0].source == a) {
+                summons += seen[0].p1 == SP_SUMMON_UNDEAD;
+                at_target += seen[0].p1 == SP_FROST_BOLT || seen[0].p1 == SP_HOLD;
+                other += seen[0].p1 == SP_BLINK;
+            } else {
+                other++;
+            }
+        }
+        CHECK(summons > 0 && at_target > 0 && other == 0);
+    }
+
     /* ---- a hell hound's breath catches its packmate, unhurt (R9: immune to its element) ---- */
     scene(0, 5);
     effects_set_base(actor_player, ATTR_HP_MAX, 200);

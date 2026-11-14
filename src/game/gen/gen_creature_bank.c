@@ -119,6 +119,46 @@ nge_entity_id_t gen_creature_random(uint8_t depth, nge_owner_t owner) NGE_BANKED
     return (kind == KIND_INVALID) ? NGE_ENTITY_INVALID : create(kind, owner);
 }
 
+nge_entity_id_t gen_creature_random_flags(uint8_t depth, nge_owner_t owner, uint8_t flags) NGE_BANKED
+{
+    uint16_t total = 0;
+    uint16_t roll = 0;
+    uint8_t rarity;
+    uint8_t kind;
+    uint8_t pass;
+
+    /* Two passes over the same test: the weights, then the pick. Fields in locals (T-ZSDCC-1) */
+    for (pass = 0; pass < 2; pass++) {
+        if (pass == 1) {
+            if (total == 0) {
+                return NGE_ENTITY_INVALID;
+            }
+            roll = (uint16_t)((unsigned int)rand() % total);
+        }
+        for (kind = CR_NONE + 1; kind < CR_COUNT; kind++) {
+            rarity = gen_creatures[kind].where.rarity;
+            if ((gen_creatures[kind].flags & flags) == flags && gen_creatures[kind].where.depth <= depth &&
+                gen_creatures[kind].spells[0] == SP_NONE) {
+                if (pass == 0) {
+                    total += rarity;
+                } else if (roll < rarity) {
+                    return create(kind, owner);
+                } else {
+                    roll -= rarity;
+                }
+            }
+        }
+    }
+    return NGE_ENTITY_INVALID;   /* not reached: the pick is within the total */
+}
+
+uint8_t gen_creature_flags(uint8_t kind) NGE_BANKED
+{
+    nge_util_assert(kind < CR_COUNT);
+
+    return gen_creatures[kind].flags;
+}
+
 uint16_t gen_creature_hit(uint8_t kind, uint8_t use) NGE_BANKED
 {
     gen_hook_t h;

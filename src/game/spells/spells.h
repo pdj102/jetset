@@ -54,7 +54,8 @@
 #define SP_CONFUSE      14   /**< Level 2, direct: confused (the harpy's song). */
 #define SP_WAIL         15   /**< Level 3 burst: frightened (the banshee). */
 #define SP_SHRIEK       16   /**< Level 2, self: wakes the monsters around (the shrieker). */
-#define SPELL_COUNT     17
+#define SP_SUMMON_UNDEAD 17  /**< Level 5, self: undead around the caster (the necromancer, the lich). */
+#define SPELL_COUNT     18
 
 /* Shapes: who a spell or an aimed item reaches (an item's: gen_item_shape()) */
 #define SPELL_SELF    0   /**< The caster. */

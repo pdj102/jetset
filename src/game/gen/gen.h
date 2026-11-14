@@ -61,6 +61,28 @@ nge_entity_id_t gen_creature(uint8_t kind, nge_owner_t owner) NGE_BANKED;
  */
 nge_entity_id_t gen_creature_random(uint8_t depth, nge_owner_t owner) NGE_BANKED;
 
+/*
+ * A creature kind's families and traits, in its record's flags byte
+ * (docs/creature_extensions.md M4.3, D8): read with gen_creature_flags()
+ */
+#define CREATURE_UNDEAD    0x02   /**< Undead: what a summon of the dead makes. */
+#define CREATURE_BEAST     0x04   /**< An animal. */
+#define CREATURE_GIANT     0x08   /**< A giant. */
+#define CREATURE_DRAGON    0x10   /**< A dragon. */
+#define CREATURE_MINDLESS  0x20   /**< No mind: sleep, confusion and fear don't take (effect_apply()). */
+
+/**
+ * @brief Create a random creature with every flag in flags (CREATURE_*),
+ *        of a kind that first appears at depth or above, and knows no spell
+ *        (so a summoner's summons don't summon), weighted by rarity
+ *        (docs/creature_extensions.md M2.1: summon undead).
+ * @return The entity, or NGE_ENTITY_INVALID if no entity is free or no kind fits.
+ */
+nge_entity_id_t gen_creature_random_flags(uint8_t depth, nge_owner_t owner, uint8_t flags) NGE_BANKED;
+
+/** @brief A creature kind's (CR_*) flags (CREATURE_*). Banked with the creature table (page 106). */
+uint8_t gen_creature_flags(uint8_t kind) NGE_BANKED;
+
 /**
  * @brief Create an item of kind (IT_*), owned by owner: its sprite, the
  *        item component (not equipped, with its kind's count) and, if its

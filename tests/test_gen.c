@@ -636,7 +636,8 @@ int main(void)
     ok = 1;
     for (i = 1; i < EF_COUNT; i++) {
         int used = i == EF_REGEN || i == EF_ROOT || i == EF_HOLD || i == EF_MANA_REGEN ||
-                   (i >= EF_DRAIN_STR && i <= EF_DRAIN_CHA) || i == EF_ERRATIC || i == EF_WAKE;   /* the bat's, the shriek's */
+                   (i >= EF_DRAIN_STR && i <= EF_DRAIN_CHA) || i == EF_ERRATIC || i == EF_WAKE ||
+                   i == EF_SUMMON_UNDEAD;   /* the bat's, the shriek's, the necromancer's */
 
         for (kind = IT_NONE + 1; kind < IT_COUNT && !used; kind++) {
             used = gen_items[kind].hook.ef == i;
@@ -728,14 +729,49 @@ int main(void)
           GEN_HOOK_EF(gen_creature_hit(CR_STIRGE, ATTACK_MELEE)) == EF_BLEEDING);
     reset();
     nge_event_init();
-    /* Only the archers, the slinger and the shaman are skirmishers */
+    /* Only the archers, the slinger and the casters who keep their distance are skirmishers */
     ok = 1;
     for (kind = CR_NONE + 1; kind < CR_COUNT; kind++) {
         ok = ok && (gen_creatures[kind].ai.traits == AI_TRAIT_SKIRMISH) ==
                    (kind == CR_GOBLIN_ARCHER || kind == CR_GOBLIN_SHAMAN || kind == CR_KOBOLD_SLINGER ||
-                    kind == CR_ORC_ARCHER || kind == CR_SKELETON_ARCHER);
+                    kind == CR_ORC_ARCHER || kind == CR_SKELETON_ARCHER || kind == CR_NECROMANCER || kind == CR_LICH);
     }
     CHECK(ok);
+    /* The families and the mindless, as docs/creature_extensions.md 6.1 to 6.3 give them (M4.3) */
+    {
+        static const uint8_t family[CR_COUNT] = {
+            [CR_RAT] = CREATURE_BEAST,
+            [CR_JACKAL] = CREATURE_BEAST, [CR_FIRE_BEETLE] = CREATURE_BEAST, [CR_WOLF] = CREATURE_BEAST,
+            [CR_BOMBARDIER] = CREATURE_BEAST, [CR_OWLBEAR] = CREATURE_BEAST, [CR_WARG] = CREATURE_BEAST,
+            [CR_BASILISK] = CREATURE_BEAST, [CR_HELL_HOUND] = CREATURE_BEAST,
+            [CR_GHOST] = CREATURE_UNDEAD, [CR_WRAITH] = CREATURE_UNDEAD, [CR_GHOUL] = CREATURE_UNDEAD,
+            [CR_WIGHT] = CREATURE_UNDEAD, [CR_BANSHEE] = CREATURE_UNDEAD, [CR_VAMPIRE] = CREATURE_UNDEAD,
+            [CR_LICH] = CREATURE_UNDEAD,
+            [CR_SKELETON] = CREATURE_UNDEAD | CREATURE_MINDLESS, [CR_ZOMBIE] = CREATURE_UNDEAD | CREATURE_MINDLESS,
+            [CR_SHADOW] = CREATURE_UNDEAD | CREATURE_MINDLESS, [CR_MUMMY] = CREATURE_UNDEAD | CREATURE_MINDLESS,
+            [CR_SKELETON_ARCHER] = CREATURE_UNDEAD | CREATURE_MINDLESS,
+            [CR_OGRE] = CREATURE_GIANT, [CR_TROLL] = CREATURE_GIANT, [CR_HILL_GIANT] = CREATURE_GIANT,
+            [CR_MINOTAUR] = CREATURE_GIANT,
+            [CR_DRAGON] = CREATURE_DRAGON, [CR_WYVERN] = CREATURE_DRAGON, [CR_FROST_DRAKE] = CREATURE_DRAGON,
+        };
+
+        ok = 1;
+        for (kind = CR_NONE + 1; kind < CR_COUNT; kind++) {
+            ok = ok && (gen_creature_flags(kind) & ~CREATURE_PLAYER) == family[kind];
+        }
+        CHECK(ok);
+    }
+    /* The necromancer: its staff wielded and its robe worn, a caster who keeps its distance and drinks potions */
+    id = gen_creature(CR_NECROMANCER, AREA);
+    CHECK(inv_equipped(id, SLOT_WEAPON) != NGE_ENTITY_INVALID && kind_index[inv_equipped(id, SLOT_WEAPON)] == IT_QUARTERSTAFF &&
+          inv_equipped(id, SLOT_BODY) != NGE_ENTITY_INVALID && kind_index[inv_equipped(id, SLOT_BODY)] == IT_ROBE);
+    CHECK(spell_knows(id, SP_SUMMON_UNDEAD) && spell_knows(id, SP_HOLD) && mana_mp[id] == 14 &&
+          (ai_can(id) & (AI_CAN_CAST | AI_CAN_USE | AI_CAN_SKIRMISH)) == (AI_CAN_CAST | AI_CAN_USE | AI_CAN_SKIRMISH));
+    id = gen_creature(CR_LICH, AREA);
+    CHECK(spell_knows(id, SP_SUMMON_UNDEAD) && mana_mp[id] == 30 && GEN_HOOK_EF(gen_hit_of(id, ATTACK_MELEE)) == EF_PARALYSE &&
+          !INV_HAS(id));
+    reset();
+    nge_event_init();
     id = gen_creature(CR_SHRIEKER, AREA);
     CHECK(ai_can(id) == AI_CAN_CAST && spell_knows(id, SP_SHRIEK));   /* Int 1, no attack, carries nothing: it shrieks */
     id = gen_creature(CR_DRAGON, AREA);

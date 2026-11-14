@@ -17,6 +17,7 @@
 #include "ecs/systems/nge_timer.h"
 #include "game/components/health.h"
 #include "game/components/stats.h"
+#include "game/gen/gen.h"
 
 #define TURNS(n)  ((n) * NGE_TIMER_TICKS_PER_TURN)
 
@@ -591,7 +592,7 @@ const effect_def_t effect_defs[EF_COUNT] = {
     [EF_SUMMON] = {
         .duration = EFFECT_INSTANT,
         .start_text = "Something answers the call!",
-        .on_start = { OP_SUMMON, 0, 1 },
+        .on_start = { OP_SUMMON, 0, 1 },   /* any kind */
     },
     [EF_LEVEL_TELEPORT] = {
         .duration = EFFECT_INSTANT,
@@ -608,6 +609,10 @@ const effect_def_t effect_defs[EF_COUNT] = {
     [EF_WAKE] = {
         .duration = EFFECT_INSTANT,
         .on_start = { OP_WAKE, 0, 1 },   /* the shriek: what wakes, wakes quietly (docs/creature_extensions.md M2.1) */
+    },
+    [EF_SUMMON_UNDEAD] = {
+        .duration = EFFECT_INSTANT,
+        .on_start = { OP_SUMMON, CREATURE_UNDEAD, 1 },   /* the necromancer's, the lich's (docs/creature_extensions.md M2.1) */
     },
     [EF_WORN_HP] = {
         .duration = EFFECT_WORN,

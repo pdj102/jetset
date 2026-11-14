@@ -944,3 +944,87 @@ CSpect checks (the user runs them):
   once the check passed.
 - Pages: 107 +945 bytes (3,756), 127 +78 (318). No new library routine in
   common memory.
+
+### Step 8: families, mindless and summon undead (2026-11-14)
+
+- As M4.3 and M2.1's summons row. `make test` passes.
+- CSpect (check 8): the necromancer summons undead, casts Hold, and backs
+  away when the player closes. Between casts it comes on, as step 3 built:
+  a skirmisher steps back only from a target next to it, and otherwise
+  hunts as any monster does. The summoned undead started asleep (fixed
+  below). The wand of sleep does nothing to the zombie.
+- **Summoned creatures wake.** They started in their kind's start state,
+  asleep for nearly every kind, the rune's and the parchment's summons too.
+  `summon()` now alerts each one it places (`ai_alert()`, as a shriek
+  does): awake, it sees the player on its first turn and hunts from the
+  next. `test_level` checks no summoned undead is asleep. Page 120 +22.
+- **The family bits are in `gen.h`**, not `gen_internal.h`: the effects
+  read `CREATURE_MINDLESS`, and `EF_SUMMON_UNDEAD`'s row names
+  `CREATURE_UNDEAD`. `CREATURE_PLAYER` stays internal. The families are
+  as 6.1 to 6.3 give them, and `test_gen` checks every kind against a table.
+- **What a summon of the dead makes (decided 2026-11-14).** Read as
+  `EF_SUMMON`, it would pick undead whose depths hold the level's, so at
+  depth 1 none, and at depth 10 the lich and the vampire. Instead
+  `gen_creature_random_flags(depth, owner, flags)` picks, by rarity, a kind
+  with every flag asked for, **first met at the depth or above**, and
+  **knowing no spell**. Deep down the weak undead stay in the pool (the
+  necromancer's court of zombies and skeletons), and no lich, vampire or
+  banshee comes from a summon, so summons never summon. At depth 1 it
+  fizzles.
+- **`OP_SUMMON`'s arg** is the flags: 0 any kind for the depth (`EF_SUMMON`,
+  as before), `CREATURE_UNDEAD` for `EF_SUMMON_UNDEAD`.
+- **The reserve (R13)** is read from `nge_entity_free_count()`: a summon
+  stops before a creature while fewer than 9 entities are free, the 5 kept
+  and room for one creature with the 3 it may own (`LEVEL_CREATURE_OWNED`).
+  It holds for `EF_SUMMON` too.
+- **`EF_SUMMON_UNDEAD`** is 73, after `EF_WAKE`, so the worn effects move up
+  by 1 (`EF_COUNT` 94). Every table names effects by constant. It has no
+  seen text, as no instant effect has: the cast says what happened.
+- **`SP_SUMMON_UNDEAD`**: level 5 (9 MP), self, power 2 (two undead),
+  `SPELL_AI_SEEN`, `SPELL_F_MONSTER`. The necromancer's 14 MP make one
+  summoning and a bolt; the lich's 30 make three.
+- **`opt_cast()` draws seen spells with target spells.** The seen pass came
+  after every target spell had failed, so a necromancer would bolt until
+  its MP fell below a summoning's cost, and never summon. The random start
+  now runs over every spell it knows (`SPELL_AI_ANY`): a target spell is
+  checked to reach its target, a seen spell as before, the others passed
+  over. `test_ai` checks a necromancer seeing the player both summons and
+  casts at them over 32 turns, and never blinks. Page 130 is 47 bytes
+  smaller for it (one loop, not two).
+- **Mindless refusal** is in `apply()`, for both `effect_apply()` and
+  `effect_apply_unsaved()`: `EF_SLEEP`, `EF_CONFUSE` and `EF_FEAR` on a
+  creature whose kind is mindless return 0 with no event, as the plan says.
+  Only those three ask `gen_creature_flags()`, so no innate effect does, and
+  a summon's chain stays at 8 banked calls. That call is 5 deep from an AI's
+  cast or hit. Asm read: the three effect numbers, then `bit 5` of the
+  banked answer.
+- **The rows:** the necromancer (`CR_NECROMANCER` 52: kit quarterstaff and
+  cloth robe, slots weapon and body, 4 carried, Int 17 so it drinks
+  potions, skirmisher) and the lich (`CR_LICH` 53: undead, immune to poison
+  and cold, its touch paralyses, nothing carried so the touch lands (R17),
+  skirmisher). `CR_COUNT` 54. The necromancer owns 3 entities (staff, robe,
+  mana regeneration), the most allowed.
+- **Tests:** the summons are in `test_level`, which has a level to place
+  them on, not `test_effects`: 40 summonings at depths 10 and 4 make only
+  undead, next to the caster, none knowing a spell, and at depth 4 only
+  kinds first met there or above; at depth 1 it fizzles; with 9 entities
+  free one creature is made and the rest stop, with fewer none.
+  `test_effects`: a zombie refuses the three, with nothing posted, and is
+  still held and paralysed; a ghoul, undead with a mind, takes all three.
+  `test_gen`: the families, the necromancer's kit and capabilities, the
+  lich's touch. Asm read: `gen_creature_random_flags()`'s field offsets,
+  flag test and loop bound.
+- **Dev kit:** with no undead at depth 1, the necromancer and a zombie go
+  out of sight on **depth 2** (`F` falls there), placed by
+  `level_dev_undead()` from `change_level()` on arriving at depth 2, apart
+  from `level_generate()` so the level tests see levels as generated.
+  Removed once check 8 passed.
+- **`make balance`**: random kinds 48 before, 50 after. Kinds at depths 7
+  to 10: 15, 13, 11, 11 (from 14, 12, 10, 9). Mean XP a monster at depths 7
+  to 10: 400, 546, 872, 951. C1 still fails at depths 2 to 8, depth 9 still
+  warns, C5 within 5 to 9 everywhere but depth 1. The XP gained by the end
+  is 24,669, from 24,897.
+- Pages: 106 +340 bytes (2,118: the pick by flags, two passes over 53
+  records, and the accessor), 107 +145 (3,901), 120 +109 (5,114), 121 +28,
+  127 +12, 135 +23, 130 −47, 126 +1, then 120 +22 for the wake (5,136). Page 102 and common memory are as before
+  once the dev kit went. No new library routine in common memory.

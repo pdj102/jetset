@@ -1334,6 +1334,84 @@ int main(void)
           recorded(EV_EFFECT_STARTED, player) < 0);
     go(4, LEVEL_ARRIVE_ANY);
 
+    /*
+     * ---- summon undead (docs/creature_extensions.md M2.1): only undead, of
+     * kinds first met at the depth or above, knowing no spell; at depth 1,
+     * where no undead is met, it fizzles ----
+     */
+    {
+        static uint8_t before[NGE_ENTITY_MAX];
+        static uint8_t kinds_seen[CR_COUNT];
+        uint8_t kind;
+        int made = 0;
+
+        memset(kinds_seen, 0, sizeof(kinds_seen));
+        ok = 1;
+        for (n = 0; n < 40 && ok; n++) {
+            go((uint8_t)(n < 20 ? LEVEL_DEPTH_BOTTOM : 4), LEVEL_ARRIVE_ANY);
+            srand((unsigned int)n);   /* the level reseeds rand() with its depth: a different summon each time */
+            for (id = 0; id < NGE_ENTITY_MAX; id++) {
+                before[id] = NGE_ENTITY_IS_ALIVE(id);
+            }
+            effect_apply(EF_SUMMON_UNDEAD, 2, player, NGE_ENTITY_INVALID);
+            settle();
+            for (id = 0; id < NGE_ENTITY_MAX; id++) {
+                if (!before[id] && NGE_ENTITY_IS_ALIVE(id) && KIND_IS(id, CLASS_CREATURE)) {
+                    kind = kind_index[id];
+                    made++;
+                    kinds_seen[kind] = 1;
+                    ok = ok && (gen_creature_flags(kind) & CREATURE_UNDEAD) && !SPELLS_IS(id) &&
+                         ai_get_state(id) != AI_STATE_ASLEEP &&   /* called up awake (CSpect check 8) */
+                         nge_map_within(NGE_LOCATION_X(player), NGE_LOCATION_Y(player), NGE_LOCATION_X(id),
+                                        NGE_LOCATION_Y(id), 1) &&
+                         (n < 20 || kind == CR_ZOMBIE || kind == CR_GHOUL || kind == CR_SKELETON ||
+                          kind == CR_SHADOW || kind == CR_SKELETON_ARCHER);   /* first met at depth 4 or above */
+                }
+            }
+        }
+        CHECK(ok && made > 40);
+        /* Deep down, the weak undead too; never a summoner, nor another caster */
+        CHECK(kinds_seen[CR_ZOMBIE] && kinds_seen[CR_MUMMY] && !kinds_seen[CR_LICH] && !kinds_seen[CR_VAMPIRE] &&
+              !kinds_seen[CR_BANSHEE] && !kinds_seen[CR_NECROMANCER]);
+        go(1, LEVEL_ARRIVE_ANY);
+        free_before = nge_entity_free_count();
+        effect_apply(EF_SUMMON_UNDEAD, 2, player, NGE_ENTITY_INVALID);
+        settle();
+        CHECK(nge_entity_free_count() == free_before && recorded(EV_FIZZLED, player) >= 0 &&
+              seen[recorded(EV_FIZZLED, player)].p1 == OP_SUMMON);
+    }
+
+    /*
+     * ---- summons keep the reserve (R13): none is made once fewer than 9
+     * entities are free (5 kept, and a creature with the 3 it may own) ----
+     */
+    go(4, LEVEL_ARRIVE_ANY);
+    d = NGE_LOCATION_X(player);
+    arrival = NGE_LOCATION_Y(player);
+    CHECK(open_around(player, d, arrival) >= 3);
+    {
+        nge_entity_id_t fill[NGE_ENTITY_MAX];
+        int filled = 0;
+
+        while (nge_entity_free_count() > 9) {
+            fill[filled++] = nge_entity_create();
+        }
+        n = creatures_around(d, arrival);
+        effect_apply(EF_SUMMON, 3, player, NGE_ENTITY_INVALID);   /* 9 free: one, then the reserve stops it */
+        settle();
+        CHECK(creatures_around(d, arrival) == n + 1 && nge_entity_free_count() < 9);
+        n = creatures_around(d, arrival);   /* fewer than 9 free: none */
+        effect_apply(EF_SUMMON_UNDEAD, 3, player, NGE_ENTITY_INVALID);
+        settle();
+        CHECK(creatures_around(d, arrival) == n && recorded(EV_FIZZLED, player) >= 0 &&
+              seen[recorded(EV_FIZZLED, player)].p1 == OP_SUMMON);
+        while (filled > 0) {
+            nge_entity_destroy(fill[--filled]);
+        }
+        settle();
+    }
+    go(4, LEVEL_ARRIVE_ANY);
+
     /* ---- the dev kit's bandit: out of the player's sight, its bow and arrows at its feet ---- */
     level_dev_bandit(player);
     ok = 0;

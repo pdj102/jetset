@@ -18,7 +18,12 @@
  * creature's innate effects, and their calls: 8, the most allowed. So is a
  * summoned creature's kit: gen_creature_random(), act_equip(),
  * effects_recompute(), gen_item_hook(). No hit hook summons yet; a summoning rune's chain starts 1 shallower
- * (feature_on_event(), act_spring(), effect_apply()).
+ * (feature_on_event(), act_spring(), effect_apply()). A summon's
+ * nge_entity_free_count() and ai_alert() are at gen_creature_random()'s
+ * depth (5 from an AI's hit), and ai_stimulus() under ai_alert() 6. The mindless test,
+ * gen_creature_flags(), is one call below effect_apply() (5 from an AI's
+ * cast or hit), and only for sleep, confusion and fear, which no innate
+ * effect is, so a summon's chain never makes it.
  */
 #ifdef __SDCC
 #pragma codeseg PAGE_120
@@ -32,12 +37,14 @@
 
 #include "core/nge_util.h"
 #include "ecs/components/nge_location.h"
+#include "ecs/nge_entity.h"
 #include "ecs/nge_owner.h"
 #include "event/nge_event.h"
 #include "game/ai/ai.h"
 #include "game/components/health.h"
 #include "game/components/feature.h"
 #include "game/components/item.h"
+#include "game/components/kind.h"
 #include "game/components/mana.h"
 #include "game/components/pc.h"
 #include "game/components/stats.h"
@@ -200,11 +207,21 @@ static void teleport(nge_entity_id_t target)
 #define SUMMON_MAX  3   /* creatures at most, whatever the power */
 
 /*
- * n random creatures for the depth (at most SUMMON_MAX), each on the first
- * free tile of the 8 around target from a random start. One with no room
+ * Summons stop while fewer entities than this are free, so they can't use
+ * up the 15 the level keeps for play (docs/creature_extensions.md R13): 5
+ * kept, and room for one more creature with the 3 it may own (its effects
+ * and kit: LEVEL_CREATURE_OWNED)
+ */
+#define SUMMON_FREE_MIN  (5 + 1 + 3)
+
+/*
+ * n random creatures (at most SUMMON_MAX): any kind for the depth (flags 0),
+ * or only kinds with every CREATURE_* flag in flags
+ * (gen_creature_random_flags()). Each goes on the first free tile of the 8
+ * around target from a random start, awake (ai_alert()). One with no room
  * is destroyed, and the rest aren't made (D9: hostile, like any other)
  */
-static void summon(nge_entity_id_t target, int8_t n)
+static void summon(nge_entity_id_t target, int8_t n, uint8_t flags)
 {
     nge_entity_id_t id;
     uint8_t tx;
@@ -222,7 +239,11 @@ static void summon(nge_entity_id_t target, int8_t n)
         tx = NGE_LOCATION_X(target);
         ty = NGE_LOCATION_Y(target);
         for (; n > 0; n--) {
-            id = gen_creature_random(level_depth, LEVEL_AREA);
+            if (nge_entity_free_count() < SUMMON_FREE_MIN) {
+                break;   /* the reserve (R13) */
+            }
+            id = (flags != 0) ? gen_creature_random_flags(level_depth, LEVEL_AREA, flags)
+                              : gen_creature_random(level_depth, LEVEL_AREA);
             if (id == NGE_ENTITY_INVALID) {
                 break;
             }
@@ -239,6 +260,9 @@ static void summon(nge_entity_id_t target, int8_t n)
                 break;
             }
             nge_location_set(id, x, y);
+            if (AI_IS(id)) {
+                ai_alert(id);   /* called up awake, not in its kind's start state: it hunts once it sees someone */
+            }
             placed++;
         }
     }
@@ -397,7 +421,7 @@ static void run_op(const effect_op_t *op, int8_t power, nge_entity_id_t target, 
         teleport(target);
         break;
     case OP_SUMMON:
-        summon(target, amount);
+        summon(target, amount, arg);
         break;
     case OP_WAKE:
         wake(target, amount);
@@ -509,6 +533,16 @@ static uint8_t apply(uint8_t ef, int8_t power, nge_entity_id_t target, nge_entit
     nge_util_assert(def.duration != EFFECT_WORN);   /* worn effects count through equipment */
     nge_util_assert(def.save.dc == 0 || def.duration == EFFECT_TIMED);   /* a saving throw is tried at firings */
     if (!affectable(target)) {
+        return 0;
+    }
+    /*
+     * A mindless creature can't be put to sleep, confused or frightened:
+     * refused as a save would, but with nothing said (docs/creature_extensions.md
+     * M4.3, Q4). Only for these three, so an innate effect asks nothing more
+     * and a summon's chain stays within 8 banked calls
+     */
+    if ((ef == EF_SLEEP || ef == EF_CONFUSE || ef == EF_FEAR) && KIND_IS(target, CLASS_CREATURE) &&
+        (gen_creature_flags(kind_index[target]) & CREATURE_MINDLESS)) {
         return 0;
     }
     /* Resisted when applied: nothing starts or is refreshed (docs/items_extensions.md R14) */

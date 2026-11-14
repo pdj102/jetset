@@ -153,27 +153,28 @@
 #define EF_DETECT_TRAPS       70   /**< Instant: finds the hidden features within 1 tile per power. */
 #define EF_BLINK              71   /**< Instant: to the tile given to effect_apply_at(). */
 #define EF_WAKE               72   /**< Instant: wakes every sleeping monster within 1 tile per power of the target (OP_WAKE). */
-#define EF_WORN_HP            73   /**< Worn: +1 per power maximum hit points. */
-#define EF_WORN_AC            74   /**< Worn: AC +1 per power: for jewellery and cursed armour; armour's own AC is in its record (docs/items.md 4.11). */
-#define EF_WORN_SPEED         75   /**< Worn: speed -1 per power (lower is faster). */
-#define EF_WORN_STR           76   /**< Worn: Str +1 per power. */
-#define EF_WORN_DEX           77   /**< Worn: Dex +1 per power. */
-#define EF_WORN_CON           78   /**< Worn: Con +1 per power. */
-#define EF_WORN_INT           79   /**< Worn: Int +1 per power. */
-#define EF_WORN_WIS           80   /**< Worn: Wis +1 per power. */
-#define EF_WORN_CHA           81   /**< Worn: Cha +1 per power. */
-#define EF_WORN_RES_FIRE      82   /**< Worn: resist fire. */
-#define EF_WORN_RES_COLD      83   /**< Worn: resist cold. */
-#define EF_WORN_RES_POISON    84   /**< Worn: resist poison. */
-#define EF_WORN_RES_ACID      85   /**< Worn: resist acid. */
-#define EF_WORN_RES_MAGIC     86   /**< Worn: resist magic. */
-#define EF_WORN_IMMUNE_FIRE   87   /**< Worn: immune to fire. */
-#define EF_WORN_IMMUNE_COLD   88   /**< Worn: immune to cold. */
-#define EF_WORN_IMMUNE_POISON 89   /**< Worn: immune to poison. */
-#define EF_WORN_FLY           90   /**< Worn: flying. */
-#define EF_WORN_REGEN         91   /**< Worn, pending: a worn effect has no tick. */
-#define EF_WORN_LIGHT         92   /**< Worn, pending: no light radius yet; power is the radius. */
-#define EF_COUNT              93
+#define EF_SUMMON_UNDEAD      73   /**< Instant: 1 random undead kind per power (at most 3) around the target (OP_SUMMON, gen_creature_random_flags()). */
+#define EF_WORN_HP            74   /**< Worn: +1 per power maximum hit points. */
+#define EF_WORN_AC            75   /**< Worn: AC +1 per power: for jewellery and cursed armour; armour's own AC is in its record (docs/items.md 4.11). */
+#define EF_WORN_SPEED         76   /**< Worn: speed -1 per power (lower is faster). */
+#define EF_WORN_STR           77   /**< Worn: Str +1 per power. */
+#define EF_WORN_DEX           78   /**< Worn: Dex +1 per power. */
+#define EF_WORN_CON           79   /**< Worn: Con +1 per power. */
+#define EF_WORN_INT           80   /**< Worn: Int +1 per power. */
+#define EF_WORN_WIS           81   /**< Worn: Wis +1 per power. */
+#define EF_WORN_CHA           82   /**< Worn: Cha +1 per power. */
+#define EF_WORN_RES_FIRE      83   /**< Worn: resist fire. */
+#define EF_WORN_RES_COLD      84   /**< Worn: resist cold. */
+#define EF_WORN_RES_POISON    85   /**< Worn: resist poison. */
+#define EF_WORN_RES_ACID      86   /**< Worn: resist acid. */
+#define EF_WORN_RES_MAGIC     87   /**< Worn: resist magic. */
+#define EF_WORN_IMMUNE_FIRE   88   /**< Worn: immune to fire. */
+#define EF_WORN_IMMUNE_COLD   89   /**< Worn: immune to cold. */
+#define EF_WORN_IMMUNE_POISON 90   /**< Worn: immune to poison. */
+#define EF_WORN_FLY           91   /**< Worn: flying. */
+#define EF_WORN_REGEN         92   /**< Worn, pending: a worn effect has no tick. */
+#define EF_WORN_LIGHT         93   /**< Worn, pending: no light radius yet; power is the radius. */
+#define EF_COUNT              94
 
 /* Why an effect ended: EV_EFFECT_ENDED's p2 */
 #define EFFECT_END_EXPIRED  0   /**< Its time ran out, or effect_end(). */

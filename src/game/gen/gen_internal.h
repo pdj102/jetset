@@ -81,7 +81,7 @@ typedef struct gen_hook {
 /* The items a creature kind is generated with, equipped: a launcher and its ammo, or a weapon and armour (docs/creature_extensions.md D2) */
 #define GEN_KIT_MAX  2
 
-/* Creature flags */
+/* Creature flags: the families and traits are in gen.h (CREATURE_UNDEAD...), as the effects read them */
 #define CREATURE_PLAYER  0x01   /* the player: its turns wait for commands */
 
 typedef struct gen_creature_kind {

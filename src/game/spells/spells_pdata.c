@@ -33,6 +33,7 @@ const spell_def_t spell_defs[SPELL_COUNT] = {
     [SP_CONFUSE]      = { "Confuse",      2, SPELL_DIRECT, EF_CONFUSE,   1, 6, SPELL_AI_TARGET, SPELL_F_MONSTER },
     [SP_WAIL]         = { "Wail",         3, SPELL_BURST,  EF_FEAR,      1, 0, SPELL_AI_SEEN,   SPELL_F_MONSTER },
     [SP_SHRIEK]       = { "Shriek",       2, SPELL_SELF,   EF_WAKE,      8, 0, SPELL_AI_SEEN,   SPELL_F_MONSTER },
+    [SP_SUMMON_UNDEAD] = { "Summon Undead", 5, SPELL_SELF, EF_SUMMON_UNDEAD, 2, 0, SPELL_AI_SEEN, SPELL_F_MONSTER },
 };
 
 /* MP by spell level (docs/spells.md, 4.2): rising with every level above 0, an ability's */

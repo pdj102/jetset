@@ -115,7 +115,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .melee_hit = { EF_POISON, 1 },                  /* a poisonous bite */
         .inventory = { .capacity = 0, .slots = 0 },     /* carries nothing */
         .xp = 5,                                        /* below 1 hit die */
-        .flags = 0,
+        .flags = CREATURE_BEAST,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
         .where = { .depth = 1, .depth_max = 2, .rarity = 10 },
     },
@@ -245,7 +245,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
         .where = { .depth = 3, .depth_max = 5, .rarity = 6 },
     },
-    [CR_SKELETON] = {                                   /* later: never flees */
+    [CR_SKELETON] = {                                   /* mindless: never flees */
         .name = "skeleton",
         .render = SHAPE_SKELETON(BANK_BONE),
         .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
@@ -254,7 +254,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .melee = { .to_hit = 2, .dice = 1, .sides = 6, .to_damage = 0, .type = DMG_SLASH, .range = 1 },   /* claws */
         .inventory = { .capacity = 2, .slots = SLOT_BIT(SLOT_WEAPON) },
         .xp = 20,                                       /* 2 hit dice */
-        .flags = 0,
+        .flags = CREATURE_UNDEAD | CREATURE_MINDLESS,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
         .where = { .depth = 3, .depth_max = 5, .rarity = 7 },
     },
@@ -324,7 +324,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .melee = { .to_hit = 5, .dice = 2, .sides = 6, .to_damage = 0, .type = DMG_BLUNT, .range = 1 },   /* fists */
         .inventory = { .capacity = 3, .slots = SLOT_BIT(SLOT_WEAPON) },
         .xp = 175,                                      /* 5 hit dice */
-        .flags = 0,
+        .flags = CREATURE_GIANT,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
         .where = { .depth = 5, .depth_max = 7, .rarity = 8 },
     },
@@ -337,7 +337,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .melee = { .to_hit = 4, .dice = 1, .sides = 8, .to_damage = 0, .type = DMG_COLD, .range = 1 },    /* a chill touch */
         .inventory = { .capacity = 0, .slots = 0 },
         .xp = 225,                                      /* 5 hit dice, special */
-        .flags = 0,
+        .flags = CREATURE_UNDEAD,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
         .where = { .depth = 5, .depth_max = 7, .rarity = 5 },
     },
@@ -351,7 +351,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .melee_hit = { EF_WEAKNESS, 2 },
         .inventory = { .capacity = 0, .slots = 0 },
         .xp = 500,                                      /* 6 hit dice, special */
-        .flags = 0,
+        .flags = CREATURE_UNDEAD,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
         .where = { .depth = 6, .depth_max = 8, .rarity = 5 },
     },
@@ -364,7 +364,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .melee = { .to_hit = 7, .dice = 2, .sides = 6, .to_damage = 2, .type = DMG_SLASH, .range = 1 },   /* claws */
         .inventory = { .capacity = 0, .slots = 0 },
         .xp = 850,                                      /* 7 hit dice, special */
-        .flags = 0,
+        .flags = CREATURE_GIANT,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
         .innate = { EF_REGEN, 1 },
         .where = { .depth = 7, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 6 },
@@ -380,7 +380,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .melee = { .to_hit = 9, .dice = 3, .sides = 6, .to_damage = 3, .type = DMG_PIERCE, .range = 1 },  /* bite */
         .inventory = { .capacity = 0, .slots = 0 },
         .xp = 1750,                                     /* 10 hit dice, special */
-        .flags = 0,
+        .flags = CREATURE_DRAGON,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
         .where = { .depth = 9, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 2 },
     },
@@ -473,7 +473,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .melee = { .to_hit = 0, .dice = 1, .sides = 2, .to_damage = 0, .type = DMG_PIERCE, .range = 1 },  /* bite */
         .inventory = { .capacity = 0, .slots = 0 },
         .xp = 5,                                        /* below 1 hit die */
-        .flags = 0,
+        .flags = CREATURE_BEAST,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
         .where = { .depth = 1, .depth_max = 3, .rarity = 6 },
     },
@@ -500,11 +500,11 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .melee = { .to_hit = 1, .dice = 1, .sides = 4, .to_damage = 1, .type = DMG_SLASH, .range = 1 },   /* mandibles */
         .inventory = { .capacity = 0, .slots = 0 },
         .xp = 10,                                       /* 1 hit die */
-        .flags = 0,
+        .flags = CREATURE_BEAST,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
         .where = { .depth = 1, .depth_max = 3, .rarity = 5 },
     },
-    [CR_ZOMBIE] = {                                     /* later: mindless (step 8) */
+    [CR_ZOMBIE] = {
         .name = "zombie",
         .render = SHAPE_ZOMBIE(BANK_GREEN),
         .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
@@ -513,7 +513,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .melee = { .to_hit = 2, .dice = 1, .sides = 8, .to_damage = 0, .type = DMG_BLUNT, .range = 1 },   /* a fist */
         .inventory = { .capacity = 0, .slots = 0 },
         .xp = 20,                                       /* 2 hit dice */
-        .flags = 0,
+        .flags = CREATURE_UNDEAD | CREATURE_MINDLESS,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
         .where = { .depth = 2, .depth_max = 4, .rarity = 6 },
     },
@@ -527,7 +527,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .melee_hit = { EF_PARALYSE, 1 },
         .inventory = { .capacity = 0, .slots = 0 },
         .xp = 25,                                       /* 2 hit dice, special */
-        .flags = 0,
+        .flags = CREATURE_UNDEAD,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
         .where = { .depth = 3, .depth_max = 5, .rarity = 5 },
     },
@@ -540,7 +540,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .melee = { .to_hit = 2, .dice = 1, .sides = 6, .to_damage = 0, .type = DMG_PIERCE, .range = 1 },  /* bite */
         .inventory = { .capacity = 0, .slots = 0 },
         .xp = 20,                                       /* 2 hit dice */
-        .flags = 0,
+        .flags = CREATURE_BEAST,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
         .where = { .depth = 3, .depth_max = 5, .rarity = 6 },
     },
@@ -555,7 +555,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .ranged_hit = { EF_CORROSION, 1 },
         .inventory = { .capacity = 0, .slots = 0 },
         .xp = 25,                                       /* 2 hit dice, special */
-        .flags = 0,
+        .flags = CREATURE_BEAST,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
         .where = { .depth = 3, .depth_max = 5, .rarity = 4 },
     },
@@ -588,7 +588,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
         .where = { .depth = 4, .depth_max = 6, .rarity = 4 },
     },
-    [CR_SHADOW] = {                                     /* later: mindless (step 8) */
+    [CR_SHADOW] = {
         .name = "shadow",
         .render = SHAPE_GHOST(BANK_SHADOW),
         .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
@@ -598,7 +598,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .melee_hit = { EF_DRAIN_STR, 1 },
         .inventory = { .capacity = 0, .slots = 0 },
         .xp = 50,                                       /* 3 hit dice, special */
-        .flags = 0,
+        .flags = CREATURE_UNDEAD | CREATURE_MINDLESS,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
         .where = { .depth = 4, .depth_max = 6, .rarity = 4 },
     },
@@ -616,7 +616,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP, .traits = AI_TRAIT_SKIRMISH },
         .where = { .depth = 4, .depth_max = 6, .rarity = 5 },
     },
-    [CR_SKELETON_ARCHER] = {                            /* later: mindless (step 8) */
+    [CR_SKELETON_ARCHER] = {
         .name = "skeleton archer",
         .render = SHAPE_SKELETON(BANK_IRON),
         .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
@@ -626,7 +626,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .kit = { IT_SHORT_BOW, IT_ARROWS },
         .inventory = { .capacity = 2, .slots = SLOT_BIT(SLOT_RANGED) | SLOT_BIT(SLOT_AMMO) },
         .xp = 25,                                       /* 2 hit dice, special */
-        .flags = 0,
+        .flags = CREATURE_UNDEAD | CREATURE_MINDLESS,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP, .traits = AI_TRAIT_SKIRMISH },
         .where = { .depth = 4, .depth_max = 6, .rarity = 4 },
     },
@@ -641,7 +641,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .melee_hit = { EF_HOLD, 1 },                    /* a hug */
         .inventory = { .capacity = 0, .slots = 0 },
         .xp = 225,                                      /* 5 hit dice, special */
-        .flags = 0,
+        .flags = CREATURE_BEAST,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
         .where = { .depth = 5, .depth_max = 7, .rarity = 5 },
     },
@@ -670,7 +670,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .melee = { .to_hit = 4, .dice = 2, .sides = 4, .to_damage = 1, .type = DMG_PIERCE, .range = 1 },  /* bite */
         .inventory = { .capacity = 0, .slots = 0 },
         .xp = 75,                                       /* 4 hit dice */
-        .flags = 0,
+        .flags = CREATURE_BEAST,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
         .where = { .depth = 6, .depth_max = 8, .rarity = 5 },
     },
@@ -684,7 +684,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .melee_hit = { EF_DRAIN_CON, 1 },
         .inventory = { .capacity = 0, .slots = 0 },     /* no sword: a weapon's hit would take its touch's place (R17) */
         .xp = 125,                                      /* 4 hit dice, special */
-        .flags = 0,
+        .flags = CREATURE_UNDEAD,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
         .where = { .depth = 6, .depth_max = 8, .rarity = 4 },
     },
@@ -699,7 +699,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .ranged_hit = { EF_PARALYSE, 1 },
         .inventory = { .capacity = 0, .slots = 0 },
         .xp = 500,                                      /* 6 hit dice, special */
-        .flags = 0,
+        .flags = CREATURE_BEAST,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
         .where = { .depth = 6, .depth_max = 8, .rarity = 3 },
     },
@@ -713,11 +713,11 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .melee_hit = { EF_POISON, 3 },
         .inventory = { .capacity = 0, .slots = 0 },
         .xp = 500,                                      /* 6 hit dice, special */
-        .flags = 0,
+        .flags = CREATURE_DRAGON,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
         .where = { .depth = 6, .depth_max = 9, .rarity = 4 },
     },
-    [CR_MUMMY] = {                                      /* later: mindless (step 8) */
+    [CR_MUMMY] = {
         .name = "mummy",
         .render = SHAPE_ZOMBIE(BANK_BONE),
         .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
@@ -728,7 +728,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .melee_hit = { EF_DRAIN_CON, 2 },
         .inventory = { .capacity = 0, .slots = 0 },
         .xp = 850,                                      /* 7 hit dice, special */
-        .flags = 0,
+        .flags = CREATURE_UNDEAD | CREATURE_MINDLESS,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
         .where = { .depth = 7, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 4 },
     },
@@ -742,7 +742,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .ranged = { .to_hit = 6, .dice = 2, .sides = 6, .to_damage = 0, .type = DMG_BLUNT, .range = 5 },  /* a boulder */
         .inventory = { .capacity = 3, .slots = SLOT_BIT(SLOT_WEAPON) },   /* wields what it finds */
         .xp = 650,                                      /* 8 hit dice */
-        .flags = 0,
+        .flags = CREATURE_GIANT,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
         .where = { .depth = 7, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 5 },
     },
@@ -757,7 +757,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .melee = { .to_hit = 6, .dice = 1, .sides = 6, .to_damage = 1, .type = DMG_PIERCE, .range = 1 },  /* bite */
         .inventory = { .capacity = 0, .slots = 0 },
         .xp = 500,                                      /* 6 hit dice, special */
-        .flags = 0,
+        .flags = CREATURE_BEAST,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
         .where = { .depth = 7, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 4 },
     },
@@ -772,7 +772,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .melee = { .to_hit = 7, .dice = 1, .sides = 6, .to_damage = 0, .type = DMG_COLD, .range = 1 },    /* a chill touch */
         .inventory = { .capacity = 0, .slots = 0 },
         .xp = 850,                                      /* 7 hit dice, special */
-        .flags = 0,
+        .flags = CREATURE_UNDEAD,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
         .where = { .depth = 8, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 3 },
     },
@@ -786,7 +786,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .kit = { IT_BATTLE_AXE },
         .inventory = { .capacity = 2, .slots = SLOT_BIT(SLOT_WEAPON) },
         .xp = 900,                                      /* 9 hit dice */
-        .flags = 0,
+        .flags = CREATURE_GIANT,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
         .where = { .depth = 8, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 4 },
     },
@@ -801,7 +801,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .melee = { .to_hit = 9, .dice = 2, .sides = 6, .to_damage = 0, .type = DMG_PIERCE, .range = 1 },  /* bite */
         .inventory = { .capacity = 0, .slots = 0 },
         .xp = 1600,                                     /* 9 hit dice, special */
-        .flags = 0,
+        .flags = CREATURE_DRAGON,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
         .where = { .depth = 9, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 3 },
     },
@@ -816,9 +816,41 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .melee = { .to_hit = 9, .dice = 1, .sides = 8, .to_damage = 0, .type = DMG_PIERCE, .range = 1 },  /* a bite */
         .inventory = { .capacity = 0, .slots = 0 },
         .xp = 1600,                                     /* 9 hit dice, special */
-        .flags = 0,
+        .flags = CREATURE_UNDEAD,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
         .innate = { EF_REGEN, 2 },
         .where = { .depth = 9, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 2 },
+    },
+    [CR_NECROMANCER] = {                                /* later: holds court (bands) */
+        .name = "necromancer",
+        .render = SHAPE_ROBE(BANK_DARK),
+        .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
+        .stats = { .speed = MONSTER_SPEED, .ability = { 10, 12, 12, 17, 14, 12 } },
+        .health = { .hp_max = 22, .ac = 11 },
+        .mana = { .mp_max = 14 },                       /* a summoning and a bolt, or bolts and a hold */
+        .spells = { SP_FROST_BOLT, SP_HOLD, SP_SUMMON_UNDEAD, SP_BLINK },
+        .melee = { .to_hit = 5, .dice = 1, .sides = 6, .to_damage = 0, .type = DMG_BLUNT, .range = 1 },   /* a staff's blow */
+        .kit = { IT_QUARTERSTAFF, IT_ROBE },
+        .inventory = { .capacity = 4, .slots = SLOT_BIT(SLOT_WEAPON) | SLOT_BIT(SLOT_BODY) },   /* drinks potions: Int 17 */
+        .xp = 500,                                      /* 6 hit dice, special */
+        .flags = 0,
+        .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP, .traits = AI_TRAIT_SKIRMISH },
+        .where = { .depth = 7, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 3 },
+    },
+    [CR_LICH] = {
+        .name = "lich",
+        .render = SHAPE_ROBE(BANK_BONE),
+        .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
+        .stats = { .speed = MONSTER_SPEED, .ability = { 12, 14, 14, 20, 16, 16 } },
+        .health = { .hp_max = 50, .immune = IMMUNE_UNDEAD | DMG_BIT(DMG_COLD), .ac = 17 },
+        .mana = { .mp_max = 30 },
+        .spells = { SP_POWER_BOLT, SP_FROST_BOLT, SP_HOLD, SP_SUMMON_UNDEAD },
+        .melee = { .to_hit = 10, .dice = 1, .sides = 10, .to_damage = 0, .type = DMG_COLD, .range = 1 },  /* a cold touch */
+        .melee_hit = { EF_PARALYSE, 1 },
+        .inventory = { .capacity = 0, .slots = 0 },     /* nothing wielded: a weapon's hit would take its touch's place (R17) */
+        .xp = 2300,                                     /* 11 hit dice, special */
+        .flags = CREATURE_UNDEAD,
+        .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP, .traits = AI_TRAIT_SKIRMISH },
+        .where = { .depth = LEVEL_DEPTH_BOTTOM, .depth_max = LEVEL_DEPTH_BOTTOM, .rarity = 1 },
     },
 };

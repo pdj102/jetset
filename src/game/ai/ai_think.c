@@ -127,11 +127,12 @@ uint8_t ai_spell_start(uint8_t r)
 
 /*
  * Cast a spell (docs/spells.md, 4.9). Hurt, each spell it uses when hurt,
- * on itself. Seeing its target, each spell it casts at one, from a random
- * one: checked by hand, as opt_shoot() does, so it holds a spell that
- * would reach someone else. Then each spell it casts when it sees its
- * target (SPELL_AI_SEEN): on itself, or a burst only with the target in
- * reach (docs/creature_extensions.md M2.1). ACT_CAST refuses what it can't
+ * on itself. Seeing its target, each spell it casts at one or when it sees
+ * one, from a random one, so a necromancer summons as often as it bolts.
+ * At the target (SPELL_AI_TARGET): checked by hand, as opt_shoot() does,
+ * so it holds a spell that would reach someone else. When it sees it
+ * (SPELL_AI_SEEN): on itself, or a burst only with the target in reach
+ * (docs/creature_extensions.md M2.1). ACT_CAST refuses what it can't
  * afford, so out of MP it falls back on its other options. The random
  * start is drawn out of the action (actions.md, R5)
  */
@@ -147,6 +148,8 @@ static uint8_t opt_cast(const ai_ctx_t *c)
     uint8_t y = c->y;
     uint8_t first;
     uint8_t sp;
+    uint8_t use;
+    uint8_t shape;
     spell_def_t def;   /* a copy: the table is in the spells' page */
     act_t a = { 0 };
 
@@ -173,34 +176,28 @@ static uint8_t opt_cast(const ai_ctx_t *c)
     if (!sees) {
         return 0;
     }
-    first = spell_next(id, ai_spell_start((uint8_t)rand()), SPELL_AI_TARGET);
-    sp = first;
-    while (sp != SP_NONE) {
-        a.spell = sp;
-        a.x = gx;
-        a.y = gy;
-        if (act_do(ACT_CAST, &a, ACT_CHECK) == ACT_SUCCESS && a.target == target) {
-            act_do(ACT_CAST, &a, ACT_DO);
-            return a.used;
-        }
-        sp = spell_next(id, sp, SPELL_AI_TARGET);
-        if (sp == first) {
-            break;
-        }
-    }
-    first = spell_next(id, SP_NONE, SPELL_AI_SEEN);
+    first = spell_next(id, ai_spell_start((uint8_t)rand()), SPELL_AI_ANY);
     sp = first;
     while (sp != SP_NONE) {
         spell_get(sp, &def);
-        if (def.shape != SPELL_BURST || nge_map_within(x, y, gx, gy, ACT_BURST_RADIUS)) {
-            a.spell = sp;
+        use = def.ai;   /* in locals (T-ZSDCC-1) */
+        shape = def.shape;
+        a.spell = sp;
+        if (use == SPELL_AI_TARGET) {
+            a.x = gx;
+            a.y = gy;
+            if (act_do(ACT_CAST, &a, ACT_CHECK) == ACT_SUCCESS && a.target == target) {
+                act_do(ACT_CAST, &a, ACT_DO);
+                return a.used;
+            }
+        } else if (use == SPELL_AI_SEEN && (shape != SPELL_BURST || nge_map_within(x, y, gx, gy, ACT_BURST_RADIUS))) {
             a.x = x;
             a.y = y;
             if (ai_try(ACT_CAST, &a)) {
                 return 1;
             }
         }
-        sp = spell_next(id, sp, SPELL_AI_SEEN);
+        sp = spell_next(id, sp, SPELL_AI_ANY);
         if (sp == first) {
             break;
         }

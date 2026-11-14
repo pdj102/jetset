@@ -39,7 +39,8 @@
 #define OP_MANA        5   /* restore amount MP (mana_restore()), or drain them to 0 if negative (mana_spend()): nothing without mana */
 #define OP_UNCURSE     10  /* lift the curse of everything the target has equipped (ITEM_UNCURSED) */
 #define OP_TELEPORT    9   /* to random free floor on the level (level_free_floor()) */
-#define OP_SUMMON      12  /* amount random creatures for the depth (at most 3) around the target */
+#define OP_SUMMON      12  /* amount random creatures (at most 3) around the target: arg 0 any kind for the depth, else
+                               only kinds with every CREATURE_* flag in arg (gen_creature_random_flags()) */
 #define OP_LEVEL_TELEPORT 13  /* go amount levels the way arg says (LT_*): the player by a request, a monster by level_send() */
 #define OP_DETECT      14  /* find what arg says (DETECT_*) within amount tiles of the target (Chebyshev) */
 #define OP_BLINK       15  /* to the tile given to effect_apply_at(), if it can still be entered */
