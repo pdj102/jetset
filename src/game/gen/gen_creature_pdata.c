@@ -65,6 +65,14 @@
                               NGE_SPRITE_PALETTE(bank), LAYER_MONSTERS }
 #define SHAPE_DRAGON(bank)  { SPRITE_DRAGON_IDLE, SPRITE_DRAGON_IDLE_COUNT, SPRITE_DRAGON_IDLE_RATE, \
                               NGE_SPRITE_PALETTE(bank), LAYER_MONSTERS }
+#define SHAPE_KOBOLD(bank)  { SPRITE_KOBOLD_IDLE, SPRITE_KOBOLD_IDLE_COUNT, SPRITE_KOBOLD_IDLE_RATE, \
+                              NGE_SPRITE_PALETTE(bank), LAYER_MONSTERS }
+#define SHAPE_DOG(bank)     { SPRITE_DOG_IDLE, SPRITE_DOG_IDLE_COUNT, SPRITE_DOG_IDLE_RATE, \
+                              NGE_SPRITE_PALETTE(bank), LAYER_MONSTERS }
+#define SHAPE_BUG(bank)     { SPRITE_BUG_IDLE, SPRITE_BUG_IDLE_COUNT, SPRITE_BUG_IDLE_RATE, \
+                              NGE_SPRITE_PALETTE(bank), LAYER_MONSTERS }
+#define SHAPE_ZOMBIE(bank)  { SPRITE_ZOMBIE_IDLE, SPRITE_ZOMBIE_IDLE_COUNT, SPRITE_ZOMBIE_IDLE_RATE, \
+                              NGE_SPRITE_PALETTE(bank), LAYER_MONSTERS }
 
 const gen_creature_kind_t gen_creatures[CR_COUNT] = {
     [CR_NONE] = { 0 },                                  /* none: rarity 0, never generated */
@@ -101,7 +109,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .xp = 5,                                        /* below 1 hit die */
         .flags = 0,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
-        .where = { .depth = 1, .depth_max = 4, .rarity = 10 },
+        .where = { .depth = 1, .depth_max = 2, .rarity = 10 },
     },
     [CR_GOBLIN] = {
         .name = "goblin",
@@ -115,7 +123,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .xp = 5,                                        /* 1-1 hit dice */
         .flags = 0,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
-        .where = { .depth = 1, .depth_max = 6, .rarity = 6 },
+        .where = { .depth = 1, .depth_max = 3, .rarity = 6 },
     },
     [CR_BAT] = {
         .name = "bat",
@@ -129,7 +137,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .flags = 0,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
         .innate = { EF_ERRATIC, 1 },                    /* erratic flight */
-        .where = { .depth = 1, .depth_max = 4, .rarity = 8 },
+        .where = { .depth = 1, .depth_max = 3, .rarity = 8 },
     },
     [CR_GREEN_SNAKE] = {
         .name = "green snake",
@@ -143,7 +151,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .xp = 13,                                       /* 1 hit die, special */
         .flags = 0,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
-        .where = { .depth = 1, .depth_max = 5, .rarity = 7 },
+        .where = { .depth = 1, .depth_max = 3, .rarity = 7 },
     },
     [CR_LICHEN] = {
         .name = "lichen",
@@ -158,7 +166,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .flags = 0,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
         .innate = { EF_ROOT, 1 },
-        .where = { .depth = 1, .depth_max = 5, .rarity = 5 },
+        .where = { .depth = 1, .depth_max = 3, .rarity = 5 },
     },
     [CR_GREEN_SLIME] = {                                /* later: splits, corrodes gear */
         .name = "green slime",
@@ -172,7 +180,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .xp = 25,                                       /* 2 hit dice, special */
         .flags = 0,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
-        .where = { .depth = 2, .depth_max = 6, .rarity = 6 },
+        .where = { .depth = 2, .depth_max = 4, .rarity = 6 },
     },
     [CR_SHRIEKER] = {
         .name = "shrieker",
@@ -187,7 +195,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .flags = 0,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
         .innate = { EF_ROOT, 1 },
-        .where = { .depth = 2, .depth_max = 6, .rarity = 4 },
+        .where = { .depth = 2, .depth_max = 5, .rarity = 4 },
     },
     [CR_BANDIT] = {                                     /* later: steals and runs */
         .name = "bandit",
@@ -200,7 +208,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .xp = 20,                                       /* 2 hit dice */
         .flags = 0,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = BANDIT_STATE },
-        .where = { .depth = 2, .depth_max = 6, .rarity = 5 },
+        .where = { .depth = 2, .depth_max = 4, .rarity = 5 },
     },
     [CR_ORC] = {
         .name = "orc",
@@ -213,7 +221,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .xp = 20,                                       /* 2 hit dice */
         .flags = 0,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
-        .where = { .depth = 3, .depth_max = 7, .rarity = 8 },
+        .where = { .depth = 3, .depth_max = 5, .rarity = 8 },
     },
     [CR_GIANT_SPIDER] = {                               /* later: webs */
         .name = "giant spider",
@@ -227,7 +235,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .xp = 50,                                       /* 3 hit dice, special */
         .flags = 0,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
-        .where = { .depth = 3, .depth_max = 7, .rarity = 6 },
+        .where = { .depth = 3, .depth_max = 5, .rarity = 6 },
     },
     [CR_SKELETON] = {                                   /* later: never flees */
         .name = "skeleton",
@@ -240,7 +248,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .xp = 20,                                       /* 2 hit dice */
         .flags = 0,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
-        .where = { .depth = 3, .depth_max = 7, .rarity = 7 },
+        .where = { .depth = 3, .depth_max = 5, .rarity = 7 },
     },
     [CR_GOBLIN_SHAMAN] = {
         .name = "goblin shaman",
@@ -255,7 +263,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .xp = 25,                                       /* 2 hit dice, special */
         .flags = 0,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP, .traits = AI_TRAIT_SKIRMISH },
-        .where = { .depth = 3, .depth_max = 7, .rarity = 4 },
+        .where = { .depth = 3, .depth_max = 5, .rarity = 4 },
     },
     [CR_GOLD_SNAKE] = {
         .name = "gold snake",
@@ -270,7 +278,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .xp = 50,                                       /* 3 hit dice, special */
         .flags = 0,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
-        .where = { .depth = 4, .depth_max = 8, .rarity = 5 },
+        .where = { .depth = 4, .depth_max = 6, .rarity = 5 },
     },
     [CR_FLOATING_EYE] = {                               /* later: a paralysing gaze */
         .name = "floating eye",
@@ -283,7 +291,7 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .flags = 0,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
         .innate = { EF_ROOT, 1 },
-        .where = { .depth = 4, .depth_max = 8, .rarity = 3 },
+        .where = { .depth = 4, .depth_max = 6, .rarity = 3 },
     },
     [CR_MIMIC] = {                                      /* later: poses as treasure until touched */
         .name = "mimic",
@@ -419,5 +427,199 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .flags = 0,
         .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP, .traits = AI_TRAIT_SKIRMISH },
         .where = { .depth = 2, .depth_max = 4, .rarity = 5 },
+    },
+    /* ---- docs/creature_extensions.md 6.1: depths 1 to 6 (plan step 6) ---- */
+    [CR_KOBOLD] = {                                     /* weak alone, dangerous in threes (later: bands) */
+        .name = "kobold",
+        .render = SHAPE_KOBOLD(BANK_RED),
+        .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
+        .stats = { .speed = MONSTER_SPEED, .ability = { 7, 13, 9, 8, 7, 6 } },
+        .health = { .hp_max = 3, .ac = 12 },
+        .melee = { .to_hit = 0, .dice = 1, .sides = 4, .to_damage = 0, .type = DMG_PIERCE, .range = 1 },  /* a spear */
+        .inventory = { .capacity = 2, .slots = SLOT_BIT(SLOT_WEAPON) },
+        .xp = 5,                                        /* below 1 hit die */
+        .flags = 0,
+        .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
+        .where = { .depth = 1, .depth_max = 3, .rarity = 8 },
+    },
+    [CR_KOBOLD_SLINGER] = {
+        .name = "kobold slinger",
+        .render = SHAPE_KOBOLD(BANK_EARTH),
+        .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
+        .stats = { .speed = MONSTER_SPEED, .ability = { 6, 14, 9, 8, 8, 6 } },
+        .health = { .hp_max = 3, .ac = 12 },
+        .melee = { .to_hit = 0, .dice = 1, .sides = 2, .to_damage = 0, .type = DMG_BLUNT, .range = 1 },   /* a cudgel */
+        .kit = { IT_SLING, IT_STONES },
+        .inventory = { .capacity = 3, .slots = SLOT_BIT(SLOT_WEAPON) | SLOT_BIT(SLOT_RANGED) | SLOT_BIT(SLOT_AMMO) },
+        .xp = 6,                                        /* below 1 hit die, special */
+        .flags = 0,
+        .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP, .traits = AI_TRAIT_SKIRMISH },
+        .where = { .depth = 1, .depth_max = 3, .rarity = 5 },
+    },
+    [CR_JACKAL] = {                                     /* later: packs (bands) */
+        .name = "jackal",
+        .render = SHAPE_DOG(BANK_GOLD),
+        .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
+        .stats = { .speed = MONSTER_FAST, .ability = { 6, 15, 9, 2, 12, 5 } },
+        .health = { .hp_max = 3, .ac = 12 },
+        .melee = { .to_hit = 0, .dice = 1, .sides = 2, .to_damage = 0, .type = DMG_PIERCE, .range = 1 },  /* bite */
+        .inventory = { .capacity = 0, .slots = 0 },
+        .xp = 5,                                        /* below 1 hit die */
+        .flags = 0,
+        .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
+        .where = { .depth = 1, .depth_max = 3, .rarity = 6 },
+    },
+    [CR_STIRGE] = {
+        .name = "stirge",
+        .render = SHAPE_BAT(BANK_RED),
+        .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NO_FLOOR },   /* flies: over holes and traps */
+        .stats = { .speed = MONSTER_SPEED, .ability = { 4, 16, 9, 2, 10, 4 } },
+        .health = { .hp_max = 4, .ac = 13 },
+        .melee = { .to_hit = 1, .dice = 1, .sides = 3, .to_damage = 0, .type = DMG_PIERCE, .range = 1 },  /* a beak that drinks */
+        .melee_hit = { EF_BLEEDING, 1 },
+        .inventory = { .capacity = 0, .slots = 0 },
+        .xp = 13,                                       /* 1 hit die, special */
+        .flags = 0,
+        .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
+        .where = { .depth = 1, .depth_max = 3, .rarity = 5 },
+    },
+    [CR_FIRE_BEETLE] = {
+        .name = "fire beetle",
+        .render = SHAPE_BUG(BANK_ORANGE),
+        .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
+        .stats = { .speed = MONSTER_SPEED, .ability = { 10, 10, 12, 1, 8, 2 } },
+        .health = { .hp_max = 5, .immune = DMG_BIT(DMG_FIRE), .ac = 14 },   /* a hard shell */
+        .melee = { .to_hit = 1, .dice = 1, .sides = 4, .to_damage = 1, .type = DMG_SLASH, .range = 1 },   /* mandibles */
+        .inventory = { .capacity = 0, .slots = 0 },
+        .xp = 10,                                       /* 1 hit die */
+        .flags = 0,
+        .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
+        .where = { .depth = 1, .depth_max = 3, .rarity = 5 },
+    },
+    [CR_ZOMBIE] = {                                     /* later: mindless (step 8) */
+        .name = "zombie",
+        .render = SHAPE_ZOMBIE(BANK_GREEN),
+        .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
+        .stats = { .speed = MONSTER_SLOW, .ability = { 13, 6, 14, 3, 6, 3 } },
+        .health = { .hp_max = 11, .immune = IMMUNE_UNDEAD, .ac = 8 },
+        .melee = { .to_hit = 2, .dice = 1, .sides = 8, .to_damage = 0, .type = DMG_BLUNT, .range = 1 },   /* a fist */
+        .inventory = { .capacity = 0, .slots = 0 },
+        .xp = 20,                                       /* 2 hit dice */
+        .flags = 0,
+        .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
+        .where = { .depth = 2, .depth_max = 4, .rarity = 6 },
+    },
+    [CR_GHOUL] = {
+        .name = "ghoul",
+        .render = SHAPE_ZOMBIE(BANK_IRON),
+        .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
+        .stats = { .speed = MONSTER_SPEED, .ability = { 11, 12, 11, 6, 9, 4 } },
+        .health = { .hp_max = 11, .immune = IMMUNE_UNDEAD, .ac = 13 },
+        .melee = { .to_hit = 2, .dice = 1, .sides = 3, .to_damage = 0, .type = DMG_SLASH, .range = 1 },   /* claws */
+        .melee_hit = { EF_PARALYSE, 1 },
+        .inventory = { .capacity = 0, .slots = 0 },
+        .xp = 25,                                       /* 2 hit dice, special */
+        .flags = 0,
+        .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
+        .where = { .depth = 3, .depth_max = 5, .rarity = 5 },
+    },
+    [CR_WOLF] = {                                       /* later: packs (bands) */
+        .name = "wolf",
+        .render = SHAPE_DOG(BANK_IRON),
+        .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
+        .stats = { .speed = MONSTER_SPEED, .ability = { 12, 14, 12, 2, 12, 6 } },
+        .health = { .hp_max = 11, .ac = 13 },
+        .melee = { .to_hit = 2, .dice = 1, .sides = 6, .to_damage = 0, .type = DMG_PIERCE, .range = 1 },  /* bite */
+        .inventory = { .capacity = 0, .slots = 0 },
+        .xp = 20,                                       /* 2 hit dice */
+        .flags = 0,
+        .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
+        .where = { .depth = 3, .depth_max = 5, .rarity = 6 },
+    },
+    [CR_BOMBARDIER] = {
+        .name = "bombardier beetle",
+        .render = SHAPE_BUG(BANK_GOLD),
+        .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
+        .stats = { .speed = MONSTER_SPEED, .ability = { 10, 10, 13, 1, 8, 2 } },
+        .health = { .hp_max = 9, .immune = DMG_BIT(DMG_ACID), .ac = 15 },
+        .melee = { .to_hit = 2, .dice = 1, .sides = 4, .to_damage = 0, .type = DMG_SLASH, .range = 1 },   /* mandibles */
+        .ranged = { .to_hit = 2, .dice = 1, .sides = 4, .to_damage = 0, .type = DMG_ACID, .range = 3 },   /* a spray */
+        .ranged_hit = { EF_CORROSION, 1 },
+        .inventory = { .capacity = 0, .slots = 0 },
+        .xp = 25,                                       /* 2 hit dice, special */
+        .flags = 0,
+        .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
+        .where = { .depth = 3, .depth_max = 5, .rarity = 4 },
+    },
+    [CR_HOBGOBLIN] = {                                  /* later: leads a troop (bands) */
+        .name = "hobgoblin",
+        .render = SHAPE_GOBLIN(BANK_RED),
+        .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
+        .stats = { .speed = MONSTER_SPEED, .ability = { 13, 12, 12, 10, 9, 9 } },
+        .health = { .hp_max = 11, .vuln = DMG_BIT(DMG_FIRE), .ac = 11 },
+        .melee = { .to_hit = 2, .dice = 1, .sides = 6, .to_damage = 0, .type = DMG_SLASH, .range = 1 },   /* claws */
+        .kit = { IT_SHORT_SWORD, IT_SHIELD },
+        .inventory = { .capacity = 4, .slots = SLOTS_FIGHTER },   /* drinks potions: Int 10 */
+        .xp = 25,                                       /* 2 hit dice, special */
+        .flags = 0,
+        .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
+        .where = { .depth = 4, .depth_max = 6, .rarity = 3 },
+    },
+    [CR_HARPY] = {
+        .name = "harpy",
+        .render = SHAPE_BAT(BANK_FLESH),
+        .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NO_FLOOR },   /* flies: over holes and traps */
+        .stats = { .speed = MONSTER_SPEED, .ability = { 10, 14, 11, 7, 10, 14 } },
+        .health = { .hp_max = 13, .ac = 12 },
+        .mana = { .mp_max = 6 },                        /* three songs */
+        .spells = { SP_CONFUSE },                       /* its song */
+        .melee = { .to_hit = 3, .dice = 1, .sides = 4, .to_damage = 0, .type = DMG_SLASH, .range = 1 },   /* talons */
+        .inventory = { .capacity = 0, .slots = 0 },
+        .xp = 50,                                       /* 3 hit dice, special */
+        .flags = 0,
+        .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
+        .where = { .depth = 4, .depth_max = 6, .rarity = 4 },
+    },
+    [CR_SHADOW] = {                                     /* later: mindless (step 8) */
+        .name = "shadow",
+        .render = SHAPE_GHOST(BANK_SHADOW),
+        .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
+        .stats = { .speed = MONSTER_SPEED, .ability = { 6, 14, 10, 3, 10, 6 } },
+        .health = { .hp_max = 13, .immune = IMMUNE_UNDEAD | DMG_BIT(DMG_COLD), .resist = RESIST_WEAPONS, .ac = 13 },
+        .melee = { .to_hit = 3, .dice = 1, .sides = 4, .to_damage = 0, .type = DMG_COLD, .range = 1 },    /* a chill touch */
+        .melee_hit = { EF_DRAIN_STR, 1 },
+        .inventory = { .capacity = 0, .slots = 0 },
+        .xp = 50,                                       /* 3 hit dice, special */
+        .flags = 0,
+        .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP },
+        .where = { .depth = 4, .depth_max = 6, .rarity = 4 },
+    },
+    [CR_ORC_ARCHER] = {                                 /* later: an orc war party (bands) */
+        .name = "orc archer",
+        .render = SHAPE_GOBLIN(BANK_EARTH),
+        .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
+        .stats = { .speed = MONSTER_SPEED, .ability = { 12, 12, 12, 8, 8, 7 } },
+        .health = { .hp_max = 9, .ac = 13 },
+        .melee = { .to_hit = 2, .dice = 1, .sides = 4, .to_damage = 0, .type = DMG_SLASH, .range = 1 },   /* a knife */
+        .kit = { IT_CROSSBOW, IT_BOLTS },
+        .inventory = { .capacity = 4, .slots = SLOT_BIT(SLOT_WEAPON) | SLOT_BIT(SLOT_RANGED) | SLOT_BIT(SLOT_AMMO) },
+        .xp = 25,                                       /* 2 hit dice, special */
+        .flags = 0,
+        .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP, .traits = AI_TRAIT_SKIRMISH },
+        .where = { .depth = 4, .depth_max = 6, .rarity = 5 },
+    },
+    [CR_SKELETON_ARCHER] = {                            /* later: mindless (step 8) */
+        .name = "skeleton archer",
+        .render = SHAPE_SKELETON(BANK_IRON),
+        .block = { NGE_BLOCK_OCCUPIED, NGE_BLOCK_NONE },
+        .stats = { .speed = MONSTER_SPEED, .ability = { 10, 13, 10, 3, 8, 4 } },
+        .health = { .hp_max = 9, .immune = IMMUNE_UNDEAD, .resist = DMG_BIT(DMG_PIERCE), .vuln = DMG_BIT(DMG_BLUNT), .ac = 13 },
+        .melee = { .to_hit = 2, .dice = 1, .sides = 4, .to_damage = 0, .type = DMG_SLASH, .range = 1 },   /* claws */
+        .kit = { IT_SHORT_BOW, IT_ARROWS },
+        .inventory = { .capacity = 2, .slots = SLOT_BIT(SLOT_RANGED) | SLOT_BIT(SLOT_AMMO) },
+        .xp = 25,                                       /* 2 hit dice, special */
+        .flags = 0,
+        .ai = { .brain = AI_BRAIN_DEFAULT, .state = AI_STATE_ASLEEP, .traits = AI_TRAIT_SKIRMISH },
+        .where = { .depth = 4, .depth_max = 6, .rarity = 4 },
     },
 };

@@ -315,7 +315,7 @@ Spec 6.5, sprite_style.md section 7. Can run alongside steps 2 to 4.
 - **Check:** `make` passes the importer's hardware rules (sprite_import.md R1 to R14).
   You open the file in Aseprite. The shapes show in CSpect from step 6.
 
-### Step 6: phase 1 kinds, depths 1 to 6 (M6.1)
+### Step 6: phase 1 kinds, depths 1 to 6 (M6.1) `[done]` (2026-11-14)
 
 Spec 6.1, 6.3, R1 to R4.
 

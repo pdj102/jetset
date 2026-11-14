@@ -43,7 +43,22 @@
 #define CR_FIGHTER        22   /* the player as a Fighter (game/chargen); CR_PLAYER is the Dev */
 #define CR_MAGE           23   /* the player as a Mage */
 #define CR_GOBLIN_ARCHER  24
-#define CR_COUNT          25
+/* docs/creature_extensions.md 6.1: depths 1 to 6 (plan step 6) */
+#define CR_KOBOLD         25
+#define CR_KOBOLD_SLINGER 26
+#define CR_JACKAL         27
+#define CR_STIRGE         28
+#define CR_FIRE_BEETLE    29
+#define CR_ZOMBIE         30
+#define CR_GHOUL          31
+#define CR_WOLF           32
+#define CR_BOMBARDIER     33   /* the bombardier beetle */
+#define CR_HOBGOBLIN      34
+#define CR_HARPY          35
+#define CR_SHADOW         36
+#define CR_ORC_ARCHER     37
+#define CR_SKELETON_ARCHER 38
+#define CR_COUNT          39
 
 /* Items (CLASS_ITEM): IT_QUEST is one a game, made by game/actors.c, never at random */
 #define IT_NONE              0   /* none: a blank row 0 in the kind table, never generated */

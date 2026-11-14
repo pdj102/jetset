@@ -137,7 +137,14 @@ static int kit_ok(uint8_t kind)
 static int creature_ok(nge_entity_id_t id, nge_owner_t owner, uint8_t kind)
 {
     const gen_creature_kind_t *b = &gen_creatures[kind];
+    uint8_t ac = b->health.ac;   /* the record's, and its kit's armour, equipped (the hobgoblin's shield) */
     uint8_t a;
+
+    for (a = 0; a < GEN_KIT_MAX; a++) {
+        if (b->kit[a] != IT_NONE) {
+            ac = (uint8_t)(ac + gen_item_armour_ac(b->kit[a]));
+        }
+    }
 
     if (!made(id, owner, CLASS_CREATURE, kind) || !render_is(id, &b->render)) {
         return 0;
@@ -149,7 +156,7 @@ static int creature_ok(nge_entity_id_t id, nge_owner_t owner, uint8_t kind)
     if (!NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_HEALTH) ||
         health_hp[id] != b->health.hp_max || health_hp_max[id] != b->health.hp_max ||
         health_immune[id] != b->health.immune || health_resist[id] != b->health.resist ||
-        health_vuln[id] != b->health.vuln || health_ac[id] != b->health.ac ||
+        health_vuln[id] != b->health.vuln || health_ac[id] != ac ||
         stats_speed[id] != b->stats.speed || !melee_is(id, &b->melee) || !ranged_is(id, &b->ranged)) {
         return 0;
     }
@@ -697,10 +704,34 @@ int main(void)
                          AI_CAN_RANGED | AI_CAN_SKIRMISH));    /* its kit's arrows */
     id = gen_creature(CR_GOLD_SNAKE, AREA);
     CHECK(ai_can(id) == (AI_CAN_MOVE | AI_CAN_MELEE | AI_CAN_RANGED));   /* spits, but stands its ground */
-    /* Only the archer and the shaman are skirmishers */
+    /* docs/creature_extensions.md 6.1 (plan step 6): kits, a spray, a song, and the hobgoblin's shield in its AC */
+    reset();
+    nge_event_init();
+    id = gen_creature(CR_HOBGOBLIN, AREA);
+    CHECK(inv_equipped(id, SLOT_WEAPON) != NGE_ENTITY_INVALID && kind_index[inv_equipped(id, SLOT_WEAPON)] == IT_SHORT_SWORD &&
+          inv_equipped(id, SLOT_SHIELD) != NGE_ENTITY_INVALID && kind_index[inv_equipped(id, SLOT_SHIELD)] == IT_SHIELD &&
+          health_ac[id] > gen_creatures[CR_HOBGOBLIN].health.ac && (ai_can(id) & AI_CAN_USE));   /* drinks potions */
+    id = gen_creature(CR_KOBOLD_SLINGER, AREA);
+    CHECK(inv_equipped(id, SLOT_AMMO) != NGE_ENTITY_INVALID && kind_index[inv_equipped(id, SLOT_AMMO)] == IT_STONES &&
+          (ai_can(id) & AI_CAN_SKIRMISH));
+    id = gen_creature(CR_ORC_ARCHER, AREA);
+    CHECK(inv_equipped(id, SLOT_RANGED) != NGE_ENTITY_INVALID && kind_index[inv_equipped(id, SLOT_RANGED)] == IT_CROSSBOW);
+    id = gen_creature(CR_BOMBARDIER, AREA);
+    CHECK(ATTACK_HAS(id, ATTACK_RANGED) && GEN_HOOK_EF(gen_hit_of(id, ATTACK_RANGED)) == EF_CORROSION &&
+          !(ai_can(id) & AI_CAN_SKIRMISH));
+    id = gen_creature(CR_HARPY, AREA);
+    CHECK(spell_knows(id, SP_CONFUSE) && mana_mp[id] == 6 && nge_block_pass[id] == NGE_BLOCK_NO_FLOOR);
+    CHECK(GEN_HOOK_EF(gen_creature_hit(CR_GHOUL, ATTACK_MELEE)) == EF_PARALYSE &&
+          GEN_HOOK_EF(gen_creature_hit(CR_SHADOW, ATTACK_MELEE)) == EF_DRAIN_STR &&
+          GEN_HOOK_EF(gen_creature_hit(CR_STIRGE, ATTACK_MELEE)) == EF_BLEEDING);
+    reset();
+    nge_event_init();
+    /* Only the archers, the slinger and the shaman are skirmishers */
     ok = 1;
     for (kind = CR_NONE + 1; kind < CR_COUNT; kind++) {
-        ok = ok && (gen_creatures[kind].ai.traits == AI_TRAIT_SKIRMISH) == (kind == CR_GOBLIN_ARCHER || kind == CR_GOBLIN_SHAMAN);
+        ok = ok && (gen_creatures[kind].ai.traits == AI_TRAIT_SKIRMISH) ==
+                   (kind == CR_GOBLIN_ARCHER || kind == CR_GOBLIN_SHAMAN || kind == CR_KOBOLD_SLINGER ||
+                    kind == CR_ORC_ARCHER || kind == CR_SKELETON_ARCHER);
     }
     CHECK(ok);
     id = gen_creature(CR_SHRIEKER, AREA);
@@ -799,7 +830,7 @@ int main(void)
         ok = ok && kinds >= 3;
     }
     CHECK(ok);
-    CHECK(gen_creatures[CR_RAT].where.depth_max == 4 && gen_creatures[CR_GOBLIN].where.depth_max == 6);
+    CHECK(gen_creatures[CR_RAT].where.depth_max == 2 && gen_creatures[CR_GOBLIN].where.depth_max == 3);   /* narrowed (6.3) */
     memset(seen, 0, sizeof(seen));
     for (i = 0; i < 300; i++) {
         reset();                                               /* a troll owns its regeneration too */

@@ -9,7 +9,8 @@ of hook slots (R17, plan step 1c).
 The plan is [creature_extensions_plan.md](creature_extensions_plan.md).
 Built: the `balance.py` fix from Q7 (section 10, plan step 1), D11 (plan step 1b), D3 (plan step 1c),
 M1.1 and M1.2 (plan step 2), M1.3 (plan step 3),
-and M1.4 and M2.1's phase-1 spells (plan step 4).
+M1.4 and M2.1's phase-1 spells (plan step 4), the six
+shapes (plan step 5) and the kinds of 6.1 (plan step 6).
 
 Builds on [creatures.md](creatures.md) (the roster of 21 random kinds and rooted
 creatures), [ai.md](ai.md) and [ai_default_brain.md](ai_default_brain.md),
@@ -866,3 +867,37 @@ CSpect checks (the user runs them):
   passed, the preview was agreed, and the frames read back from the file as
   drawn. `make` passed the importer's rules.
 - Nothing uses the shapes yet: steps 6 and 7 do.
+
+### Step 6: phase-1 kinds, depths 1 to 6 (2026-11-14)
+
+- The 14 kinds of 6.1 other than the goblin archer (step 2) and the gas spore
+  (step 9): `CR_KOBOLD` 25 to `CR_SKELETON_ARCHER` 38, with the shape macros
+  `SHAPE_KOBOLD`, `SHAPE_DOG`, `SHAPE_BUG` and `SHAPE_ZOMBIE`. Their ability
+  scores, which 6.1 leaves open, follow the older kinds of their sort.
+  `make test` passes.
+- CSpect (check 6): the new shapes show in their banks, kobolds and stirges
+  at depth 1, the harpy's song confuses, the ghoul's claws paralyse, the
+  orc archer skirmishes. Paralysis seemed to end at once: measured over
+  2,000 seeds it costs a Fighter 1 to 3 turns when it lands (46%, 28%,
+  33%), but a lost turn shows nothing, and in the dev build the ghoul acts
+  at half speed. Saying so each lost turn is a question for the effects,
+  not this spec.
+- **The depths of four older kinds don't narrow yet.** The mimic (4-9), ogre
+  (5-8), ghost (5-9) and wraith (6-10) keep their depths until step 7 brings
+  the deep kinds. Narrowed now, depths 8 to 10 would hold 2 kinds each,
+  below `test_gen`'s 3 a depth and `make balance`'s C3. The other 14 older
+  kinds narrow as 6.3 says.
+- **A kit's armour counts in its AC.** The hobgoblin's shield, equipped,
+  raises its AC above the record's 11 (6.1's AC is the record's).
+  `test_gen`'s `creature_ok()` adds the kit's armour AC.
+- The shadow is drawn in `BANK_SHADOW`, the silhouette bank, as 6.1 says:
+  an all-dark ghost.
+- **`make balance`** (R14): random kinds 21 before, 35 after. Kinds a depth,
+  1 to 10: 10, 15, 21, 20, 18, 11, 5, 5, 5, 3. Mean XP a monster: 8, 11, 16,
+  32, 59, 134, 389, 389, 600, 854. C1 still fails at depths 2 to 8, and C5's
+  warning at depth 4 has gone (7.6 hits to kill the player); depth 1 still
+  warns (4.0). The XP gained by the end is 19,924, from 17,350.
+- **Dev kit:** for the check, the out-of-sight monsters were placed from a
+  table: the shaman, a kobold, jackal, fire beetle, zombie, harpy, ghoul and
+  orc archer. Removed once the check passed.
+- Pages: 107 +1,030 bytes (2,811), 127 +84 (240). Page 102 unchanged once the dev kit went. No new library routine in common memory.
