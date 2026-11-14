@@ -300,7 +300,7 @@ Spec M1.4, M2.1, R10, R11.
 - **CSpect (check 2b):** the dragon breathes, catching itself without harm. The shriek
   wakes the goblin. A bat sometimes flies off its line.
 
-### Step 5: the six shapes (M6.3)
+### Step 5: the six shapes (M6.3) `[done]` (2026-11-14)
 
 Spec 6.5, sprite_style.md section 7. Can run alongside steps 2 to 4.
 

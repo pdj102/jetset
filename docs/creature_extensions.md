@@ -848,3 +848,21 @@ CSpect checks (the user runs them):
   (2 rows), 130 +165, 134 +76, 135 +102 (5 rows, a byte for each row's
   flags, and names). Page 102 +115 for the dev kit while the check ran, back
   to 8,015 after it. No new library routine in common memory.
+
+### Step 5: the six shapes (2026-11-14)
+
+- As 6.5: `kobold.idle`, `dog.idle`, `bug.idle`, `zombie.idle`,
+  `robe.idle` and `lizard.idle`, 2 frames each, at the end of
+  `assets/Sprites.aseprite`: patterns 86 to 97, 98 of 128 used, over 2
+  pattern pages.
+- The kobold is 8 x 9: the small class's 9 rows, not the "about 9 x 10" of
+  the table, which no size class allows (small is up to 12 x 9, medium 12
+  rows or more). It was redrawn upright after the first preview, where it
+  read as a bird.
+- Sizes: dog 12 x 9, bug 12 x 8 and lizard 12 x 7 (small), zombie 11 x 13
+  and robe 11 x 14 with its staff (medium).
+- The grids were written as interiors and outlined by a script, so every
+  outline is 1 pixel with single diagonal steps. `sprite_grids.py check`
+  passed, the preview was agreed, and the frames read back from the file as
+  drawn. `make` passed the importer's rules.
+- Nothing uses the shapes yet: steps 6 and 7 do.

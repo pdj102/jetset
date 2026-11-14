@@ -21,13 +21,13 @@
 
 #define SPRITE_PALETTE_PAGE          155 /**< SECTION PAGE_155 in sprite_palette_data.asm. */
 #define SPRITE_PALETTE_ENTRIES       256 /**< Entries in sprite_palette: load them from entry 0. */
-#define SPRITE_PATTERNS              86  /**< 4-bit patterns, from pattern 0. */
+#define SPRITE_PATTERNS              98  /**< 4-bit patterns, from pattern 0. */
 #define SPRITE_PATTERN_PAGES         2   /**< Pages of patterns: SPRITE_PATTERNS_PAGE_0 on. */
 
 #define SPRITE_PATTERNS_PAGE_0       157 /**< Patterns 0-63: sprite_patterns_0. */
 #define SPRITE_PATTERNS_COUNT_0      64
-#define SPRITE_PATTERNS_PAGE_1       159 /**< Patterns 64-85: sprite_patterns_1. */
-#define SPRITE_PATTERNS_COUNT_1      22
+#define SPRITE_PATTERNS_PAGE_1       159 /**< Patterns 64-97: sprite_patterns_1. */
+#define SPRITE_PATTERNS_COUNT_1      34
 
 #define SPRITE_PLAYER_IDLE           0   /**< Tag player.idle: frames 0-1. */
 #define SPRITE_PLAYER_IDLE_COUNT     2
@@ -353,6 +353,36 @@
 #define SPRITE_MUSHROOM_COUNT        1
 #define SPRITE_MUSHROOM_RATE         5
 #define SPRITE_MUSHROOM_BANK         10
+
+#define SPRITE_KOBOLD_IDLE           86  /**< Tag kobold.idle: frames 86-87. */
+#define SPRITE_KOBOLD_IDLE_COUNT     2
+#define SPRITE_KOBOLD_IDLE_RATE      25
+#define SPRITE_KOBOLD_IDLE_BANK      3
+
+#define SPRITE_DOG_IDLE              88  /**< Tag dog.idle: frames 88-89. */
+#define SPRITE_DOG_IDLE_COUNT        2
+#define SPRITE_DOG_IDLE_RATE         25
+#define SPRITE_DOG_IDLE_BANK         13
+
+#define SPRITE_BUG_IDLE              90  /**< Tag bug.idle: frames 90-91. */
+#define SPRITE_BUG_IDLE_COUNT        2
+#define SPRITE_BUG_IDLE_RATE         25
+#define SPRITE_BUG_IDLE_BANK         4
+
+#define SPRITE_ZOMBIE_IDLE           92  /**< Tag zombie.idle: frames 92-93. */
+#define SPRITE_ZOMBIE_IDLE_COUNT     2
+#define SPRITE_ZOMBIE_IDLE_RATE      25
+#define SPRITE_ZOMBIE_IDLE_BANK      6
+
+#define SPRITE_ROBE_IDLE             94  /**< Tag robe.idle: frames 94-95. */
+#define SPRITE_ROBE_IDLE_COUNT       2
+#define SPRITE_ROBE_IDLE_RATE        25
+#define SPRITE_ROBE_IDLE_BANK        15
+
+#define SPRITE_LIZARD_IDLE           96  /**< Tag lizard.idle: frames 96-97. */
+#define SPRITE_LIZARD_IDLE_COUNT     2
+#define SPRITE_LIZARD_IDLE_RATE      25
+#define SPRITE_LIZARD_IDLE_BANK      6
 
 extern const uint8_t sprite_patterns_0[];
 extern const uint8_t sprite_patterns_1[];
