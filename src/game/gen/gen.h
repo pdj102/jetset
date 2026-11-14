@@ -61,6 +61,18 @@ nge_entity_id_t gen_creature(uint8_t kind, nge_owner_t owner) NGE_BANKED;
  */
 nge_entity_id_t gen_creature_random(uint8_t depth, nge_owner_t owner) NGE_BANKED;
 
+/**
+ * @brief The kinds of a monster draw at depth, for the level generator
+ *        (docs/creature_extensions.md M3.2): 1 time in 4, if a band's depths
+ *        hold depth, a band picked by rarity, its leader first and each
+ *        member rolled between its min and max, whatever its own depths;
+ *        otherwise one random kind, as gen_creature_random() picks it. Cut
+ *        short at max kinds: a band uses as many draws as it has creatures.
+ * @param kinds  Out, in common memory: CR_*, at least max of them.
+ * @return How many kinds were written: 0 if max is 0 or no kind appears at depth.
+ */
+uint8_t gen_band_pick(uint8_t depth, uint8_t *kinds, uint8_t max) NGE_BANKED;
+
 /*
  * A creature kind's families and traits, in its record's flags byte
  * (docs/creature_extensions.md M4.3, D8): read with gen_creature_flags()

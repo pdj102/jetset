@@ -91,6 +91,7 @@ typedef struct level_room {
 extern level_room_t level_rooms[LEVEL_CELLS];       /* by cell */
 extern uint8_t      level_room_cells[LEVEL_ROOMS_MAX];  /* the cells with rooms */
 extern uint8_t      level_room_count;               /* entries in level_room_cells */
+extern uint8_t      level_floor_cell;               /* the cell of the room free_floor() last found a tile in */
 extern uint8_t      level_links[LEVEL_CELLS];       /* LEVEL_LINK_* to the cell's right and below */
 
 /* Doorways: where corridors meet rooms, found while making corridors (page 103) */

@@ -111,11 +111,19 @@ void gen_creature_seqs(uint8_t kind, gen_seq_t *seq) NGE_BANKED
     memcpy(seq, gen_creatures[kind].seqs, sizeof(gen_creatures[kind].seqs));
 }
 
-nge_entity_id_t gen_creature_random(uint8_t depth, nge_owner_t owner) NGE_BANKED
+/* A random kind for depth by rarity (GEN_PICK()), KIND_INVALID if none: once, for the random creature and the band pick */
+static uint8_t pick(uint8_t depth)
 {
     uint8_t kind;
 
     GEN_PICK(gen_creatures, CR_COUNT, depth, kind);
+    return kind;
+}
+
+nge_entity_id_t gen_creature_random(uint8_t depth, nge_owner_t owner) NGE_BANKED
+{
+    uint8_t kind = pick(depth);
+
     return (kind == KIND_INVALID) ? NGE_ENTITY_INVALID : create(kind, owner);
 }
 
@@ -170,6 +178,45 @@ uint16_t gen_creature_struck(uint8_t kind) NGE_BANKED
 
     h = gen_creatures[kind].struck;
     return GEN_HOOK_PACK(h.ef, h.power);
+}
+
+uint8_t gen_band_pick(uint8_t depth, uint8_t *kinds, uint8_t max) NGE_BANKED
+{
+    gen_band_t b;   /* a copy: its fields in locals (T-ZSDCC-1) */
+    uint8_t band = KIND_INVALID;
+    uint8_t kind;
+    uint8_t n;
+    uint8_t i;
+    uint8_t each;
+
+    if (max == 0) {
+        return 0;
+    }
+    if ((rand() & 3) == 0) {
+        GEN_PICK(gen_bands, GEN_BANDS, depth, band);
+    }
+    if (band == KIND_INVALID) {
+        kind = pick(depth);
+        if (kind == KIND_INVALID) {
+            return 0;
+        }
+        kinds[0] = kind;
+        return 1;
+    }
+    memcpy(&b, &gen_bands[band], sizeof(b));
+    kinds[0] = b.leader;
+    n = 1;
+    for (i = 0; i < GEN_BAND_MEMBERS; i++) {
+        kind = b.member[i];
+        if (kind == CR_NONE) {
+            continue;
+        }
+        each = (uint8_t)(b.min[i] + (unsigned int)rand() % (uint8_t)(b.max[i] - b.min[i] + 1));
+        while (each-- > 0 && n < max) {
+            kinds[n++] = kind;
+        }
+    }
+    return n;
 }
 
 uint8_t gen_creature_flags(uint8_t kind) NGE_BANKED

@@ -773,6 +773,72 @@ int main(void)
         }
         CHECK(ok);
     }
+    /*
+     * The bands (docs/creature_extensions.md M3): real kinds; a member CR_NONE
+     * exactly when it has none; at most LEVEL_MONSTERS_MAX creatures (R8); the
+     * leader met at every depth of its band; members asleep with their leader
+     */
+    ok = 1;
+    for (i = 0; i < GEN_BANDS; i++) {
+        const gen_band_t *b = &gen_bands[i];
+        const gen_creature_kind_t *l = &gen_creatures[b->leader];
+        int size = 1;
+        int m;
+
+        ok = ok && b->leader > CR_NONE && b->leader < CR_COUNT && l->ai.brain != AI_BRAIN_NONE && b->where.rarity > 0 &&
+             b->where.depth >= l->where.depth && b->where.depth_max <= l->where.depth_max &&
+             b->where.depth <= b->where.depth_max;
+        for (m = 0; m < GEN_BAND_MEMBERS; m++) {
+            if (b->member[m] == CR_NONE) {
+                ok = ok && b->min[m] == 0 && b->max[m] == 0;
+            } else {
+                ok = ok && b->member[m] < CR_COUNT && gen_creatures[b->member[m]].ai.brain != AI_BRAIN_NONE &&
+                     b->min[m] <= b->max[m] && b->max[m] > 0 &&
+                     gen_creatures[b->member[m]].ai.state == l->ai.state;
+                size += b->max[m];
+            }
+        }
+        ok = ok && size <= LEVEL_MONSTERS_MAX;
+    }
+    CHECK(ok);
+    /* The pick: none for max 0; one kind for max 1; a band leader first and members in its bounds, about 1 draw in 4 */
+    {
+        uint8_t kinds[LEVEL_MONSTERS_MAX];
+        uint8_t n;
+        int bands = 0;
+        int k;
+
+        CHECK(gen_band_pick(2, kinds, 0) == 0);
+        ok = 1;
+        for (k = 0; k < 400; k++) {
+            n = gen_band_pick(1, kinds, 1);
+            ok = ok && n == 1 && kinds[0] > CR_NONE && kinds[0] < CR_COUNT &&
+                 gen_creatures[kinds[0]].where.depth <= 1 && gen_creatures[kinds[0]].where.depth_max >= 1;
+        }
+        CHECK(ok);
+        ok = 1;
+        for (k = 0; k < 2000; k++) {
+            n = gen_band_pick(2, kinds, LEVEL_MONSTERS_MAX);
+            ok = ok && n >= 1 && n <= 5;   /* the largest band at depth 2: the goblin war band */
+            if (n > 1) {
+                bands++;
+                ok = ok && (kinds[0] == CR_KOBOLD || kinds[0] == CR_JACKAL || kinds[0] == CR_GOBLIN);
+                if (kinds[0] == CR_JACKAL) {
+                    ok = ok && n == 3 && kinds[1] == CR_JACKAL && kinds[2] == CR_JACKAL;
+                }
+                if (kinds[0] == CR_GOBLIN) {
+                    ok = ok && n >= 3 && kinds[1] == CR_GOBLIN && kinds[n - 1] != CR_KOBOLD;
+                }
+            }
+        }
+        CHECK(ok && bands > 2000 / 4 - 100 && bands < 2000 / 4 + 100);
+        /* Cut short at max: a band of 3 jackals in 2 draws is 2 */
+        ok = 1;
+        for (k = 0; k < 400; k++) {
+            ok = ok && gen_band_pick(1, kinds, 2) <= 2;
+        }
+        CHECK(ok);
+    }
     /* The necromancer: its staff wielded and its robe worn, a caster who keeps its distance and drinks potions */
     id = gen_creature(CR_NECROMANCER, AREA);
     CHECK(inv_equipped(id, SLOT_WEAPON) != NGE_ENTITY_INVALID && kind_index[inv_equipped(id, SLOT_WEAPON)] == IT_QUARTERSTAFF &&

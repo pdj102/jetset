@@ -410,7 +410,7 @@ static uint8_t free_floor_in(const level_room_t *r, uint8_t *x, uint8_t *y)
     return 0;
 }
 
-/* The same in a random room, a new one each try, not a locked one */
+/* The same in a random room, a new one each try, not a locked one; its cell in level_floor_cell */
 static uint8_t free_floor(uint8_t *x, uint8_t *y)
 {
     uint8_t tries;
@@ -419,6 +419,7 @@ static uint8_t free_floor(uint8_t *x, uint8_t *y)
     for (tries = 0; tries < PLACE_ATTEMPTS; tries++) {
         cell = level_room_cells[roll(level_room_count)];
         if (!LEVEL_CELL_LOCKED(cell) && try_floor(&level_rooms[cell], x, y)) {
+            level_floor_cell = cell;
             return 1;
         }
     }
@@ -771,23 +772,42 @@ static void place_features(uint8_t depth, uint8_t locks)
 }
 
 /*
- * Up to n random entities (gen_item_random() or gen_creature_random()) for
- * the depth, each on free floor in a room. A tile is found first, so an
- * entity is only created where it can go
+ * Up to n random entities for the depth, each on free floor in a room: items
+ * one a draw (gen_item_random()), monsters a kind or a band a draw
+ * (gen_band_pick(), docs/creature_extensions.md M3.2), a band using as many
+ * draws as it has creatures, its leader first and the rest in the leader's
+ * room. A tile is found first, so an entity is only created where it can go.
+ * A band's members share its leader's start state by the kinds' data
+ * (test_gen)
  */
 static void place_random(uint8_t n, uint8_t depth, uint8_t creatures)
 {
+    uint8_t kinds[LEVEL_MONSTERS_MAX];   /* n is at most this: level_generate() rolls it up to LEVEL_MONSTERS_MAX */
     nge_entity_id_t id;
+    uint8_t count = 1;
+    uint8_t i;
     uint8_t x;
     uint8_t y;
 
-    while (n-- > 0) {
+    while (n > 0) {
+        if (creatures) {
+            count = gen_band_pick(depth, kinds, n);
+            if (count == 0) {
+                return;   /* no kind at this depth */
+            }
+        }
+        n = (uint8_t)(n - count);
         if (!free_floor(&x, &y)) {
             continue;
         }
-        id = creatures ? gen_creature_random(depth, LEVEL_AREA) : gen_item_random(depth, LEVEL_AREA);
-        if (id != NGE_ENTITY_INVALID) {
-            nge_location_set(id, x, y);
+        for (i = 0; i < count; i++) {
+            if (i != 0 && !free_floor_in(&level_rooms[level_floor_cell], &x, &y)) {
+                break;   /* the room is full: the rest of the band is lost */
+            }
+            id = creatures ? gen_creature(kinds[i], LEVEL_AREA) : gen_item_random(depth, LEVEL_AREA);
+            if (id != NGE_ENTITY_INVALID) {
+                nge_location_set(id, x, y);
+            }
         }
     }
 }

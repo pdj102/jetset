@@ -1149,3 +1149,68 @@ CSpect checks (the user runs them):
   +201, `hurt_ally()` 223, `ai_can()` +31; the plan said about 0.2K), 107
   +80, 135 +31, 127 +6, `BANK_56` −37 (16,281). Page 102 is as before
   once the dev kit went. No new library routine in common memory.
+
+### Step 11: bands (2026-11-14)
+
+- As M3, R8 and D5. `make test` passes.
+- CSpect (checks 4 and 5): a goblin war band met on the debug build's fixed
+  levels, its archer staying back and its shaman casting and mending; a
+  shriek waking a band; and depth 10 with a full band, the frame time
+  holding.
+- **The table** (`gen_bands[]`, page 107, 13 bytes a band) is written with
+  a `BAND()` macro, one row a band, as M3's table gives them, except:
+  - **The goblin war band is 2-3 and the bone patrol 3-5**, not 2-5 and
+    3-6: step 6 narrowed the goblin to 1-3 and the skeleton to 3-5, and
+    `test_gen` asks that a band's leader is met at every depth of its band.
+    The hobgoblin troop carries goblins from depth 4.
+  - **The war band's shaman is 0-1 at both its depths**, not "from depth
+    3": a member has no depths of its own in the band.
+- **`gen_band_pick(depth, kinds, max)`** (page 106) picks a band 1 draw in
+  4 when one is in the depth's pool, else one kind by rarity, through a
+  `pick()` it now shares with `gen_creature_random()` (one `GEN_PICK()`
+  copy, not two: 284 bytes). Members are rolled between their min and max,
+  and the whole is cut short at `max`.
+- **`place_random()`** (page 102) asks for each monster draw's kinds with
+  the draws left, places the first on free floor, and the rest on free
+  floor in the same room, which `free_floor()` now records in
+  `level_floor_cell` (page 103). A room too full for the rest loses them.
+  It fits page 102 (39 bytes left) without the move to page 136, once a
+  debug assert on `n` went: `n` is rolled up to `LEVEL_MONSTERS_MAX` by its
+  caller, and the buffer is that size.
+- **Start states by data, not code.** M3.2 has members follow their
+  leader's state. Every kind in a band starts asleep, so `test_gen` checks
+  each member's start state is its leader's, and `place_random()` sets
+  none: no AI call in page 102.
+- **Tests:** `test_gen`: every band's kinds are real, a member is `CR_NONE`
+  exactly when its counts are 0, a band's largest size fits
+  `LEVEL_MONSTERS_MAX` (R8), its leader is met at all its depths, its
+  members share the leader's start state; the pick returns nothing for 0,
+  one kind of the depth for 1, a band leader first with its members in
+  bounds about 1 draw in 4 (over 2,000), and never more than asked.
+  `test_level`: over every depth and 20 seeds, a kind met below its own
+  depths only in a band (a zombie at 7 or more, a goblin at 4 to 6) shares
+  a room with its band's leader, and some were seen; `check_level()`
+  already holds the monster count within `LEVEL_MONSTERS_MAX`, and the
+  event queue check runs on every level as before. Asm read: the band
+  pick's 13-byte stride and `where` offset, and the member loop's reads of
+  `member[]`, `min[]` and `max[]` in the copy.
+- **`balance.py`** (difficulty.md D10, M1, M2): a monster draw is a band
+  with the chance in `gen_band_pick()` (the script stops if its test
+  changes) where one is in the pool, holding its leader and each member's
+  mean count; the means a monster (XP, HP, damage, AC) are per creature.
+  The simulation (`--sim`) rolls bands as the game does, cut short at the
+  draws left.
+- **`make balance`**: bands bring weaker members below their own depths (a
+  court's zombies at depth 10, a troop's goblins at 6), so the mean XP a
+  monster falls: 6, 9, 14, 25, 44, 107, 276, 385, 623, 716 at depths 1 to
+  10 (from 8, 11, 16, 31, 71, 176, 395, 614, 927, 997). Section 10's
+  "bands don't change XP per draw" was wrong. C1 still fails at depths 2 to
+  8, and less (the arrival levels are nearer the targets: 3.26 at depth 2,
+  8.56 at 7); depth 9 still warns. C5 within 5 to 9 everywhere but depth 1.
+  The XP gained by the end is 17,643, from 25,966. The simulation's
+  medians match the model's arrivals.
+- **No dev kit:** page 102 has no room for a placed band. The debug build's
+  levels come from a fixed seed (`level_dev_seed` is 0), so whether depths 2
+  and 3 hold a war band is fixed too.
+- Pages: 106 +384 bytes (2,713), 107 +156 (4,592), 102 +138 (8,153, 39
+  free), 103 +1. No new library routine in common memory.

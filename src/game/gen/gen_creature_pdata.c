@@ -914,3 +914,28 @@ const gen_creature_kind_t gen_creatures[CR_COUNT] = {
         .where = { .depth = 6, .depth_max = 8, .rarity = 2 },
     },
 };
+
+/*
+ * The bands (docs/creature_extensions.md M3): a leader, and up to 3 kinds of
+ * member, each min to max. The goblin war band and the bone patrol stop
+ * where their leaders' depths stop (goblin 1-3, skeleton 3-5)
+ */
+#define BAND(l, m0, n0, x0, m1, n1, x1, m2, n2, x2, d0, d1, r) \
+    { .leader = (l), .member = { (m0), (m1), (m2) }, .min = { (n0), (n1), (n2) }, .max = { (x0), (x1), (x2) }, \
+      .where = { .depth = (d0), .depth_max = (d1), .rarity = (r) } }
+
+const gen_band_t gen_bands[GEN_BANDS] = {
+    /*    leader            member, min, max ...                                                       depths  rarity */
+    BAND(CR_KOBOLD,      CR_KOBOLD, 1, 2,        CR_KOBOLD_SLINGER, 0, 1,  CR_NONE, 0, 0,             1, 3, 6),    /* kobold pack */
+    BAND(CR_JACKAL,      CR_JACKAL, 2, 2,        CR_NONE, 0, 0,            CR_NONE, 0, 0,             1, 3, 5),    /* jackal pack */
+    BAND(CR_GOBLIN,      CR_GOBLIN, 1, 2,        CR_GOBLIN_ARCHER, 1, 1,   CR_GOBLIN_SHAMAN, 0, 1,    2, 3, 5),    /* goblin war band */
+    BAND(CR_HOBGOBLIN,   CR_GOBLIN, 2, 2,        CR_GOBLIN_ARCHER, 1, 1,   CR_GOBLIN_SHAMAN, 1, 1,    4, 6, 3),    /* hobgoblin troop */
+    BAND(CR_WOLF,        CR_WOLF, 1, 2,          CR_NONE, 0, 0,            CR_NONE, 0, 0,             3, 5, 5),    /* wolf pack */
+    BAND(CR_SKELETON,    CR_SKELETON, 1, 1,      CR_SKELETON_ARCHER, 1, 1, CR_NONE, 0, 0,             3, 5, 4),    /* bone patrol */
+    BAND(CR_GHOUL,       CR_ZOMBIE, 1, 2,        CR_NONE, 0, 0,            CR_NONE, 0, 0,             3, 5, 3),    /* ghoul pack */
+    BAND(CR_ORC_WARLORD, CR_ORC, 2, 2,           CR_ORC_ARCHER, 1, 1,      CR_NONE, 0, 0,             6, 8, 4),    /* orc war party */
+    BAND(CR_WARG,        CR_WARG, 1, 2,          CR_NONE, 0, 0,            CR_NONE, 0, 0,             6, 8, 4),    /* warg pack */
+    BAND(CR_NECROMANCER, CR_ZOMBIE, 1, 1,        CR_SKELETON, 1, 1,        CR_WIGHT, 0, 1,            7, LEVEL_DEPTH_BOTTOM, 3),   /* necromancer's court */
+    BAND(CR_HELL_HOUND,  CR_HELL_HOUND, 1, 1,    CR_NONE, 0, 0,            CR_NONE, 0, 0,             7, LEVEL_DEPTH_BOTTOM, 3),   /* hell hound pack */
+    BAND(CR_LICH,        CR_MUMMY, 1, 1,         CR_WIGHT, 1, 1,           CR_NONE, 0, 0,             LEVEL_DEPTH_BOTTOM, LEVEL_DEPTH_BOTTOM, 1),   /* the lich's crypt */
+};

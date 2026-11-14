@@ -108,6 +108,26 @@ typedef struct gen_creature_kind {
     gen_where_t  where;
 } gen_creature_kind_t;
 
+/* A band's members besides its leader, at most (docs/creature_extensions.md M3.1) */
+#define GEN_BAND_MEMBERS  3
+
+/*
+ * A band (docs/creature_extensions.md M3, D5): a leader and up to
+ * GEN_BAND_MEMBERS kinds of member, each min to max of them, placed together
+ * in one room as one draw that uses as many of the level's monster draws as
+ * it has creatures. A member is placed whatever its own depths; CR_NONE for
+ * none. In page 107, beside the kinds
+ */
+typedef struct gen_band {
+    uint8_t     leader;                     /* CR_* */
+    uint8_t     member[GEN_BAND_MEMBERS];   /* CR_*, CR_NONE for none */
+    uint8_t     min[GEN_BAND_MEMBERS];
+    uint8_t     max[GEN_BAND_MEMBERS];
+    gen_where_t where;                      /* the band's depths and rarity, as a kind's */
+} gen_band_t;
+
+#define GEN_BANDS  12
+
 /*
  * An item's sprite: one still pattern in a palette bank. The item generator
  * makes the rest of gen_render_t (a still sprite on LAYER_OBJECTS), so a
@@ -168,6 +188,7 @@ typedef struct gen_feature_kind {
 
 /* The tables, in the classes' odd pages: read only by their own page's code */
 extern const gen_creature_kind_t gen_creatures[CR_COUNT];   /* page 107 */
+extern const gen_band_t          gen_bands[GEN_BANDS];      /* page 107 */
 extern const gen_item_kind_t     gen_items[IT_COUNT];       /* page 109 */
 extern const gen_feature_kind_t  gen_features[FT_COUNT];    /* page 123 */
 

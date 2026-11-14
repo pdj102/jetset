@@ -910,6 +910,52 @@ static nge_entity_id_t first_of(uint8_t c)
     return NGE_ENTITY_INVALID;
 }
 
+/*
+ * Bands in one room (docs/creature_extensions.md M3.2): a kind met below its
+ * own depths only as a band member (a zombie at depth 7 or more, in a
+ * necromancer's court; a goblin at depths 4 to 6, in a hobgoblin troop)
+ * shares a room with a leader of its band. Counts those seen
+ */
+static int bands_seen;
+
+static int band_rooms_ok(int depth)
+{
+    nge_entity_id_t id;
+    nge_entity_id_t other;
+    uint8_t i;
+    uint8_t j;
+    uint8_t member;
+    uint8_t leader;
+    int ok;
+
+    if (depth >= 7) {
+        member = CR_ZOMBIE;
+        leader = CR_NECROMANCER;
+    } else if (depth >= 4) {
+        member = CR_GOBLIN;
+        leader = CR_HOBGOBLIN;
+    } else {
+        return 1;
+    }
+    NGE_OWNER_FOR_EACH_OWNED(i, id, LEVEL_AREA) {
+        if (KIND_IS(id, CLASS_CREATURE) && kind_index[id] == member) {
+            ok = 0;
+            NGE_OWNER_FOR_EACH_OWNED(j, other, LEVEL_AREA) {
+                if (KIND_IS(other, CLASS_CREATURE) && kind_index[other] == leader &&
+                    room_of(NGE_LOCATION_X(other), NGE_LOCATION_Y(other)) ==
+                        room_of(NGE_LOCATION_X(id), NGE_LOCATION_Y(id))) {
+                    ok = 1;
+                }
+            }
+            if (!ok || room_of(NGE_LOCATION_X(id), NGE_LOCATION_Y(id)) < 0) {
+                return fail(depth, "a band member placed away from its leader's room");
+            }
+            bands_seen++;
+        }
+    }
+    return 1;
+}
+
 int main(void)
 {
     static nge_tile_t again[LEVEL_HEIGHT][LEVEL_WIDTH];
@@ -952,11 +998,12 @@ int main(void)
         for (depth = 1; depth <= LEVEL_DEPTH_BOTTOM && ok; depth++) {
             nge_event_init();   /* the peak, for this level only */
             go((uint8_t)depth, (uint8_t)((seed + depth) % 3));
-            ok = check_level(depth) && generation_events_ok();
+            ok = check_level(depth) && generation_events_ok() && band_rooms_ok(depth);
             peak = (nge_event_peak() > peak) ? nge_event_peak() : peak;
         }
     }
     CHECK(ok);
+    CHECK(bands_seen > 0);   /* some bands placed below their members' own depths */
     /* Generating never fills the event queue, kits and all (R15); some kits were equipped */
     CHECK(peak < NGE_EVENT_QUEUE && equips_seen > 0);
     level_dev_seed = 0;

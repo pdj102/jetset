@@ -54,7 +54,12 @@ SRC = {
     "creatures": "src/game/gen/gen_creature_pdata.c",
     "items": "src/game/gen/gen_item_pdata.c",
     "features": "src/game/gen/gen_feature_pdata.c",
+    "creature_gen": "src/game/gen/gen_creature_bank.c",
 }
+
+# A monster draw is a band this often, where one is in the depth's pool: gen_band_pick()'s test, checked in load()
+BAND_CHANCE = 0.25
+BAND_TEST = "(rand() & 3) == 0"
 
 
 class ParseError(Exception):
@@ -159,6 +164,34 @@ def load():
 
     if not creatures or not items:
         raise ParseError("no random creatures or items parsed: has the table format changed?")
+
+    # The bands (docs/creature_extensions.md M3): BAND(leader, member, min, max x 3, depth, depth_max, rarity)
+    if BAND_TEST not in read("creature_gen"):
+        raise ParseError(f"gen_band_pick()'s chance '{BAND_TEST}' not found in {SRC['creature_gen']}: update BAND_CHANCE")
+    text = read("creatures")
+    m = re.search(r"gen_bands\[GEN_BANDS\]\s*=\s*\{(.*?)\n\};", text, re.S)
+    if not m:
+        raise ParseError(f"gen_bands[] not found in {SRC['creatures']}")
+    by_kind = {c["kind"]: c for c in creatures}
+    bands = []
+    for args in re.findall(r"BAND\(([^)]*)\)", m.group(1)):
+        a = [x.strip() for x in args.replace("LEVEL_DEPTH_BOTTOM", str(bottom)).split(",")]
+        if len(a) != 13:
+            raise ParseError(f"a BAND() row with {len(a)} arguments, not 13: {args}")
+        members = []
+        for i in range(3):
+            kind, lo, hi = a[1 + 3 * i], int(a[2 + 3 * i]), int(a[3 + 3 * i])
+            if kind != "CR_NONE":
+                members.append((kind, lo, hi))
+        for kind in [a[0]] + [k for k, _, _ in members]:
+            if kind not in by_kind:
+                raise ParseError(f"band kind {kind} is not a random creature kind")
+        bands.append({"leader": a[0], "members": members, "d0": int(a[10]), "d1": int(a[11]),
+                      "rarity": int(a[12])})
+    if not bands:
+        raise ParseError("no BAND() rows parsed in gen_bands[]")
+    g["bands"] = bands
+    g["by_kind"] = by_kind
     return g, creatures, items, features
 
 
@@ -171,6 +204,27 @@ def pool(table, depth):
 def weighted_mean(kinds, key):
     total = sum(k["rarity"] for k in kinds)
     return sum(k[key] * k["rarity"] for k in kinds) / total if total else 0.0
+
+
+def per_creature(g, creatures, depth, key):
+    """
+    The mean of key over the creatures a level holds at depth (M1, M2 with
+    bands): a draw is a band with BAND_CHANCE where one is in the depth's
+    pool, and then holds its leader and each member's mean count; else one
+    kind by rarity. A band's draws used are its size, so the mean is per
+    creature, not per draw. Bands cut short by the last draws are left out.
+    """
+    single = weighted_mean(pool(creatures, depth), key)
+    bpool = pool(g["bands"], depth)
+    if not bpool:
+        return single
+    by = g["by_kind"]
+    total = sum(b["rarity"] for b in bpool)
+    size = sum(b["rarity"] * (1 + sum((lo + hi) / 2 for _, lo, hi in b["members"])) for b in bpool) / total
+    held = sum(b["rarity"] * (by[b["leader"]][key] +
+                              sum((lo + hi) / 2 * by[k][key] for k, lo, hi in b["members"])) for b in bpool) / total
+    p = BAND_CHANCE
+    return (p * held + (1 - p) * single) / (p * size + (1 - p))
 
 
 def mean_between(lo, hi):
@@ -209,19 +263,20 @@ def expected(g, creatures, items, features, clear, gold_xp):
         arrive = fractional_level(g, cum)
         monsters, draws, gold = per_level(g, items, features, depth)
         mpool = pool(creatures, depth)
-        mxp = monsters * weighted_mean(mpool, "xp") * clear
+        avg_xp = per_creature(g, creatures, depth, "xp")
+        mxp = monsters * avg_xp * clear
         gxp = gold * clear if gold_xp else 0.0
         rows.append({"depth": depth, "arrive": arrive, "target": TARGETS["arrive_level"](depth),
-                     "monsters": monsters, "kinds": len(mpool), "avg_xp": weighted_mean(mpool, "xp"),
+                     "monsters": monsters, "kinds": len(mpool), "avg_xp": avg_xp,
                      "mxp": mxp, "draws": draws, "gold": gold, "gxp": gxp, "cum_before": cum,
-                     "hp": weighted_mean(mpool, "hp"), "dmg": weighted_mean(mpool, "dmg"),
-                     "ac": weighted_mean(mpool, "ac")})
+                     "hp": per_creature(g, creatures, depth, "hp"), "dmg": per_creature(g, creatures, depth, "dmg"),
+                     "ac": per_creature(g, creatures, depth, "ac")})
         cum += mxp + gxp
     return rows, cum
 
 
 def simulate(g, creatures, items, features, clear, gold_xp, runs, seed):
-    """The spread: each game rolls the counts and picks kinds by rarity, as level_gen.c does."""
+    """The spread: each game rolls the counts and picks kinds and bands by rarity, as level_gen.c does."""
     rng = random.Random(seed)
     at = {d: [] for d in range(1, g["bottom"] + 1)}
     for _ in range(runs):
@@ -229,9 +284,20 @@ def simulate(g, creatures, items, features, clear, gold_xp, runs, seed):
         for depth in range(1, g["bottom"] + 1):
             at[depth].append(fractional_level(g, xp))
             mpool = pool(creatures, depth)
-            for _ in range(rng.randint(g["monsters_min"], g["monsters_max"])):
-                if mpool and rng.random() < clear:
-                    xp += rng.choices(mpool, weights=[k["rarity"] for k in mpool])[0]["xp"]
+            bpool = pool(g["bands"], depth)
+            left = rng.randint(g["monsters_min"], g["monsters_max"])
+            while left > 0 and mpool:
+                if bpool and rng.random() < BAND_CHANCE:   # gen_band_pick(): a band, cut short at the draws left
+                    b = rng.choices(bpool, weights=[k["rarity"] for k in bpool])[0]
+                    drawn = [b["leader"]]
+                    for kind, lo, hi in b["members"]:
+                        drawn += [kind] * rng.randint(lo, hi)
+                    drawn = drawn[:left]
+                    xps = [g["by_kind"][k]["xp"] for k in drawn]
+                else:
+                    xps = [rng.choices(mpool, weights=[k["rarity"] for k in mpool])[0]["xp"]]
+                left -= len(xps)
+                xp += sum(x for x in xps if rng.random() < clear)
             if gold_xp:
                 _, draws, _ = per_level(g, items, features, depth)
                 ipool = pool(items, depth)

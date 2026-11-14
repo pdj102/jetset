@@ -8,7 +8,7 @@ Status: planned (2026-11-13). Step 1 done the same day. Step 1b added and done 2
 (spec D11). Step 1c added 2026-11-14 (spec D3 revised, R17), agreed and done the same day;
 steps 2, 8, 9 and 12 changed to match. Steps 2 to 7 done 2026-11-14. Step 8 done
 2026-11-14. Step 9 done 2026-11-14. Step 10 done
-2026-11-14.
+2026-11-14. Step 11 done 2026-11-14.
 
 ## 1. How the steps work
 
@@ -446,7 +446,7 @@ Spec M2.2, D6, R9.
 - **CSpect (check 10):** a shaman mends a goblin the player has hurt. A warlord's war
   cry shows on its party (the glow, if V1.3 is built; otherwise their hits land more).
 
-### Step 11: bands (M3)
+### Step 11: bands (M3) `[done]` (2026-11-14)
 
 Spec M3, R8, D5.
 
