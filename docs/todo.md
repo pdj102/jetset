@@ -20,7 +20,7 @@ detail goes in a spec when an item is picked up.
 - To pick one up, ask: *"Write a spec for U1"* (whole objective) or
   *"Write a spec and plan for U1.3"* (one feature).
 
-Topic codes: `C` Character creation, `E` Effects, `G` Game rules, `I` Items, `K` Knowledge, `M` Monsters, `U` UI, `V` Visual effects.
+Topic codes: `C` Character creation, `E` Effects, `G` Game rules, `I` Items, `K` Knowledge, `M` Monsters, `N` Noise, `U` UI, `V` Visual effects.
 
 ---
 
@@ -66,6 +66,8 @@ Topic codes: `C` Character creation, `E` Effects, `G` Game rules, `I` Items, `K`
 - D1.2 Define key principles e.g. player character should on average gain 1 level per dungeon depth fully cleared - when going down
 - D1.3 Retune the pace after the creature, item and feature extensions: C1 failed at depths 2-8. Gold gives XP, a new level table, depth 1's C5 band 4-9 (difficulty.md D11-D14, section 8.5) `[built]` (2026-11-15): `make balance` passes; CSpect check pending
 - D1.4 C7 Danger in `make balance`: the HP the player loses a fight, with a kit curve (difficulty.md section 5.5, D15-D18) `[done]` (2026-11-15): a report until a second play test calibrates it (D17)
+- D1.5 C7 for the Mage: fights a full MP a depth, beside the Fighter's fights a full HP; after N1, calibrated against play test 3 (out of MP first at depth 5) (difficulty.md D21)
+- D1.6 The healing check (difficulty.md section 8.6, R-b): healing items and food a depth against C7's HP lost, and mana items against the Mage's MP a fight; the mana items change only if it shows a shortfall (D25)
 
 ## E — Effects
 
@@ -319,6 +321,15 @@ shapes (`SPELL_*`), items didn't.
 - I10.1 Gold and gems are only picked up today: shops, or shrines that take
   an offering
 
+### I11 Stacking consumables (from play test 3, difficulty.md section 8.7, D22)
+
+- I11.1 Potions, scrolls and food of one kind stack, as ammo does
+  (`find_stack()` in `act_pickup.c`), `item_count[]` the quantity
+- I11.2 Using, throwing or dropping one takes one off the stack; the screens
+  show the count
+- I11.3 Wands, lanterns and torches don't stack: their count is charges or fuel
+- I11.4 With K2: items of one kind stack whether known or not
+
 Items in other objectives: amulet of life saving (E5.6), ring of free action
 (E5.9), invisibility and see invisible (E4.8), a vampiric weapon (E5.5),
 lightning wands and weapons (E5.7), telepathy (E5.2), identify (K), light,
@@ -424,7 +435,27 @@ New kinds and the mechanics that make them work: [spec](creature_extensions.md),
 - M6.2 Phase 2 kinds: gas spore, orc warlord, necromancer, salamander, black pudding, lich `[done]`
 - M6.3 Six new shapes: kobold, dog, bug, zombie, robe, lizard `[done]`
 
-## N
+## N — Noise
+
+### N1 A noise system (from play tests 2 and 3, difficulty.md section 8.7, D20)
+
+**First priority** (difficulty.md D24). The biggest flaw found by play
+test 3: rooms are fought one monster at a time, as attacking one doesn't
+wake the rest (difficulty.md section 7.1b).
+
+- N1.1 A general, extensible system: it reads the game's events
+  ([events.md](events.md)), and for each decides whether a noise was made,
+  how loud, and where
+- N1.2 A table of what makes noise: a hit, a kill, a spell cast, a door
+  forced, a trap going off; new sources added as data
+- N1.3 The noise's effects are applied to the creatures that hear it: first
+  a roll to wake for sleepers within its range (as `hears()` does for the
+  player today); other consequences (a monster coming to look) can be added
+- N1.4 A band wakes together: when one of a band is hurt or wakes, the rest
+  wake and hunt
+- N1.5 The player's own steps as one noise source among others, replacing
+  `hears()`'s special case
+- N1.6 A message when the player is heard, or hears something (low)
 ## O
 ## P — Performance optimisations
 
@@ -483,9 +514,13 @@ T2 - Cursor feedback from the action's check `[done]` (2026-11-13) [spec](target
 - U1.5 Context help: `?` on each screen and prompt opens the page for it
   (ui_screens.md R13)
 - U1.6 Tell the player about `?` on the title or creation screen
+- U1.7 A hint for the Mage: spells are best cast from a distance (from play
+  test 2, difficulty.md D23)
 
 ### U2 Main stats panel
 - Stats are coloured to show delta from base - cyan for better, red for worse
+- U2.2 A mark on the stats panel while the player has a free spell slot, so
+  the level-up message can't be missed (from play test 3, difficulty.md D23)
 - 
  ### U3 Update keyboard controls
 - sU3.1 Remove **hjkl** as direction keys and update help descriptions

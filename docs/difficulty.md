@@ -7,7 +7,10 @@ pace fails (section 7). Options are in section 8; Q6-Q9 were answered
 the same day, giving D11-D14, built the same day (to-do D1.3): `make
 balance` passes with no warnings (section 7.1). After play test 1
 (section 7.1a), Q10-Q14 answered, giving D15-D19; C7 (D15-D18, section 5.5)
-built the same day: to-do D1.4.
+built the same day: to-do D1.4. Play tests 2 and 3, Mages (section
+7.1b, test 3 ongoing): options in section 8.7; Q15-Q18 answered, giving
+D20-D23, all to-do items. Test 3's end (depths 6-8): Q19-Q20 answered,
+giving D24-D25; the noise system (N1) is the first priority.
 
 Covers to-do objective **D1** (D1.1, D1.2) in [todo.md](todo.md). Builds
 on [player_character.md](player_character.md) (XP, levels, the level
@@ -195,6 +198,32 @@ table: D6 there) and the generator tables in `game/gen`. The check is
   (Q11), until C7 is built and calibrated. A rest command is to-do A3
   (Q12). Hell hounds and wargs opening doors (Int 6) is left as it is
   (Q13). Exchange from the wear screen is to-do U4 (Q14).
+
+- **D20 Waking comes from a noise system (Q15).** W1 (fights make noise)
+  and W2 (bands wake together) agreed, built on a general, extensible
+  noise system rather than a rule for fights alone: it reads the game's
+  events ([events.md](events.md)), decides whether each made a noise, how
+  loud and where, then applies what follows, a roll to wake first. A new
+  topic in the to-do log: **N1**. It comes before any change to the
+  monsters' numbers (H1/H2).
+
+- **D21 C7 for the Mage (Q16).** Fights a full MP, beside the Fighter's
+  fights a full HP, built after N1 so it measures the new rules. To-do
+  D1.5. Replaces D18's "later".
+
+- **D22 Consumables stack (Q17).** Potions, scrolls and food of one kind
+  stack, as ammo does. To-do I11.
+
+- **D23 A free spell slot shows on the stats panel, and a hint for the
+  Mage (Q18).** To-do U2.2 and U1.7.
+
+- **D24 The noise system is the first priority (Q19).** N1 comes before
+  the other to-do items of play tests 1-3: it was play test 3's biggest
+  flaw (section 7.1b).
+
+- **D25 Mana supply is judged by the healing check (Q20).** R-b (section
+  8.6) counts mana items against the Mage's MP a fight (D21); the mana
+  items' rarity and power change only if it shows a shortfall.
 
 - **D14 Depth 1's power is accepted (Q9).** 4.0 hits, as its monsters are
   the weakest, every blow is counted as a hit, and the player starts in
@@ -414,6 +443,63 @@ What it says against the model:
   (`AI_INT_OPEN`), which beasts shouldn't; the wear screen has no
   exchange (the inventory's has); no ammo found by depth 7.
 
+### 7.1b Play tests 2 and 3 (2026-11-15, CSpect, after D1.4)
+
+Two Mages. Test 3 was stopped alive at depth 8, as the waking flaw had
+become the main thing it showed.
+
+| Test, depth | What happened |
+|---|---|
+| 2, 1 | Killed one monster, then killed by an archer: walked up to it rather than using Magic Bolt from a distance |
+| 3, 1 | Killed one monster; killed the archer with Magic Bolt from a distance |
+| 3, 2 | Killed every monster from a distance with Magic Bolt. Never hit, never out of MP. Level 2. Best kit equipped as found |
+| 3, 3 | Arrived next to a monster and was hit killing it. Level 3. Hit by a goblin shaman: 19 of 22 HP |
+| 3, 4 | Arrived near two skeletons: killed with Magic Bolt, MP 11 of 25; two more monsters, MP 5 of 25. The pack kept filling: items dropped to make room. Level 4 |
+| 3, 5 | Level 5; missed the "you can learn more spells" message. A room full of monsters: out of MP for the first time, the last one killed with the bow: HP 30 of 35, MP 1 of 29. The first fight that felt a challenge. A ghost: out of MP, normal arrows did less, fire arrows used. The first time weapon choice mattered |
+| 3, 6 | Arrived in a room of 6 monsters: killed without much trouble, out of MP near the end. Picked off one by one again, as they don't all attack at once. Level 6 |
+| 3, 7 | Arrived among several wargs. Out of MP, HP low: a good challenge, won with the inventory's kit. Fire Bolt good against a mummy. No mana potion found; one would have helped. Level 7. Fell through a trap door |
+| 3, 8 | Arrived at level 7 (a level behind). A room with a wyvern and a troll: the wyvern killed with Fire Bolt, using all the MP. The troll didn't wake: had it, likely death or near it. Stopped here |
+
+Overall: depths 1-4 easy once Magic Bolt is used from a distance; depth
+5 the first challenge, and it was MP, not HP, that ran out; 7 a good
+challenge. **The biggest flaw of the play test:** monsters in a room
+don't wake or attack when another in it is attacked, so every room is
+fought one monster at a time. At depth 8 it was the only reason the
+player lived.
+
+What it says against the model and the code:
+
+- **The Mage agrees with the Fighter: depths 1-4 are easy, the step is at
+  5-6.** Play test 1 found it at 6 with a Fighter; this Mage at 5. C7 is
+  the Fighter's (D18), so it can't say this yet. For the Mage, the limit
+  is **MP a depth**, not HP a fight: Magic Bolt costs 3 MP (range 8), and
+  MP ran out at depth 5.
+- **Depth 1 is deadly to a Mage who closes in.** Test 2 died to an
+  archer at depth 1. With 3 MP a bolt and few HP, the Mage must learn to
+  fight from range; the game doesn't tell them (no hint, no help text).
+- **Sleep makes the shallow depths easy, as built.** Almost every kind
+  starts `AI_STATE_ASLEEP` (`gen_creature_pdata.c`; only depth 1's bandit
+  is awake). A sleeper wakes only when hurt, or when the player is within
+  `AI_HEAR` = 4 tiles and it rolls 1d20 + Wis ≥ `AI_WAKE_DC` = 15 (about
+  30% a turn), and a noise wakes it only to idle (`ai_brains.c`). A fight
+  makes no noise: killing one monster doesn't wake the one beside it. So
+  from Magic Bolt's range of 8, twice the hearing range, a room is cleared
+  one sleeper at a time, each one waking only when the bolt hits it. The
+  shriek (`SP_SHRIEK`) is the only thing that wakes others.
+- **MP is the Mage's recovery limit, as HP was the Fighter's.** From
+  depth 5 every big fight emptied the MP. Mana items exist: the mana
+  draught (3 MP, depths 1-7, rarity 4) and the mana potion (8 MP, from
+  depth 4, rarity 3), but none was found or used by depth 8. Section
+  8.6's healing check (R-b) should count MP for the Mage.
+- **A trap door puts the player a level behind, again.** As in play test
+  1, the fall to depth 8 came at level 7, and depth 8 was the most
+  dangerous room of the game.
+- **Not balance:** only ammo stacks (`act_pickup.c` `find_stack()`), so
+  potions, scrolls and food each take a pack slot and the pack fills by
+  depth 4; the "learn more spells" message is easy to miss and nothing on
+  the stats panel shows a free spell slot; the targeting cursor moves more
+  than one tile for a diagonal (bug B4, [bugs.md](bugs.md)).
+
 ### 7.2 Before D1.3 (2026-11-15)
 
 After the creature, item and feature extensions: 54 random creature kinds
@@ -632,6 +718,45 @@ Options, for Q10-Q14:
   hounds and wargs: `CREATURE_BEAST` excluded from `AI_CAN_OPEN`, or their
   Int to 5); exchange on the wear screen; ammo supply (with R-b).
 
+### 8.7 After play tests 2 and 3
+
+Options, for Q15-Q18:
+
+- **Waking (harder depths 1-5 without new numbers):**
+  - *W1 Fights make noise:* a hit, a kill or a spell is heard by the
+    sleepers within a range of it (say `AI_HEAR` of where it happened),
+    which roll to wake as they do for the player. Picking off one sleeper
+    then risks the room. Works at every depth, and for the Fighter too.
+  - *W2 Bands wake together:* when one of a band is hurt or wakes, the
+    rest of its band wake and hunt. Groups (M3) become groups.
+  - *W3 Some start awake:* a share of the monsters start idle (say 1 in 3
+    at every depth, or more shallow), so some rooms come to the player.
+  - *W4 Lighter sleep:* `AI_HEAR` 4 to 6, or `AI_WAKE_DC` 15 to 12. A
+    change of numbers only, but sleeping monsters still don't hear fights.
+  - **Recommended:** W1 and W2: they answer what the play test found (the
+    room cleared one at a time) and they reward the tactics play test 1
+    used (luring into a corridor). W3 later, if still easy. It comes
+    before H1/H2 (section 8.6): waking may be the shallow depths' missing
+    danger, not the monsters' HP.
+- **The Mage in C7 (D18 said later):** MP a fight against the MP pool,
+  giving **fights a full MP** a depth, beside the Fighter's fights a full
+  HP. Calibrated against this test: out of MP first at depth 5.
+  **Recommended:** after W1/W2, so it measures the new rules.
+- **Stacking consumables (to-do, under I):** potions, scrolls and food of
+  one kind stack, as ammo does (`item_count[]` as the quantity), and
+  using, dropping or throwing one takes one off. Wands and lanterns don't
+  stack (their count is charges or fuel). Interacts with K2 (unidentified
+  items): items of one kind stack whether known or not.
+- **A free spell slot on the stats panel (to-do, under U2):** a mark on
+  the panel while the player has a free slot and isn't at the most spells
+  they could learn, so the level-up message can't be missed.
+- **A hint for the Mage (low):** the help screen or a first message says
+  spells are best cast from a distance.
+- **Mana supply (from depths 6-8):** make R-b (section 8.6) count mana
+  items against the Mage's MP a fight (D21's C7), and if short, raise the
+  mana draught's and potion's rarity or the draught's 3 MP. Judged by the
+  check, not changed now.
+
 ## 9. Questions
 
 All answered (2026-11-09):
@@ -666,3 +791,20 @@ Answered (2026-11-15, after play test 1):
 - **Q13 (8.6)** Hell hounds and wargs opening doors? **Leave as is** (D19).
 - **Q14 (8.6)** Exchange on the wear screen? **A to-do item, under UI**
   (U4, D19).
+
+Answered (2026-11-15, after play tests 2 and 3):
+
+- **Q15 (8.7)** Waking: W1, W2, W3, W4 or a mix? **W1 and W2, through a
+  general noise system** (D20, to-do N1).
+- **Q16 (8.7)** C7 for the Mage? **Yes, after the noise system** (D21,
+  D1.5).
+- **Q17 (8.7)** Stacking potions, scrolls and food? **Yes** (D22, I11).
+- **Q18 (8.7)** A free spell slot mark, and the Mage hint? **Yes** (D23,
+  U2.2, U1.7).
+
+Answered (2026-11-15, after the end of play test 3):
+
+- **Q19 (8.7)** The noise system (N1) first? **Yes, the first priority**
+  (D24).
+- **Q20 (8.7)** Mana supply: judge it by the healing check, or raise the
+  mana items' rarity now? **By the check** (D25).
