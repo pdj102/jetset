@@ -39,6 +39,7 @@ Topic codes: `C` Character creation, `E` Effects, `G` Game rules, `I` Items, `K`
 ### D1 - Create a roadmap guide for game mechanic scaling `[spec]` [spec](difficulty.md)
 - D1.1 Define key parameters that are key inputs to  scaling game mechanics e.g. maximum dungeon depth, maximum character level
 - D1.2 Define key principles e.g. player character should on average gain 1 level per dungeon depth fully cleared - when going down
+- D1.3 Retune the pace after the creature, item and feature extensions: C1 fails at depths 2-8. Agreed: gold gives XP, a new level table, depth 1's C5 band 4-9 (difficulty.md D11-D14, steps in section 8.5)
 
 ## E — Effects
 

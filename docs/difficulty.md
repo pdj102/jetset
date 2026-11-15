@@ -1,7 +1,10 @@
 # Difficulty scaling: requirements and design
 
 Status: spec agreed, and the check script written (2026-11-09). Questions
-Q1-Q5 were answered and decisions D1-D10 agreed the same day (section 8).
+Q1-Q5 were answered and decisions D1-D10 agreed the same day (section 9).
+Reviewed after the creature, item and feature extensions (2026-11-15): the
+pace fails (section 7). Options are in section 8; Q6-Q9 were answered
+the same day, giving D11-D14. Not yet built: to-do D1.3.
 
 Covers to-do objective **D1** (D1.1, D1.2) in [todo.md](todo.md). Builds
 on [player_character.md](player_character.md) (XP, levels, the level
@@ -105,7 +108,8 @@ table: D6 there) and the generator tables in `game/gen`. The check is
   player_character.md gives 1 XP for each gold piece, but picking up
   treasure doesn't call `pc_gain_gold()` yet. So no XP comes from gold
   in play today. `--gold` shows what it will do. `TARGETS["gold_xp"]`
-  turns on when that is built.
+  turns on when that is built. *Changed (2026-11-15, Q7):* gold will give
+  XP, and is built with D11 (D12).
 
 - **D5 Tolerances: ±0.5 of a level passes, ±1 warns, more fails.**
   Based on the spread (C6): a single game already varies by about ±0.8
@@ -133,12 +137,35 @@ table: D6 there) and the generator tables in `game/gen`. The check is
   doesn't count AC, to-hit, ranged attacks, spells, effects, or more
   than one monster at a time. So it compares depths with each other; it
   doesn't predict deaths. Outside the band warns rather than fails, as
-  the measure is rough.
+  the measure is rough. *Changed (2026-11-15, D14):* 4 to 9 at depth 1.
 
 - **D10 The counting model is in one function.** `per_level()` says
   what a level holds (M1-M4). When the generator changes how it counts,
   for example monsters per room rather than per level, that function
   changes to match, and the spec's model with it.
+
+- **D11 The level table is set from the XP the dungeon gives (P1, Q6).**
+  `level_xp[]` becomes 0, 50, 120, 230, 430, 790, 1,650, 3,850, 6,900,
+  11,900 plus gold (D12): each level's figure is the XP, monsters and
+  gold, that a player who clears every depth has on arrival at that
+  depth. The monsters' B/X values and the counts a level stay. When C1
+  fails again (new kinds, new counts), the table is re-set the same way.
+  **Rejected:** P2 scaling the monsters' XP, P3 fewer monsters, P4 a mix
+  (section 8.1).
+
+- **D12 Gold gives XP (Q7).** Picking up treasure calls `pc_gain_gold()`
+  (player_character.md R12a: 1 XP a gold piece), and `TARGETS["gold_xp"]`
+  turns on. So D11 uses the table with gold: **0, 60, 150, 270, 500, 850,
+  1,750, 4,000, 7,300, 12,500**. Without gold the player would be a little
+  behind (2.7 at depth 3), still within D5.
+
+- **D13 XP scaled by depth over level (P5) is later (Q8).** With hunger
+  (G2), if farming on the stairs proves to be a problem.
+
+- **D14 Depth 1's power is accepted (Q9).** 4.0 hits, as its monsters are
+  the weakest, every blow is counted as a hit, and the player starts in
+  armour. C5's band is 4 to 9 at depth 1 (`TARGETS`), 5 to 9 below it.
+  Confirmed in play on CSpect.
 
 ## 5. Design
 
@@ -148,7 +175,7 @@ table: D6 there) and the generator tables in `game/gen`. The check is
 |---|---|---|
 | Deepest depth | 10 | `LEVEL_DEPTH_BOTTOM` (game/level/level.h) |
 | Highest level | 10 | `PC_LEVEL_MAX` (game/components/pc.h) |
-| XP for each level | 0, 20, 40, 80, 160, 320, 640, 1200, 2000, 3000 | `level_xp[]` (game/components/pc.c) |
+| XP for each level | 0, 20, 40, 80, 160, 320, 640, 1200, 2000, 3000 (to become 0, 60, 150 ... 12,500: D11, D12) | `level_xp[]` (game/components/pc.c) |
 | HP die per level | d8 | `PC_HIT_DIE` |
 | Rooms per level | 7-11 | `LEVEL_ROOMS_MIN/MAX` (game/level/level_internal.h) |
 | Monsters per level | 6-10 | `LEVEL_MONSTERS_MIN/MAX` |
@@ -229,53 +256,188 @@ The spell slot table (S1, [spells.md](spells.md) D27) is given by
 level, and the target level curve says at which depth the player gets
 each slot: the spell books are found from those depths (D28).
 
-## 7. Today's results (2026-11-09)
+## 7. Today's results (2026-11-15)
 
-`make balance`: 0 failed, 4 warnings.
-
-| Depth | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
-|---|---|---|---|---|---|---|---|---|---|---|
-| Level on arrival | 1.00 | 2.34 | 3.66 | 4.57 | 5.32 | 6.27 | 7.16 | 8.26 | 9.51 | 10.00 |
-| Monster kinds | 5 | 8 | 12 | 15 | 15 | 14 | 11 | 7 | 5 | 3 |
-| Hits to kill the player | 4.4 | 6.8 | 7.3 | 8.9 | 8.3 | 8.6 | 7.6 | 7.2 | 6.3 | 5.8 |
-
-- **C1:** on target, a little ahead at depths 3, 4 and 9 (WARN).
-- **C2:** level 10 is reached while clearing depth 9, which meets D2.
-  61% of the dungeon's XP comes after it: depths 9 and 10 hold about
-  5,100 of 7,600 XP, because the deep monsters' XP (500, 850, 1,750)
-  grows faster than the level table. Accepted (D6).
-- **C3:** 3 kinds at depth 10, the minimum.
-- **C5:** depth 1 is below the band at 4.4 hits (WARN). Then it gets
-  easier to depth 4 (8.9, near the top), and harder again from depth 7
-  down (5.8 at depth 10, near the bottom).
-- **With XP for gold (`--gold`):** depths 3 and 4 FAIL, half a level to
-  a level ahead. Gold has to be weighed when D4 turns on.
-- **Spread (`--sim 2000`):** about ±0.8 of a level between the 10th and
-  90th percentile from depth 4 down.
-
-These are findings, not changes. Tuning is for later to-do items.
-
-### 7.1 After the creature extensions (2026-11-14)
-
-`make balance` with the 54 kinds and the bands of
-[creature_extensions.md](creature_extensions.md): 7 failed, 2 warnings. The counts per
-level rose since section 7 (monsters 6-10, items 11-18), which is what put C1 ahead before
-that spec started (its section 10).
+After the creature, item and feature extensions: 54 random creature kinds
+in 12 bands, 212 item kinds, 6-10 monsters and 11-18 items a level.
+`make balance`: **7 failed, 2 warnings** (exit 1).
 
 | Depth | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| Level on arrival | 1.00 | 3.26 | 4.50 | 5.46 | 6.35 | 7.27 | 8.56 | 10.00 | 10.00 | 10.00 |
+| Level on arrival (target: the depth) | 1.00 | 3.26 | 4.50 | 5.46 | 6.35 | 7.27 | 8.56 | 10.00 | 10.00 | 10.00 |
+| C1 | ok | FAIL | FAIL | FAIL | FAIL | FAIL | FAIL | FAIL | WARN | ok |
+| XP the level table wants from the depth | 20 | 20 | 40 | 80 | 160 | 320 | 560 | 800 | 1,000 | - |
+| XP the depth gives | 51 | 69 | 113 | 200 | 355 | 857 | 2,208 | 3,076 | 4,982 | 5,731 |
+| Gives ÷ wants | 2.6 | 3.5 | 2.8 | 2.5 | 2.2 | 2.7 | 3.9 | 3.8 | 5.0 | - |
 | Monster kinds | 10 | 16 | 22 | 21 | 21 | 18 | 16 | 16 | 13 | 13 |
 | Mean XP a monster | 6 | 9 | 14 | 25 | 44 | 107 | 276 | 385 | 623 | 716 |
-| Hits to kill the player | 4.0 | 6.0 | 6.8 | 7.3 | 8.0 | 7.6 | 6.7 | 7.5 | 7.8 | 8.2 |
+| Hits to kill the player (C5) | 4.0 | 6.0 | 6.8 | 7.3 | 8.0 | 7.6 | 6.7 | 7.5 | 7.8 | 8.2 |
+| Spread, 10th-90th (C6) | 1.0 | 2.8-3.7 | 4.1-4.9 | 5.1-5.9 | 6.1-6.7 | 6.8-7.8 | 7.8-9.4 | 9.7-10 | 10 | 10 |
 
-- **C1:** fails at depths 2 to 8, the player 1 to 2 levels ahead; depth 9 warns. Retuning
-  the pace (the monster count, the level table or XP) is a task of its own.
-- **C2:** level 10 is reached while clearing depth 7; 83% of the XP comes after it.
-- **C3:** 10 kinds at depth 1, the fewest.
-- **C5:** within 5 to 9 everywhere but depth 1 (4.0, WARN).
+"Wants" is the level table's step, `level_xp[d] - level_xp[d-1]`: what
+keeps the player at level *d* on arrival at depth *d* (D2).
 
-## 8. Questions
+### 7.1 Findings
+
+- **C1 Pacing fails.** The player is 1.3 levels ahead at depth 2, and
+  stays 1 to 1.5 ahead down to depth 7. Level 10 comes on arrival at
+  depth 8, two depths early, in more than half the games (C6).
+- **The cause: every depth gives 2.2 to 5 times the XP its level step
+  needs.** It has two parts:
+  - *Monster count (all depths, about ×2.3).* Levels went from 2-5
+    monsters to 6-10 ("Denser levels", `f7f7fc7`); the mean went from 3.5
+    to 8. The level table (player_character.md D6) was on target with
+    2-5 monsters (section 7.2): its note there says the pace is a guess, and
+    tuning it changes one table.
+  - *Deep monster XP (depths 6-9, a further ×1.5 to ×2).* The phase-1
+    kinds of depths 5-10 ([creature_extensions.md](creature_extensions.md)
+    step 7) are worth 500 to 2,300 XP. The mean XP a monster jumps
+    2.6 times between depths 6 and 7 (107 to 276), while the level table's
+    steps only grow 1.75 times (320 to 560).
+- **C2 Cap.** Level 10 is reached while clearing depth 7; 83% of the
+  dungeon's 17,600 XP comes after it (report, D6).
+- **C3 Variety.** 10 kinds or more at every depth: well clear of D7's 3.
+- **C4 Coverage.** Items at every depth.
+- **C5 Power.** In the 5-9 band at depths 2-10, and smooth: the
+  extensions fixed section 7.2's dip at depth 10 (5.8 then, 8.2 now).
+  Depth 1 is under it at 4.0 (WARN): 8 HP against a mean of 2.0 damage.
+  C5 uses the *target* level, so while C1 fails the real player is
+  stronger than it shows: at depth 7 they are level 8.6, with 42 HP, and
+  8.1 hits rather than 6.7.
+- **XP for gold (`--gold`).** Small next to monster XP (734 in a game, 4%)
+  but larger at depth 2 (35 gold against 69 XP). It moves the player a
+  further 0.3 to 0.5 of a level ahead at depths 2-4.
+- **The spell books follow the pace.** spells.md D28 puts the adept's
+  book at depths 4-8 for the level 3 slot at level 5, and the master's at
+  8-10 for the level 5 slot at level 9, both assuming D2. Today the player
+  is level 5 at depth 3.4 and level 9 at depth 7.2, so the slots come a
+  depth before the books. Fixing C1 fixes this too.
+
+### 7.2 Earlier results
+
+- **2026-11-09** (before the extensions; 2-5 monsters, 4-10 items a level): 0 failed,
+  4 warnings. Level on arrival 1.00, 2.34, 3.66, 4.57, 5.32, 6.27, 7.16,
+  8.26, 9.51, 10.00. Hits to kill the player 4.4 at depth 1, 8.9 at depth
+  4, 5.8 at depth 10. 61% of the XP after the cap.
+- **2026-11-14** (after creature_extensions.md): the same as section 7.
+
+## 8. Options and recommendations
+
+Each option was modelled with the script's own functions against
+today's tables (level on arrival, clear 1.0):
+
+| Option | Level on arrival, depths 1-10 | C1 fails | With gold |
+|---|---|---|---|
+| Today | 1.0 3.3 4.5 5.5 6.4 7.3 8.6 10 10 10 | 7 | 7 |
+| **P1** Level table from the XP | 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10 | 0 | 0 (3.4 at depth 3) |
+| **P2** Monster XP scaled down | 1.0 2.0 3.2 4.2 5.1 6.0 7.0 8.2 9.3 10 | 0 | 7 |
+| **P3** Fewer monsters (3-5) | 1.0 2.3 3.5 4.5 5.4 6.2 7.3 8.9 10 10 | 1 (+1 warn) | - |
+| **P4** Table ×2, deep XP ×0.5 | 1.0 2.3 3.5 4.5 5.4 6.2 7.1 8.2 9.1 10 | 0 | 3 |
+| **P5** XP × depth ÷ level, with a table | 1.0 2.1 2.8 3.8 4.9 5.9 7.0 8.2 9.2 10 | 0 | 0 |
+
+### 8.1 Pacing (C1)
+
+- **P1 Set the level table from the XP the dungeon gives (recommended).**
+  `level_xp[]` becomes the XP before each depth, rounded:
+
+  | Level | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
+  |---|---|---|---|---|---|---|---|---|---|---|
+  | Today | 0 | 20 | 40 | 80 | 160 | 320 | 640 | 1,200 | 2,000 | 3,000 |
+  | P1 | 0 | 50 | 120 | 230 | 430 | 790 | 1,650 | 3,850 | 6,900 | 11,900 |
+  | P1 with gold (Q7) | 0 | 60 | 150 | 270 | 500 | 850 | 1,750 | 4,000 | 7,300 | 12,500 |
+
+  One table in `pc.c` and its PC tests (`test_pc.c`, `test_ui.c` hold
+  20 and 3,000); no game data changes. It is what player_character.md D6
+  planned. It fits in 16 bits (D5 there). The B/X monster values stay.
+  It takes the deep XP jump as it is, so the table's steps grow faster
+  at the top (860, 2,200, 3,050) than a classic table's. The XP after
+  the cap falls to 33%, the bottom depth itself (D6). The spread is the
+  same as today's: about ±0.5 of a level from depth 4 down. The table is
+  re-set whenever kinds or counts change enough to fail C1: that is
+  what `make balance` is for.
+
+- **P2 Scale the monsters' XP down instead.** ×0.4 to depth 5, and lower
+  with depth to ×0.15 at depth 10. It meets C1 today, but it rewrites 54
+  kinds' values, loses the B/X values (player_character.md D6), and
+  rounds badly where XP is small (a rat's 5 becomes 2). With gold on, gold
+  becomes most of the XP at shallow depths and C1 fails again at 7
+  depths. **Not recommended.**
+
+- **P3 Fewer monsters a level.** Back to 3-5 meets the shallow depths,
+  but depths 8-9 are still ahead, and the levels empty out again: the
+  denser levels were wanted for play. **Not recommended.**
+
+- **P4 Halve both gaps: the table ×2, the XP of kinds from depth 6 ×0.5.**
+  Keeps the table's classic doubling shape (0, 40, 80 ... 6,000) and
+  smooths the jump at depth 7, but changes 19 kinds' XP, sits 0.3-0.5
+  ahead at depths 2-5, and fails 3 depths once gold is on. An option if
+  the classic shape matters more than an exact pace.
+
+- **P5 XP scaled by depth over level, as Angband does.** A kill gives
+  `xp × kind's first depth ÷ player's level`, plus a level table set to
+  match (0, 40, 110, 210, 380, 700, 1,400, 3,000, 5,200, 8,500). A player
+  who gets ahead gains less, and one who falls behind more. In the
+  simulation that narrows the spread little (a player clearing 60% is
+  0.1-0.3 of a level closer to target). Its real use is to make farming
+  shallow levels on the stairs (level_transitions.md D7) give little.
+  It costs a multiply and a divide on each kill (`player_on_pc_event()`;
+  2,300 × 10 fits 16 bits), and the help screen must explain it.
+  **Later, with hunger (G2), if farming proves to be a problem** (Q8).
+
+### 8.2 Power (C5) at depth 1
+
+The mean depth-1 monster does 2.0 damage (rat 2.0, kobold 2.5), and the
+player has 8 HP (the hit die in full), so 4.0 hits. Options:
+
+- **Accept it (recommended).** Depth 1 holds the weakest kinds, C5 counts
+  every blow as a hit, and the player starts in armour. Record it as
+  accepted (an amendment to D9: 4 to 9 at depth 1), and confirm in play
+  on CSpect.
+- Raise the player's level-1 HP (a bonus on top of the die).
+- Make depth 1's monsters weaker: drop the fire beetle (3.5 damage) from
+  depth 1.
+- Make C5 count to-hit against the player's AC. More accurate, but D9
+  chose a simple measure on purpose.
+
+### 8.3 Gold (D4)
+
+Gold isn't XP in play yet. P1 has a table for each case. **Recommended:**
+decide D4 before setting the table, so that it is set once (Q7).
+
+### 8.4 What the model doesn't count
+
+None of these changes a result today. They are recorded so a later spec
+knows they are missing.
+
+- **Summons.** A necromancer or lich can summon up to 3 undead, worth XP
+  when killed. Only at depths 7-10, where the player is at the cap
+  anyway.
+- **Allies' kills give no XP** (`player_on_pc_event()` needs the player as
+  the killer). A player who lets allies fight levels more slowly.
+- **Farming on the stairs** (level_transitions.md D7): each round trip
+  makes a new level, so XP has no limit. P5 or hunger (G2) can close it.
+- **Healing and food.** Healing potions against C5's damage, and food
+  against the hunger clock (G2.4), have no check yet. When hunger is
+  built, G2.4 should add one (R13).
+- **The spell books' depths** against the slots (spells.md D28) are
+  checked by hand. A check could test that each book's first depth is at
+  or before the depth where the target level gives its spell level.
+
+### 8.5 Recommended order
+
+Agreed (2026-11-15: Q6-Q9, D11-D14). To-do D1.3:
+
+1. Gold gives XP (D12): picking up treasure calls `pc_gain_gold()`, with
+   a PC test; `TARGETS["gold_xp"]` on.
+2. The new `level_xp[]` (D11, D12), and its PC tests (`test_pc.c`,
+   `test_ui.c`).
+3. C5's band of 4 to 9 at depth 1 in `TARGETS` (D14).
+4. `make`, `make test`, `make balance` (0 failed), and section 7 updated.
+5. On CSpect: play a Fighter and a Mage down a few depths to confirm the
+   pace and depth 1's danger.
+6. Later: P5 with hunger (D13), and the extra checks of section 8.4.
+
+## 9. Questions
 
 All answered (2026-11-09):
 
@@ -287,3 +449,13 @@ All answered (2026-11-09):
 - **Q4 (R11)** Should `make test` run the check? **Not yet.**
 - **Q5 (D1)** A PC test running the real generator to confirm M1-M4?
   **Not yet.**
+
+Answered (2026-11-15):
+
+- **Q6 (C1, 8.1)** Which fix for the pace: P1 the level table, P2 the
+  monsters' XP, P3 fewer monsters, or P4 a mix? **P1** (D11).
+- **Q7 (D4, 8.3)** Will treasure give XP for gold? **Yes** (D12).
+- **Q8 (8.1)** P5, XP scaled by depth over level: later, now, or never?
+  **Later** (D13).
+- **Q9 (C5, 8.2)** Depth 1's 4.0 hits: accept it, or change the player's
+  HP, the depth-1 kinds or the check? **Accept** (D14).
