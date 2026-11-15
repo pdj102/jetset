@@ -437,7 +437,7 @@ New kinds and the mechanics that make them work: [spec](creature_extensions.md),
 
 ## N — Noise
 
-### N1 A noise system (from play tests 2 and 3, difficulty.md section 8.7, D20)
+### N1 A noise system (from play tests 2 and 3, difficulty.md section 8.7, D20) `[spec]` (2026-11-15) [spec](noise.md)
 
 **First priority** (difficulty.md D24). The biggest flaw found by play
 test 3: rooms are fought one monster at a time, as attacking one doesn't
@@ -456,6 +456,16 @@ wake the rest (difficulty.md section 7.1b).
 - N1.5 The player's own steps as one noise source among others, replacing
   `hears()`'s special case
 - N1.6 A message when the player is heard, or hears something (low)
+
+### N2 Sneaking (after a play test of N1, noise.md Q1 and section 6)
+
+- N2.1 A sneak mode: a command that toggles a status, steps 2 quieter, the
+  player's speed halved while it lasts
+- N2.2 Dexterity's modifier off the step's loudness
+- N2.3 Heavy body armour 1 louder (needs a weight or class of armour on
+  the item kinds)
+- N2.4 A class stealth bonus, when classes get rules
+- N2.5 Light sleepers and deaf monsters (a trait or a kind's DC modifier)
 ## O
 ## P — Performance optimisations
 
