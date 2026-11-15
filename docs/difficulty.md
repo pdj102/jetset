@@ -4,7 +4,10 @@ Status: spec agreed, and the check script written (2026-11-09). Questions
 Q1-Q5 were answered and decisions D1-D10 agreed the same day (section 9).
 Reviewed after the creature, item and feature extensions (2026-11-15): the
 pace fails (section 7). Options are in section 8; Q6-Q9 were answered
-the same day, giving D11-D14. Not yet built: to-do D1.3.
+the same day, giving D11-D14, built the same day (to-do D1.3): `make
+balance` passes with no warnings (section 7.1). After play test 1
+(section 7.1a), Q10-Q14 answered, giving D15-D19; C7 (D15-D18, section 5.5)
+is specified, not built: to-do D1.4.
 
 Covers to-do objective **D1** (D1.1, D1.2) in [todo.md](todo.md). Builds
 on [player_character.md](player_character.md) (XP, levels, the level
@@ -108,8 +111,8 @@ table: D6 there) and the generator tables in `game/gen`. The check is
   player_character.md gives 1 XP for each gold piece, but picking up
   treasure doesn't call `pc_gain_gold()` yet. So no XP comes from gold
   in play today. `--gold` shows what it will do. `TARGETS["gold_xp"]`
-  turns on when that is built. *Changed (2026-11-15, Q7):* gold will give
-  XP, and is built with D11 (D12).
+  turns on when that is built. *Changed (2026-11-15, Q7):* gold gives XP,
+  built with D11 (D12).
 
 - **D5 Tolerances: ±0.5 of a level passes, ±1 warns, more fails.**
   Based on the spread (C6): a single game already varies by about ±0.8
@@ -153,19 +156,49 @@ table: D6 there) and the generator tables in `game/gen`. The check is
   **Rejected:** P2 scaling the monsters' XP, P3 fewer monsters, P4 a mix
   (section 8.1).
 
-- **D12 Gold gives XP (Q7).** Picking up treasure calls `pc_gain_gold()`
-  (player_character.md R12a: 1 XP a gold piece), and `TARGETS["gold_xp"]`
-  turns on. So D11 uses the table with gold: **0, 60, 150, 270, 500, 850,
+- **D12 Gold gives XP (Q7).** The player's treasure goes to their gold
+  when picked up, through `pc_gain_gold()` (player_character.md R12a: 1 XP
+  a gold piece; action_pickup.md R3), and `TARGETS["gold_xp"]` is on. So D11 uses the table with gold: **0, 60, 150, 270, 500, 850,
   1,750, 4,000, 7,300, 12,500**. Without gold the player would be a little
   behind (2.7 at depth 3), still within D5.
 
 - **D13 XP scaled by depth over level (P5) is later (Q8).** With hunger
   (G2), if farming on the stairs proves to be a problem.
 
+- **D15 C7 Danger: the HP the player loses a fight (Q10).** Play test 1
+  showed C5 misses how fast the player kills (section 7.1a). C7 measures
+  the HP a fight costs, against the player's kit, as a share of their HP
+  (section 5.5). It comes before any change to the monsters, so changes
+  are measured, not guessed.
+
+- **D16 The kit curve: what the player has had a fair chance to find.**
+  At each depth, for each slot (weapon, and each armour slot), the best
+  kind that a player who clears every depth has found with a chance of at
+  least 50% by arrival, from the item pools (M3's draws, by rarity), or the
+  class's starting kit if better. "Best" is the most damage a turn against
+  the depth's mean monster AC for a weapon (to-hit counts, so a sword +1
+  can beat an axe), and the most AC for armour. One kind a slot: no
+  rings, potions or wands yet. **Rejected:** the mean of the pool (counts junk the player
+  wouldn't wield), the best in the pool (a rare +3 sword nobody has).
+
+- **D17 C7 is a report until it is calibrated.** Its numbers are checked
+  against play first: play test 1 felt "easy" at depths 1-5 and "a
+  challenge" from 6. A band (pass, warn) is set once a second play test
+  agrees with it. C7 doesn't fail or warn yet.
+
+- **D18 C7 is for the Fighter.** The class played; its starting kit and
+  abilities from `gen_creature_pdata.c` and `chargen_bank.c`. The Mage,
+  whose fights are spells, is later.
+
+- **D19 After play test 1 (Q11-Q14).** No change to the monsters for now
+  (Q11), until C7 is built and calibrated. A rest command is to-do A3
+  (Q12). Hell hounds and wargs opening doors (Int 6) is left as it is
+  (Q13). Exchange from the wear screen is to-do U4 (Q14).
+
 - **D14 Depth 1's power is accepted (Q9).** 4.0 hits, as its monsters are
   the weakest, every blow is counted as a hit, and the player starts in
   armour. C5's band is 4 to 9 at depth 1 (`TARGETS`), 5 to 9 below it.
-  Confirmed in play on CSpect.
+  To be confirmed in play on CSpect (section 8.5).
 
 ## 5. Design
 
@@ -175,7 +208,7 @@ table: D6 there) and the generator tables in `game/gen`. The check is
 |---|---|---|
 | Deepest depth | 10 | `LEVEL_DEPTH_BOTTOM` (game/level/level.h) |
 | Highest level | 10 | `PC_LEVEL_MAX` (game/components/pc.h) |
-| XP for each level | 0, 20, 40, 80, 160, 320, 640, 1200, 2000, 3000 (to become 0, 60, 150 ... 12,500: D11, D12) | `level_xp[]` (game/components/pc.c) |
+| XP for each level | 0, 60, 150, 270, 500, 850, 1750, 4000, 7300, 12500 (D11, D12; 0, 20, 40 ... 3,000 before) | `level_xp[]` (game/components/pc.c) |
 | HP die per level | d8 | `PC_HIT_DIE` |
 | Rooms per level | 7-11 | `LEVEL_ROOMS_MIN/MAX` (game/level/level_internal.h) |
 | Monsters per level | 6-10 | `LEVEL_MONSTERS_MIN/MAX` |
@@ -237,6 +270,57 @@ python3 scripts/balance.py --sim 2000
 python3 scripts/balance.py --clear 0.75 --gold
 ```
 
+### 5.5 C7 Danger (D15-D18, to-do D1.4)
+
+For each depth *d*, the player at the target level (D2) with the kit
+curve (D16), against each random creature kind in the pool, one at a time:
+
+- **The player's blow:** a hit is 1d20 + the weapon's to-hit + the
+  Strength modifier at or above the monster's AC; 20 always hits, 1
+  always misses (action_melee.md, `attack_hits()`). So the chance is
+  (21 − (AC − to-hit)) / 20, between 0.05 and 0.95. The damage is the
+  weapon's mean (dice × (sides + 1) / 2 + to-damage) + the Strength
+  modifier, at least 1.
+- **The monster's blow:** the same, with its melee to-hit and Strength
+  modifier against the player's AC: 10 (the Fighter's `.ac`) + the kit
+  curve's armour.
+- **Turns it lives:** its HP ÷ the player's mean damage a turn.
+- **HP lost:** (turns − 0.5) × its mean damage a turn: the player strikes
+  first, so on average half a turn less. Both at speed 10.
+- **The depth's figure:** the mean over creatures, as M2 (`per_creature()`,
+  bands included), of the HP lost, as a share of the player's HP (C5's),
+  and its inverse, **fights a full HP**.
+- **Not counted:** ranged attacks, spells and breath (the hell hound's),
+  more than one monster at a time, statuses, regeneration and healing,
+  rings and other kit, and speed. As C5, it compares depths; it doesn't
+  predict deaths.
+
+Prototype (2026-11-15, a scratch script with today's tables, monster
+damage without its Strength modifier):
+
+| Depth | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Weapon (kit curve) | short sword | short sword | short sword | hand axe | hand axe | hand axe | hand axe | hand axe | battle axe | battle axe |
+| Player AC | 14 | 14 | 14 | 14 | 15 | 15 | 21 | 21 | 21 | 22 |
+| Turns a monster lives | 0.8 | 1.1 | 1.6 | 2.2 | 2.8 | 3.9 | 5.6 | 6.1 | 6.5 | 7.1 |
+| HP lost a fight, share | 2% | 4% | 9% | 12% | 17% | 31% | 33% | 38% | 53% | 49% |
+| Fights a full HP | 40 | 27 | 12 | 8.5 | 6.0 | 3.2 | 3.0 | 2.6 | 1.9 | 2.0 |
+
+It agrees with play test 1: depths 1-3 cost almost nothing, depth 6 is a
+step (6 fights to 3), and from depth 7 a fight is a third of the player's
+HP and more. The cause is in its rows: the monsters' HP rises ninefold
+(3.4 to 28.6) while the player's damage rises by half, and **the player's
+to-hit doesn't rise with level** (only HP does), while monster AC rises
+from 12 to 13.5. That is a finding for a later scaling task (a to-hit by
+level, as classic D&D's), not a change here (Q11).
+
+What the build adds to `balance.py`: the weapon and armour kinds read
+from `gen_item_pdata.c` (`.attack`, `.data.armour_ac`, `.fits`), the
+Fighter's abilities, AC and kit (`CR_FIGHTER`, `kit_fighter[]`), the
+monsters' melee to-hit and Strength; a C7 table after C5's (the kit
+curve's weapon and AC, turns, HP lost, share, fights a full HP); and
+section 7 updated. R12 holds: what it can't read, it names and stops.
+
 ## 6. Curves for the roadmap (R13)
 
 Each scaling mechanic picks one of these to follow, so it moves with the
@@ -256,7 +340,64 @@ The spell slot table (S1, [spells.md](spells.md) D27) is given by
 level, and the target level curve says at which depth the player gets
 each slot: the spell books are found from those depths (D28).
 
-## 7. Today's results (2026-11-15)
+## 7. Today's results
+
+### 7.1 After D1.3 (2026-11-15)
+
+D11, D12 and D14 built. `make balance`: **0 failed, 0 warnings**.
+
+| Depth | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Level on arrival | 1.00 | 2.02 | 3.13 | 4.16 | 5.12 | 6.12 | 7.06 | 8.05 | 9.01 | 10.00 |
+| Without gold (`--no-gold`) | 1.00 | 1.84 | 2.66 | 3.69 | 4.71 | 5.82 | 6.88 | 7.93 | 8.89 | 9.89 |
+| Clearing 75% (`--clear 0.75`) | 1.00 | 1.77 | 2.72 | 3.67 | 4.60 | 5.63 | 6.62 | 7.61 | 8.46 | 9.40 |
+| Spread, 10th-90th (C6) | 1.0 | 1.7-2.3 | 2.6-3.6 | 3.6-4.5 | 4.7-5.5 | 5.6-6.5 | 6.5-7.4 | 7.6-8.6 | 8.4-9.5 | 9.5-10 |
+
+- **C1:** within 0.16 of a level at every depth. A player who clears 75%
+  is about half a level behind, and a level behind at depth 9 and 10 (WARN).
+- **C2:** level 10 on arrival at depth 10 (the report says "while
+  clearing depth 9", as the XP before depth 10 is the figure itself); 32%
+  of the XP, depth 10's, comes after it (D6).
+- **C5:** unchanged, all within the band, 4.0 at depth 1 (D14).
+- **The spell books** (spells.md D28) now come at the depths their slots
+  do: level 5 at depth 5, level 9 at depth 9.
+
+### 7.1a Play test 1 (2026-11-15, CSpect, after D1.3)
+
+A Fighter, killed by a hell hound at depth 9.
+
+| Depths | What happened |
+|---|---|
+| 1-5 | Easy. Walked into monsters and hit them; HP never in danger. The best kit equipped as found; a sword +2 helped a lot |
+| 6 | A room of 7 monsters was a challenge: lured them into a bent corridor, one at a time. Some healing items used |
+| 7 | HP down to 12 of 50 twice. No ammo. Ran from a troll at under 5 HP, escaping by speed. Found boots of speed. Fell through a trap door to depth 8 |
+| 8 | Arrived at level 7 (a level behind) with under 20 HP. Ran from a dragon. Explored avoiding monsters; killed a necromancer easily. A hell hound did a lot of damage, and opened a door. Level 8 |
+| 9 | Arrived next to a troll and ran. A room with a necromancer, 2 hell hounds, a zombie and a mummy: down to 5 HP, ran. A locked door with no key. Killed by a hell hound |
+
+Overall: well balanced, but depths 1-5 needed no tactics.
+
+What it says against the model:
+
+- **C5 ranks the depths right but misses the start.** Its easiest depths,
+  4-6 (7.3 to 8.0 hits), were easy, and the first hard one, 7 (6.7), was
+  hard. But depth 1 (4.0, "the hardest") was easy: C5 counts only how hard
+  monsters hit, not how fast the player kills them. A depth-1 monster has
+  3.4 HP, one blow from a sword. Danger is the HP lost a fight: the
+  monster's damage times the turns it lives.
+- **The kit isn't in the model.** A +2 sword and boots of speed changed
+  the game; C5 assumes no kit at all.
+- **A player who falls behind stays behind.** A trap door and running
+  from fights cost a level by depth 8, and with it the HP to fight, so
+  more running: the 75% player of section 7.1 (half a level to a level
+  behind) is the one who died.
+- **Recovery is the limit from depth 6.** Healing items ran out, food was
+  left behind (it heals), and there is no rest. Section 8.4's healing
+  check matters now.
+- **Not balance:** hell hounds and wargs open doors, from Int 6
+  (`AI_INT_OPEN`), which beasts shouldn't; the wear screen has no
+  exchange (the inventory's has); no ammo found by depth 7.
+
+### 7.2 Before D1.3 (2026-11-15)
 
 After the creature, item and feature extensions: 54 random creature kinds
 in 12 bands, 212 item kinds, 6-10 monsters and 11-18 items a level.
@@ -277,7 +418,7 @@ in 12 bands, 212 item kinds, 6-10 monsters and 11-18 items a level.
 "Wants" is the level table's step, `level_xp[d] - level_xp[d-1]`: what
 keeps the player at level *d* on arrival at depth *d* (D2).
 
-### 7.1 Findings
+#### Findings
 
 - **C1 Pacing fails.** The player is 1.3 levels ahead at depth 2, and
   stays 1 to 1.5 ahead down to depth 7. Level 10 comes on arrival at
@@ -287,7 +428,7 @@ keeps the player at level *d* on arrival at depth *d* (D2).
   - *Monster count (all depths, about ×2.3).* Levels went from 2-5
     monsters to 6-10 ("Denser levels", `f7f7fc7`); the mean went from 3.5
     to 8. The level table (player_character.md D6) was on target with
-    2-5 monsters (section 7.2): its note there says the pace is a guess, and
+    2-5 monsters (section 7.3): its note there says the pace is a guess, and
     tuning it changes one table.
   - *Deep monster XP (depths 6-9, a further ×1.5 to ×2).* The phase-1
     kinds of depths 5-10 ([creature_extensions.md](creature_extensions.md)
@@ -299,7 +440,7 @@ keeps the player at level *d* on arrival at depth *d* (D2).
 - **C3 Variety.** 10 kinds or more at every depth: well clear of D7's 3.
 - **C4 Coverage.** Items at every depth.
 - **C5 Power.** In the 5-9 band at depths 2-10, and smooth: the
-  extensions fixed section 7.2's dip at depth 10 (5.8 then, 8.2 now).
+  extensions fixed section 7.3's dip at depth 10 (5.8 then, 8.2 now).
   Depth 1 is under it at 4.0 (WARN): 8 HP against a mean of 2.0 damage.
   C5 uses the *target* level, so while C1 fails the real player is
   stronger than it shows: at depth 7 they are level 8.6, with 42 HP, and
@@ -313,7 +454,7 @@ keeps the player at level *d* on arrival at depth *d* (D2).
   is level 5 at depth 3.4 and level 9 at depth 7.2, so the slots come a
   depth before the books. Fixing C1 fixes this too.
 
-### 7.2 Earlier results
+### 7.3 Earlier results
 
 - **2026-11-09** (before the extensions; 2-5 monsters, 4-10 items a level): 0 failed,
   4 warnings. Level on arrival 1.00, 2.34, 3.66, 4.57, 5.32, 6.27, 7.16,
@@ -425,7 +566,8 @@ knows they are missing.
 
 ### 8.5 Recommended order
 
-Agreed (2026-11-15: Q6-Q9, D11-D14). To-do D1.3:
+Agreed (2026-11-15: Q6-Q9, D11-D14). To-do D1.3, steps 1-4 done the same
+day:
 
 1. Gold gives XP (D12): picking up treasure calls `pc_gain_gold()`, with
    a PC test; `TARGETS["gold_xp"]` on.
@@ -436,6 +578,42 @@ Agreed (2026-11-15: Q6-Q9, D11-D14). To-do D1.3:
 5. On CSpect: play a Fighter and a Mage down a few depths to confirm the
    pace and depth 1's danger.
 6. Later: P5 with hunger (D13), and the extra checks of section 8.4.
+
+### 8.6 After play test 1
+
+Options, for Q10-Q14:
+
+- **C7 Danger: the HP the player loses a fight (a new check).** The turns
+  the average monster lives against the player at the target level (its
+  HP ÷ the player's mean damage, with a weapon from the depth's item
+  pool), times its damage, as a share of the player's HP. It replaces
+  "hits to kill the player" as the measure of difficulty, and needs a
+  kit curve: the best weapon and armour a player has found by each depth
+  (the item pools, by rarity). C5 stays as a report. **Recommended
+  first:** it measures what the play test felt, so changes can be tested
+  against it, not guessed.
+- **Harder depths 1-5**, once C7 shows by how much:
+  - *H1 Tougher shallow monsters:* more HP for the kinds of depths 1-5, so
+    they live 2-3 blows (data only; XP stays, so the pace holds).
+  - *H2 More groups early:* a band a draw 1 time in 3 rather than 4 at
+    depths 1-5, or new shallow bands (goblins, kobolds, jackals exist). The
+    monster count stays, so the pace barely moves.
+  - *H3 Fewer good items early:* +2 weapons from a deeper depth. Changes
+    the reward curve, not the danger.
+  - **Recommended:** H1 and H2 together, judged by C7.
+- **Recovery:**
+  - *R-a A rest command:* wait until HP and MP are full, stopped by a
+    monster coming into view or being hurt. Regeneration already exists,
+    so it is a player command, a loop of `ACT_WAIT`. Makes the game more
+    forgiving everywhere, so it goes with H1/H2. Farming is not changed
+    (resting gives no XP).
+  - *R-b A healing check:* healing items and food a depth against C7's HP
+    lost (section 8.4), so the deep depths can be survived without luck.
+- **Falling behind:** P5 (D13) is the tool if it proves a problem: a
+  player behind gains more. Not yet: one game is not enough.
+- **Not balance, as to-do items:** beasts don't open doors (Int 6 hell
+  hounds and wargs: `CREATURE_BEAST` excluded from `AI_CAN_OPEN`, or their
+  Int to 5); exchange on the wear screen; ammo supply (with R-b).
 
 ## 9. Questions
 
@@ -459,3 +637,15 @@ Answered (2026-11-15):
   **Later** (D13).
 - **Q9 (C5, 8.2)** Depth 1's 4.0 hits: accept it, or change the player's
   HP, the depth-1 kinds or the check? **Accept** (D14).
+
+Answered (2026-11-15, after play test 1):
+
+- **Q10 (8.6)** Add C7, the HP lost a fight, with a kit curve, before
+  changing monsters? **Yes** (D15-D18).
+- **Q11 (8.6)** Harder depths 1-5: H1, H2, H3 or a mix? **No change for
+  now** (D19).
+- **Q12 (8.6)** A rest command and a healing check? **Rest: a to-do item**
+  (A3, D19).
+- **Q13 (8.6)** Hell hounds and wargs opening doors? **Leave as is** (D19).
+- **Q14 (8.6)** Exchange on the wear screen? **A to-do item, under UI**
+  (U4, D19).

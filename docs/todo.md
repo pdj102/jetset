@@ -24,7 +24,32 @@ Topic codes: `C` Character creation, `E` Effects, `G` Game rules, `I` Items, `K`
 
 ---
 
-## A
+## A - Actions
+### A1 Implement Throw Item action
+- A1.1 The player presses 'v' to invoke throw item action
+- A1.2 The player selects the item to throw, or cancels
+- A1.3 The player selects target tile 
+- A1.4 By default a  player can throw an item 4 tiles
+- A1.5 If a thrown item hits a blocking entity it applies its hit effect (if any) and is destroyed
+- A1.6 If a thrown item hits a blocking tile it is destroyed
+- A1.7 If a thrown item does not hit anything it lands on the floor
+- A1.8 Review the implementation of fired items like daggers and re-use the same game mechanics as much as possible, and extend the existing mechanics where it makes sense to accomodate the new throw an item action
+- A1.9 Recommend what items can be thrown, all, some?  
+- A1.10 Recommend how to avoid inconsistenies between items that can be fired and thrown e.g. a flask can be put in the ammo  slot and fired. Maybe the best solution is only true ammo (arrows, throwing dagger etc)  can be equipped in the ammo slot and fired and all other items like flasks can only be thrown. 
+## A2 Implement Read scroll action
+- A2.1 The player presses 'r' to invoke read scroll action
+### A3 Rest until healed (from play test 1, difficulty.md section 8.6, Q12)
+- A3.1 A command that waits turn after turn until HP and MP are full
+- A3.2 It stops when a monster comes into view, the player is hurt, or a status needs attention
+- A3.3 Resting gives no XP, so farming isn't changed; how it sits with hunger (G2) is for the spec
+## A3 Implement Quaff Potion action
+- A3.1 The player presses 'q' to invoke quaff potion action
+
+## A4 Implement Open action 
+- A4.1 The player presses 'o' to invoke open action
+
+## A5 Implement Eat action 
+- A5.1 The player presses 'E' to invoke eat action 
 ## B
 ## C — Character creation
 
@@ -39,7 +64,8 @@ Topic codes: `C` Character creation, `E` Effects, `G` Game rules, `I` Items, `K`
 ### D1 - Create a roadmap guide for game mechanic scaling `[spec]` [spec](difficulty.md)
 - D1.1 Define key parameters that are key inputs to  scaling game mechanics e.g. maximum dungeon depth, maximum character level
 - D1.2 Define key principles e.g. player character should on average gain 1 level per dungeon depth fully cleared - when going down
-- D1.3 Retune the pace after the creature, item and feature extensions: C1 fails at depths 2-8. Agreed: gold gives XP, a new level table, depth 1's C5 band 4-9 (difficulty.md D11-D14, steps in section 8.5)
+- D1.3 Retune the pace after the creature, item and feature extensions: C1 failed at depths 2-8. Gold gives XP, a new level table, depth 1's C5 band 4-9 (difficulty.md D11-D14, section 8.5) `[built]` (2026-11-15): `make balance` passes; CSpect check pending
+- D1.4 C7 Danger in `make balance`: the HP the player loses a fight, with a kit curve (difficulty.md section 8.6, Q10) `[spec]`
 
 ## E — Effects
 
@@ -462,15 +488,18 @@ T2 - Cursor feedback from the action's check `[done]` (2026-11-13) [spec](target
 - Stats are coloured to show delta from base - cyan for better, red for worse
 - 
  ### U3 Update keyboard controls
-- sU3.1 Remove **hjkl** as diirection keys
-- U3.2 Change key r **r**emove to t **t**akeoff
-- U3.3 Implement key **r**ead scrolls 
-- U3.4 Implement key q **q**uaff potions
-- U3.5 Change key **x** to key l **l**ook around
+- sU3.1 Remove **hjkl** as direction keys and update help descriptions
+- U3.2 Change key r **r**emove to t **t**akeoff and update help descriptions
+- U3.5 Change key **x** to key l **l**ook around and update help descriptions
 - U3.6 Change key o  **o**perate to A **A**ctivate feature  e.g. shrine, trap 
-- U3.7 Implement o **o**pen
-- U3.8 Implement key E **E**at  
 - U3.9 Change key e **e**xchange to x e**x**change
+- U3.10 Update UI screens to use Space as the standard back key and Enter as the standard select key
+- U3.11 Update UI messages to use standard phrasiology e.g. Space: back; Enter: <action> 
+- U3.12 Update the help Commands screen to align to new keyboard controls
+- U3.13 If the commands help does not fit comfotably on one page it over two pages. Clarity is more important the fitting on one page. 
+
+### U4 Exchange from the wear screen (from play test 1, difficulty.md section 8.6, Q14)
+- U4.1 The wear screen offers exchange, as the inventory screen does (e.g. a bow for a crossbow), so the player needn't go through the inventory
 
 
 ## V — Visual effects
