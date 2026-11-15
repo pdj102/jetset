@@ -437,7 +437,7 @@ New kinds and the mechanics that make them work: [spec](creature_extensions.md),
 
 ## N — Noise
 
-### N1 A noise system (from play tests 2 and 3, difficulty.md section 8.7, D20) `[spec]` (2026-11-15) [spec](noise.md)
+### N1 A noise system (from play tests 2 and 3, difficulty.md section 8.7, D20) `[spec]` (2026-11-15) [spec](noise.md), [plan](noise_plan.md)
 
 **First priority** (difficulty.md D24). The biggest flaw found by play
 test 3: rooms are fought one monster at a time, as attacking one doesn't
