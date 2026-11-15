@@ -68,3 +68,25 @@ the commit, and it stays listed so the number keeps its meaning.
   than a lichen's 20 ticks (creatures.md D6). To fix: a refresh keeps the time
   to the next firing and only tops up the cycles, then effects.md R13 and
   `test_effects` follow, and `EF_HOLD`'s period could be looked at again.
+
+## B4 The targeting cursor moves more than one tile for a diagonal
+
+- **Seen:** 2026-11-15, CSpect, dev branch at 3e76fc1, play test 3
+  (difficulty.md section 7.1b).
+- **Steps:** cast a bolt or fire, then press a diagonal (two direction
+  keys together) to move the cursor.
+- **Seen:** the cursor jumps several tiles, as if moved several times for
+  one diagonal press.
+- **Expected:** one tile diagonally a press (diagonals.md R3).
+- **Status:** open, cause found by reading the code; not tried on CSpect.
+- **Notes:** by design, diagonals.md D4: the cursor uses only the snapshot
+  (`player_key_direction()` in `target_key()`, `target/target_bank.c`), not
+  `player_read_direction()`, so neither the chord window (R6) nor dropping
+  the chord's second press (D5, R8) applies. A chord is two key events:
+  the first gives a straight step (or a diagonal, if the other key is
+  already down), the second a diagonal; a key held then repeats. So one
+  diagonal is two or more steps. D4 expected one extra key to correct; in
+  play it reads as a jump. To fix: the cursor drops the chord's second
+  press as play does (D5), which costs no lag, and perhaps ignores repeats
+  that change direction (R10); D4 is updated with it.
+
