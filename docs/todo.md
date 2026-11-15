@@ -65,7 +65,7 @@ Topic codes: `C` Character creation, `E` Effects, `G` Game rules, `I` Items, `K`
 - D1.1 Define key parameters that are key inputs to  scaling game mechanics e.g. maximum dungeon depth, maximum character level
 - D1.2 Define key principles e.g. player character should on average gain 1 level per dungeon depth fully cleared - when going down
 - D1.3 Retune the pace after the creature, item and feature extensions: C1 failed at depths 2-8. Gold gives XP, a new level table, depth 1's C5 band 4-9 (difficulty.md D11-D14, section 8.5) `[built]` (2026-11-15): `make balance` passes; CSpect check pending
-- D1.4 C7 Danger in `make balance`: the HP the player loses a fight, with a kit curve (difficulty.md section 8.6, Q10) `[spec]`
+- D1.4 C7 Danger in `make balance`: the HP the player loses a fight, with a kit curve (difficulty.md section 5.5, D15-D18) `[done]` (2026-11-15): a report until a second play test calibrates it (D17)
 
 ## E — Effects
 

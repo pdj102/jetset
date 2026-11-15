@@ -7,7 +7,7 @@ pace fails (section 7). Options are in section 8; Q6-Q9 were answered
 the same day, giving D11-D14, built the same day (to-do D1.3): `make
 balance` passes with no warnings (section 7.1). After play test 1
 (section 7.1a), Q10-Q14 answered, giving D15-D19; C7 (D15-D18, section 5.5)
-is specified, not built: to-do D1.4.
+built the same day: to-do D1.4.
 
 Covers to-do objective **D1** (D1.1, D1.2) in [todo.md](todo.md). Builds
 on [player_character.md](player_character.md) (XP, levels, the level
@@ -69,7 +69,8 @@ table: D6 there) and the generator tables in `game/gen`. The check is
   band, or changing a count changes the result with no edit to the
   script.
 - **R8** It prints one table by depth (pacing), the results of checks
-  C1-C4, the power report C5, and with `--sim N` the spread C6.
+  C1-C4, the power report C5, the danger report C7, and with `--sim N`
+  the spread C6.
 - **R9** It exits 1 if a check fails, 2 if it can't read the tables, and
   0 otherwise. Warnings don't fail.
 - **R10** It counts only what the generator places at random. Kinds with
@@ -261,6 +262,7 @@ level table, as a fraction between levels.
 | C4 Coverage | A depth with no random items | FAIL |
 | C5 Power | Average monster HP, damage, AC; the player's HP; hits to kill the player | WARN outside 5-9 (D9) |
 | C6 Spread | Level on arrival over N simulated games | Report only, with `--sim N` |
+| C7 Danger | The Fighter with the kit curve: turns a monster lives, HP lost a fight, fights a full HP (section 5.5) | Report only until calibrated (D17) |
 
 ### 5.4 Running it
 
@@ -287,24 +289,36 @@ curve (D16), against each random creature kind in the pool, one at a time:
 - **Turns it lives:** its HP ÷ the player's mean damage a turn.
 - **HP lost:** (turns − 0.5) × its mean damage a turn: the player strikes
   first, so on average half a turn less. Both at speed 10.
+- **The kit:** D16's curve, slot by slot. A two-handed weapon
+  (`ITEMF_TWO_HANDS`) leaves no shield, so both kits are tried, the best
+  one-handed weapon with the best shield and the best two-handed one
+  without, and the one that loses less HP is the depth's.
+- **The player's HP:** the class's own, not C5's: its `.hp_max` (12 for
+  the Fighter), then the hit die's mean plus the Constitution modifier a
+  level (+2 at Con 14), at least 1, as `level_up()` does.
 - **The depth's figure:** the mean over creatures, as M2 (`per_creature()`,
-  bands included), of the HP lost, as a share of the player's HP (C5's),
-  and its inverse, **fights a full HP**.
+  bands included), of the HP lost, as a share of the player's HP, and its
+  inverse, **fights a full HP**.
 - **Not counted:** ranged attacks, spells and breath (the hell hound's),
   more than one monster at a time, statuses, regeneration and healing,
   rings and other kit, and speed. As C5, it compares depths; it doesn't
   predict deaths.
 
-Prototype (2026-11-15, a scratch script with today's tables, monster
-damage without its Strength modifier):
+As built (2026-11-15, `make balance`):
 
 | Depth | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| Weapon (kit curve) | short sword | short sword | short sword | hand axe | hand axe | hand axe | hand axe | hand axe | battle axe | battle axe |
+| Weapon (kit curve) | short sword | short sword | short sword | sword | sword | sword | sword | sword | battle axe | battle axe |
 | Player AC | 14 | 14 | 14 | 14 | 15 | 15 | 21 | 21 | 21 | 22 |
-| Turns a monster lives | 0.8 | 1.1 | 1.6 | 2.2 | 2.8 | 3.9 | 5.6 | 6.1 | 6.5 | 7.1 |
-| HP lost a fight, share | 2% | 4% | 9% | 12% | 17% | 31% | 33% | 38% | 53% | 49% |
-| Fights a full HP | 40 | 27 | 12 | 8.5 | 6.0 | 3.2 | 3.0 | 2.6 | 1.9 | 2.0 |
+| Turns a monster lives | 0.8 | 1.1 | 1.6 | 2.0 | 2.4 | 3.4 | 4.8 | 5.2 | 5.9 | 6.4 |
+| HP lost a fight | 0.1 | 0.4 | 1.5 | 2.4 | 4.3 | 10.7 | 14.8 | 19.3 | 29.4 | 29.7 |
+| Player HP | 12 | 18.5 | 25 | 31.5 | 38 | 44.5 | 51 | 57.5 | 64 | 70.5 |
+| Share | 1% | 2% | 6% | 8% | 11% | 24% | 29% | 34% | 46% | 42% |
+| Fights a full HP | 103 | 47 | 17 | 13 | 8.8 | 4.2 | 3.4 | 3.0 | 2.2 | 2.4 |
+
+(A scratch prototype first gave 40 at depth 1 and 1.9 at depth 9: it
+used C5's HP and chose weapons by damage alone, so a hand axe over the
+sword.)
 
 It agrees with play test 1: depths 1-3 cost almost nothing, depth 6 is a
 step (6 fights to 3), and from depth 7 a fight is a third of the player's
@@ -361,6 +375,9 @@ D11, D12 and D14 built. `make balance`: **0 failed, 0 warnings**.
 - **C5:** unchanged, all within the band, 4.0 at depth 1 (D14).
 - **The spell books** (spells.md D28) now come at the depths their slots
   do: level 5 at depth 5, level 9 at depth 9.
+- **C7 (D1.4):** fights a full HP fall from 103 at depth 1 to 8.8 at
+  depth 5, 4.2 at depth 6 and 2.2 at depth 9 (section 5.5). Report only
+  (D17).
 
 ### 7.1a Play test 1 (2026-11-15, CSpect, after D1.3)
 

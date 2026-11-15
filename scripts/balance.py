@@ -6,7 +6,8 @@ Reads the game's own tables from the C sources, so it follows the game as
 it changes: the depths, the XP table, the per-level counts in the level
 generator, and every creature, item and feature kind with its band of
 depths and rarity. It works out what an average level holds at each depth,
-then compares the player's pace with the targets below.
+then compares the player's pace with the targets below, and reports the
+monsters' power (C5) and the danger of a fight with the kit found (C7).
 
     python3 scripts/balance.py            # the report; exit 1 if a check fails
     python3 scripts/balance.py --sim 2000 # also simulate 2000 games for the spread
@@ -55,7 +56,13 @@ SRC = {
     "items": "src/game/gen/gen_item_pdata.c",
     "features": "src/game/gen/gen_feature_pdata.c",
     "creature_gen": "src/game/gen/gen_creature_bank.c",
+    "chargen": "src/game/chargen/chargen_bank.c",
 }
+
+# C7 (D18): the class it measures, its creature kind and its starting kit's table in chargen_bank.c
+C7_CLASS = ("Fighter", "CR_FIGHTER", "kit_fighter")
+# D16: a kind is in the kit curve once found with at least this chance
+KIT_CHANCE = 0.5
 
 # A monster draw is a band this often, where one is in the depth's pool: gen_band_pick()'s test, checked in load()
 BAND_CHANCE = 0.25
@@ -132,17 +139,21 @@ def load():
         d0, d1, rarity = where(b, kind, bottom)
         if rarity == 0:
             continue   # never at random: placed by hand (not counted, R10)
-        melee = re.search(r"\.melee\s*=\s*\{[^}]*\.dice\s*=\s*(\d+),\s*\.sides\s*=\s*(\d+),"
+        melee = re.search(r"\.melee\s*=\s*\{\s*\.to_hit\s*=\s*(-?\d+),\s*\.dice\s*=\s*(\d+),\s*\.sides\s*=\s*(\d+),"
                           r"\s*\.to_damage\s*=\s*(-?\d+)", b)
         if melee is None and re.search(r"\.melee\s*=", b):
-            raise ParseError(f"{kind}: .melee found but its dice, sides and to_damage not read (R12)")
+            raise ParseError(f"{kind}: .melee found but its to_hit, dice, sides and to_damage not read (R12)")
+        st = stats_mod(ability(b, kind)[0])
+        dmg = int(melee.group(2)) * (int(melee.group(3)) + 1) / 2 + int(melee.group(4)) if melee else 0.0
         creatures.append({
             "kind": kind, "d0": d0, "d1": d1, "rarity": rarity,
             "xp": field(b, r"\.xp\s*=\s*(\d+)", "xp", kind),
             "hp": field(b, r"\.hp_max\s*=\s*(\d+)", "hp_max", kind),
             "ac": field(b, r"\.ac\s*=\s*(\d+)", "ac", kind),
-            "dmg": (int(melee.group(1)) * (int(melee.group(2)) + 1) / 2 + int(melee.group(3)))
-                   if melee else 0.0,
+            "dmg": dmg,
+            # C7: the melee blow with the Strength modifier (attack_hits(), attack_damage(): at least 1)
+            "mth": int(melee.group(1)) + st if melee else 0,
+            "mdmg": max(1.0, dmg + st) if melee else 0.0,
         })
 
     items = []
@@ -192,7 +203,67 @@ def load():
         raise ParseError("no BAND() rows parsed in gen_bands[]")
     g["bands"] = bands
     g["by_kind"] = by_kind
+    g["gear"] = load_gear(bottom)
+    g["c7"] = load_class(g["gear"])
     return g, creatures, items, features
+
+
+def stats_mod(score):
+    return (score - 10) >> 1   # STATS_MOD() in game/components/stats.h
+
+
+def ability(block, kind):
+    m = re.search(r"\.ability\s*=\s*\{([^}]*)\}", block)
+    if not m:
+        raise ParseError(f".ability not found for {kind}")
+    return [int(x) for x in m.group(1).split(",")]
+
+
+def load_gear(bottom):
+    """C7: every weapon and armour kind, random or not (kits), with what the kit curve needs."""
+    gear = {}
+    for kind, b in kind_blocks(read("items"), "IT").items():
+        if "ITEM_WEAPON" in b:
+            m = re.search(r"\.attack\s*=\s*\{\s*\.to_hit\s*=\s*(-?\d+),\s*\.dice\s*=\s*(\d+),\s*\.sides\s*=\s*(\d+),"
+                          r"\s*\.to_damage\s*=\s*(-?\d+)", b)
+            if not m:
+                raise ParseError(f"{kind}: a weapon whose .attack is not read (R12)")
+            th, dice, sides, td = (int(x) for x in m.groups())
+            entry = {"slot": "SLOT_WEAPON", "th": th, "dmg": dice * (sides + 1) / 2 + td,
+                     "two_hands": "ITEMF_TWO_HANDS" in b}
+        elif "ITEM_ARMOUR" in b:
+            m = re.search(r"\.fits\s*=\s*SLOT_BIT\((SLOT_\w+)\)\s*,", b)
+            if not m:
+                raise ParseError(f"{kind}: armour whose .fits is not one SLOT_BIT() (R12)")
+            entry = {"slot": m.group(1), "ac": field(b, r"armour_ac\s*=\s*(\d+)", "armour_ac", kind, 0)}
+        else:
+            continue
+        entry["kind"] = kind
+        entry["d0"], entry["d1"], entry["rarity"] = where(b, kind, bottom)
+        gear[kind] = entry
+    if not any(e["slot"] == "SLOT_WEAPON" for e in gear.values()):
+        raise ParseError("no weapon kinds parsed: has the item table changed?")
+    return gear
+
+
+def load_class(gear):
+    """C7: the class's Strength, Constitution, HP, AC and starting kit (D18)."""
+    name, cr, kit = C7_CLASS
+    blocks = kind_blocks(read("creatures"), "CR")
+    if cr not in blocks:
+        raise ParseError(f"{cr} not found in {SRC['creatures']}")
+    b = blocks[cr]
+    ab = ability(b, cr)
+    m = re.search(rf"{kit}\[\]\s*=\s*\{{(.*?)\}};", read("chargen"), re.S)
+    if not m:
+        raise ParseError(f"{kit}[] not found in {SRC['chargen']}")
+    kinds = re.findall(r"\{\s*(IT_\w+)\s*,\s*1\s*\}", m.group(1))   # the kit's equipped items
+    if not any(k in gear and gear[k]["slot"] == "SLOT_WEAPON" for k in kinds):
+        raise ParseError(f"no equipped weapon read in {kit}[] (R12)")
+    return {"name": name, "str": stats_mod(ab[0]), "con": stats_mod(ab[2]),
+            "hp": field(b, r"\.hp_max\s*=\s*(\d+)", "hp_max", cr),
+            "ac": field(b, r"\.health\s*=\s*\{[^}]*\.ac\s*=\s*(\d+)", "ac", cr),
+            "kit": [gear[k] for k in kinds if k in gear]}
 
 
 # ---- The model (docs/difficulty.md, section 5) -----------------------------
@@ -244,6 +315,68 @@ def per_level(g, items, features, depth):
     draws = mean_between(g["items_min"], g["items_max"]) + locked + contents
     gold = draws * weighted_mean(pool(items, depth), "gold")
     return monsters, draws, gold
+
+
+def hit_chance(to_hit, ac):
+    """1d20 + to_hit at or above ac; 20 always hits, 1 always misses (attack_hits())."""
+    return min(0.95, max(0.05, (21 - (ac - to_hit)) / 20))
+
+
+def found_chances(g, items, features):
+    """D16: for each random gear kind, the chance it has been found by arrival at each depth."""
+    out = {}
+    miss = {k: 1.0 for k, e in g["gear"].items() if e["rarity"]}
+    for depth in range(1, g["bottom"] + 1):
+        out[depth] = {k: 1 - m for k, m in miss.items()}
+        draws = per_level(g, items, features, depth)[1]
+        total = sum(k["rarity"] for k in pool(items, depth))
+        for k in miss:
+            e = g["gear"][k]
+            if e["d0"] <= depth <= e["d1"]:
+                miss[k] *= (1 - e["rarity"] / total) ** draws
+    return out
+
+
+def danger(g, creatures, depth, found):
+    """
+    C7 (section 5.5): the class at the target level with the kit curve
+    against each creature kind, one at a time: the HP a fight costs, as M2's
+    mean. The kit is the one that loses least: the best one-handed weapon
+    with the best shield, or the best two-handed one without.
+    """
+    c = g["c7"]
+    lvl = TARGETS["arrive_level"](depth)
+    php = c["hp"] + (lvl - 1) * max(1, (g["hit_die"] + 1) / 2 + c["con"])
+    had = list(c["kit"]) + [g["gear"][k] for k, p in found[depth].items() if p >= KIT_CHANCE]
+    mac = per_creature(g, creatures, depth, "ac")
+
+    def per_turn(w):
+        return hit_chance(w["th"] + c["str"], mac) * max(1, w["dmg"] + c["str"])
+
+    armour = {}
+    for e in had:
+        if e["slot"] != "SLOT_WEAPON":
+            armour[e["slot"]] = max(armour.get(e["slot"], 0), e["ac"])
+    shield = armour.pop("SLOT_SHIELD", 0)
+    base_ac = c["ac"] + sum(armour.values())
+    weapons = [e for e in had if e["slot"] == "SLOT_WEAPON"]
+    kits = []
+    for two, ac in ((False, base_ac + shield), (True, base_ac)):
+        ws = [w for w in weapons if w["two_hands"] == two]
+        if ws:
+            kits.append((max(ws, key=per_turn), ac))
+    best = None
+    for w, ac in kits:
+        pdpt = per_turn(w)
+        for cr in creatures:
+            turns = cr["hp"] / pdpt
+            cr["c7_turns"] = turns
+            cr["c7_lost"] = max(0.0, turns - 0.5) * hit_chance(cr["mth"], ac) * cr["mdmg"]   # the player first
+        lost = per_creature(g, creatures, depth, "c7_lost")
+        if best is None or lost < best["lost"]:
+            best = {"weapon": w["kind"], "ac": ac, "mac": mac, "lost": lost, "hp": php,
+                    "turns": per_creature(g, creatures, depth, "c7_turns")}
+    return best
 
 
 def fractional_level(g, xp):
@@ -389,6 +522,17 @@ def main():
         s = "ok" if lo <= hits <= hi else "WARN"
         warnings += s == "WARN"
         print(f"{r['depth']:>5} {r['hp']:>6.1f} {r['dmg']:>7.1f} {r['ac']:>6.1f} {php:>9.1f} {hits:>19.1f}  {s}")
+
+    found = found_chances(g, items, features)
+    print(f"\nDanger (C7): the {g['c7']['name']} at the target level with the kit found by then "
+          f"(a chance of {KIT_CHANCE:.0%}), against each monster alone  (report, D17)")
+    print(f"{'depth':>5} {'weapon':<20} {'AC':>3} {'mon AC':>6} {'turns':>5} {'HP lost':>7} "
+          f"{'player HP':>9} {'share':>6} {'fights a full HP':>16}")
+    for r in rows:
+        d = danger(g, creatures, r["depth"], found)
+        fights = d["hp"] / d["lost"] if d["lost"] else float("inf")
+        print(f"{r['depth']:>5} {d['weapon'][3:].lower():<20} {d['ac']:>3} {d['mac']:>6.1f} {d['turns']:>5.1f} "
+              f"{d['lost']:>7.1f} {d['hp']:>9.1f} {d['lost'] / d['hp']:>6.0%} {fights:>16.1f}")
 
     if args.sim:
         at = simulate(g, creatures, items, features, args.clear, args.gold, args.sim, args.seed)
