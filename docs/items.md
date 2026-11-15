@@ -545,7 +545,7 @@ mechanic is missing.
 | Light | `EF_WORN_LIGHT`, with the radius as its power; a light's count as burn time |
 | Worn regeneration | `EF_WORN_REGEN`: a worn effect has no tick |
 | The pending ops | Mapping, identify, enchant, light: used up with their message, but nothing happens. Teleport and summon work (effects_extensions.md) |
-| Gold | Treasure's count: it is carried as an item, not added to the PC's gold |
+| Gold | Treasure's count: *changed (2026-11-15)*: the player's goes to their gold when picked up (action_pickup.md R3); a monster carries it as an item |
 
 Also outside this design: identification and shuffled appearances (a per-game
 table from kind to look, which would sit on top of this design), new attributes
@@ -591,6 +591,6 @@ The PC tests enforce the rules that the data could break:
   after I2's four kinds (7,757 bytes used), 196 (2.4%) after I3's six (7,996
   used; items_aimed.md, "As built"). The next kind needs room made first:
   the names could move to page 108, the generator's, which has about 6.1K free.
-- **Treasure takes pack slots** until gold is picked up as gold.
+- ~~**Treasure takes pack slots**~~ until gold is picked up as gold: done (action_pickup.md R3, 2026-11-15).
 - **Row letters.** In the choosing lists, letters run past "z" after 26 rows
   (`'a' + i`), which a full list can reach.

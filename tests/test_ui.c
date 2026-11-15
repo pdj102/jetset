@@ -539,26 +539,43 @@ int main(void)
     CHECK(strcmp(text, "XP       12 ") == 0);
     test_layer2_row(13, 28, 39, text);
     CHECK(strcmp(text, "Gold     12 ") == 0);
-    pc_gain_xp(actor_player, 8);                                   /* 20: level 2 */
+    pc_gain_xp(actor_player, 48);                                  /* 60: level 2 */
     nge_event_process(player_on_event);
     test_layer2_row(1, 28, 39, text);
     CHECK(strcmp(text, "Level     2 ") == 0);
     test_layer2_row(12, 28, 39, text);
-    CHECK(strcmp(text, "XP       20 ") == 0);
+    CHECK(strcmp(text, "XP       60 ") == 0);
     /* A monster the player kills gives its XP; one killed by anything else, none */
     rat = gen_creature(CR_RAT, AREA);
     nge_event_flush();
     health_damage(rat, actor_player, 99, DMG_SLASH);
     nge_event_process(player_on_event);
-    CHECK(pc_xp == 25);
+    CHECK(pc_xp == 65);
     test_layer2_row(12, 28, 39, text);
-    CHECK(strcmp(text, "XP       25 ") == 0);
+    CHECK(strcmp(text, "XP       65 ") == 0);
     rat = gen_creature(CR_RAT, AREA);
     nge_event_flush();
     health_damage(rat, NGE_ENTITY_INVALID, 99, DMG_POISON);        /* immune: poison doesn't kill it */
     health_damage(rat, NGE_ENTITY_INVALID, 99, DMG_FIRE);          /* a trap */
     nge_event_process(player_on_event);
-    CHECK(pc_xp == 25);
+    CHECK(pc_xp == 65);
+    /* Treasure the player picks up: its gold and as many XP, the item destroyed; a monster's, nothing */
+    potion = gen_item(IT_GOLD_SMALL, AREA);
+    nge_location_set(potion, 5, 5);
+    nge_event_flush();
+    nge_event_post(potion, EV_PICKED_UP, actor_player, 0, 0);
+    nge_event_process(player_on_event);
+    CHECK(pc_gold == 22 && pc_xp == 75 && !NGE_ENTITY_IS_ALIVE(potion));
+    test_layer2_row(13, 28, 39, text);
+    CHECK(strcmp(text, "Gold     22 ") == 0);
+    level_release_dying();
+    potion = gen_item(IT_GOLD_SMALL, AREA);
+    nge_event_post(potion, EV_PICKED_UP, rat, 0, 0);
+    rat = gen_creature(CR_RAT, AREA);
+    nge_event_post(rat, EV_PICKED_UP, actor_player, 0, 0);          /* not an item: nothing */
+    nge_event_process(player_on_event);
+    CHECK(pc_gold == 22 && NGE_ENTITY_IS_ALIVE(potion));
+    nge_entity_destroy(potion);
     /* An arrival: the deepest depth */
     nge_event_post(actor_player, EV_ARRIVED, NGE_EVENT_NONE, 4, LEVEL_ARRIVE_ANY);
     nge_event_post(actor_player, EV_ARRIVED, NGE_EVENT_NONE, 3, LEVEL_ARRIVE_ANY);

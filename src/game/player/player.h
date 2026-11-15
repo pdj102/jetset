@@ -58,8 +58,9 @@ void player_on_event(const nge_event_t *e);
 /**
  * @brief player_on_event()'s reactions for the PC component, banked to keep
  *        common memory free: XP for a creature the player killed
- *        (EV_DIED), the deepest depth (EV_ARRIVED), and the XP, level and
- *        gold in the stats window.
+ *        (EV_DIED), gold for treasure the player picked up (EV_PICKED_UP:
+ *        the item is destroyed), the deepest depth (EV_ARRIVED), and the
+ *        XP, level and gold in the stats window.
  * @param e In common memory (the event's copy).
  */
 void player_on_pc_event(const nge_event_t *e) NGE_BANKED;

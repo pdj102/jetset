@@ -747,6 +747,19 @@ void player_on_pc_event(const nge_event_t *e) NGE_BANKED
         }
         return;
     }
+    if (id == EV_PICKED_UP) {
+        /*
+         * The player's treasure, left where it was by act_pickup(): to their
+         * gold, with an XP a gold piece. Destroyed, it is dying, so the
+         * messages can still name it (docs/action_pickup.md, R3)
+         */
+        if (source == actor_player && NGE_ENTITY_IS_ALIVE(target) && KIND_IS(target, CLASS_ITEM) &&
+            gen_item_subclass(kind_index[target]) == ITEM_TREASURE) {
+            pc_gain_gold(actor_player, item_count[target]);
+            nge_entity_destroy(target);
+        }
+        return;
+    }
     if (target != actor_player) {
         return;
     }

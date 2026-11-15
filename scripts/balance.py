@@ -10,7 +10,7 @@ then compares the player's pace with the targets below.
 
     python3 scripts/balance.py            # the report; exit 1 if a check fails
     python3 scripts/balance.py --sim 2000 # also simulate 2000 games for the spread
-    python3 scripts/balance.py --clear 0.75 --gold
+    python3 scripts/balance.py --clear 0.75 --no-gold
 
 If the C changes shape (a constant renamed, a table moved), the script
 stops with an error naming what it could not find (R12): fix the parser or
@@ -32,16 +32,16 @@ TARGETS = {
     "arrive_level": lambda depth: depth,
     # D3: how much of each depth the target player clears (1.0: every monster)
     "clear": 1.0,
-    # D4: off until treasure turns into gold in play (pc_gain_gold)
-    "gold_xp": False,
+    # D4, D12: the player's treasure turns into gold on pick up, an XP a gold piece
+    "gold_xp": True,
     # D5: |level on arrival - target|: within ok passes, within warn warns, else fails
     "ok": 0.5,
     "warn": 1.0,
     # D6: XP beyond the last level is accepted (Q2): C2 reports it, never warns
     # D7: monster kinds that can appear at every depth, at least
     "kinds_min": 3,
-    # D9: hits for the average monster to kill the player at the target level (Q3)
-    "hits": (5, 9),
+    # D9: hits for the average monster to kill the player at the target level (Q3); D14: 4 at depth 1
+    "hits": lambda depth: (4, 9) if depth == 1 else (5, 9),
 }
 
 # ---- Sources --------------------------------------------------------------
@@ -322,7 +322,8 @@ def status(delta):
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--clear", type=float, default=TARGETS["clear"], help="share of each depth cleared")
-    ap.add_argument("--gold", action="store_true", default=TARGETS["gold_xp"], help="count XP for gold")
+    ap.add_argument("--gold", action=argparse.BooleanOptionalAction, default=TARGETS["gold_xp"],
+                    help="count XP for gold (--no-gold: without)")
     ap.add_argument("--sim", type=int, default=0, metavar="N", help="simulate N games for the spread")
     ap.add_argument("--seed", type=int, default=1)
     args = ap.parse_args()
@@ -374,15 +375,17 @@ def main():
     print(f"Coverage (C4): depths with no random items {empty if empty else 'none'}  "
           f"{'FAIL' if empty else 'ok'}")
 
-    lo, hi = TARGETS["hits"]
+    lo, hi = TARGETS["hits"](2)
+    lo1, _ = TARGETS["hits"](1)
     print(f"\nPower (C5): the average monster at each depth, against the player at the target level; "
-          f"hits to kill the player {lo}-{hi}")
+          f"hits to kill the player {lo}-{hi} ({lo1} at depth 1)")
     print(f"{'depth':>5} {'mon HP':>6} {'mon dmg':>7} {'mon AC':>6} {'player HP':>9} {'hits to kill player':>19}  status")
     con_mod = 0   # an average Constitution
     for r in rows:
         lvl = r["target"]
         php = g["hit_die"] + (lvl - 1) * max(1, (g["hit_die"] + 1) / 2 + con_mod)
         hits = php / r["dmg"] if r["dmg"] else float("inf")
+        lo, hi = TARGETS["hits"](r["depth"])
         s = "ok" if lo <= hits <= hi else "WARN"
         warnings += s == "WARN"
         print(f"{r['depth']:>5} {r['hp']:>6.1f} {r['dmg']:>7.1f} {r['ac']:>6.1f} {php:>9.1f} {hits:>19.1f}  {s}")

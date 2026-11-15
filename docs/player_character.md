@@ -138,7 +138,8 @@ Later, each in its own spec:
 - **R19 (later)** Level drain (an undead's touch): takes a level, and the XP
   down to that level's figure.
 - **R20 (later)** Gold on the floor and in monsters' packs (a gold item,
-  picked up into the PC's gold, giving its XP through R12a), how much gold
+  picked up into the PC's gold, giving its XP through R12a: *built
+  2026-11-15*, action_pickup.md R3), how much gold
   each depth holds, and shops (gold from a sale gives no XP: D13).
 - **R21 (later)** Hunger, if the game has it: only the player eats, so it
   goes in the PC component.
@@ -198,7 +199,11 @@ equipment, light and vision, spells known if monsters cast spells.
 
   | Level | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
   |---|---|---|---|---|---|---|---|---|---|---|
-  | XP | 0 | 20 | 40 | 80 | 160 | 320 | 640 | 1,200 | 2,000 | 3,000 |
+  | XP | 0 | 60 | 150 | 270 | 500 | 850 | 1,750 | 4,000 | 7,300 | 12,500 |
+
+  *Changed (2026-11-15):* set from the XP the dungeon gives, monsters and
+  gold, by [difficulty.md](difficulty.md) D11 and D12; it was 0, 20, 40, 80,
+  160, 320, 640, 1,200, 2,000, 3,000.
 
   `PC_LEVEL_MAX` is 10. The figures are a first guess to tune in play (Q6).
   With XP for gold (D13), the pace also depends on how much gold each depth
@@ -394,7 +399,7 @@ CSpect checks:
 
 1. A new game with a typed name: the stats window shows the name, `Level 1`,
    `XP 0`, `Gold 0`, and the other rows in their new places.
-2. Kill a rat: `XP 5`. Kill rats until 20 XP: `Level 2`, "Welcome to experience level
+2. Kill a rat: `XP 5`. Kill rats until 60 XP (20 before D11 of difficulty.md): `Level 2`, "Welcome to experience level
    2.", and the HP maximum higher, the current HP up by the same.
 3. With D11's key: `E` goes up a level each press and adds 10 gold (the
    XP for it included), up to level 10; after that the XP still rise, by

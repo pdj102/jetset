@@ -24,12 +24,13 @@
 static const char default_name[] = "Rogue";
 
 /*
- * The XP each level needs, by level - PC_LEVEL_MIN: classic in shape
- * (doubling, then slower), scaled so a player who clears most of each
- * depth is about level 10 at the bottom (docs/player_character.md, D6)
+ * The XP each level needs, by level - PC_LEVEL_MIN: the XP, monsters' and
+ * gold's, that a player who clears every depth has on arrival at depth
+ * level, so level d comes at depth d (docs/difficulty.md, D11 and D12). Set
+ * again from scripts/balance.py when its pacing check fails
  */
 static const uint16_t level_xp[PC_LEVEL_MAX - PC_LEVEL_MIN + 1] = {
-    0, 20, 40, 80, 160, 320, 640, 1200, 2000, 3000,
+    0, 60, 150, 270, 500, 850, 1750, 4000, 7300, 12500,
 };
 
 /* The player, in use with the PC component */

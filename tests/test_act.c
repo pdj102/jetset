@@ -2937,6 +2937,25 @@ int main(void)
     a = ctx(player);
     CHECK(act_pickup(&a, ACT_DO) == ACT_SUCCESS && stowed(i2, player) && item_count[i1] == 5 && item_count[i2] == 5);
     events();
+    /* Treasure: the player's needs no room and stays where it is, for player_on_pc_event() to turn into gold */
+    CHECK(PC_IS(player));
+    inv_capacity[player] = (uint8_t)inv_count(player);
+    i2 = floor_stack(IT_GOLD_PILE, 30, 0, 2);
+    a = ctx(player);
+    CHECK(act_pickup(&a, ACT_CHECK) == ACT_SUCCESS && a.target == i2);
+    a = ctx(player);
+    CHECK(act_pickup(&a, ACT_DO) == ACT_SUCCESS && a.used == 1 && a.target == i2);
+    CHECK(NGE_ENTITY_IS_ALIVE(i2) && at(i2, 0, 2) && NGE_OWNER_OF(i2) == AREA && item_count[i2] == 30);
+    CHECK(events() == 1 && is(0, i2, EV_PICKED_UP, player));
+    nge_entity_destroy(i2);
+    inv_capacity[player] = 20;
+    /* A monster's stays an item, stowed */
+    gob = creature(CR_GOBLIN, 1, 2);
+    CHECK(INV_HAS(gob));
+    i2 = floor_stack(IT_GEM_OPAL, 60, 1, 2);
+    a = ctx(gob);
+    CHECK(act_pickup(&a, ACT_DO) == ACT_SUCCESS && stowed(i2, gob) && item_count[i2] == 60);
+    events();
 
     /* ---- aim: the player at (0, 2), a wand of fire stowed, a rat along the row ---- */
     nge_entity_init();

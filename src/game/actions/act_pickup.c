@@ -15,6 +15,7 @@
 #include "game/components/inventory.h"
 #include "game/components/item.h"
 #include "game/components/kind.h"
+#include "game/components/pc.h"
 #include "game/events.h"
 #include "game/gen/gen.h"
 
@@ -50,6 +51,7 @@ uint8_t act_pickup(act_t *a, uint8_t mode) NGE_BANKED
     uint8_t x;
     uint8_t y;
     uint8_t room;
+    uint8_t gold;
 
     /* 1. Context: the actor's tile, and the item on it */
     nge_util_assert(actor < NGE_ENTITY_MAX && NGE_ENTITY_IS_ALIVE(actor));
@@ -79,8 +81,10 @@ uint8_t act_pickup(act_t *a, uint8_t mode) NGE_BANKED
         }
     }
     a->target = item;
+    /* The player's treasure goes to their gold (game/player: player_on_pc_event()), needing no room */
+    gold = PC_IS(actor) && gen_item_subclass(kind_index[item]) == ITEM_TREASURE;
     stack = find_stack(actor, item);
-    if (stack == NGE_ENTITY_INVALID && inv_count(actor) >= inv_capacity_of(actor)) {
+    if (!gold && stack == NGE_ENTITY_INVALID && inv_count(actor) >= inv_capacity_of(actor)) {
         return act_fail(a, ACT_R_FULL);
     }
     if (mode == ACT_CHECK) {
@@ -89,10 +93,11 @@ uint8_t act_pickup(act_t *a, uint8_t mode) NGE_BANKED
 
     /* 3. Resolve: nothing to roll */
 
-    /* 4. Apply: into the stack, what fits of it, or stowed. Then the event */
-    if (stack == NGE_ENTITY_INVALID) {
-        inv_stow(item, actor);
-    } else {
+    /*
+     * 4. Apply: into the stack, what fits of it, or stowed; the player's
+     * treasure stays where it is for the event's handler. Then the event
+     */
+    if (stack != NGE_ENTITY_INVALID) {
         room = (uint8_t)(STACK_MAX - item_count[stack]);
         if (item_count[item] <= room) {
             item_count[stack] = (uint8_t)(item_count[stack] + item_count[item]);
@@ -101,6 +106,8 @@ uint8_t act_pickup(act_t *a, uint8_t mode) NGE_BANKED
             item_count[stack] = STACK_MAX;
             item_count[item] = (uint8_t)(item_count[item] - room);   /* the rest stays where it is */
         }
+    } else if (!gold) {
+        inv_stow(item, actor);
     }
     nge_event_post(item, EV_PICKED_UP, actor, 0, 0);
     return act_succeed(a);

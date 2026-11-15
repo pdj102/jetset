@@ -110,7 +110,7 @@ int main(void)
     CHECK(strcmp(pc_name, "Bartho") == 0);
 
     /* ---- the level table ---- */
-    CHECK(pc_xp_needed(1) == 0 && pc_xp_needed(2) == 20 && pc_xp_needed(PC_LEVEL_MAX) == 3000);
+    CHECK(pc_xp_needed(1) == 0 && pc_xp_needed(2) == 60 && pc_xp_needed(PC_LEVEL_MAX) == 12500);
     ok = 1;
     for (i = PC_LEVEL_MIN; i < PC_LEVEL_MAX; i++) {
         ok &= pc_xp_needed((uint8_t)i) < pc_xp_needed((uint8_t)(i + 1));
@@ -118,18 +118,18 @@ int main(void)
     CHECK(ok);
 
     /* ---- XP below the next level: posted, no level ---- */
-    pc_gain_xp(p, 19);
-    CHECK(pc_xp == 19 && pc_level == 1);
-    CHECK(events() == 1 && seen[0].id == EV_XP_GAINED && seen[0].target == p && seen[0].p1 == 19 &&
+    pc_gain_xp(p, 59);
+    CHECK(pc_xp == 59 && pc_level == 1);
+    CHECK(events() == 1 && seen[0].id == EV_XP_GAINED && seen[0].target == p && seen[0].p1 == 59 &&
           seen[0].p2 == 0);
     pc_gain_xp(p, 0);                                  /* nothing: nothing posted */
-    CHECK(pc_xp == 19 && events() == 0);
+    CHECK(pc_xp == 59 && events() == 0);
 
     /* ---- exactly the figure: a level, more hit points (1d8 + Con 12's +1), the XP first ---- */
     hp_max = health_hp_max[p];
     CHECK(health_hp[p] == hp_max);
     pc_gain_xp(p, 1);
-    CHECK(pc_xp == 20 && pc_level == 2);
+    CHECK(pc_xp == 60 && pc_level == 2);
     gain = (uint8_t)(health_hp_max[p] - hp_max);
     CHECK(gain >= 2 && gain <= 9 && health_hp_max_base[p] == health_hp_max[p]);
     CHECK(health_hp[p] == health_hp_max[p]);           /* the current hit points up by the same */
@@ -147,14 +147,14 @@ int main(void)
     /* ---- hurt: a level heals the gain, not to full ---- */
     health_damage(p, NGE_ENTITY_INVALID, 10, DMG_BLUNT);
     hp_max = health_hp_max[p];
-    pc_gain_xp(p, 20);                                 /* 40: level 3 */
+    pc_gain_xp(p, 90);                                 /* 150: level 3 */
     gain = (uint8_t)(health_hp_max[p] - hp_max);
     CHECK(pc_level == 3 && health_hp[p] == (uint8_t)(hp_max - 10 + gain));
     events();
 
     /* ---- one gain across three figures: three levels, three events, in order ---- */
-    pc_gain_xp(p, 280);                                /* 320: level 6 */
-    CHECK(pc_xp == 320 && pc_level == 6);
+    pc_gain_xp(p, 700);                                /* 850: level 6 */
+    CHECK(pc_xp == 850 && pc_level == 6);
     events();
     CHECK(count(EV_LEVEL_GAINED) == 3 && first(EV_XP_GAINED) == 0);
     ok = 1;
@@ -173,15 +173,15 @@ int main(void)
     CHECK(seen[0].id == EV_XP_GAINED && seen[0].p1 == (300 & 0xFF) && seen[0].p2 == (300 >> 8));
 
     /* ---- at the top level the XP still rise; at PC_XP_MAX they stop ---- */
-    pc_gain_xp(p, 5000);
-    CHECK(pc_level == PC_LEVEL_MAX && pc_xp == 5620);
+    pc_gain_xp(p, 12000);
+    CHECK(pc_level == PC_LEVEL_MAX && pc_xp == 13150);
     events();
     CHECK(count(EV_LEVEL_GAINED) == 4);
     pc_gain_xp(p, 100);
-    CHECK(pc_level == PC_LEVEL_MAX && pc_xp == 5720 && events() == 1);
+    CHECK(pc_level == PC_LEVEL_MAX && pc_xp == 13250 && events() == 1);
     pc_gain_xp(p, 65000);
-    CHECK(pc_xp == PC_XP_MAX && events() == 1 && seen[0].p1 == ((PC_XP_MAX - 5720) & 0xFF) &&
-          seen[0].p2 == ((PC_XP_MAX - 5720) >> 8));
+    CHECK(pc_xp == PC_XP_MAX && events() == 1 && seen[0].p1 == ((PC_XP_MAX - 13250) & 0xFF) &&
+          seen[0].p2 == ((PC_XP_MAX - 13250) >> 8));
     pc_gain_xp(p, 1);                                  /* full: nothing posted */
     CHECK(pc_xp == PC_XP_MAX && events() == 0);
 
@@ -201,35 +201,35 @@ int main(void)
     p = new_player();
     effects_set_base(p, ATTR_INT, 1);                  /* modifier -5 */
     mana_spend(p, 3);
-    pc_gain_xp(p, 20);
+    pc_gain_xp(p, 60);
     CHECK(mana_mp_max[p] == 6 && mana_mp[p] == 3);
     events();
     /* No mana component: hit points only */
     p = new_player();
     NGE_ENTITY_REMOVE_COMPONENT(p, COMPONENT_MANA);
     hp_max = health_hp_max[p];
-    pc_gain_xp(p, 20);
+    pc_gain_xp(p, 60);
     events();
     CHECK(pc_level == 2 && health_hp_max[p] > hp_max && count(EV_MANA_RESTORED) == 0 && count(EV_ATTRS_CHANGED) == 1);
     p = new_player();
     effects_set_base(p, ATTR_HP_MAX, 254);
-    pc_gain_xp(p, 20);
+    pc_gain_xp(p, 60);
     CHECK(pc_level == 2 && health_hp_max_base[p] == 255 && health_hp_max[p] == 255);
     events();
 
     /* ---- gold: posted, then as many XP; spending leaves the XP ---- */
     p = new_player();
-    pc_gain_gold(p, 15);
-    CHECK(pc_gold == 15 && pc_xp == 15 && pc_level == 1);
+    pc_gain_gold(p, 55);
+    CHECK(pc_gold == 55 && pc_xp == 55 && pc_level == 1);
     CHECK(events() == 2 && seen[0].id == EV_GOLD_CHANGED && seen[0].target == p && seen[1].id == EV_XP_GAINED &&
-          seen[1].p1 == 15);
-    CHECK(PC_HAS_GOLD(15) && !PC_HAS_GOLD(16));
-    pc_gain_gold(p, 5);                                /* 20: crosses the figure, a level */
-    CHECK(pc_gold == 20 && pc_xp == 20 && pc_level == 2);
+          seen[1].p1 == 55);
+    CHECK(PC_HAS_GOLD(55) && !PC_HAS_GOLD(56));
+    pc_gain_gold(p, 5);                                /* 60: crosses the figure, a level */
+    CHECK(pc_gold == 60 && pc_xp == 60 && pc_level == 2);
     events();
     CHECK(first(EV_GOLD_CHANGED) == 0 && first(EV_XP_GAINED) == 1 && count(EV_LEVEL_GAINED) == 1);
-    pc_spend_gold(p, 8);
-    CHECK(pc_gold == 12 && pc_xp == 20 && events() == 1 && seen[0].id == EV_GOLD_CHANGED);
+    pc_spend_gold(p, 48);
+    CHECK(pc_gold == 12 && pc_xp == 60 && events() == 1 && seen[0].id == EV_GOLD_CHANGED);
     pc_spend_gold(p, 0);                               /* nothing: nothing posted */
     CHECK(pc_gold == 12 && events() == 0);
     pc_spend_gold(p, 12);
@@ -240,7 +240,7 @@ int main(void)
         pc_gain_xp(p, (uint16_t)(pc_xp_needed((uint8_t)(i + 1)) - pc_xp));
         events();
     }
-    CHECK(pc_level == PC_LEVEL_MAX && pc_xp == 3000);
+    CHECK(pc_level == PC_LEVEL_MAX && pc_xp == 12500);
     pc_gain_gold(p, 65000);                            /* the XP stop at PC_XP_MAX */
     CHECK(pc_gold == 65000 && pc_xp == PC_XP_MAX && events() == 2);
     pc_gain_gold(p, 1000);                             /* only 535 more fit */
