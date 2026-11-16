@@ -74,7 +74,8 @@ typedef uint16_t ai_can_t;    /**< A mask of AI_CAN_*: 16 bits (docs/creature_ex
 #define AI_STIM_NOISE  2   /**< Heard a noise (asleep: wakes; idle: investigates its tile). */
 #define AI_STIM_SEEN   3   /**< Saw its target, or the player. */
 #define AI_STIM_LOST   4   /**< Lost its target: at the goal and not seen, or can't get there. */
-#define AI_STIM_COUNT  5
+#define AI_STIM_ALARM  5   /**< A band member was hurt by the source: it becomes the target (docs/noise.md D9). */
+#define AI_STIM_COUNT  6
 
 /* Brains */
 #define AI_BRAIN_NONE     0   /**< In a kind record: no AI. */
@@ -128,6 +129,15 @@ typedef struct ai_kind {
  *          AI_BRAIN_NONE; its state isn't AI_STATE_NONE.
  */
 void ai_add(nge_entity_id_t id, const ai_kind_t *k) NGE_BANKED;
+
+/**
+ * @brief Make AI entity id a member of band (1 up, unique on its level;
+ *        0: none), as the level generator places a band (docs/noise.md
+ *        R13). One hurt raises the alarm: the band's asleep and idle
+ *        members in its area hunt whoever hurt it. One woken by a noise
+ *        wakes the band's sleepers. An entity without AI is left alone.
+ */
+void ai_band_set(nge_entity_id_t id, uint8_t band) NGE_BANKED;
 
 /** @brief Remove the AI component. */
 void ai_remove(nge_entity_id_t id) NGE_BANKED;

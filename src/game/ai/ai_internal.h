@@ -52,6 +52,7 @@ extern uint8_t ai_heard[NGE_ENTITY_MAX];            /* its record: the loudest n
                                                     /* since its last turn; 0: none (ai_hear()) */
 extern uint8_t ai_heard_x[NGE_ENTITY_MAX];          /* the record's tile */
 extern uint8_t ai_heard_y[NGE_ENTITY_MAX];
+extern uint8_t ai_band[NGE_ENTITY_MAX];             /* its band's number on its level; 0: none (ai_band_set()) */
 
 /* What an AI entity knows on this turn: ai_sense() fills it, on the stack */
 typedef struct ai_ctx {
@@ -76,9 +77,12 @@ uint8_t ai_spell_start(uint8_t r);
 
 /*
  * Stimulus stim for AI entity id, caused by source (or NGE_EVENT_NONE).
- * Hurt by a source in its area: that is its target, its tile the goal,
- * tracked for AI_TRACK turns. Lost: no goal, no tracking. Then its brain's next state, and EV_AI_CHANGED if that
- * changes it
+ * Hurt or alarmed by a source in its area: that is its target, its tile
+ * the goal, tracked for AI_TRACK turns. Lost: no goal, no tracking. Then
+ * its brain's next state, and EV_AI_CHANGED if that changes it. Then its
+ * band (docs/noise.md R14 to R16): hurt, the alarm to the band's asleep
+ * and idle members in its area; woken by a noise, a noise to the band's
+ * sleepers. Members reached pass nothing on
  */
 void ai_stimulus(nge_entity_id_t id, ai_stim_t stim, nge_entity_id_t source) NGE_BANKED;
 

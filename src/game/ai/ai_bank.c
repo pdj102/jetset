@@ -56,6 +56,16 @@ void ai_add(nge_entity_id_t id, const ai_kind_t *k) NGE_BANKED
     ai_track[id] = 0;
     ai_traits[id] = k->traits;
     ai_heard[id] = 0;
+    ai_band[id] = 0;
+}
+
+void ai_band_set(nge_entity_id_t id, uint8_t band) NGE_BANKED
+{
+    check_entity(id);
+
+    if (AI_IS(id)) {
+        ai_band[id] = band;
+    }
 }
 
 void ai_remove(nge_entity_id_t id) NGE_BANKED
@@ -140,16 +150,14 @@ ai_can_t ai_can(nge_entity_id_t id) NGE_BANKED
 
 /* ---- The state machine ---- */
 
-void ai_stimulus(nge_entity_id_t id, ai_stim_t stim, nge_entity_id_t source) NGE_BANKED
+/* One creature's change: its target and goal, its brain's next state, EV_AI_CHANGED. Bands aren't looked at (R16) */
+static void stimulus_one(nge_entity_id_t id, ai_stim_t stim, nge_entity_id_t source)
 {
     ai_state_t old;
     ai_state_t next;
 
-    check_ai(id);
-    nge_util_assert(stim < AI_STIM_COUNT);
-
-    /* The target and goal: whoever hurt it, where they are; lost, nowhere */
-    if (stim == AI_STIM_HURT && source != NGE_EVENT_NONE && NGE_ENTITY_IS_ALIVE(source) &&
+    /* The target and goal: whoever hurt it or its band member, where they are; lost, nowhere */
+    if ((stim == AI_STIM_HURT || stim == AI_STIM_ALARM) && source != NGE_EVENT_NONE && NGE_ENTITY_IS_ALIVE(source) &&
         NGE_ENTITY_HAS_COMPONENT(source, NGE_COMPONENT_LOCATION) &&
         NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_LOCATION) && NGE_OWNER_OF(source) == NGE_OWNER_OF(id)) {
         ai_target[id] = source;
@@ -169,4 +177,43 @@ void ai_stimulus(nge_entity_id_t id, ai_stim_t stim, nge_entity_id_t source) NGE
     }
     ai_state[id] = next;
     nge_event_post(id, EV_AI_CHANGED, source, old, next);
+}
+
+void ai_stimulus(nge_entity_id_t id, ai_stim_t stim, nge_entity_id_t source) NGE_BANKED
+{
+    ai_state_t old;
+    uint8_t band;
+    nge_owner_t area;
+    nge_entity_id_t member;
+    ai_state_t state;
+    uint8_t i;
+
+    check_ai(id);
+    nge_util_assert(stim < AI_STIM_COUNT);
+
+    old = ai_state[id];
+    stimulus_one(id, stim, source);
+
+    /* Its band: hurt, the rest come for whoever did it; woken by a noise, the sleepers wake (R14, R15) */
+    band = ai_band[id];
+    if (band == 0) {
+        return;
+    }
+    if (stim == AI_STIM_HURT) {
+        stim = AI_STIM_ALARM;
+    } else if (stim == AI_STIM_NOISE && old == AI_STATE_ASLEEP && ai_state[id] != old) {
+        source = NGE_EVENT_NONE;
+    } else {
+        return;
+    }
+    area = NGE_OWNER_OF(id);
+    NGE_ENTITY_FOR_EACH_ALIVE(i, member) {
+        if (member == id || !AI_IS(member) || ai_band[member] != band || NGE_OWNER_OF(member) != area) {
+            continue;
+        }
+        state = ai_state[member];
+        if (state == AI_STATE_ASLEEP || (state == AI_STATE_IDLE && stim == AI_STIM_ALARM)) {
+            stimulus_one(member, stim, source);
+        }
+    }
 }

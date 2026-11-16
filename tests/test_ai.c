@@ -286,6 +286,9 @@ int main(void)
           NEXT(IDLE, SEEN) == AI_STATE_HUNT && NEXT(IDLE, LOST) == AI_STATE_NO_CHANGE);
     CHECK(NEXT(HUNT, HURT) == AI_STATE_NO_CHANGE && NEXT(HUNT, NOISE) == AI_STATE_NO_CHANGE &&
           NEXT(HUNT, SEEN) == AI_STATE_NO_CHANGE && NEXT(HUNT, LOST) == AI_STATE_IDLE);
+    /* The alarm: asleep and idle hunt (noise.md D9) */
+    CHECK(NEXT(ASLEEP, ALARM) == AI_STATE_HUNT && NEXT(IDLE, ALARM) == AI_STATE_HUNT &&
+          NEXT(HUNT, ALARM) == AI_STATE_NO_CHANGE);
     for (s = 0; s < AI_STATE_COUNT; s++) {
         CHECK(ai_brains[AI_BRAIN_DEFAULT].next[s][AI_STIM_NONE] == AI_STATE_NO_CHANGE);
     }
@@ -523,6 +526,74 @@ int main(void)
     CHECK(ai_get_state(goblin) == AI_STATE_HUNT && ai_target[goblin] == actor_player);
     CHECK(ai_goal_x[goblin] == 0 && ai_goal_y[goblin] == 5 && ai_heard[goblin] == 0);
     events();
+
+    /* ---- bands: the alarm, and waking the sleepers (noise.md R13 to R16, D14) ---- */
+    scene(0, 0);
+    wall_column(3, 0, 9);                                   /* out of sight: only the band moves them */
+    a = creature(CR_RAT, 5, 5);
+    b = creature(CR_RAT, 6, 5);
+    rat = creature(CR_RAT, 7, 5);                           /* another band */
+    goblin = creature(CR_GOBLIN, 8, 5);                     /* band 1, hunting someone else */
+    gob2 = creature(CR_GOBLIN, 9, 9);                       /* band 1, on another level */
+    CHECK(ai_band[a] == 0);                                 /* none when made */
+    ai_band_set(a, 1);
+    ai_band_set(b, 1);
+    ai_band_set(rat, 2);
+    ai_band_set(goblin, 1);
+    ai_band_set(gob2, 1);
+    nge_owner_set(gob2, AREA1);
+    ai_state[a] = AI_STATE_ASLEEP;
+    ai_state[b] = AI_STATE_ASLEEP;
+    ai_state[rat] = AI_STATE_ASLEEP;
+    ai_state[goblin] = AI_STATE_HUNT;
+    ai_target[goblin] = rat;
+    ai_state[gob2] = AI_STATE_ASLEEP;
+    holder = nge_entity_create();                           /* no AI: no band */
+    ai_band_set(holder, 3);
+    CHECK(ai_band[a] == 1 && ai_band[rat] == 2);
+    events();
+    /* One hurt: the band's sleeper hunts the attacker; one event each, no cascade */
+    ai_stimulus(a, AI_STIM_HURT, actor_player);
+    CHECK(ai_get_state(a) == AI_STATE_HUNT && ai_get_state(b) == AI_STATE_HUNT);
+    CHECK(ai_target[b] == actor_player && ai_goal_x[b] == 0 && ai_goal_y[b] == 0 && ai_track[b] == AI_TRACK);
+    CHECK(ai_get_state(rat) == AI_STATE_ASLEEP && ai_get_state(gob2) == AI_STATE_ASLEEP);   /* another band, area */
+    CHECK(ai_get_state(goblin) == AI_STATE_HUNT && ai_target[goblin] == rat);                /* keeps its target */
+    CHECK(events() == 2 && is(0, a, EV_AI_CHANGED, actor_player) && is(1, b, EV_AI_CHANGED, actor_player));
+    /* An idle member is alarmed too */
+    ai_state[a] = AI_STATE_ASLEEP;
+    ai_state[b] = AI_STATE_IDLE;
+    ai_stimulus(a, AI_STIM_HURT, actor_player);
+    CHECK(ai_get_state(b) == AI_STATE_HUNT && events() == 2);
+    /* Woken by a noise: the band's sleepers wake, to idle; idle members don't move */
+    ai_state[a] = AI_STATE_ASLEEP;
+    ai_state[b] = AI_STATE_ASLEEP;
+    ai_state[goblin] = AI_STATE_IDLE;
+    ai_stimulus(a, AI_STIM_NOISE, NGE_EVENT_NONE);
+    CHECK(ai_get_state(a) == AI_STATE_IDLE && ai_get_state(b) == AI_STATE_IDLE && ai_get_state(goblin) == AI_STATE_IDLE);
+    CHECK(ai_get_state(rat) == AI_STATE_ASLEEP && ai_get_state(gob2) == AI_STATE_ASLEEP && events() == 2);
+    /* A noise on a member awake: no one woken (it didn't wake) */
+    ai_state[a] = AI_STATE_HUNT;
+    ai_state[b] = AI_STATE_ASLEEP;
+    ai_stimulus(a, AI_STIM_NOISE, NGE_EVENT_NONE);
+    CHECK(ai_get_state(b) == AI_STATE_ASLEEP && events() == 0);
+    /* ai_alert() wakes a sleeper's band as a noise does */
+    ai_state[a] = AI_STATE_ASLEEP;
+    ai_alert(a);
+    CHECK(ai_get_state(a) == AI_STATE_IDLE && ai_get_state(b) == AI_STATE_IDLE && events() == 2);
+    /* Killed outright: dying when the attack's events are handled, it raises no alarm (D14) */
+    ai_state[a] = AI_STATE_ASLEEP;
+    ai_state[b] = AI_STATE_ASLEEP;
+    nge_entity_destroy(a);
+    {
+        nge_event_t e = { .target = a, .id = EV_HIT, .source = actor_player };
+
+        ai_on_event(&e);
+    }
+    CHECK(ai_get_state(b) == AI_STATE_ASLEEP && events() == 0);
+    nge_entity_release(nge_entity_next_dying());
+    /* ai_add() clears the band */
+    ai_add(b, &idle);
+    CHECK(ai_band[b] == 0);
 
     /* ---- ai_alert(): wakes a sleeper; an idle creature doesn't change (noise.md D13) ---- */
     scene(0, 0);

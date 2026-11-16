@@ -24,6 +24,7 @@
 #include "data/tile_data.h"
 
 #include "game/ai/ai.h"
+#include "game/ai/ai_internal.h"   /* the band numbers */
 #include "game/components/feature.h"
 #include "game/components/health.h"
 #include "game/components/inventory.h"
@@ -956,6 +957,54 @@ static int band_rooms_ok(int depth)
     return 1;
 }
 
+/*
+ * Band numbers (docs/noise.md R13): each number's members are in one room
+ * and are 2 or more; the numbers run from 1 up to the bands placed; a kind
+ * met below its own depths only as a band member has one. Counts the bands
+ */
+static int bands_numbered;
+
+static int band_numbers_ok(int depth)
+{
+    uint8_t count[LEVEL_MONSTERS_MAX + 1] = { 0 };
+    int room[LEVEL_MONSTERS_MAX + 1];
+    nge_entity_id_t id;
+    uint8_t member = (depth >= 7) ? CR_ZOMBIE : (depth >= 4) ? CR_GOBLIN : CR_NONE;
+    uint8_t i;
+    uint8_t b;
+    uint8_t top = 0;
+
+    NGE_OWNER_FOR_EACH_OWNED(i, id, LEVEL_AREA) {
+        if (id == player || !AI_IS(id)) {
+            continue;
+        }
+        b = ai_band[id];
+        if (b == 0) {
+            if (kind_index[id] == member) {
+                return fail(depth, "a band member with no band number");
+            }
+            continue;
+        }
+        if (b > LEVEL_MONSTERS_MAX) {
+            return fail(depth, "a band number past the monsters placed");
+        }
+        if (count[b] == 0) {
+            room[b] = room_of(NGE_LOCATION_X(id), NGE_LOCATION_Y(id));
+        } else if (room[b] != room_of(NGE_LOCATION_X(id), NGE_LOCATION_Y(id))) {
+            return fail(depth, "a band number in two rooms");
+        }
+        count[b]++;
+        top = (b > top) ? b : top;
+    }
+    for (b = 1; b <= top; b++) {
+        if (count[b] < 2) {
+            return fail(depth, "a band number with fewer than 2 members, or a number skipped");
+        }
+        bands_numbered++;
+    }
+    return 1;
+}
+
 int main(void)
 {
     static nge_tile_t again[LEVEL_HEIGHT][LEVEL_WIDTH];
@@ -998,12 +1047,13 @@ int main(void)
         for (depth = 1; depth <= LEVEL_DEPTH_BOTTOM && ok; depth++) {
             nge_event_init();   /* the peak, for this level only */
             go((uint8_t)depth, (uint8_t)((seed + depth) % 3));
-            ok = check_level(depth) && generation_events_ok() && band_rooms_ok(depth);
+            ok = check_level(depth) && generation_events_ok() && band_rooms_ok(depth) && band_numbers_ok(depth);
             peak = (nge_event_peak() > peak) ? nge_event_peak() : peak;
         }
     }
     CHECK(ok);
     CHECK(bands_seen > 0);   /* some bands placed below their members' own depths */
+    CHECK(bands_numbered > 0);
     /* Generating never fills the event queue, kits and all (R15); some kits were equipped */
     CHECK(peak < NGE_EVENT_QUEUE && equips_seen > 0);
     level_dev_seed = 0;

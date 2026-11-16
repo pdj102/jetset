@@ -575,3 +575,37 @@ All answered (2026-11-15), as recommended:
   door) and 4 (an idle monster comes to look) couldn't be set up in play;
   `test_noise` (muffling) and `test_ai` (investigating) cover them, and
   the step 4 play test watches for them.
+
+### Step 3: bands and the alarm
+
+- **The band step is in `ai_bank.c`** with `ai_stimulus()` and
+  `stimulus_one()`, and `ai_band_set()` beside `ai_add()`, not in
+  `ai_hear.c` (5.5). The page is the same.
+- **`ai_band_set()` leaves an entity without AI alone,** so
+  `place_random()` calls it for every entity it places, items too, with
+  0 for one creature or an item. Page 102 grew by 6 bytes (about 25
+  planned), so `place_random()` stays in page 102.
+- **The band counter is a local of `place_random()`.** The function is
+  called once a level for the creatures, so the count starts at 0 for
+  each level with no reset of its own.
+- **The alarm needs nothing new for its source:** `stimulus_one()` sets
+  the target and goal for `AI_STIM_ALARM` under the same test as
+  `AI_STIM_HURT` (the source alive and placed in the member's area).
+- **Memory:** page 130 from 7,507 to 7,938 bytes, +431 (about 130
+  planned), 254 free in the debug build. `ai_stimulus()` is about 330
+  bytes of code and `stimulus_one()` 271: zsdcc's code for loops over
+  per-entity tables is large. **Over R20:** N1 has added 866 bytes to
+  page 130 against about 600. Page 131 from 1,500 to 1,650. Page 102 from
+  8,153 to 8,159, 33 free. Common memory unchanged.
+- **The asm was read** for `ai_stimulus()`: the state re-read after
+  `stimulus_one()` for "woken", the band and area compares, and the
+  arguments to `stimulus_one()` are right.
+- **Tests:** `test_ai` 260 checks (the alarm, another band, another area,
+  a hunting member's target, one event each, a noise waking the band, an
+  awake member waking no one, `ai_alert()`, a kill outright, `ai_add()`
+  clearing the band, the brain's new column). `test_level` 104: over
+  every depth and seed, each band number is 2 or more creatures in one
+  room, the numbers run from 1 with none skipped, and goblins at depths
+  4 to 6 and zombies from depth 7 (met there only in bands) have one.
+- **CSpect check 5 passed** (2026-11-16). Page 130's 254 bytes free
+  accepted over R20 (2026-11-16).

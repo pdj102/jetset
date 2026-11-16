@@ -778,13 +778,15 @@ static void place_features(uint8_t depth, uint8_t locks)
  * draws as it has creatures, its leader first and the rest in the leader's
  * room. A tile is found first, so an entity is only created where it can go.
  * A band's members share its leader's start state by the kinds' data
- * (test_gen)
+ * (test_gen), and a band number, from 1 on each level (docs/noise.md R13)
  */
 static void place_random(uint8_t n, uint8_t depth, uint8_t creatures)
 {
     uint8_t kinds[LEVEL_MONSTERS_MAX];   /* n is at most this: level_generate() rolls it up to LEVEL_MONSTERS_MAX */
     nge_entity_id_t id;
     uint8_t count = 1;
+    uint8_t band = 0;   /* the last band's number: called once a level for the creatures */
+    uint8_t tag;        /* this draw's: 0 for one creature or an item */
     uint8_t i;
     uint8_t x;
     uint8_t y;
@@ -800,6 +802,7 @@ static void place_random(uint8_t n, uint8_t depth, uint8_t creatures)
         if (!free_floor(&x, &y)) {
             continue;
         }
+        tag = (count > 1) ? ++band : 0;
         for (i = 0; i < count; i++) {
             if (i != 0 && !free_floor_in(&level_rooms[level_floor_cell], &x, &y)) {
                 break;   /* the room is full: the rest of the band is lost */
@@ -807,6 +810,7 @@ static void place_random(uint8_t n, uint8_t depth, uint8_t creatures)
             id = creatures ? gen_creature(kinds[i], LEVEL_AREA) : gen_item_random(depth, LEVEL_AREA);
             if (id != NGE_ENTITY_INVALID) {
                 nge_location_set(id, x, y);
+                ai_band_set(id, tag);   /* an item has no AI: left alone */
             }
         }
     }
