@@ -77,7 +77,7 @@ static int at(nge_entity_id_t id, uint8_t x, uint8_t y)
     return NGE_LOCATION_X(id) == x && NGE_LOCATION_Y(id) == y;
 }
 
-/* A seed whose first rand() gives the d20 roll r: hearing's first draw is its roll */
+/* A seed whose first rand() gives the d20 roll r: the notice roll is a turn's first draw */
 static unsigned int seed_for_roll(int r)
 {
     unsigned int s;
@@ -282,7 +282,7 @@ int main(void)
 #define NEXT(s, t)  (ai_brains[AI_BRAIN_DEFAULT].next[AI_STATE_##s][AI_STIM_##t])
     CHECK(NEXT(ASLEEP, HURT) == AI_STATE_HUNT && NEXT(ASLEEP, NOISE) == AI_STATE_IDLE &&
           NEXT(ASLEEP, SEEN) == AI_STATE_NO_CHANGE && NEXT(ASLEEP, LOST) == AI_STATE_NO_CHANGE);
-    CHECK(NEXT(IDLE, HURT) == AI_STATE_HUNT && NEXT(IDLE, NOISE) == AI_STATE_NO_CHANGE &&
+    CHECK(NEXT(IDLE, HURT) == AI_STATE_HUNT && NEXT(IDLE, NOISE) == AI_STATE_HUNT &&   /* to look (noise.md D7) */
           NEXT(IDLE, SEEN) == AI_STATE_HUNT && NEXT(IDLE, LOST) == AI_STATE_NO_CHANGE);
     CHECK(NEXT(HUNT, HURT) == AI_STATE_NO_CHANGE && NEXT(HUNT, NOISE) == AI_STATE_NO_CHANGE &&
           NEXT(HUNT, SEEN) == AI_STATE_NO_CHANGE && NEXT(HUNT, LOST) == AI_STATE_IDLE);
@@ -427,32 +427,113 @@ int main(void)
     CHECK(!ai_sees(NGE_ENTITY_INVALID, actor_player) && !ai_sees(actor_player, NGE_ENTITY_INVALID));
     events();
 
-    /* ---- hearing: asleep, within AI_HEAR, 1d20 + the Wisdom modifier against AI_WAKE_DC ---- */
+    /* ---- hearing asleep: a record, 1d20 + the Wisdom modifier + heard against AI_WAKE_DC (noise.md R9) ---- */
     scene(0, 0);
     rat = creature(CR_RAT, 3, 0);                           /* Wis 10: no modifier */
-    srand(seed_for_roll(AI_WAKE_DC - 1));
+    CHECK(ai_heard[rat] == 0);                              /* none when made */
+    ai_heard[rat] = 2 + 1;                                  /* heard 2 */
+    srand(seed_for_roll(AI_WAKE_DC - 2 - 1));
     ai_on_turn(rat);
     CHECK(ai_get_state(rat) == AI_STATE_ASLEEP && at(rat, 3, 0) && events() == 0);   /* waited */
-    srand(seed_for_roll(AI_WAKE_DC));
+    CHECK(ai_heard[rat] == 0);                              /* cleared */
+    ai_heard[rat] = 2 + 1;
+    srand(seed_for_roll(AI_WAKE_DC - 2));
     ai_on_turn(rat);
-    CHECK(ai_get_state(rat) == AI_STATE_IDLE);              /* woken: idle acts this turn */
+    CHECK(ai_get_state(rat) == AI_STATE_IDLE && ai_heard[rat] == 0);   /* woken: idle acts this turn */
     CHECK(events() >= 1 && is(0, rat, EV_AI_CHANGED, NGE_EVENT_NONE) && seen[0].p1 == AI_STATE_ASLEEP &&
           seen[0].p2 == AI_STATE_IDLE);
     goblin = creature(CR_GOBLIN, 0, 3);                     /* Wis 8: -1 */
+    ai_heard[goblin] = 0 + 1;                               /* heard 0 */
     srand(seed_for_roll(AI_WAKE_DC));
     ai_on_turn(goblin);
     CHECK(ai_get_state(goblin) == AI_STATE_ASLEEP);
+    ai_heard[goblin] = 0 + 1;
     srand(seed_for_roll(AI_WAKE_DC + 1));
     ai_on_turn(goblin);
     CHECK(ai_get_state(goblin) == AI_STATE_IDLE);
     events();
-    /* Out of AI_HEAR: no roll at all */
-    b = creature(CR_RAT, 9, 9);
+    /* No record: no roll at all, even next to the player, turn after turn (D8) */
+    b = creature(CR_RAT, 1, 1);
     srand(9);
     r = rand();
     srand(9);
-    ai_on_turn(b);
-    CHECK(rand() == r && ai_get_state(b) == AI_STATE_ASLEEP && at(b, 9, 9) && events() == 0);
+    for (s = 0; s < 20; s++) {
+        ai_on_turn(b);
+    }
+    CHECK(rand() == r && ai_get_state(b) == AI_STATE_ASLEEP && at(b, 1, 1) && events() == 0);
+
+    /* ---- hearing idle: a record and the roll send it to look, after no one (R10) ---- */
+    scene(0, 0);
+    wall_column(3, 0, 9);                                   /* hides the player */
+    goblin = creature(CR_GOBLIN, 5, 5);                     /* Wis 8: -1 */
+    ai_state[goblin] = AI_STATE_IDLE;
+    ai_heard[goblin] = 1 + 1;                               /* heard 1, at (8, 5) */
+    ai_heard_x[goblin] = 8;
+    ai_heard_y[goblin] = 5;
+    srand(seed_for_roll(AI_NOTICE_DC - 1 + 1 - 1));
+    ai_on_turn(goblin);
+    CHECK(ai_get_state(goblin) == AI_STATE_IDLE && ai_heard[goblin] == 0);
+    nge_location_set(goblin, 5, 5);                         /* it may have wandered */
+    events();
+    ai_heard[goblin] = 1 + 1;
+    srand(seed_for_roll(AI_NOTICE_DC - 1 + 1));
+    ai_on_turn(goblin);
+    CHECK(ai_get_state(goblin) == AI_STATE_HUNT && ai_target[goblin] == NGE_ENTITY_INVALID);
+    CHECK(ai_goal_x[goblin] == 8 && ai_goal_y[goblin] == 5 && ai_track[goblin] == 0 && ai_heard[goblin] == 0);
+    CHECK(at(goblin, 6, 5));                                /* it steps towards the goal this turn */
+    CHECK(events() == 2 && is(0, goblin, EV_AI_CHANGED, NGE_EVENT_NONE) && seen[0].p1 == AI_STATE_IDLE &&
+          seen[0].p2 == AI_STATE_HUNT && is(1, goblin, EV_MOVED, NGE_EVENT_NONE));
+    /* Hunting, a record is ignored and cleared */
+    ai_heard[goblin] = 9 + 1;
+    ai_heard_x[goblin] = 9;
+    ai_heard_y[goblin] = 9;
+    srand(seed_for_roll(20));
+    ai_on_turn(goblin);
+    CHECK(at(goblin, 7, 5) && ai_goal_x[goblin] == 8 && ai_goal_y[goblin] == 5 && ai_heard[goblin] == 0);
+    /* At the goal with no one seen: lost, back to idle */
+    ai_on_turn(goblin);
+    CHECK(at(goblin, 8, 5) && ai_get_state(goblin) == AI_STATE_HUNT);
+    events();
+    ai_on_turn(goblin);
+    CHECK(ai_get_state(goblin) == AI_STATE_IDLE && ai_goal_x[goblin] == NGE_MAP_X_INVALID);
+    CHECK(events() >= 1 && is(0, goblin, EV_AI_CHANGED, NGE_EVENT_NONE) && seen[0].p1 == AI_STATE_HUNT &&
+          seen[0].p2 == AI_STATE_IDLE);
+    /* Seeing the player on the way: the player becomes the target */
+    nge_location_set(goblin, 5, 5);
+    ai_heard[goblin] = 1 + 1;
+    ai_heard_x[goblin] = 8;
+    ai_heard_y[goblin] = 5;
+    srand(seed_for_roll(AI_NOTICE_DC));
+    ai_on_turn(goblin);
+    CHECK(ai_get_state(goblin) == AI_STATE_HUNT && ai_target[goblin] == NGE_ENTITY_INVALID && at(goblin, 6, 5));
+    nge_location_set(actor_player, 9, 9);
+    events();
+    ai_on_turn(goblin);
+    CHECK(ai_get_state(goblin) == AI_STATE_HUNT && ai_target[goblin] == actor_player);
+    CHECK(ai_goal_x[goblin] == 9 && ai_goal_y[goblin] == 9);
+    events();
+    /* Idle and seeing the player: it hunts the player and ignores the record */
+    scene(0, 5);
+    goblin = creature(CR_GOBLIN, 5, 5);
+    ai_state[goblin] = AI_STATE_IDLE;
+    ai_heard[goblin] = 5 + 1;
+    ai_heard_x[goblin] = 9;
+    ai_heard_y[goblin] = 9;
+    ai_on_turn(goblin);
+    CHECK(ai_get_state(goblin) == AI_STATE_HUNT && ai_target[goblin] == actor_player);
+    CHECK(ai_goal_x[goblin] == 0 && ai_goal_y[goblin] == 5 && ai_heard[goblin] == 0);
+    events();
+
+    /* ---- ai_alert(): wakes a sleeper; an idle creature doesn't change (noise.md D13) ---- */
+    scene(0, 0);
+    wall_column(3, 0, 9);
+    goblin = creature(CR_GOBLIN, 5, 5);
+    ai_state[goblin] = AI_STATE_IDLE;
+    ai_alert(goblin);
+    CHECK(ai_get_state(goblin) == AI_STATE_IDLE && ai_goal_x[goblin] == NGE_MAP_X_INVALID && events() == 0);
+    ai_state[goblin] = AI_STATE_ASLEEP;
+    ai_alert(goblin);
+    CHECK(ai_get_state(goblin) == AI_STATE_IDLE && events() == 1 && is(0, goblin, EV_AI_CHANGED, NGE_EVENT_NONE));
 
     /* ---- the frame: an idle entity that sees the player hunts at once, and comes ---- */
     scene(0, 5);

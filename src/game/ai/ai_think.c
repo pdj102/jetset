@@ -476,7 +476,7 @@ void ai_on_turn(nge_entity_id_t id) NGE_BANKED
     /* 2. Think: its state's options, in order */
     switch (ai_state[id]) {
     case AI_STATE_ASLEEP:
-        break;   /* sleeps until it hears the player or is hurt */
+        break;   /* sleeps until a noise wakes it or it is hurt */
     case AI_STATE_IDLE:
         used = think_idle(&c);
         break;

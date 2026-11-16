@@ -551,3 +551,27 @@ All answered (2026-11-15), as recommended:
   registers kept across the calls are right.
 - **Tests:** `test_noise` 34 checks (new), `test_ai` 227, unchanged.
 - **CSpect check 6 (timing) passed** (2026-11-16): no visible slowdown.
+
+### Step 2: hearing from the records
+
+- **A helpless creature keeps its record.** An unconscious or paralysed
+  creature loses its turn before it senses (`ai_on_turn()`), so the record
+  isn't cleared. When it recovers, it makes one roll for the loudest noise
+  heard meanwhile. That is at most one roll, as D3 accepts for a parked
+  creature.
+- **The Wisdom roll is `notices(id, heard, dc)`** in `ai_sense.c`, shared
+  by both states. It is still the turn's first `rand()`, so
+  `seed_for_roll()` finds the d20.
+- **Memory:** page 130 from 7,466 to 7,507 bytes, +41 (about 100
+  planned), 685 free. Common memory unchanged.
+- **The asm was read** for `ai_sense()` and `notices()`: the arguments
+  (id, heard, DC), the state tests, the idle branch's target, goal and
+  tracking, and the record cleared before the context is written are
+  right.
+- **Tests:** `test_ai` 245 checks, `test_noise` 37 (the end-to-end case:
+  a real attack, its events through `ai_on_event()` and
+  `noise_on_event()`, wakes a sleeper 3 tiles away).
+- **CSpect checks 1 and 2 passed** (2026-11-16). Checks 3 (a closed
+  door) and 4 (an idle monster comes to look) couldn't be set up in play;
+  `test_noise` (muffling) and `test_ai` (investigating) cover them, and
+  the step 4 play test watches for them.

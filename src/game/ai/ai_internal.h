@@ -84,12 +84,14 @@ void ai_stimulus(nge_entity_id_t id, ai_stim_t stim, nge_entity_id_t source) NGE
 
 /*
  * Fill c for AI entity id at the start of its turn, and keep its target
- * and goal: a target no longer alive in its area is dropped. Asleep, it
- * may hear the player (AI_STIM_NOISE); awake, it looks for its target,
- * or the player if it has none (AI_STIM_SEEN: the target, and its tile
- * the goal, AI_TRACK turns of tracking). Not seen, the goal stays until
- * it is reached; then, while tracking is left, it is the target's tile,
- * one turn less each turn
+ * and goal: a target no longer alive in its area is dropped. Asleep, a
+ * noise recorded since its last turn may wake it (AI_STIM_NOISE); awake,
+ * it looks for its target, or the player if it has none (AI_STIM_SEEN:
+ * the target, and its tile the goal, AI_TRACK turns of tracking). Not
+ * seen, the goal stays until it is reached; then, while tracking is left,
+ * it is the target's tile, one turn less each turn. Idle and seeing no
+ * one, a noise may send it to look (AI_STIM_NOISE: no target, the
+ * noise's tile the goal). The record is cleared, whatever the state
  */
 void ai_sense(nge_entity_id_t id, ai_ctx_t *c);
 

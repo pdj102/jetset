@@ -1,6 +1,8 @@
 /* game/noise: the noise table and mask, the noises events make, and the AI's records (ai_hear()). */
 #include "test.h"
 
+#include <stdlib.h>
+
 #include "ecs/components/nge_location.h"
 #include "ecs/nge_entity.h"
 #include "ecs/nge_owner.h"
@@ -11,6 +13,7 @@
 
 #include "data/tile_data.h"
 
+#include "game/actions/act.h"
 #include "game/ai/ai_internal.h"
 #include "game/components/feature.h"
 #include "game/components/pc.h"
@@ -107,6 +110,27 @@ static void filtered(nge_entity_id_t target, nge_event_id_t id, nge_entity_id_t 
     noise_on_event(&e);
 }
 
+/* As the game's dispatcher: the AI, then the noises */
+static void dispatch(const nge_event_t *e)
+{
+    ai_on_event(e);
+    noise_on_event(e);
+}
+
+/* A seed whose first rand() gives the d20 roll r: the notice roll is a turn's first draw */
+static unsigned int seed_for_roll(int r)
+{
+    unsigned int s;
+
+    for (s = 1; s < 100000; s++) {
+        srand(s);
+        if (1 + rand() % 20 == r) {
+            return s;
+        }
+    }
+    return 0;
+}
+
 /* id's record: heard loudness h (heard + 1 stored) at (x, y) */
 static int record(nge_entity_id_t id, uint8_t h, uint8_t x, uint8_t y)
 {
@@ -132,6 +156,7 @@ int main(void)
     nge_entity_id_t other;
     nge_entity_id_t door;
     nge_entity_id_t trap;
+    act_t a;
     uint8_t i;
     uint8_t j;
     uint8_t y;
@@ -301,6 +326,23 @@ int main(void)
     ai_heard[h] = 0;
     noise(m, EV_HIT, actor_player, 15, NGE_EVENT_NONE);
     CHECK(record(h, 6 - 4, 5, 5) && record(far, 6 - 5, 5, 5));
+
+    /* ---- end to end: the player's attack, its events handled as the game does, wakes a sleeper ---- */
+    scene(2, 5);
+    m = creature(CR_GOBLIN, 3, 5);
+    h = creature(CR_RAT, 6, 5);                             /* 3 from the goblin; Wis 10 */
+    ai_state[h] = AI_STATE_ASLEEP;
+    a = (act_t){ 0 };
+    a.actor = actor_player;
+    a.target = m;
+    a.item = NGE_ENTITY_INVALID;
+    act_do(ACT_MELEE, &a, ACT_DO);
+    CHECK(a.used == 1);                                     /* a hit or a miss: as loud */
+    nge_event_process(dispatch);
+    CHECK(ai_heard[h] == 6 - 3 + 1 && ai_heard_x[h] == 3 && ai_heard_y[h] == 5);
+    srand(seed_for_roll(AI_WAKE_DC - 3));
+    ai_on_turn(h);
+    CHECK(ai_get_state(h) == AI_STATE_IDLE && ai_heard[h] == 0);
 
     return test_summary("noise");
 }

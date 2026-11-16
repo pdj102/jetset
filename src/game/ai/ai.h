@@ -21,9 +21,10 @@
  *
  * Turns: its timer (TIMER_AI, game/timers.h) fires every `speed` ticks,
  * and the game calls ai_on_turn() for an AI entity on the current level.
- * It senses (hears while asleep, else looks: a stimulus from that changes
- * its state at once), its state acts, and it does exactly one action
- * that uses the turn: ACT_WAIT if nothing else applies.
+ * It senses (the loudest noise heard since its last turn, game/noise/
+ * noise.h, and awake, what it sees: a stimulus from that changes its
+ * state at once), its state acts, and it does exactly one action that
+ * uses the turn: ACT_WAIT if nothing else applies.
  *
  * Target and goal: who it is after (the player it saw, or whoever hurt
  * it) and where it thinks they are, kept between turns with its state.
@@ -61,7 +62,7 @@ typedef uint16_t ai_can_t;    /**< A mask of AI_CAN_*: 16 bits (docs/creature_ex
 
 /* States */
 #define AI_STATE_NONE    0   /**< No state: never an entity's. */
-#define AI_STATE_ASLEEP  1   /**< Does nothing; wakes when it hears the player, or is hurt. */
+#define AI_STATE_ASLEEP  1   /**< Does nothing; wakes when it notices a noise, or is hurt. */
 #define AI_STATE_IDLE    2   /**< Awake, after no one: picks up, wields, wanders; looks. */
 #define AI_STATE_HUNT    3   /**< After its target: attacks, drinks, shoots, steps towards it. */
 #define AI_STATE_COUNT   4
@@ -70,7 +71,7 @@ typedef uint16_t ai_can_t;    /**< A mask of AI_CAN_*: 16 bits (docs/creature_ex
 /* Stimuli */
 #define AI_STIM_NONE   0   /**< Nothing new: from a state's handler. Changes no state. */
 #define AI_STIM_HURT   1   /**< Attacked: hit, missed or damaged. Its source becomes the target. */
-#define AI_STIM_NOISE  2   /**< Heard the player (asleep). */
+#define AI_STIM_NOISE  2   /**< Heard a noise (asleep: wakes; idle: investigates its tile). */
 #define AI_STIM_SEEN   3   /**< Saw its target, or the player. */
 #define AI_STIM_LOST   4   /**< Lost its target: at the goal and not seen, or can't get there. */
 #define AI_STIM_COUNT  5
@@ -101,11 +102,11 @@ typedef uint16_t ai_can_t;    /**< A mask of AI_CAN_*: 16 bits (docs/creature_ex
 #define AI_INT_OPEN  6
 
 /* The senses */
-#define AI_SIGHT    8    /**< Sees this far (nge_map_within()), if the line is clear. */
-#define AI_HEAR     4    /**< Asleep, hears the player this near, walls or not... */
-#define AI_WAKE_DC  15   /**< ...and wakes on 1d20 + its Wisdom modifier of this or more. */
-#define AI_TRACK    3    /**< Its turns the goal follows the target unseen, from where it was last seen or hurt it. */
-#define AI_MUFFLE   2    /**< Off a noise's heard loudness through a wall or closed door (docs/noise.md D5). */
+#define AI_SIGHT      8    /**< Sees this far (nge_map_within()), if the line is clear. */
+#define AI_WAKE_DC    15   /**< Asleep, wakes to a noise on 1d20 + its Wisdom modifier + the heard loudness of this or more. */
+#define AI_NOTICE_DC  12   /**< Idle, goes to look where a noise came from on the same roll of this or more. */
+#define AI_TRACK      3    /**< Its turns the goal follows the target unseen, from where it was last seen or hurt it. */
+#define AI_MUFFLE     2    /**< Off a noise's heard loudness through a wall or closed door (docs/noise.md D5). */
 
 /** The AI part of a creature's kind record. */
 typedef struct ai_kind {
@@ -132,9 +133,9 @@ void ai_add(nge_entity_id_t id, const ai_kind_t *k) NGE_BANKED;
 void ai_remove(nge_entity_id_t id) NGE_BANKED;
 
 /**
- * @brief Alert AI entity id, as a noise does (AI_STIM_NOISE): a sleeper
- *        wakes to idle, as when it hears the player, and nothing else
- *        changes (the shriek, EF_WAKE).
+ * @brief Alert AI entity id, as a noise does (AI_STIM_NOISE), if it is
+ *        asleep: it wakes to idle. Awake, nothing changes (the shriek,
+ *        EF_WAKE).
  */
 void ai_alert(nge_entity_id_t id) NGE_BANKED;
 

@@ -23,13 +23,16 @@ const ai_brain_def_t ai_brains[AI_BRAIN_COUNT] = {
                                   [AI_STIM_SEEN] = SAME, [AI_STIM_LOST] = SAME },
         },
     },
-    /* Wakes when it hears the player or is hurt; hunts what it sees or what hurt it; gives up when lost */
+    /*
+     * Wakes when it notices a noise or is hurt; hunts what it sees or what hurt it; awake, goes to look
+     * where a noise came from (a hunt with no target, docs/noise.md D7); gives up when lost
+     */
     [AI_BRAIN_DEFAULT] = {
         .next = {
             [AI_STATE_ASLEEP] = { [AI_STIM_NONE] = SAME, [AI_STIM_HURT] = AI_STATE_HUNT,
                                   [AI_STIM_NOISE] = AI_STATE_IDLE, [AI_STIM_SEEN] = SAME, [AI_STIM_LOST] = SAME },
             [AI_STATE_IDLE]   = { [AI_STIM_NONE] = SAME, [AI_STIM_HURT] = AI_STATE_HUNT,
-                                  [AI_STIM_NOISE] = SAME, [AI_STIM_SEEN] = AI_STATE_HUNT, [AI_STIM_LOST] = SAME },
+                                  [AI_STIM_NOISE] = AI_STATE_HUNT, [AI_STIM_SEEN] = AI_STATE_HUNT, [AI_STIM_LOST] = SAME },
             [AI_STATE_HUNT]   = { [AI_STIM_NONE] = SAME, [AI_STIM_HURT] = SAME,
                                   [AI_STIM_NOISE] = SAME, [AI_STIM_SEEN] = SAME, [AI_STIM_LOST] = AI_STATE_IDLE },
         },

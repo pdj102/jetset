@@ -1,7 +1,9 @@
 /*
  * The AI's senses: banked in page 130 with the rest of the module. The
- * turn's context (ai_sense()), hearing, and sight (ai_in_sight(), on
- * nge's line test). See docs/ai_default_brain.md, R6 to R9 and D5.
+ * turn's context (ai_sense()), hearing the noise recorded since its last
+ * turn (ai_hear(), ai_hear.c), and sight (ai_in_sight(), on nge's line
+ * test). See docs/ai_default_brain.md, R6 to R9 and D5, and docs/noise.md,
+ * R9 to R11.
  */
 #ifdef __SDCC
 #pragma codeseg PAGE_130
@@ -27,20 +29,17 @@ static uint8_t present(nge_entity_id_t id, nge_owner_t area)
            NGE_ENTITY_HAS_COMPONENT(id, NGE_COMPONENT_LOCATION) && NGE_OWNER_OF(id) == area;
 }
 
-/* Asleep: 1 if it hears the player at (px, py) this turn, 1d20 + its Wisdom modifier */
-static uint8_t hears(nge_entity_id_t id, uint8_t x, uint8_t y, uint8_t px, uint8_t py)
+/* 1 if it notices a noise heard at loudness heard: 1d20 + its Wisdom modifier + heard against dc */
+static uint8_t notices(nge_entity_id_t id, uint8_t heard, uint8_t dc)
 {
     int8_t mod = 0;
     int16_t roll;
 
-    if (!nge_map_within(x, y, px, py, AI_HEAR)) {
-        return 0;
-    }
     if (NGE_ENTITY_HAS_COMPONENT(id, COMPONENT_STATS)) {
         mod = STATS_MOD(stats_ability[ABIL_WIS][id]);
     }
-    roll = (int16_t)(1 + (unsigned int)rand() % 20) + mod;
-    return roll >= AI_WAKE_DC;
+    roll = (int16_t)(1 + (unsigned int)rand() % 20) + mod + heard;
+    return roll >= dc;
 }
 
 uint8_t ai_in_sight(nge_owner_t area, uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1)
@@ -71,6 +70,10 @@ void ai_sense(nge_entity_id_t id, ai_ctx_t *c)
     uint8_t gx = ai_goal_x[id];
     uint8_t gy = ai_goal_y[id];
     uint8_t track = ai_track[id];
+    uint8_t heard = ai_heard[id];   /* the record: heard loudness + 1; 0: none */
+    uint8_t hx = ai_heard_x[id];
+    uint8_t hy = ai_heard_y[id];
+    ai_state_t state = ai_state[id];
     uint8_t lx;
     uint8_t ly;
     ai_stim_t stim = AI_STIM_NONE;
@@ -87,10 +90,9 @@ void ai_sense(nge_entity_id_t id, ai_ctx_t *c)
         track = 0;
     }
 
-    /* Asleep, it may hear the player; awake, it looks for its target, or the player */
-    if (ai_state[id] == AI_STATE_ASLEEP) {
-        if (present(actor_player, area) &&
-            hears(id, x, y, NGE_LOCATION_X(actor_player), NGE_LOCATION_Y(actor_player))) {
+    /* Asleep, it may wake to a noise; awake, it looks for its target, or the player */
+    if (state == AI_STATE_ASLEEP) {
+        if (heard != 0 && notices(id, (uint8_t)(heard - 1), AI_WAKE_DC)) {
             stim = AI_STIM_NOISE;
         }
     } else {
@@ -112,11 +114,21 @@ void ai_sense(nge_entity_id_t id, ai_ctx_t *c)
                 track--;
             }
         }
+        /* Idle and nothing seen: it may go to look where a noise came from, after no one (R10) */
+        if (state == AI_STATE_IDLE && stim == AI_STIM_NONE && heard != 0 &&
+            notices(id, (uint8_t)(heard - 1), AI_NOTICE_DC)) {
+            target = NGE_ENTITY_INVALID;
+            gx = hx;
+            gy = hy;
+            track = 0;
+            stim = AI_STIM_NOISE;
+        }
     }
     ai_target[id] = target;
     ai_goal_x[id] = gx;
     ai_goal_y[id] = gy;
     ai_track[id] = track;
+    ai_heard[id] = 0;   /* one roll a turn, whatever the noises (R19); hunting, it is ignored */
 
     /* After the banked calls: the context is only written, from locals */
     c->id = id;
