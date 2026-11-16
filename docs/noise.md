@@ -1,7 +1,10 @@
 # Noise: design specification
 
-Status: agreed (2026-11-15). Q1 to Q6 answered in section 9, as
+Status: built (2026-11-16): N1.1 to N1.5, section 11 says how it
+differs. Agreed 2026-11-15; Q1 to Q6 answered in section 9, as
 recommended; D14 added (a band member killed outright raises no alarm).
+N1.6 (R17, messages) and N1.7 (a band shares its target, from the play
+test) are open in todo.md.
 
 Covers to-do objective **N1** (N1.1 to N1.6) in [todo.md](todo.md), from
 play tests 2 and 3 ([difficulty.md](difficulty.md) section 8.7, D20,
@@ -506,6 +509,8 @@ All answered (2026-11-15), as recommended:
   **Silent.**
 
 ## 10. Changes to other documents (when implemented)
+
+Done 2026-11-16 (plan step 5).
 
 - [ai_default_brain.md](ai_default_brain.md): R6 and D6 (hearing) point
   here; `AI_HEAR` goes.

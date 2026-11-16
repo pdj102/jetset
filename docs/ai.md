@@ -448,6 +448,15 @@ ai_can_t   ai_can(nge_entity_id_t id) NGE_BANKED;
 void       ai_alert(nge_entity_id_t id) NGE_BANKED;                     /* wakes a sleeper, as a noise (AI_STIM_NOISE) */
 ```
 
+**Later, from [noise.md](noise.md) (N1):** `AI_STIM_ALARM` (5, a band
+member was hurt by the source: it becomes the target), so
+`AI_STIM_COUNT` is 6; the default brain sends asleep and idle to hunt on
+it, and idle + `AI_STIM_NOISE` to hunt too (going to look where a noise
+came from, a hunt with no target). `ai_hear()` records the noises that
+reach each creature, rolled for at its turn (`ai_sense()`), and
+`ai_band_set()` gives it a band number for the alarm. `ai_alert()` wakes
+sleepers only. The current definitions are in `game/ai/ai.h`.
+
 `ai_add()` asserts the entity is in use, the brain is in range and not
 `AI_BRAIN_NONE`, and the state in range. `ai_can()` asserts the entity
 is alive; an entity without stats has Int 0 for the rules (it can't open

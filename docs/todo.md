@@ -437,7 +437,7 @@ New kinds and the mechanics that make them work: [spec](creature_extensions.md),
 
 ## N — Noise
 
-### N1 A noise system (from play tests 2 and 3, difficulty.md section 8.7, D20) `[spec]` (2026-11-15) [spec](noise.md), [plan](noise_plan.md)
+### N1 A noise system (from play tests 2 and 3, difficulty.md section 8.7, D20) `[done]` (2026-11-16) [spec](noise.md), [plan](noise_plan.md) (N1.6, N1.7 open)
 
 **First priority** (difficulty.md D24). The biggest flaw found by play
 test 3: rooms are fought one monster at a time, as attacking one doesn't
@@ -445,16 +445,17 @@ wake the rest (difficulty.md section 7.1b).
 
 - N1.1 A general, extensible system: it reads the game's events
   ([events.md](events.md)), and for each decides whether a noise was made,
-  how loud, and where
+  how loud, and where `[done]` (2026-11-16)
 - N1.2 A table of what makes noise: a hit, a kill, a spell cast, a door
-  forced, a trap going off; new sources added as data
+  forced, a trap going off; new sources added as data `[done]` (2026-11-16),
+  but a door forced, which comes with its action (noise.md R3)
 - N1.3 The noise's effects are applied to the creatures that hear it: first
   a roll to wake for sleepers within its range (as `hears()` does for the
-  player today); other consequences (a monster coming to look) can be added
+  player today); other consequences (a monster coming to look) can be added `[done]` (2026-11-16)
 - N1.4 A band wakes together: when one of a band is hurt or wakes, the rest
-  wake and hunt
+  wake and hunt `[done]` (2026-11-16)
 - N1.5 The player's own steps as one noise source among others, replacing
-  `hears()`'s special case
+  `hears()`'s special case `[done]` (2026-11-16)
 - N1.6 A message when the player is heard, or hears something (low)
 - N1.7 A band shares its target: when one member sees the target and
   hunts, the band's idle and asleep members in its area hunt it too (from

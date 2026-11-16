@@ -112,7 +112,7 @@ As in ai.md section 3, and:
 | Target | Who the entity is after (`ai_target[]`): the player, or whoever hurt it. Kept between turns |
 | Goal | Where it thinks its target is (`ai_goal_x[]`, `ai_goal_y[]`): where it last saw or felt it. Kept between turns |
 | In sight | Within `AI_SIGHT` of it (`nge_map_within()`), with no wall or closed door on the line between (`nge_block_line()`) |
-| Hear | Notice the player within `AI_HEAR` while asleep, by a Wisdom roll each turn |
+| Hear | Notice the player within `AI_HEAR` while asleep, by a Wisdom roll each turn. **Replaced by [noise.md](noise.md)**: noises from events, steps among them |
 
 ## 4. Requirements
 
@@ -153,6 +153,10 @@ adds to it, with the reason.
   modifier (`STATS_MOD()`), and on `AI_WAKE_DC` (15) or more gets
   `AI_STIM_NOISE`. Walls don't stop hearing. A rat (Wis 10) wakes on 30%
   of its turns near the player, a goblin (Wis 8) on 25%.
+  **Replaced by [noise.md](noise.md) R7 to R11:** the player's steps are a
+  noise like a fight's, recorded by the creatures within range (walls and
+  closed doors muffle it), and each rolls once a turn on its record, asleep
+  to wake and idle to go and look. `AI_HEAR` and `hears()` are gone.
 - **R7** An awake entity looks: the player is in sight if they are on its
   level, within `AI_SIGHT` (8) tiles (`nge_map_within()`), and no wall or
   closed door is on the line between them. In sight, its target becomes
@@ -407,6 +411,8 @@ adds to it, with the reason.
   impossible. **Rejected:** a sight range from Wisdom now: one more number
   to tune before there is anything to tune it against (ai.md R18 keeps it
   for later).
+  **Changed by [noise.md](noise.md):** awake, an idle entity also hears
+  (noise.md R9), and every state clears its noise record each turn.
 
 - **D7 Target and goal in page 131 (R21).** 300 bytes, beside the state
   and brain (page 131 uses 200 of 8K). The target is kept, not assumed to
@@ -501,15 +507,14 @@ adds to it, with the reason.
 /* Stimuli */
 #define AI_STIM_NONE   0
 #define AI_STIM_HURT   1   /**< Attacked: hit, missed or damaged. */
-#define AI_STIM_NOISE  2   /**< Heard the player (asleep). */
+#define AI_STIM_NOISE  2   /**< Heard a noise (asleep: wakes; idle: investigates its tile; noise.md). */
 #define AI_STIM_SEEN   3   /**< Saw its target. */
 #define AI_STIM_LOST   4   /**< Lost its target: at the goal and not seen, or can't get there. */
 #define AI_STIM_COUNT  5
 
 /* Senses */
 #define AI_SIGHT    8    /* tiles, nge_map_within() */
-#define AI_HEAR     4
-#define AI_WAKE_DC  15   /* 1d20 + Wis modifier */
+#define AI_WAKE_DC  15   /* 1d20 + Wis modifier (+ the heard loudness since noise.md, which removed AI_HEAR) */
 
 /** @brief 1 if viewer sees entity id: both on the current level, in sight (D5). Any viewer, AI or not. */
 uint8_t ai_sees(nge_entity_id_t viewer, nge_entity_id_t id) NGE_BANKED;

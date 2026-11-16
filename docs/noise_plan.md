@@ -4,7 +4,7 @@ The steps that build to-do objective N1 ([todo.md](todo.md)) as
 [noise.md](noise.md) specifies it. The spec says what and why; this file
 says in what order, what changes, and how each step is checked.
 
-Status: proposed (2026-11-15).
+Status: done (2026-11-16): steps 1 to 5 built.
 
 ## 1. How the steps work
 

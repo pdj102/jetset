@@ -44,6 +44,7 @@ in a fixed order.
  play_step(), each frame            ^                       +-> player_on_event()
                                     |                       +-> quest_on_event()
                                     |                       +-> ai_on_event()
+                                    |                       +-> noise_on_event()
                                     |                       +-> messages_on_event()
                                     |                       +-> death_on_event()
                                     |                               |
@@ -276,6 +277,7 @@ static void game_on_event(const nge_event_t *e)
     player_on_event(e);
     quest_on_event(e);
     ai_on_event(e);
+    noise_on_event(e);
     messages_on_event(e);
     death_on_event(e);
 }
@@ -292,11 +294,12 @@ before "Game over".
 | `player_on_event()` | Common | Calls banked `player_on_pc_event()` for every event, which keeps common memory free |
 | `quest_on_event()` | Banked | |
 | `ai_on_event()` | Common | A filter: only events about a living AI entity reach the banked code |
+| `noise_on_event()` | Common | A filter: one bit test in a mask built from the noise table (noise.md D2); only events that make a noise call banked `noise_event()`, page 142, which records it for the AI creatures that hear it (`ai_hear()`, page 130). Posts nothing: the records are read at the creatures' turns |
 | `messages_on_event()` | Banked, page 118 | |
 | `death_on_event()` | Common | In `game.c` |
 
-So each event costs four banked calls, whoever wants it. `ai_on_event()` shows how to
-avoid that for a handler that wants few events.
+So each event costs four banked calls, whoever wants it. `ai_on_event()` and
+`noise_on_event()` show how to avoid that for a handler that wants few events.
 
 `game_over()` from a handler stops the clock, which takes effect after the tick
 (`nge_timer.h`). The rest of that tick still fires, and the game's rules cope with a
@@ -314,7 +317,7 @@ cascades:
 |---|---|---|
 | `EV_DIED`, killed by the player | `player_on_pc_event()` through `pc_gain_xp()` | `EV_XP_GAINED`, and for each level gained `EV_ATTRS_CHANGED`, `EV_HEALED`, `EV_ATTRS_CHANGED`, `EV_MANA_RESTORED`, `EV_LEVEL_GAINED`, `EV_SPELL_LEARNED` |
 | `EV_PICKED_UP`, the quest item, first time | `quest_on_event()` | `EV_QUEST_FOUND` |
-| `EV_HIT`, `EV_MISSED`, `EV_DAMAGED`, `EV_CAST` at another | `ai_on_event()` through `ai_stimulus()` | `EV_AI_CHANGED`, if the state changed |
+| `EV_HIT`, `EV_MISSED`, `EV_DAMAGED`, `EV_CAST` at another | `ai_on_event()` through `ai_stimulus()` | `EV_AI_CHANGED`, if the state changed, and one for each band member the alarm reaches (noise.md R14) |
 | `EV_STOOD_ON`, a trap stood on by a walker | `feature_on_event()` through `act_spring()` | `EV_TRIGGERED`, `EV_FOUND` if it was hidden, then `EV_HIT` and `EV_DAMAGED` or `EV_MISSED`, or its effect's events; `EV_LEFT_LEVEL` for a monster down a trapdoor |
 
 `NGE_EVENT_PROCESS_MAX` (64) catches handlers that keep posting. It is a guard, not a
@@ -512,7 +515,7 @@ level gained in one handler call (spells.md, "As built").
 | nge's own events | IDs 0 to 15 are reserved, and nothing uses them |
 | Events with no target | The queue allows them, and no game event has one |
 | Reactions to `EV_STOOD_ON` | Only a message. Traps and the like would react here (level_transitions.md) |
-| An event's handlers filtering early | Only `ai_on_event()` does it (section 4.5) |
+| An event's handlers filtering early | Only `ai_on_event()` and `noise_on_event()` do it (section 4.5) |
 
 ## 7. Tests
 
