@@ -456,6 +456,11 @@ wake the rest (difficulty.md section 7.1b).
 - N1.5 The player's own steps as one noise source among others, replacing
   `hears()`'s special case
 - N1.6 A message when the player is heard, or hears something (low)
+- N1.7 A band shares its target: when one member sees the target and
+  hunts, the band's idle and asleep members in its area hunt it too (from
+  the noise play test, noise.md "As built" step 4: one kobold saw the
+  player, the other stayed idle). As the alarm, members reached pass
+  nothing on (R16)
 
 ### N2 Sneaking (after a play test of N1, noise.md Q1 and section 6)
 
@@ -503,6 +508,8 @@ wake the rest (difficulty.md section 7.1b).
  ### S10 - Implement identify spell (needs K1, K2)
 - S10.1 to S10.3 Moved to K: knowledge is kept per kind, not by a flag on each item (K1, K2.5)
 - S10.4 The identify spell identifies a single item in the inventory (`OP_IDENTIFY`, K2.4)
+### S11 - Hold lasts longer (from the noise play test, Mage, noise.md "As built" step 4)
+- S11.1 A held creature shakes hold off in 1 or 2 turns: `EF_HOLD` saves on Str DC 14 at every firing, each turn (`effects_pdata.c`). Fewer saves (a longer period, or saves every other firing) or a higher DC. The lichen's hold on the player uses the same effect, so a change there may want its own effect
 ## T - Targetting action
 T1 - Selecting previous target
 - T1.1 the player character targetting action should select the previous target, if one exists and it is still alive

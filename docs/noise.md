@@ -609,3 +609,36 @@ All answered (2026-11-15), as recommended:
   4 to 6 and zombies from depth 7 (met there only in bands) have one.
 - **CSpect check 5 passed** (2026-11-16). Page 130's 254 bytes free
   accepted over R20 (2026-11-16).
+
+### Step 4: the play test and tuning
+
+- **Fighter, depths 1 to 5** (2026-11-16, CSpect, dev at 980a540). The
+  loudness felt right, so the table and the defines are unchanged.
+  - Depth 1: a jackal killed outright; one woke and noticed, and the rest
+    woke during the fight. Shooting a kobold from outside its room
+    brought two to look.
+  - Depth 2: sneaked past a goblin, which woke but didn't see the player.
+    3 turns standing 3 tiles from a gas spore didn't wake it (D8). A
+    kobold 4 tiles from the shot gas spore didn't notice.
+  - Depth 3: a kobold shot from afar; the other two woke, came to look,
+    and lost the player, who ran. One that saw the player hunted; the
+    other, idle, didn't follow it. **To do N1.7** (a band shares the
+    target one of it sees).
+  - Depth 4: sneaked away from two idle skeletons 2 tiles away. In a room
+    of three, the one shot came, and the other two came to look one after
+    the other during the fight.
+  - Depth 5: a room of 6 or 7, shot from the corridor; most came.
+    Challenging, but won easily.
+  - Found: bug B5 (the targeting cursor, docs/bugs.md), not from N1.
+- **Mage, depths 1 to 5** (2026-11-16, CSpect, dev at 980a540). Balanced.
+  - Depth 1: breaking the boulder in a corridor brought the bandit to
+    look. A shot into a room of four jackals woke three. A fire bolt into
+    a room of kobolds brought the room.
+  - Depth 2: a fire bolt into a room didn't wake its kobolds (the roll).
+  - Depth 4: walked across a room with a zombie unnoticed.
+  - Depth 5: cleared a room of about 6 from the corridor, never in danger:
+    HP 32/38 and MP 4/30 at the end. For D1.5 (the Mage's C7).
+  - Found: hold is shaken off in 1 or 2 turns (to do S11), not from N1.
+- **As tuned:** no changes. The table is section 5.1's, `AI_WAKE_DC` 15,
+  `AI_NOTICE_DC` 12, `AI_MUFFLE` 2. difficulty.md section 8.7's W1 and W2
+  are marked built.

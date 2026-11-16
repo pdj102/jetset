@@ -90,3 +90,27 @@ the commit, and it stays listed so the number keeps its meaning.
   press as play does (D5), which costs no lag, and perhaps ignores repeats
   that change direction (R10); D4 is updated with it.
 
+
+## B5 The targeting cursor is red on a creature and green on the empty tile beyond it
+
+- **Seen:** 2026-11-16, CSpect, dev branch at 980a540, the noise play
+  test (noise.md "As built", step 4).
+- **Steps:** from a corridor, fire into a room. Move the cursor onto a
+  creature, then one tile further on.
+- **Seen:** the cursor is red on the creature. On the empty tile beyond it
+  is green, and firing there hits the creature.
+- **Expected:** the cursor's colour says what firing at the tile does. A
+  green cursor on an empty tile, for a shot that hits something else, is
+  confusing.
+- **Status:** open, cause probable by reading the code; not tried.
+- **Notes:** `act_line()` (`actions/act_shared.c`) walks Bresenham's line
+  to the cursor's tile and stops at the first creature on it. Red means
+  `ACT_R_NO_LINE` (or out of range): the line to the creature's own tile
+  clips a wall from the corridor. The line to the tile beyond is a
+  different line, and it reaches the creature before any wall, so the
+  check succeeds with `a->target` the creature (green, D6 in
+  targeting.md). Both colours are right for the rule; what's missing is
+  showing which creature a shot reaches. Options: mark the creature
+  `a->target` names when it isn't on the cursor's tile, or make the line
+  to an occupied tile try the neighbouring lines (symmetric, as sight
+  isn't either). A spec decision first.

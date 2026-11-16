@@ -738,6 +738,9 @@ Options, for Q15-Q18:
     used (luring into a corridor). W3 later, if still easy. It comes
     before H1/H2 (section 8.6): waking may be the shallow depths' missing
     danger, not the monsters' HP.
+  - **Built:** W1 and W2, 2026-11-16 (N1, [noise.md](noise.md)). The
+    Fighter and Mage play test of depths 1 to 5 found them balanced, with
+    no numbers changed (noise.md "As built", step 4).
 - **The Mage in C7 (D18 said later):** MP a fight against the MP pool,
   giving **fights a full MP** a depth, beside the Fighter's fights a full
   HP. Calibrated against this test: out of MP first at depth 5.
