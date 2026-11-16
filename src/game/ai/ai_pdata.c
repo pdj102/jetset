@@ -2,7 +2,8 @@
 /*
  * The AI module's page data, in page 131 (slot 7 while its code in page
  * 130 runs): each AI entity's state, brain and traits (docs/ai.md, D4), and its
- * target and goal (docs/ai_default_brain.md, D7).
+ * target and goal (docs/ai_default_brain.md, D7), and its record of the
+ * loudest noise heard (docs/noise.md, D3).
  * Uninitialised: ai_add() sets an entity's. See "Page data" in
  * docs/memory_map.md.
  */
@@ -15,3 +16,6 @@ uint8_t ai_goal_x[NGE_ENTITY_MAX];
 uint8_t ai_goal_y[NGE_ENTITY_MAX];
 uint8_t ai_track[NGE_ENTITY_MAX];
 uint8_t ai_traits[NGE_ENTITY_MAX];
+uint8_t ai_heard[NGE_ENTITY_MAX];
+uint8_t ai_heard_x[NGE_ENTITY_MAX];
+uint8_t ai_heard_y[NGE_ENTITY_MAX];

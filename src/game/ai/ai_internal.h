@@ -6,6 +6,7 @@
  * - ai.c (common memory): the event filter;
  * - ai_bank.c (page 130): the component, the stimuli, ai_can();
  * - ai_sense.c (page 130): the context, hearing and sight;
+ * - ai_hear.c (page 130): noises reaching creatures, their records;
  * - ai_think.c (page 130): the turn, the states and their options;
  * - ai_act.c (page 130): ai_try() and the moves built on it, the states'
  *   way to act;
@@ -47,6 +48,10 @@ extern uint8_t ai_goal_y[NGE_ENTITY_MAX];           /* nowhere */
 extern uint8_t ai_track[NGE_ENTITY_MAX];            /* turns the goal may follow the target unseen; */
                                                     /* below AI_TRACK: following started */
 extern uint8_t ai_traits[NGE_ENTITY_MAX];           /* AI_TRAIT_*, from its kind (ai_add()) */
+extern uint8_t ai_heard[NGE_ENTITY_MAX];            /* its record: the loudest noise's heard loudness + 1 */
+                                                    /* since its last turn; 0: none (ai_hear()) */
+extern uint8_t ai_heard_x[NGE_ENTITY_MAX];          /* the record's tile */
+extern uint8_t ai_heard_y[NGE_ENTITY_MAX];
 
 /* What an AI entity knows on this turn: ai_sense() fills it, on the stack */
 typedef struct ai_ctx {

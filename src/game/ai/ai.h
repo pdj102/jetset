@@ -50,6 +50,7 @@
 
 #include "core/nge_bank.h"
 #include "ecs/nge_entity.h"
+#include "ecs/nge_owner.h"
 #include "event/nge_event.h"
 #include "game/components/components.h"
 
@@ -104,6 +105,7 @@ typedef uint16_t ai_can_t;    /**< A mask of AI_CAN_*: 16 bits (docs/creature_ex
 #define AI_HEAR     4    /**< Asleep, hears the player this near, walls or not... */
 #define AI_WAKE_DC  15   /**< ...and wakes on 1d20 + its Wisdom modifier of this or more. */
 #define AI_TRACK    3    /**< Its turns the goal follows the target unseen, from where it was last seen or hurt it. */
+#define AI_MUFFLE   2    /**< Off a noise's heard loudness through a wall or closed door (docs/noise.md D5). */
 
 /** The AI part of a creature's kind record. */
 typedef struct ai_kind {
@@ -145,6 +147,27 @@ ai_state_t ai_get_state(nge_entity_id_t id) NGE_BANKED;
  *        own check still decides (a door may be locked).
  */
 ai_can_t ai_can(nge_entity_id_t id) NGE_BANKED;
+
+/** A noise (game/noise/noise.h): where, how loud, and who made it. */
+typedef struct ai_noise {
+    nge_owner_t area;          /**< Its area, and its tile. */
+    uint8_t x;
+    uint8_t y;
+    uint8_t loud;              /**< How far it carries, in tiles (nge_map_within()). */
+    nge_entity_id_t source;    /**< The event's source and target, which don't hear it; */
+    nge_entity_id_t target;    /**< NGE_EVENT_NONE: none. */
+} ai_noise_t;
+
+/**
+ * @brief A noise reaches the AI creatures in its area within its loudness,
+ *        but its source and target: each keeps the loudest that reached it
+ *        since its last turn, and its tile, for its next turn (its record,
+ *        docs/noise.md R7). The heard loudness is the loudness less the
+ *        distance, less AI_MUFFLE if a wall or closed door is in the way;
+ *        below 0, it isn't heard.
+ * @param n On the stack (not in a banked page).
+ */
+void ai_hear(const ai_noise_t *n) NGE_BANKED;
 
 /** @brief An AI entity's turn (TIMER_AI): sense, its state's handler, one action. */
 void ai_on_turn(nge_entity_id_t id) NGE_BANKED;

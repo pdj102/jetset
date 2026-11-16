@@ -31,6 +31,7 @@
 #include "game/events.h"
 #include "game/level/level.h"
 #include "game/messages/messages.h"
+#include "game/noise/noise.h"
 #include "game/player/player.h"
 #include "game/quest/quest.h"
 #include "game/timers.h"
@@ -75,6 +76,7 @@ static void game_on_event(const nge_event_t *e)
         feature_on_event(e);   /* a container spills, a trap fires: filtered here, as the call is banked */
     }
     ai_on_event(e);      /* before the messages: its EV_AI_CHANGED comes after the attack's */
+    noise_on_event(e);   /* filtered by its own mask: records resolved at the hearers' turns */
     if (e->id == EV_DAMAGED || e->id == EV_DIED) {
         effects_on_event(e);   /* damage wakes the unconscious, a death bursts: filtered here, as the call is banked */
     }
@@ -377,6 +379,7 @@ static void over_run(uint8_t reason)
 void game_run(void)
 {
     nge_event_init();
+    noise_init();        /* the mask, from the table: once */
     for (;;) {
         screen_title_run();
         over_run(play_run());

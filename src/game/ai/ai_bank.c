@@ -55,6 +55,7 @@ void ai_add(nge_entity_id_t id, const ai_kind_t *k) NGE_BANKED
     ai_goal_y[id] = NGE_MAP_Y_INVALID;
     ai_track[id] = 0;
     ai_traits[id] = k->traits;
+    ai_heard[id] = 0;
 }
 
 void ai_remove(nge_entity_id_t id) NGE_BANKED

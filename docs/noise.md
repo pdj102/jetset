@@ -516,3 +516,38 @@ All answered (2026-11-15), as recommended:
   sizes, common memory.
 - [difficulty.md](difficulty.md): section 8.7's W1/W2 built.
 - [todo.md](todo.md): N1's status.
+
+## 11. As built: differences from the design
+
+### Step 1: the noise module and the records
+
+- **The noise is `ai_noise_t`, not `noise_t` (5.2).** It is declared in
+  `ai.h`, so it carries the AI's prefix (G-NAME-1).
+- **The tile's entity may be dying, not only alive (R1).** Events are
+  handled after the action, so the target of a killing blow is already
+  dying when its `EV_HIT` and `EV_DIED` arrive. `noise_event()` takes any
+  entity in use and placed in an area. Without this, a kill would make
+  neither the hit's noise nor its death cry.
+- **The distance is `nge_map_within()`'s, not Chebyshev (section 2).**
+  The heard loudness uses the least range that reaches the creature, on
+  the same circle as sight and every other range. The larger of dx and dy
+  (Chebyshev) is the first guess, and the creature is out of hearing
+  without a range test when that is beyond the loudness. So a creature at
+  (4, 4) from a hit (loudness 6) is at range 6 and hears it at 0.
+- **`noise_table[]` is file-local** in `noise_bank.c`. `test_noise`
+  checks the mask against the list of loud events, not the table.
+- **`noise_init()`** is called once, in `game_run()` after
+  `nge_event_init()`, since the mask depends only on the table.
+- **`ai_hear()` copies the whole noise into a local struct**, not field by
+  field. zsdcc reloaded the pointer for each field, which cost about 90
+  bytes; the struct copy is one `ldir`.
+- **Memory:** common memory +90 bytes (85 code, 5 the mask), 4,114 free in
+  the debug build. Page 130 from 7,072 to 7,466 bytes, +394 (`ai_hear()` is
+  384, against about 0.3K planned), 726 free. Page 131 from 1,050 to 1,500.
+  Page 142 520 bytes. No new library routines in common memory.
+- **The asm was read** for `ai_hear()`, `noise_event()` and
+  `noise_on_event()`: the field offsets of the noise and the event, the
+  argument order of `nge_map_within()` and `nge_block_line()`, and the
+  registers kept across the calls are right.
+- **Tests:** `test_noise` 34 checks (new), `test_ai` 227, unchanged.
+- **CSpect check 6 (timing) passed** (2026-11-16): no visible slowdown.

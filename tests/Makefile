@@ -14,7 +14,7 @@
 #   Game code (src/game) is linked only into the tests listed with it below
 #   (GEN_GAME_SRCS, with the components, effects and attributes, for test_gen,
 #   LEVEL_GAME_SRCS and those for test_level,
-#   ACT_GAME_SRCS (with the AI files that act, and the features' reactions, which act) and the level and gen ones for test_act and test_ai, the gen ones for
+#   ACT_GAME_SRCS (with the AI files that act, the noises, and the features' reactions, which act) and the level and gen ones for test_act, test_ai and test_noise, the gen ones for
 #   test_inventory, UI_GAME_SRCS (with character creation) and the action ones for test_ui and test_target,
 #   the action ones and character creation for test_chargen).
 #   Library files that only work on the Next (inline asm traps, Layer 2
@@ -68,7 +68,8 @@ GEN_ACT_SRCS := $(wildcard $(GAMEDIR)/actions/*.c)
 GEN_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(GEN_GAME_SRCS) $(GEN_ACT_SRCS)) $(LEVEL_ONLY_OBJS)
 LEVEL_GAME_OBJS := $(GEN_GAME_OBJS)
 # The monsters' thinking and the features' reactions, with the actions they choose
-ACT_GAME_SRCS := $(addprefix $(GAMEDIR)/ai/,ai_act.c ai_sense.c ai_think.c) $(GAMEDIR)/components/feature_event.c
+ACT_GAME_SRCS := $(addprefix $(GAMEDIR)/ai/,ai_act.c ai_hear.c ai_sense.c ai_think.c) $(GAMEDIR)/components/feature_event.c \
+                 $(addprefix $(GAMEDIR)/noise/,noise.c noise_bank.c)
 ACT_GAME_OBJS := $(patsubst $(GAMEDIR)/%.c,$(BUILD)/game/%.o,$(ACT_GAME_SRCS)) $(LEVEL_GAME_OBJS)
 UI_GAME_SRCS := $(wildcard $(GAMEDIR)/ui/*.c) \
                 $(addprefix $(GAMEDIR)/,player/player.c player/player_bank.c messages/messages_bank.c \
@@ -146,6 +147,9 @@ $(BUILD)/test_mana: $(BUILD)/test_mana.o $(LIB_OBJS) $(SUPPORT_OBJS) $(GEN_GAME_
 	$(HOSTCC) $(CFLAGS) $^ -o $@
 
 $(BUILD)/test_ai: $(BUILD)/test_ai.o $(LIB_OBJS) $(SUPPORT_OBJS) $(ACT_GAME_OBJS)
+	$(HOSTCC) $(CFLAGS) $^ -o $@
+
+$(BUILD)/test_noise: $(BUILD)/test_noise.o $(LIB_OBJS) $(SUPPORT_OBJS) $(ACT_GAME_OBJS)
 	$(HOSTCC) $(CFLAGS) $^ -o $@
 
 $(BUILD)/test_pc: $(BUILD)/test_pc.o $(LIB_OBJS) $(SUPPORT_OBJS) $(GEN_GAME_OBJS)
